@@ -17,10 +17,19 @@ import { EmployeeList } from '../employees/EmployeeList';
 import { AutomotoraModule } from '../../modules/automotora/AutomotoraModule';
 import { DetailingModule } from '../../modules/detailing/DetailingModule';
 import { InspeccionModule } from '../../modules/inspecciones/InspeccionModule';
+import { PublicQuoteRequestPage } from '../public/PublicQuoteRequestPage';
 import { Vehicle, Client, Appointment } from '../../types';
 
 export const AppLayout: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('inicio');
+
+  // Vista Pública de Presupuestos (sin login / accesible por URL o toggle)
+  const [isPublicFormView, setIsPublicFormView] = useState(() => {
+    return typeof window !== 'undefined' && (
+      window.location.search.includes('public=presupuesto') || 
+      window.location.search.includes('public=detailing')
+    );
+  });
 
   // Modales Globales
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
@@ -51,6 +60,11 @@ export const AppLayout: React.FC = () => {
     setVehicleDefaultClientId(c.id);
     setIsVehicleFormOpen(true);
   };
+
+  // Si está activa la vista pública de formulario de presupuesto (reemplazo de Google Form)
+  if (isPublicFormView) {
+    return <PublicQuoteRequestPage onBackToApp={() => setIsPublicFormView(false)} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#070A0E] text-slate-100">
@@ -97,7 +111,9 @@ export const AppLayout: React.FC = () => {
           {currentTab === 'empleados' && <EmployeeList />}
 
           {currentTab === 'mod-automotora' && <AutomotoraModule />}
-          {currentTab === 'mod-detailing' && <DetailingModule />}
+          {currentTab === 'mod-detailing' && (
+            <DetailingModule onOpenPublicForm={() => setIsPublicFormView(true)} />
+          )}
           {currentTab === 'mod-inspeccion' && <InspeccionModule />}
         </main>
       </div>

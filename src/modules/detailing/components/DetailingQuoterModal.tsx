@@ -1,0 +1,831 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  X,
+  Sparkles,
+  Car,
+  User,
+  Phone,
+  Clock,
+  DollarSign,
+  Calendar,
+  AlertTriangle,
+  Camera,
+  Plus,
+  MessageCircle,
+  Save,
+  CheckCircle2
+} from 'lucide-react';
+import {
+  DetailingQuote,
+  DetailingQuoteStatus,
+  DetailingDiscountType,
+  VehicleCategory,
+  ClientOrigin
+} from '../../../types';
+import { useData } from '../../../context/DataContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
+import { formatCurrency, normalizePlate } from '../../../lib/formatters';
+
+interface DetailingQuoterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  quoteToEdit?: DetailingQuote | null;
+  onOpenWhatsApp?: (quote: DetailingQuote) => void;
+}
+
+export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
+  isOpen,
+  onClose,
+  quoteToEdit,
+  onOpenWhatsApp
+}) => {
+  const {
+    clients,
+    vehicles,
+    detailingTariffs,
+    addDetailingQuote,
+    updateDetailingQuote,
+    updateDetailingQuoteStatus,
+    addClient,
+    addVehicle
+  } = useData();
+
+  const { profile } = useAuth();
+  const { showToast } = useToast();
+
+  // Estados de Formulario
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+
+  // En caso de creación rápida en el momento
+  const [isNewClientMode, setIsNewClientMode] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
+
+  const [isNewVehicleMode, setIsNewVehicleMode] = useState(false);
+  const [newVehicleBrand, setNewVehicleBrand] = useState('');
+  const [newVehicleModel, setNewVehicleModel] = useState('');
+  const [newVehiclePlate, setNewVehiclePlate] = useState('');
+  const [newVehicleCategory, setNewVehicleCategory] = useState<VehicleCategory>('Chico');
+
+  // Selección de servicios y montos
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [discountType, setDiscountType] = useState<DetailingDiscountType>('none');
+  const [fixedDiscountAmount, setFixedDiscountAmount] = useState<number>(0);
+  const [hasExtremeDirt, setHasExtremeDirt] = useState(false);
+  const [extremeDirtSurcharge, setExtremeDirtSurcharge] = useState<number>(1500);
+
+  // Metadatos
+  const [origin, setOrigin] = useState<ClientOrigin | 'Llamada' | 'Form Web'>('WhatsApp');
+  const [assignedTo, setAssignedTo] = useState<string>('user-maxi');
+  const [estimatedTime, setEstimatedTime] = useState<string>('1 día');
+  const [status, setStatus] = useState<DetailingQuoteStatus>('Por Cotizar');
+  const [appointmentDate, setAppointmentDate] = useState<string>('');
+  const [notes, setNotes] = useState('');
+  const [priorityZones, setPriorityZones] = useState('');
+
+  // Fotos
+  const [photoInput, setPhotoInput] = useState('');
+  const [photosBefore, setPhotosBefore] = useState<string[]>([]);
+  const [photosAfter, setPhotosAfter] = useState<string[]>([]);
+
+  // Inicializar si estamos editando
+  useEffect(() => {
+    if (quoteToEdit) {
+      setSelectedClientId(quoteToEdit.client_id || '');
+      setSelectedVehicleId(quoteToEdit.vehicle_id || '');
+      setSelectedServiceIds(quoteToEdit.selected_services.map((s) => s.serviceId));
+      setDiscountType(quoteToEdit.discount_type || 'none');
+      setFixedDiscountAmount(quoteToEdit.discount_amount || 0);
+      setHasExtremeDirt(quoteToEdit.extreme_dirt_surcharge > 0);
+      setExtremeDirtSurcharge(quoteToEdit.extreme_dirt_surcharge || 1500);
+      setOrigin(quoteToEdit.origin);
+      setAssignedTo(quoteToEdit.assigned_to || profile?.id || 'user-maxi');
+      setEstimatedTime(quoteToEdit.estimated_time || '1 día');
+      setStatus(quoteToEdit.status);
+      setAppointmentDate(quoteToEdit.appointment_date || '');
+      setNotes(quoteToEdit.notes || '');
+      setPriorityZones(quoteToEdit.priority_zones || '');
+      setPhotosBefore(quoteToEdit.photos_before || []);
+      setPhotosAfter(quoteToEdit.photos_after || []);
+      setIsNewClientMode(false);
+      setIsNewVehicleMode(false);
+    } else {
+      // Valores por defecto para nueva cotización
+      setSelectedClientId('');
+      setSelectedVehicleId('');
+      setSelectedServiceIds(['lavado_exterior', 'interior']);
+      setDiscountType('none');
+      setFixedDiscountAmount(0);
+      setHasExtremeDirt(false);
+      setExtremeDirtSurcharge(1500);
+      setOrigin('WhatsApp');
+      setAssignedTo(profile?.id || 'user-maxi');
+      setEstimatedTime('1 día');
+      setStatus('Por Cotizar');
+      setAppointmentDate(new Date(Date.now() + 86400000).toISOString().slice(0, 16));
+      setNotes('');
+      setPriorityZones('');
+      setPhotosBefore([]);
+      setPhotosAfter([]);
+      setIsNewClientMode(false);
+      setIsNewVehicleMode(false);
+    }
+  }, [quoteToEdit, profile, isOpen]);
+
+  // Si se selecciona un vehículo existente, autodetectar su categoría
+  const currentVehicle = useMemo(() => {
+    return vehicles.find((v) => v.id === selectedVehicleId);
+  }, [vehicles, selectedVehicleId]);
+
+  const activeCategory: VehicleCategory = useMemo(() => {
+    if (currentVehicle) return currentVehicle.category;
+    if (isNewVehicleMode) return newVehicleCategory;
+    return 'Chico';
+  }, [currentVehicle, isNewVehicleMode, newVehicleCategory]);
+
+  // Mapear categoría a key del tarifario ('chico' | 'mediano' | 'suv' | 'pickup' | 'moto')
+  const categoryKey = useMemo(() => {
+    switch (activeCategory) {
+      case 'Mediano':
+        return 'mediano';
+      case 'SUV/Rural':
+        return 'suv';
+      case 'Pick-up':
+        return 'pickup';
+      case 'Moto':
+        return 'moto';
+      default:
+        return 'chico';
+    }
+  }, [activeCategory]);
+
+  // Cálculo en tiempo real de Subtotal, Descuentos y Total
+  const { subtotal, discountAmount, calculatedTotal, selectedServiceObjects } = useMemo(() => {
+    const serviceObjs = selectedServiceIds.map((id) => {
+      const tariff = detailingTariffs.find((t) => t.id === id);
+      const price = tariff ? tariff.prices[categoryKey] || 0 : 0;
+      return {
+        serviceId: id,
+        serviceName: tariff?.name || tariff?.shortName || id,
+        price
+      };
+    });
+
+    const sub = serviceObjs.reduce((acc, curr) => acc + curr.price, 0);
+
+    let disc = 0;
+    if (discountType === 'combo_10') {
+      disc = Math.round(sub * 0.1);
+    } else if (discountType === 'special_15') {
+      disc = Math.round(sub * 0.15);
+    } else if (discountType === 'fixed') {
+      disc = fixedDiscountAmount;
+    }
+
+    const surcharge = hasExtremeDirt ? extremeDirtSurcharge : 0;
+    const total = Math.max(0, sub - disc + surcharge);
+
+    return {
+      subtotal: sub,
+      discountAmount: disc,
+      calculatedTotal: total,
+      selectedServiceObjects: serviceObjs
+    };
+  }, [selectedServiceIds, detailingTariffs, categoryKey, discountType, fixedDiscountAmount, hasExtremeDirt, extremeDirtSurcharge]);
+
+  if (!isOpen) return null;
+
+  const toggleService = (serviceId: string) => {
+    if (selectedServiceIds.includes(serviceId)) {
+      setSelectedServiceIds(selectedServiceIds.filter((id) => id !== serviceId));
+    } else {
+      setSelectedServiceIds([...selectedServiceIds, serviceId]);
+    }
+  };
+
+  const handleAddPhoto = (type: 'before' | 'after') => {
+    if (!photoInput.trim()) return;
+    if (type === 'before') {
+      setPhotosBefore([...photosBefore, photoInput.trim()]);
+    } else {
+      setPhotosAfter([...photosAfter, photoInput.trim()]);
+    }
+    setPhotoInput('');
+  };
+
+  const handleSave = (openWhatsAppAfterSave = false) => {
+    // 1. Resolver Cliente
+    let finalClientId = selectedClientId;
+    let finalClientName = '';
+    let finalClientPhone = '';
+
+    if (isNewClientMode) {
+      if (!newClientName.trim() || !newClientPhone.trim()) {
+        showToast('Ingresá el nombre y teléfono del nuevo cliente', 'error');
+        return;
+      }
+      const res = addClient({
+        full_name: newClientName.trim(),
+        phone: newClientPhone.trim(),
+        origin: origin as any,
+        notes: 'Creado desde Cotizador de Detailing'
+      });
+      finalClientId = res.client.id;
+      finalClientName = res.client.full_name;
+      finalClientPhone = res.client.phone;
+    } else {
+      const cli = clients.find((c) => c.id === selectedClientId);
+      if (!cli) {
+        showToast('Seleccioná un cliente existente o creá uno nuevo', 'error');
+        return;
+      }
+      finalClientId = cli.id;
+      finalClientName = cli.full_name;
+      finalClientPhone = cli.phone;
+    }
+
+    // 2. Resolver Vehículo
+    let finalVehicleId = selectedVehicleId;
+    let finalVehicleInfo = '';
+    let finalPlate = '';
+
+    if (isNewVehicleMode) {
+      if (!newVehicleBrand.trim() || !newVehicleModel.trim()) {
+        showToast('Ingresá la marca y modelo del vehículo', 'error');
+        return;
+      }
+      const plate = newVehiclePlate.trim() ? normalizePlate(newVehiclePlate.trim()) : `UY-${Math.floor(1000 + Math.random() * 9000)}`;
+      const res = addVehicle({
+        brand: newVehicleBrand.trim(),
+        model: newVehicleModel.trim(),
+        plate,
+        category: newVehicleCategory,
+        ownership: 'client',
+        client_id: finalClientId,
+        photos: photosBefore
+      });
+      finalVehicleId = res.vehicle.id;
+      finalVehicleInfo = `${res.vehicle.brand} ${res.vehicle.model}`;
+      finalPlate = res.vehicle.plate;
+    } else {
+      const veh = vehicles.find((v) => v.id === selectedVehicleId);
+      if (veh) {
+        finalVehicleId = veh.id;
+        finalVehicleInfo = `${veh.brand} ${veh.model}`;
+        finalPlate = veh.plate;
+      } else {
+        finalVehicleInfo = 'Vehículo a confirmar';
+      }
+    }
+
+    if (selectedServiceObjects.length === 0) {
+      showToast('Seleccioná al menos un servicio del tarifario', 'error');
+      return;
+    }
+
+    let savedQuote: DetailingQuote;
+
+    if (quoteToEdit) {
+      updateDetailingQuote(quoteToEdit.id, {
+        client_id: finalClientId,
+        client_name: finalClientName,
+        client_phone: finalClientPhone,
+        vehicle_id: finalVehicleId,
+        vehicle_info: finalVehicleInfo,
+        vehicle_plate: finalPlate,
+        vehicle_category: activeCategory,
+        selected_services: selectedServiceObjects,
+        subtotal,
+        discount_type: discountType,
+        discount_amount: discountAmount,
+        extreme_dirt_surcharge: hasExtremeDirt ? extremeDirtSurcharge : 0,
+        total_amount: calculatedTotal,
+        estimated_time: estimatedTime,
+        assigned_to: assignedTo,
+        origin,
+        notes,
+        priority_zones: priorityZones,
+        photos_before: photosBefore,
+        photos_after: photosAfter
+      });
+
+      // Si cambió el estado
+      if (quoteToEdit.status !== status) {
+        updateDetailingQuoteStatus(quoteToEdit.id, status, {
+          date: appointmentDate,
+          assigned_to: assignedTo
+        });
+      }
+
+      savedQuote = {
+        ...quoteToEdit,
+        client_name: finalClientName,
+        client_phone: finalClientPhone,
+        vehicle_info: finalVehicleInfo,
+        total_amount: calculatedTotal,
+        selected_services: selectedServiceObjects,
+        status
+      };
+
+      showToast('Cotización actualizada', 'success');
+    } else {
+      savedQuote = addDetailingQuote({
+        client_id: finalClientId,
+        client_name: finalClientName,
+        client_phone: finalClientPhone,
+        vehicle_id: finalVehicleId,
+        vehicle_info: finalVehicleInfo,
+        vehicle_plate: finalPlate,
+        vehicle_category: activeCategory,
+        selected_services: selectedServiceObjects,
+        subtotal,
+        discount_type: discountType,
+        discount_amount: discountAmount,
+        extreme_dirt_surcharge: hasExtremeDirt ? extremeDirtSurcharge : 0,
+        total_amount: calculatedTotal,
+        estimated_time: estimatedTime,
+        assigned_to: assignedTo,
+        origin,
+        notes,
+        priority_zones: priorityZones,
+        status,
+        appointment_date: status === 'Turno Confirmado' ? appointmentDate : undefined,
+        photos_before: photosBefore,
+        photos_after: photosAfter
+      });
+
+      // Si se crea directo como Turno Confirmado o Completado
+      if (status !== 'Por Cotizar') {
+        updateDetailingQuoteStatus(savedQuote.id, status, {
+          date: appointmentDate,
+          assigned_to: assignedTo
+        });
+      }
+
+      showToast('Cotización creada exitosamente', 'success');
+    }
+
+    onClose();
+
+    if (openWhatsAppAfterSave && onOpenWhatsApp) {
+      onOpenWhatsApp(savedQuote);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="bg-[#0E131F] border border-purple-500/30 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+        
+        {/* Cabecera */}
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-[#121826]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-white flex items-center gap-2">
+                {quoteToEdit ? 'Editar Cotización / Trabajo' : 'Nueva Cotización DetailVlak'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                Calculadora inteligente según categoría y tarifario oficial en $UYU.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Formulario */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+          
+          {/* SECCIÓN 1: CLIENTE Y VEHÍCULO */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-2xl bg-[#141A28] border border-slate-800">
+            {/* Cliente */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Cliente</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsNewClientMode(!isNewClientMode)}
+                  className="text-[10px] font-bold text-purple-400 hover:underline"
+                >
+                  {isNewClientMode ? 'Elegir existente' : '+ Crear nuevo'}
+                </button>
+              </div>
+
+              {isNewClientMode ? (
+                <div className="space-y-2 animate-fade-in">
+                  <input
+                    type="text"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Nombre y Apellido"
+                    className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  />
+                  <input
+                    type="text"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                    placeholder="Celular / WhatsApp (09X...)"
+                    className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  />
+                </div>
+              ) : (
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => {
+                    setSelectedClientId(e.target.value);
+                    // Si el cliente tiene vehículos, seleccionar el primero
+                    const clientVehs = vehicles.filter((v) => v.client_id === e.target.value);
+                    if (clientVehs.length > 0) {
+                      setSelectedVehicleId(clientVehs[0].id);
+                    }
+                  }}
+                  className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                >
+                  <option value="">-- Seleccionar Cliente --</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.full_name} ({c.phone})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Vehículo */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-slate-300 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Vehículo</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsNewVehicleMode(!isNewVehicleMode)}
+                  className="text-[10px] font-bold text-purple-400 hover:underline"
+                >
+                  {isNewVehicleMode ? 'Elegir existente' : '+ Crear nuevo'}
+                </button>
+              </div>
+
+              {isNewVehicleMode ? (
+                <div className="space-y-2 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={newVehicleBrand}
+                      onChange={(e) => setNewVehicleBrand(e.target.value)}
+                      placeholder="Marca (ej. Toyota)"
+                      className="bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    />
+                    <input
+                      type="text"
+                      value={newVehicleModel}
+                      onChange={(e) => setNewVehicleModel(e.target.value)}
+                      placeholder="Modelo (ej. Corolla)"
+                      className="bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={newVehiclePlate}
+                      onChange={(e) => setNewVehiclePlate(e.target.value)}
+                      placeholder="Matrícula (opcional)"
+                      className="bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white font-mono uppercase"
+                    />
+                    <select
+                      value={newVehicleCategory}
+                      onChange={(e) => setNewVehicleCategory(e.target.value as VehicleCategory)}
+                      className="bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white font-bold"
+                    >
+                      <option value="Chico">Chico / Hatchback</option>
+                      <option value="Mediano">Mediano / Sedán</option>
+                      <option value="SUV/Rural">SUV / Rural</option>
+                      <option value="Pick-up">Pick-up / Camioneta</option>
+                      <option value="Moto">Moto</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <select
+                    value={selectedVehicleId}
+                    onChange={(e) => setSelectedVehicleId(e.target.value)}
+                    className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  >
+                    <option value="">-- Seleccionar Vehículo --</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.brand} {v.model} [{normalizePlate(v.plate)}] ({v.category})
+                      </option>
+                    ))}
+                  </select>
+                  {currentVehicle && (
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                      <span>Categoría detectada:</span>
+                      <span className="font-bold text-purple-300 px-1.5 py-0.5 rounded bg-purple-500/20">
+                        {currentVehicle.category}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SECCIÓN 2: SELECCIÓN DE SERVICIOS DEL TARIFARIO */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <span>Servicios de Detailing</span>
+                <span className="text-[10px] font-normal text-slate-500">
+                  (Precios calculados para categoría: <strong className="text-purple-300">{activeCategory}</strong>)
+                </span>
+              </h4>
+              <span className="text-xs font-mono font-bold text-amber-400">
+                Subtotal: {formatCurrency(subtotal, 'UYU')}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {detailingTariffs.map((t) => {
+                const isSelected = selectedServiceIds.includes(t.id);
+                const price = t.prices[categoryKey] || 0;
+
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => toggleService(t.id)}
+                    className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-start justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-purple-950/30 border-purple-500/60 shadow-md shadow-purple-500/10'
+                        : 'bg-[#121826] border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}} // handled by div
+                        className="mt-0.5 w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-900 border-slate-700 pointer-events-none"
+                      />
+                      <div>
+                        <div className="font-bold text-white leading-tight">{t.shortName || t.name}</div>
+                        <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{t.description}</p>
+                      </div>
+                    </div>
+                    <div className="font-mono font-bold text-amber-400 shrink-0 text-right">
+                      {formatCurrency(price, 'UYU')}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SECCIÓN 3: AJUSTES (DESCUENTO, RECARGO POR SUCIEDAD, TIEMPO) */}
+          <div className="p-4 rounded-2xl bg-[#141A28] border border-slate-800 space-y-4">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">
+              Descuentos &amp; Recargos Especiales
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Descuento */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Descuento Aplicado
+                </label>
+                <select
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value as DetailingDiscountType)}
+                  className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                >
+                  <option value="none">Sin Descuento</option>
+                  <option value="combo_10">10% Combo Promocional</option>
+                  <option value="special_15">15% Cliente Especial / Automotora</option>
+                  <option value="fixed">Monto Fijo Personalizado</option>
+                </select>
+
+                {discountType === 'fixed' && (
+                  <div className="mt-2 relative">
+                    <span className="absolute left-2.5 top-2 text-[10px] text-slate-500 font-bold">$U</span>
+                    <input
+                      type="number"
+                      value={fixedDiscountAmount}
+                      onChange={(e) => setFixedDiscountAmount(Number(e.target.value))}
+                      placeholder="Monto descuento"
+                      className="w-full bg-[#090D15] border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Suciedad Extrema */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Suciedad Extrema / Campo
+                </label>
+                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasExtremeDirt}
+                    onChange={(e) => setHasExtremeDirt(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
+                  />
+                  <span className="text-slate-300">Aplicar recargo</span>
+                </label>
+                {hasExtremeDirt && (
+                  <div className="mt-1.5 relative">
+                    <span className="absolute left-2.5 top-2 text-[10px] text-slate-500 font-bold">$U</span>
+                    <input
+                      type="number"
+                      value={extremeDirtSurcharge}
+                      onChange={(e) => setExtremeDirtSurcharge(Number(e.target.value))}
+                      className="w-full bg-[#090D15] border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Tiempo Estimado */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Tiempo Estimado de Trabajo
+                </label>
+                <input
+                  type="text"
+                  value={estimatedTime}
+                  onChange={(e) => setEstimatedTime(e.target.value)}
+                  placeholder="ej: 1 día, 8 horas"
+                  className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECCIÓN 4: ESTADO, ATENDIDO POR, Y AGENDA */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-[#141A28] border border-slate-800">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                Estado del Trabajo
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as DetailingQuoteStatus)}
+                className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white font-bold"
+              >
+                <option value="Por Cotizar">🟡 Por Cotizar</option>
+                <option value="Presupuesto Enviado">🟣 Presupuesto Enviado</option>
+                <option value="Turno Confirmado">🟢 Turno Confirmado</option>
+                <option value="Trabajo Completado">✅ Trabajo Completado</option>
+                <option value="Cancelado">❌ Cancelado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                Atendido por (Detailer)
+              </label>
+              <select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+              >
+                <option value="user-maxi">Maximiliano Irujo (Comisión 30%)</option>
+                <option value="user-matias">Matías Pereyra</option>
+                <option value="user-romina">Romina (Administración)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                Origen de la Consulta
+              </label>
+              <select
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value as any)}
+                className="w-full bg-[#090D15] border border-slate-700 rounded-xl px-3 py-2 text-white"
+              >
+                <option value="Presencial">Presencial en taller</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Llamada">Llamada telefónica</option>
+                <option value="Google Form">Google Form / Web</option>
+              </select>
+            </div>
+
+            {status === 'Turno Confirmado' && (
+              <div className="sm:col-span-3 pt-2 border-t border-slate-800 animate-fade-in">
+                <label className="text-[11px] font-semibold text-emerald-400 block mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Fecha y Hora del Turno (Se reflejará en la Agenda Unificada)</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={appointmentDate}
+                  onChange={(e) => setAppointmentDate(e.target.value)}
+                  className="w-full sm:w-80 bg-[#090D15] border border-emerald-500/50 rounded-xl px-3 py-2 text-white"
+                  required
+                />
+              </div>
+            )}
+          </div>
+
+          {/* SECCIÓN 5: NOTAS Y FOTOS ANTES/DESPUÉS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                Zonas a priorizar / Observaciones
+              </label>
+              <textarea
+                value={priorityZones}
+                onChange={(e) => setPriorityZones(e.target.value)}
+                placeholder="Ej: Techo con marcas de pájaros, capot con microrayones..."
+                rows={2}
+                className="w-full bg-[#090D15] border border-slate-700 rounded-xl p-2.5 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                Notas internas
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Comentarios adicionales para el equipo..."
+                rows={2}
+                className="w-full bg-[#090D15] border border-slate-700 rounded-xl p-2.5 text-white"
+              />
+            </div>
+          </div>
+
+          {/* Resumen Final */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 to-slate-900 border border-purple-500/30 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-purple-300 font-bold uppercase tracking-wider">
+                Total Presupuestado
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono mt-0.5">
+                {formatCurrency(calculatedTotal, 'UYU')}
+              </div>
+              {discountAmount > 0 && (
+                <div className="text-[10px] text-emerald-400">
+                  Descuento: -{formatCurrency(discountAmount, 'UYU')}
+                </div>
+              )}
+            </div>
+
+            <div className="text-right text-[11px] text-slate-400">
+              <div>Servicios: <strong className="text-white">{selectedServiceObjects.length}</strong></div>
+              <div>Estimado: <strong className="text-white">{estimatedTime}</strong></div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Barra de Acciones */}
+        <div className="p-4 sm:p-5 border-t border-slate-800 bg-[#121826] flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs"
+          >
+            Cancelar
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSave(true)}
+              className="px-4 py-2.5 rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-700/20 transition-all"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Guardar y Enviar WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSave(false)}
+              className="px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-purple-600/30 transition-all"
+            >
+              <Save className="w-4 h-4" />
+              <span>Guardar Cotización</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};

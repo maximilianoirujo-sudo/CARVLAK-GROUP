@@ -36,9 +36,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onSelectAppointment
 }) => {
   const { profile } = useAuth();
-  const { appointments, tasks, vehicles, clients, updateTaskStatus } = useData();
+  const { appointments, tasks, vehicles, clients, updateTaskStatus, detailingQuotes } = useData();
 
   const isBoss = isEncargado(profile);
+
+  // Solicitudes de presupuesto pendientes de DetailVlak
+  const pendingQuotes = useMemo(() => {
+    return detailingQuotes.filter((q) => q.status === 'Por Cotizar');
+  }, [detailingQuotes]);
 
   // Filtrar turnos de hoy
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -110,6 +115,40 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Alerta de Presupuestos Pendientes DetailVlak */}
+      {pendingQuotes.length > 0 && isBoss && (
+        <div
+          onClick={() => onNavigate('mod-detailing')}
+          className="p-4 rounded-3xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-[#121826] border border-purple-500/40 cursor-pointer hover:border-purple-400 transition-all flex items-center justify-between gap-3 shadow-xl group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-lg shrink-0">
+              ✨
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">
+                  DetailVlak Shangrilá
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200">
+                  {pendingQuotes.length} pendientes
+                </span>
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-white mt-0.5 group-hover:text-purple-300 transition-colors">
+                Tenés {pendingQuotes.length} solicitud{pendingQuotes.length > 1 ? 'es' : ''} de presupuesto web por responder
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Última: {pendingQuotes[0]?.client_name} • {pendingQuotes[0]?.vehicle_info}
+              </p>
+            </div>
+          </div>
+          <div className="text-xs font-bold text-purple-400 flex items-center gap-1 shrink-0">
+            <span>Ver y Cotizar</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )}
 
       {/*  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

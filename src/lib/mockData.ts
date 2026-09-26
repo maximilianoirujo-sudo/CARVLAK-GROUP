@@ -2,7 +2,21 @@
 // CARVLAK GROUP - DATOS SEMILLA & DEMO LOCAL
 // ==============================================================================
 
-import { Profile, Client, Vehicle, Appointment, Task, VehicleHistoryEvent, ActivityLog } from '../types';
+import { 
+  Profile, 
+  Client, 
+  Vehicle, 
+  Appointment, 
+  Task, 
+  VehicleHistoryEvent, 
+  ActivityLog,
+  DetailingTariff,
+  DetailingQuote,
+  StockItem,
+  Expense,
+  CommissionRecord,
+  WhatsAppTemplate
+} from '../types';
 
 export const INITIAL_PROFILES: Profile[] = [
   {
@@ -340,3 +354,379 @@ export const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [
     created_at: '2026-09-24T10:35:00Z'
   }
 ];
+
+// ==============================================================================
+// FASE 2: DETAILVLAK PRO - DATOS SEMILLA
+// ==============================================================================
+
+export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
+  {
+    id: 'interior',
+    name: 'Limpieza profunda de interiores (Tapizados, alfombras, techo, paneles y desinfección)',
+    shortName: 'Limpieza profunda de interior',
+    description: 'Inyección y extracción de tapizados, limpieza profunda a vapor, techo, alfombras y desinfección total.',
+    durationHours: 5,
+    prices: { chico: 3500, mediano: 4200, suv: 4900, pickup: 5800, moto: 2000 },
+    isActive: true
+  },
+  {
+    id: 'cuero',
+    name: 'Nutrición y restauración de tapizados de cuero',
+    shortName: 'Tratamiento de cuero',
+    description: 'Limpieza técnica de poros y nutrición profunda con acondicionadores mate de pH neutro.',
+    durationHours: 3,
+    prices: { chico: 2200, mediano: 2600, suv: 3200, pickup: 3800, moto: 1500 },
+    isActive: true
+  },
+  {
+    id: 'motor',
+    name: 'Lavado y detallado técnico de motor (Vapor / dieléctrico + acondicionador de plásticos)',
+    shortName: 'Detallado de motor',
+    description: 'Limpieza técnica segura con vapor, desengrasante dieléctrico y acondicionamiento satinado de mangueras y plásticos.',
+    durationHours: 2.5,
+    prices: { chico: 1800, mediano: 1800, suv: 2000, pickup: 2200, moto: 1500 },
+    isActive: true
+  },
+  {
+    id: 'opticas',
+    name: 'Pulido y restauración de ópticas / faros (Lijado + pulido + protección UV)',
+    shortName: 'Restauración de ópticas',
+    description: 'Lijado al agua en varios pasos, pulido de alta transparencia y sellado de protección contra rayos UV.',
+    durationHours: 2,
+    prices: { chico: 2000, mediano: 2000, suv: 2000, pickup: 2000, moto: 1200 },
+    isActive: true
+  },
+  {
+    id: 'lavado_exterior',
+    name: 'Lavado técnico exterior & descontaminado de pintura',
+    shortName: 'Lavado al detalle exterior',
+    description: 'Lavado con guante de microfibra en 2 baldes, descontaminado químico y mecánico con clay bar.',
+    durationHours: 2.5,
+    prices: { chico: 1800, mediano: 2200, suv: 2600, pickup: 3200, moto: 1400 },
+    isActive: true
+  },
+  {
+    id: 'pulido',
+    name: 'Pulido / Corrección de pintura (Eliminación de microrayones / swirls)',
+    shortName: 'Corrección de pintura / Pulido',
+    description: 'Corte, pulido y abrillantado técnico para devolver el brillo espejo y eliminar marcas de lavado.',
+    durationHours: 8,
+    prices: { chico: 6800, mediano: 7900, suv: 9200, pickup: 10800, moto: 3800 },
+    isActive: true
+  },
+  {
+    id: 'ceramico',
+    name: 'Tratamiento Acrílico o Cerámico (Sellado de alto brillo y protección)',
+    shortName: 'Sellado Cerámico / Acrílico',
+    description: 'Protección hidrofóbica de larga duración contra rayos UV, lluvia ácida y contaminación.',
+    durationHours: 8,
+    prices: { chico: 8500, mediano: 9800, suv: 11500, pickup: 13200, moto: 4500 },
+    isActive: true
+  },
+  {
+    id: 'llantas',
+    name: 'Detallado profundo de llantas, cálipers y pasarruedas',
+    shortName: 'Detallado de llantas y chasis',
+    description: 'Descontaminado férrico de llantas, limpieza de pasarruedas y sellado protector.',
+    durationHours: 2,
+    prices: { chico: 1600, mediano: 1800, suv: 2200, pickup: 2500, moto: 1200 },
+    isActive: true
+  }
+];
+
+export const INITIAL_STOCK_ITEMS: StockItem[] = [
+  {
+    id: 'stk-1',
+    business: 'detailing',
+    name: 'Shampoo pH Neutro Concentrado',
+    category: 'Químicos',
+    unit: 'litros',
+    quantity: 4.5,
+    min_stock: 2.0,
+    unit_cost: 850,
+    supplier: 'Detailing Pro UY',
+    updated_at: '2026-09-24T10:00:00Z',
+    movements: [
+      {
+        id: 'mov-1',
+        stock_item_id: 'stk-1',
+        type: 'Entrada',
+        quantity: 5.0,
+        unit_cost: 850,
+        operator_name: 'Maximiliano Irujo',
+        notes: 'Compra bidón 5L',
+        created_at: '2026-09-20T10:00:00Z'
+      }
+    ]
+  },
+  {
+    id: 'stk-2',
+    business: 'detailing',
+    name: 'APC Limpiador Multiuso (Interior/Motor)',
+    category: 'Químicos',
+    unit: 'litros',
+    quantity: 1.5,
+    min_stock: 2.0, // Alerta stock bajo
+    unit_cost: 790,
+    supplier: 'Detailing Pro UY',
+    updated_at: '2026-09-24T10:00:00Z',
+    movements: []
+  },
+  {
+    id: 'stk-3',
+    business: 'detailing',
+    name: 'Coating Cerámico 9H (Frasco 30ml)',
+    category: 'Selladores',
+    unit: 'unidades',
+    quantity: 1, // Alerta stock bajo
+    min_stock: 2,
+    unit_cost: 2400,
+    supplier: 'Importador CarCare',
+    updated_at: '2026-09-24T10:00:00Z',
+    movements: []
+  },
+  {
+    id: 'stk-4',
+    business: 'detailing',
+    name: 'Paños Microfibra Sin Costura 40x40 (400gsm)',
+    category: 'Paños/Microfibras',
+    unit: 'unidades',
+    quantity: 18,
+    min_stock: 10,
+    unit_cost: 190,
+    supplier: 'Detailing Pro UY',
+    updated_at: '2026-09-24T10:00:00Z',
+    movements: []
+  },
+  {
+    id: 'stk-5',
+    business: 'detailing',
+    name: 'Pads de Corte Pesado Cordero / Espuma 5.5"',
+    category: 'Pads',
+    unit: 'unidades',
+    quantity: 4,
+    min_stock: 3,
+    unit_cost: 650,
+    supplier: 'Koch Chemie UY',
+    updated_at: '2026-09-24T10:00:00Z',
+    movements: []
+  }
+];
+
+export const INITIAL_EXPENSES: Expense[] = [
+  {
+    id: 'exp-1',
+    business: 'detailing',
+    date: '2026-09-20',
+    amount: 4250,
+    currency: 'UYU',
+    category: 'Insumos',
+    payment_method: 'Transferencia',
+    description: 'Compra de shampoo concentrado y microfibras en Detailing Pro UY',
+    created_by: 'user-maxi',
+    created_at: '2026-09-20T10:30:00Z'
+  },
+  {
+    id: 'exp-2',
+    business: 'detailing',
+    date: '2026-09-22',
+    amount: 1800,
+    currency: 'UYU',
+    category: 'Herramientas/Maquinaria',
+    payment_method: 'Efectivo',
+    description: 'Mantenimiento de compresor y mangueras neumáticas',
+    created_by: 'user-maxi',
+    created_at: '2026-09-22T15:00:00Z'
+  },
+  {
+    id: 'exp-3',
+    business: 'detailing',
+    date: '2026-09-23',
+    amount: 3500,
+    currency: 'UYU',
+    category: 'Marketing/Publicidad',
+    payment_method: 'Tarjeta',
+    description: 'Pauta Instagram campaña tratamientos cerámicos primavera',
+    created_by: 'user-maxi',
+    created_at: '2026-09-23T12:00:00Z'
+  }
+];
+
+export const INITIAL_DETAILING_QUOTES: DetailingQuote[] = [
+  {
+    id: 'quote-1',
+    client_id: 'cli-2',
+    vehicle_id: 'veh-1',
+    client_name: 'Nicolás Varela',
+    client_phone: '098 765 432',
+    vehicle_info: 'BMW 320i M-Sport (2021)',
+    vehicle_plate: 'SBX 1234',
+    vehicle_category: 'Mediano',
+    selected_services: [
+      { serviceId: 'ceramico', serviceName: 'Sellado Cerámico / Acrílico', price: 9800 },
+      { serviceId: 'interior', serviceName: 'Limpieza profunda de interior', price: 4200 }
+    ],
+    subtotal: 14000,
+    discount_type: 'combo_10',
+    discount_amount: 1400,
+    extreme_dirt_surcharge: 0,
+    total_amount: 12600,
+    estimated_time: '2 días',
+    assigned_to: 'user-maxi',
+    origin: 'WhatsApp',
+    notes: 'Priorizar protección contra microrayones en laca negra.',
+    priority_zones: 'Capot y techo negro piano',
+    status: 'Turno Confirmado',
+    appointment_id: 'app-1',
+    appointment_date: `${todayIso}T10:00:00Z`,
+    created_by: 'user-maxi',
+    created_at: '2026-09-23T11:00:00Z',
+    updated_at: '2026-09-24T12:00:00Z'
+  },
+  {
+    id: 'quote-2',
+    client_id: 'cli-1',
+    vehicle_id: 'veh-2',
+    client_name: 'Estudio Jurídico Alvear (Martín)',
+    client_phone: '099 123 456',
+    vehicle_info: 'Toyota Hilux SRV 4x4 (2023)',
+    vehicle_plate: 'AAT 8920',
+    vehicle_category: 'Pick-up',
+    selected_services: [
+      { serviceId: 'lavado_exterior', serviceName: 'Lavado al detalle exterior', price: 3200 },
+      { serviceId: 'interior', serviceName: 'Limpieza profunda de interior', price: 5800 }
+    ],
+    subtotal: 9000,
+    discount_type: 'none',
+    discount_amount: 0,
+    extreme_dirt_surcharge: 1500, // Suciedad de campo
+    total_amount: 10500,
+    estimated_time: '1 día',
+    assigned_to: 'user-matias',
+    origin: 'Presencial',
+    notes: 'Camioneta con barro seco en chasis y tapizados con tierra.',
+    priority_zones: 'Tapizados de tela y chasis',
+    status: 'Por Cotizar',
+    created_by: 'user-maxi',
+    created_at: '2026-09-24T09:30:00Z',
+    updated_at: '2026-09-24T09:30:00Z'
+  },
+  {
+    id: 'quote-3',
+    client_id: 'cli-3',
+    vehicle_id: 'veh-3',
+    client_name: 'Lucía Fernández',
+    client_phone: '094 555 789',
+    vehicle_info: 'Volkswagen Golf GTI Mk7 (2018)',
+    vehicle_plate: 'SCA 4321',
+    vehicle_category: 'Chico',
+    selected_services: [
+      { serviceId: 'pulido', serviceName: 'Corrección de pintura / Pulido', price: 6800 },
+      { serviceId: 'opticas', serviceName: 'Restauración de ópticas', price: 2000 }
+    ],
+    subtotal: 8800,
+    discount_type: 'special_15',
+    discount_amount: 1320,
+    extreme_dirt_surcharge: 0,
+    total_amount: 7480,
+    estimated_time: '8 horas',
+    assigned_to: 'user-maxi',
+    origin: 'Instagram',
+    notes: 'Trabajo terminado y entregado a entera conformidad.',
+    priority_zones: 'Ópticas delanteras y pulido capot',
+    status: 'Trabajo Completado',
+    created_by: 'user-maxi',
+    created_at: '2026-09-21T14:00:00Z',
+    updated_at: '2026-09-22T18:00:00Z'
+  }
+];
+
+export const INITIAL_COMMISSIONS: CommissionRecord[] = [
+  {
+    id: 'comm-1',
+    business: 'detailing',
+    employee_id: 'user-maxi',
+    employee_name: 'Maximiliano Irujo',
+    quote_id: 'quote-3',
+    client_name: 'Lucía Fernández',
+    vehicle_description: 'VW Golf GTI (SCA 4321)',
+    amount_charged: 7480,
+    commission_rate: 30,
+    commission_amount: 2244, // 30% de 7480
+    status: 'Pendiente',
+    created_at: '2026-09-22T18:00:00Z'
+  }
+];
+
+export const INITIAL_WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
+  {
+    key: 'formal',
+    title: 'Formal Detallada',
+    description: 'Presupuesto completo y profesional con desglose de servicios, tiempo y medios de pago.',
+    template: `¡Hola {{cliente}}! Te escribe {{operador}} de *DetailVlak* 🚗✨
+
+Recibimos tu consulta para tu *{{vehiculo}}* y con gusto te pasamos la cotización detallada:
+
+📋 *Servicios presupuestados:*
+{{servicios}}
+
+⏱️ *Tiempo estimado de trabajo:* {{tiempo}}
+💰 *Total Final:* *{{total}}*
+💳 *Formas de pago:* Efectivo, Transferencia o Tarjetas de Crédito / Débito.
+
+📍 *Ubicación del taller:* Av. Giannattasio y, Shangrilá, Canelones
+
+¿Te gustaría que veamos disponibilidad de días para agendar tu turno esta semana?`
+  },
+  {
+    key: 'promo',
+    title: 'Promo Combo',
+    description: 'Enfocada en el valor del combo y beneficio por confirmación rápida en 48hs.',
+    template: `¡Hola {{cliente}}! 👋 Te saluda {{operador}} de *DetailVlak* (Shangrilá).
+
+Para tu *{{vehiculo}}*, el paquete completo de *{{servicios_resumen}}* queda en un total de *{{total}}*.
+
+🎁 *Beneficio exclusivo:* Si confirmamos el turno en las próximas 48hs, te bonificamos sin costo el sellado y acondicionado protector de gomas y plásticos exteriores.
+
+¿Querés que te guardemos un lugar para esta semana?`
+  },
+  {
+    key: 'fotos',
+    title: 'Pedir Fotos',
+    description: 'Solicitud amable de fotos o video para evaluar la pintura antes de cotizar.',
+    template: `¡Hola {{cliente}}! ¿Cómo estás? Te escribe {{operador}} de *DetailVlak* 🚗
+
+Estuvimos revisando tu solicitud para tu *{{vehiculo}}* ({{servicios_resumen}}). 
+
+Para darte el presupuesto más exacto y asesorarte con precisión:
+📸 ¿Podrías enviarnos por acá 2 o 3 fotos o un video corto del estado actual?
+
+Así lo evaluamos enseguida y te pasamos los números exactos. ¡Muchas gracias!`
+  },
+  {
+    key: 'seguimiento',
+    title: 'Seguimiento',
+    description: 'Recordatorio para presupuestos enviados sin respuesta para cerrar turnos de la semana.',
+    template: `¡Hola {{cliente}}! ¿Cómo estás? Te saluda {{operador}} de *DetailVlak* 🚗
+
+Te escribo para saber si pudiste revisar el presupuesto que te enviamos para tu *{{vehiculo}}*.
+
+Estamos cerrando la agenda de la semana y nos quedan los últimos cupos disponibles en taller. ¿Querés que te reservemos un lugar?`
+  },
+  {
+    key: 'turno',
+    title: 'Confirmar Turno',
+    description: 'Confirmación oficial de fecha agendada con dirección y recordatorio de objetos personales.',
+    template: `¡Excelente {{cliente}}! Turno confirmado con éxito en *DetailVlak* 🗓️✅
+
+🚗 *Vehículo:* {{vehiculo}}
+🛠️ *Trabajo a realizar:* {{servicios_resumen}}
+💰 *Presupuesto acordado:* {{total}}
+📍 *Dirección:* Av. Giannattasio y, Shangrilá, Canelones
+
+⚠️ *Recomendación:* Por favor retirar objetos personales de valor antes de ingresar el vehículo al taller.
+
+¡Muchas gracias por confiar en nosotros! Nos vemos pronto.`
+  }
+];
+

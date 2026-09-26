@@ -7,7 +7,17 @@ import {
   VehicleHistoryEvent,
   ActivityLog,
   AppointmentStatus,
-  TaskStatus
+  TaskStatus,
+  DetailingTariff,
+  DetailingTariffPrices,
+  DetailingQuote,
+  DetailingQuoteStatus,
+  StockItem,
+  StockMovement,
+  Expense,
+  CommissionRecord,
+  WhatsAppTemplate,
+  WhatsAppTemplateKey
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -15,7 +25,14 @@ import {
   INITIAL_APPOINTMENTS,
   INITIAL_TASKS,
   INITIAL_VEHICLE_HISTORY,
-  INITIAL_ACTIVITY_LOGS
+  INITIAL_ACTIVITY_LOGS,
+  INITIAL_DETAILING_TARIFFS,
+  INITIAL_STOCK_ITEMS,
+  INITIAL_EXPENSES,
+  INITIAL_DETAILING_QUOTES,
+  INITIAL_COMMISSIONS,
+  INITIAL_WHATSAPP_TEMPLATES,
+  INITIAL_PROFILES
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -54,6 +71,49 @@ interface DataContextType {
 
   // Auditoría
   logActivity: (entityType: ActivityLog['entity_type'], entityId: string, action: ActivityLog['action'], details?: Record<string, any>) => void;
+
+  // FASE 2: DETAILING (DETAILVLAK)
+  detailingTariffs: DetailingTariff[];
+  updateDetailingTariff: (id: string, prices: DetailingTariffPrices, isActive?: boolean) => void;
+  addDetailingTariff: (tariff: Omit<DetailingTariff, 'id'>) => DetailingTariff;
+
+  detailingQuotes: DetailingQuote[];
+  addDetailingQuote: (quoteData: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'>) => DetailingQuote;
+  updateDetailingQuote: (id: string, data: Partial<DetailingQuote>) => void;
+  updateDetailingQuoteStatus: (id: string, newStatus: DetailingQuoteStatus, appointmentDetails?: { date: string; assigned_to?: string }) => void;
+  archiveDetailingQuote: (id: string) => void;
+
+  stockItems: StockItem[];
+  addStockItem: (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>) => StockItem;
+  updateStockItem: (id: string, data: Partial<StockItem>) => void;
+  archiveStockItem: (id: string) => void;
+  recordStockMovement: (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense?: boolean) => void;
+
+  expenses: Expense[];
+  addExpense: (expenseData: Omit<Expense, 'id' | 'created_at'>) => Expense;
+  updateExpense: (id: string, data: Partial<Expense>) => void;
+  deleteExpense: (id: string) => void;
+
+  commissions: CommissionRecord[];
+  markCommissionPaid: (id: string) => void;
+
+  whatsappTemplates: WhatsAppTemplate[];
+  updateWhatsAppTemplate: (key: WhatsAppTemplateKey, templateText: string) => void;
+
+  importDetailVlakData: (payload: {
+    leads?: any[];
+    stock?: any[];
+    expenses?: any[];
+    commissions?: any[];
+    tariffs?: any[];
+  }) => {
+    importedClientsCount: number;
+    importedVehiclesCount: number;
+    importedQuotesCount: number;
+    importedStockCount: number;
+    importedExpensesCount: number;
+    duplicatesDetected: number;
+  };
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -92,6 +152,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return s ? JSON.parse(s) : INITIAL_ACTIVITY_LOGS;
   });
 
+  // FASE 2: Estados Detailing, Stock, Gastos, Comisiones y WhatsApp
+  const [detailingTariffs, setDetailingTariffs] = useState<DetailingTariff[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_tariffs');
+    return s ? JSON.parse(s) : INITIAL_DETAILING_TARIFFS;
+  });
+
+  const [detailingQuotes, setDetailingQuotes] = useState<DetailingQuote[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_quotes');
+    return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
+  });
+
+  const [stockItems, setStockItems] = useState<StockItem[]>(() => {
+    const s = localStorage.getItem('carvlak_stock_items');
+    return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
+  });
+
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    const s = localStorage.getItem('carvlak_expenses');
+    return s ? JSON.parse(s) : INITIAL_EXPENSES;
+  });
+
+  const [commissions, setCommissions] = useState<CommissionRecord[]>(() => {
+    const s = localStorage.getItem('carvlak_commissions');
+    return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
+  });
+
+  const [whatsappTemplates, setWhatsappTemplates] = useState<WhatsAppTemplate[]>(() => {
+    const s = localStorage.getItem('carvlak_whatsapp_templates');
+    return s ? JSON.parse(s) : INITIAL_WHATSAPP_TEMPLATES;
+  });
+
   // Guardar en localStorage
   useEffect(() => {
     localStorage.setItem('carvlak_clients', JSON.stringify(clients));
@@ -116,6 +207,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('carvlak_activity_logs', JSON.stringify(activityLogs));
   }, [activityLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(detailingTariffs));
+  }, [detailingTariffs]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(detailingQuotes));
+  }, [detailingQuotes]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_stock_items', JSON.stringify(stockItems));
+  }, [stockItems]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_expenses', JSON.stringify(expenses));
+  }, [expenses]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_commissions', JSON.stringify(commissions));
+  }, [commissions]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_whatsapp_templates', JSON.stringify(whatsappTemplates));
+  }, [whatsappTemplates]);
 
   // Si Supabase está configurado, sincronizar con la nube
   useEffect(() => {
@@ -375,6 +490,396 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateTask(id, { status });
   };
 
+  // ============================================================================
+  // FASE 2: DETAILVLAK PRO IMPLEMENTACIÓN
+  // ============================================================================
+
+  // Tarifario
+  const updateDetailingTariff = (id: string, prices: DetailingTariffPrices, isActive?: boolean) => {
+    setDetailingTariffs((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, prices, isActive: isActive !== undefined ? isActive : t.isActive } : t))
+    );
+    logActivity('cotizacion_detailing', id, 'update', { action: 'Actualización de tarifario' });
+  };
+
+  const addDetailingTariff = (tariffData: Omit<DetailingTariff, 'id'>): DetailingTariff => {
+    const newTariff: DetailingTariff = {
+      ...tariffData,
+      id: `tariff-${Date.now()}`
+    };
+    setDetailingTariffs((prev) => [...prev, newTariff]);
+    return newTariff;
+  };
+
+  // Cotizaciones / Trabajos
+  const addDetailingQuote = (quoteData: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'>): DetailingQuote => {
+    const newQuote: DetailingQuote = {
+      ...quoteData,
+      id: `quote-${Date.now()}`,
+      created_by: profile?.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setDetailingQuotes((prev) => [newQuote, ...prev]);
+    logActivity('cotizacion_detailing', newQuote.id, 'create', {
+      client: newQuote.client_name,
+      total: newQuote.total_amount,
+      status: newQuote.status
+    });
+    return newQuote;
+  };
+
+  const updateDetailingQuote = (id: string, data: Partial<DetailingQuote>) => {
+    setDetailingQuotes((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...data, updated_at: new Date().toISOString() } : q))
+    );
+    logActivity('cotizacion_detailing', id, 'update', data);
+  };
+
+  const archiveDetailingQuote = (id: string) => {
+    setDetailingQuotes((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, is_archived: true, updated_at: new Date().toISOString() } : q))
+    );
+    logActivity('cotizacion_detailing', id, 'archive', { is_archived: true });
+  };
+
+  const updateDetailingQuoteStatus = (
+    id: string,
+    newStatus: DetailingQuoteStatus,
+    appointmentDetails?: { date: string; assigned_to?: string }
+  ) => {
+    const currentQuote = detailingQuotes.find((q) => q.id === id);
+    if (!currentQuote) return;
+
+    const updatedFields: Partial<DetailingQuote> = {
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Al pasar a "Turno Confirmado" -> Crear turno en Agenda Unificada
+    if (newStatus === 'Turno Confirmado') {
+      const apptDate = appointmentDetails?.date || currentQuote.appointment_date || new Date().toISOString();
+      const assignedEmployeeId = appointmentDetails?.assigned_to || currentQuote.assigned_to || profile?.id;
+      
+      const newAppt = addAppointment({
+        business: 'detailing',
+        client_id: currentQuote.client_id,
+        vehicle_id: currentQuote.vehicle_id,
+        assigned_to: assignedEmployeeId,
+        start_time: apptDate,
+        duration_minutes: 180,
+        status: 'Confirmado',
+        title: `Detailing: ${currentQuote.selected_services.map((s) => s.serviceName).join(' + ') || 'Servicios Varios'}`,
+        notes: `Origen: ${currentQuote.origin}. Zonas a priorizar: ${currentQuote.priority_zones || 'Estándar'}. ${currentQuote.notes || ''}`,
+        price_amount: currentQuote.total_amount,
+        price_currency: 'UYU'
+      });
+
+      updatedFields.appointment_id = newAppt.id;
+      updatedFields.appointment_date = apptDate;
+      if (assignedEmployeeId) updatedFields.assigned_to = assignedEmployeeId;
+    }
+
+    // 2. Al pasar a "Trabajo Completado" -> Historial y Liquidación de Comisión
+    if (newStatus === 'Trabajo Completado') {
+      // Historial en Vehículo
+      if (currentQuote.vehicle_id) {
+        addVehicleHistory(
+          currentQuote.vehicle_id,
+          'detailing',
+          'Trabajo de Detailing Completado',
+          `Servicios realizados: ${currentQuote.selected_services.map((s) => s.serviceName).join(', ')}. Monto cobrado: $U ${currentQuote.total_amount.toLocaleString('es-UY')}`
+        );
+      }
+
+      // Generar comisión para el empleado asignado (usando la tasa configurada en Fase 1)
+      const employeeId = currentQuote.assigned_to || profile?.id;
+      const employee = INITIAL_PROFILES.find((p) => p.id === employeeId) || profile;
+      const rate = employee?.commissions?.detailing ?? (employeeId === 'user-maxi' ? 30 : 0);
+
+      if (rate > 0) {
+        const commAmount = Math.round(currentQuote.total_amount * (rate / 100));
+        const newComm: CommissionRecord = {
+          id: `comm-${Date.now()}`,
+          business: 'detailing',
+          employee_id: employeeId || 'user-maxi',
+          employee_name: employee?.full_name || 'Maximiliano Irujo',
+          quote_id: currentQuote.id,
+          client_name: currentQuote.client_name,
+          vehicle_description: `${currentQuote.vehicle_info}${currentQuote.vehicle_plate ? ` (${currentQuote.vehicle_plate})` : ''}`,
+          amount_charged: currentQuote.total_amount,
+          commission_rate: rate,
+          commission_amount: commAmount,
+          status: 'Pendiente',
+          created_at: new Date().toISOString()
+        };
+        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), newComm]);
+      }
+    } else if (currentQuote.status === 'Trabajo Completado') {
+      // Si el trabajo vuelve atrás o se cancela, se elimina la comisión generada
+      setCommissions((prev) => prev.filter((c) => c.quote_id !== currentQuote.id));
+    }
+
+    setDetailingQuotes((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q))
+    );
+    logActivity('cotizacion_detailing', id, 'status_change', { from: currentQuote.status, to: newStatus });
+  };
+
+  // Stock Genérico
+  const addStockItem = (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>): StockItem => {
+    const newItem: StockItem = {
+      ...itemData,
+      id: `stk-${Date.now()}`,
+      movements: [],
+      updated_at: new Date().toISOString()
+    };
+    setStockItems((prev) => [newItem, ...prev]);
+    logActivity('stock', newItem.id, 'create', { name: newItem.name, qty: newItem.quantity });
+    return newItem;
+  };
+
+  const updateStockItem = (id: string, data: Partial<StockItem>) => {
+    setStockItems((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s))
+    );
+    logActivity('stock', id, 'update', data);
+  };
+
+  const archiveStockItem = (id: string) => {
+    setStockItems((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, is_archived: true, updated_at: new Date().toISOString() } : s))
+    );
+    logActivity('stock', id, 'archive', { is_archived: true });
+  };
+
+  const recordStockMovement = (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense = false) => {
+    const newMovement: StockMovement = {
+      ...movement,
+      id: `mov-${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+
+    setStockItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== movement.stock_item_id) return item;
+        const delta = movement.type === 'Entrada' ? movement.quantity : -movement.quantity;
+        const newQty = Math.max(0, item.quantity + delta);
+        return {
+          ...item,
+          quantity: newQty,
+          movements: [newMovement, ...(item.movements || [])],
+          updated_at: new Date().toISOString()
+        };
+      })
+    );
+
+    // Registro opcional como gasto al reponer stock
+    if (createExpense && movement.type === 'Entrada' && movement.unit_cost && movement.unit_cost > 0) {
+      const item = stockItems.find((s) => s.id === movement.stock_item_id);
+      const totalCost = Math.round(movement.unit_cost * movement.quantity);
+      addExpense({
+        business: item?.business || 'detailing',
+        date: new Date().toISOString().slice(0, 10),
+        amount: totalCost,
+        currency: 'UYU',
+        category: 'Insumos',
+        payment_method: 'Transferencia',
+        description: `Reposición stock: ${movement.quantity} ${item?.unit || 'un.'} de ${item?.name || 'Insumo'} (${movement.operator_name})`
+      });
+    }
+
+    logActivity('stock', movement.stock_item_id, 'update', {
+      type: movement.type,
+      quantity: movement.quantity,
+      operator: movement.operator_name
+    });
+  };
+
+  // Gastos Genéricos
+  const addExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>): Expense => {
+    const newExpense: Expense = {
+      ...expenseData,
+      id: `exp-${Date.now()}`,
+      created_by: profile?.id,
+      created_at: new Date().toISOString()
+    };
+    setExpenses((prev) => [newExpense, ...prev]);
+    logActivity('gasto', newExpense.id, 'create', { amount: newExpense.amount, category: newExpense.category });
+    return newExpense;
+  };
+
+  const updateExpense = (id: string, data: Partial<Expense>) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...data } : e))
+    );
+    logActivity('gasto', id, 'update', data);
+  };
+
+  const deleteExpense = (id: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    logActivity('gasto', id, 'archive', { deleted: true });
+  };
+
+  // Comisiones
+  const markCommissionPaid = (id: string) => {
+    setCommissions((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status: 'Pagada', paid_at: new Date().toISOString() } : c))
+    );
+  };
+
+  // Plantillas WhatsApp
+  const updateWhatsAppTemplate = (key: WhatsAppTemplateKey, templateText: string) => {
+    setWhatsappTemplates((prev) =>
+      prev.map((t) => (t.key === key ? { ...t, template: templateText } : t))
+    );
+  };
+
+  // Migración desde DetailVlak
+  const importDetailVlakData = (payload: {
+    leads?: any[];
+    stock?: any[];
+    expenses?: any[];
+    commissions?: any[];
+    tariffs?: any[];
+  }) => {
+    let importedClientsCount = 0;
+    let importedVehiclesCount = 0;
+    let importedQuotesCount = 0;
+    let importedStockCount = 0;
+    let importedExpensesCount = 0;
+    let duplicatesDetected = 0;
+
+    // Leads / Cotizaciones
+    if (Array.isArray(payload.leads)) {
+      payload.leads.forEach((l) => {
+        if (!l.name && !l.phone && !l.vehicle) return;
+        const cleanPhone = sanitizePhoneForWhatsApp(l.phone || '');
+        let existingClient = clients.find((c) => sanitizePhoneForWhatsApp(c.phone) === cleanPhone);
+        
+        let clientId = existingClient?.id;
+        if (!existingClient && l.name) {
+          const newC = addClient({
+            full_name: l.name,
+            phone: l.phone || '',
+            origin: (l.source === 'Google Forms' ? 'Google Form' : l.source || 'WhatsApp') as any,
+            notes: l.notes || 'Importado de DetailVlak'
+          });
+          existingClient = newC.client;
+          clientId = newC.client.id;
+          importedClientsCount++;
+        } else if (existingClient) {
+          duplicatesDetected++;
+        }
+
+        // Vehículo
+        let vehicleId = undefined;
+        if (l.vehicle) {
+          const plateCandidate = normalizePlate(l.plate || '');
+          const existingVeh = plateCandidate ? vehicles.find((v) => normalizePlate(v.plate) === plateCandidate) : undefined;
+          if (existingVeh) {
+            vehicleId = existingVeh.id;
+          } else {
+            const newVehRes = addVehicle({
+              brand: l.vehicle.split(' ')[0] || 'Vehículo',
+              model: l.vehicle.split(' ').slice(1).join(' ') || 'Detailing',
+              plate: plateCandidate || `UY-${Math.floor(1000 + Math.random() * 9000)}`,
+              category: (l.category === 'pickup' ? 'Pick-up' : l.category === 'suv' ? 'SUV/Rural' : l.category === 'mediano' ? 'Mediano' : l.category === 'moto' ? 'Moto' : 'Chico'),
+              ownership: 'client',
+              client_id: clientId,
+              photos: []
+            });
+            vehicleId = newVehRes.vehicle.id;
+            importedVehiclesCount++;
+          }
+        }
+
+        // Cotización
+        const quoteStatus: DetailingQuoteStatus = 
+          l.status === 'COMPLETADO' ? 'Trabajo Completado' :
+          l.status === 'TURNO' ? 'Turno Confirmado' :
+          l.status === 'COTIZADO' ? 'Presupuesto Enviado' : 'Por Cotizar';
+
+        const newQuote: DetailingQuote = {
+          id: `quote-mig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          client_id: clientId || 'cli-anon',
+          client_name: l.name || 'Cliente Importado',
+          client_phone: l.phone || '',
+          vehicle_id: vehicleId,
+          vehicle_info: l.vehicle || 'Vehículo',
+          vehicle_category: (l.category === 'pickup' ? 'Pick-up' : l.category === 'suv' ? 'SUV/Rural' : l.category === 'mediano' ? 'Mediano' : l.category === 'moto' ? 'Moto' : 'Chico'),
+          selected_services: Array.isArray(l.quotedServices) ? l.quotedServices.map((sid: string) => ({
+            serviceId: sid,
+            serviceName: sid,
+            price: 0
+          })) : [],
+          subtotal: l.quotedTotal || 0,
+          discount_type: 'none',
+          discount_amount: 0,
+          extreme_dirt_surcharge: 0,
+          total_amount: l.quotedTotal || 0,
+          origin: (l.source || 'WhatsApp') as any,
+          notes: l.notes || '',
+          status: quoteStatus,
+          created_at: l.timestamp || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        setDetailingQuotes((prev) => [newQuote, ...prev]);
+        importedQuotesCount++;
+      });
+    }
+
+    // Stock
+    if (Array.isArray(payload.stock)) {
+      payload.stock.forEach((s) => {
+        if (!s.name) return;
+        const exists = stockItems.some((item) => item.name.toLowerCase() === s.name.toLowerCase());
+        if (exists) {
+          duplicatesDetected++;
+        } else {
+          addStockItem({
+            business: 'detailing',
+            name: s.name,
+            category: s.category || 'Químicos',
+            unit: s.unit || 'unidades',
+            quantity: Number(s.quantity) || 0,
+            min_stock: Number(s.minStock) || 2,
+            unit_cost: Number(s.unitCost) || 0,
+            supplier: s.supplier || 'DetailVlak'
+          });
+          importedStockCount++;
+        }
+      });
+    }
+
+    // Gastos
+    if (Array.isArray(payload.expenses)) {
+      payload.expenses.forEach((e) => {
+        if (!e.amount) return;
+        addExpense({
+          business: 'detailing',
+          date: e.date || new Date().toISOString().slice(0, 10),
+          amount: Number(e.amount) || 0,
+          currency: 'UYU',
+          category: (e.category || 'Varios') as any,
+          payment_method: (e.paymentMethod || 'Efectivo') as any,
+          description: e.description || 'Gasto importado DetailVlak'
+        });
+        importedExpensesCount++;
+      });
+    }
+
+    return {
+      importedClientsCount,
+      importedVehiclesCount,
+      importedQuotesCount,
+      importedStockCount,
+      importedExpensesCount,
+      duplicatesDetected
+    };
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -399,7 +904,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addTask,
         updateTask,
         updateTaskStatus,
-        logActivity
+        logActivity,
+
+        // Detailing
+        detailingTariffs,
+        updateDetailingTariff,
+        addDetailingTariff,
+        detailingQuotes: detailingQuotes.filter((q) => !q.is_archived),
+        addDetailingQuote,
+        updateDetailingQuote,
+        updateDetailingQuoteStatus,
+        archiveDetailingQuote,
+        stockItems: stockItems.filter((s) => !s.is_archived),
+        addStockItem,
+        updateStockItem,
+        archiveStockItem,
+        recordStockMovement,
+        expenses: expenses.filter((e) => !e.is_archived),
+        addExpense,
+        updateExpense,
+        deleteExpense,
+        commissions,
+        markCommissionPaid,
+        whatsappTemplates,
+        updateWhatsAppTemplate,
+        importDetailVlakData
       }}
     >
       {children}
