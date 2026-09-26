@@ -20,7 +20,13 @@ import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 
 export const DealershipDashboardSection: React.FC = () => {
-  const { dealershipVehicles, dealershipInquiries } = useData();
+  const {
+    dealershipVehicles,
+    dealershipInquiries,
+    zeroKmOrders,
+    totalZeroKmProfit,
+    totalFondosARendir0km
+  } = useData();
   const { profile } = useAuth();
 
   const isAdmin = profile?.roles.includes('admin');
@@ -111,6 +117,19 @@ export const DealershipDashboardSection: React.FC = () => {
     const wonInquiries = dealershipInquiries.filter((i) => i.status === 'Ganada' || i.status === 'Vendido').length;
     return ((wonInquiries / dealershipInquiries.length) * 100).toFixed(1);
   }, [dealershipInquiries]);
+
+  // 8. Ventas 0km Computables
+  const periodZeroKmOrders = useMemo(() => {
+    return zeroKmOrders.filter((o) => {
+      if (o.unit_delivery_status === 'cancelado') return false;
+      if (useAllTime) return true;
+      return (o.created_at || '').startsWith(selectedMonth);
+    });
+  }, [zeroKmOrders, selectedMonth, useAllTime]);
+
+  const periodZeroKmProfit = useMemo(() => {
+    return periodZeroKmOrders.reduce((acc, o) => acc + (o.resulting_profit || 0), 0);
+  }, [periodZeroKmOrders]);
 
   if (!isAdmin) {
     return (
@@ -238,37 +257,63 @@ export const DealershipDashboardSection: React.FC = () => {
             </span>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300">
-            {soldVehicles.length} autos vendidos
+            {soldVehicles.length} usados + {periodZeroKmOrders.length} unidades 0km
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">Facturación Total</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase">Facturación Usados</div>
             <div className="text-xl font-black text-white mt-1">
               USD {salesVolumeUsd.toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">Volumen bruto de ventas</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Volumen vendido de inventario</p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">Margen Bruto Realizado</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase">Margen Usados</div>
             <div className="text-xl font-black text-emerald-400 mt-1">
               +USD {Math.round(realizedGrossProfitUsd).toLocaleString()}
             </div>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              Margen neto post costos y alistamiento
+              Margen neto post costos de taller
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">Comisiones a Vendedores</div>
-            <div className="text-xl font-black text-amber-400 mt-1">
-              USD {totalCommissionsUsd.toLocaleString()}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30">
+            <div className="text-[11px] font-bold text-amber-400 uppercase">Ganancia Neta 0km</div>
+            <div className="text-xl font-black text-amber-300 mt-1">
+              +USD {Math.round(periodZeroKmProfit).toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">Generadas para el equipo comercial</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Margen neto e ingresos de comisión
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-emerald-500/40 bg-emerald-950/20">
+            <div className="text-[11px] font-bold text-emerald-400 uppercase">Ganancia Total Automotora</div>
+            <div className="text-xl font-black text-emerald-300 mt-1">
+              +USD {Math.round(realizedGrossProfitUsd + periodZeroKmProfit).toLocaleString()}
+            </div>
+            <p className="text-[10px] text-emerald-400/80 mt-0.5">Usados + 0km computables</p>
           </div>
         </div>
+
+        {/* Recordatorio de Fondos a Rendir */}
+        {totalFondosARendir0km > 0 && (
+          <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/40 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-slate-300">
+                Fondos de 0km en custodia a rendir a importadores:{' '}
+                <strong className="text-amber-300 font-bold">${totalFondosARendir0km.toLocaleString()} USD</strong>.
+              </span>
+            </div>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 uppercase">
+              No es liquidez disponible
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Widget: Distribución por Antigüedad del Stock */}

@@ -121,7 +121,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'orden_0km' | 'marca_0km' | 'caja_0km';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -634,5 +634,122 @@ export interface DealershipConfig {
   commission_basis: 'total_sale' | 'margin';
   default_commission_rate: number; // % ej: 1.5%
   seller_commission_percentage?: number;
+}
+
+// ==============================================================================
+// COMPLEMENTO 0KM: MODELO DE GANANCIA POR MARCA, CAJA & FONDOS A RENDIR
+// ==============================================================================
+
+export type ZeroKmProfitScheme = 'margen' | 'comision_aparte';
+
+export interface ZeroKmBrandConfig {
+  id: string;
+  brand: string;
+  importer_name: string;
+  profit_scheme: ZeroKmProfitScheme;
+  default_commission_type?: 'percentage' | 'fixed_amount';
+  default_commission_value?: number; // e.g. 4.5% o USD 1200
+  payment_terms_days: number; // e.g. 15 o 30 días
+  contact_person?: string;
+  contact_phone?: string;
+}
+
+export type ZeroKmDeliveryStatus =
+  | 'pedido_confirmado'
+  | 'en_transito'
+  | 'en_salon_preparacion'
+  | 'entregado'
+  | 'cancelado';
+
+export type ZeroKmPaymentStatus =
+  | 'pendiente'
+  | 'sena_cobrada'
+  | 'saldo_pendiente'
+  | 'cobrado_total';
+
+export type ZeroKmImporterPaymentStatus =
+  | 'pendiente'
+  | 'pagado_parcial'
+  | 'pagado_total';
+
+export type ZeroKmCashMovementTag =
+  | 'Cobro 0km – fondos a rendir'
+  | 'Pago a importador 0km'
+  | 'Comisión cobrada de importador';
+
+export interface ZeroKmCashMovement {
+  id: string;
+  order_id: string;
+  order_info: string;
+  type: 'ingreso' | 'egreso';
+  tag: ZeroKmCashMovementTag;
+  amount: number;
+  currency: Currency;
+  account: string; // e.g. 'Santander USD', 'Itaú USD', 'Caja Efectivo USD'
+  date: string;
+  receipt_number?: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ZeroKmOrder {
+  id: string;
+  empresa_id: string; // Multi-tenant SaaS ready, default 'carvlak'
+  brand: string;
+  model: string;
+  version: string;
+  color?: string;
+  chassis_vin?: string;
+  year: number;
+
+  // Cliente
+  client_id?: string;
+  client_name: string;
+  client_phone: string;
+  client_email?: string;
+
+  // Importador & Esquema
+  importer_name: string;
+  importer_scheme: ZeroKmProfitScheme;
+
+  // Números comerciales (USD)
+  sale_price_client: number; // Precio de venta total acordado con cliente
+  amount_to_pay_importer: number; // Monto a pagar al importador
+  resulting_profit: number; // Ganancia computable para CARVLAK (Margen o Comisión)
+
+  // En Opción B: Comisión del importador
+  commission_from_importer?: number;
+  commission_status_from_importer?: 'pendiente' | 'cobrado';
+  commission_collected_date?: string;
+
+  // Cobranzas al cliente (Seña y Saldo)
+  client_deposit_amount: number;
+  client_deposit_account?: string;
+  client_deposit_date?: string;
+  client_balance_amount: number;
+  client_balance_account?: string;
+  client_balance_date?: string;
+  client_total_collected: number;
+  client_payment_status: ZeroKmPaymentStatus;
+
+  // Pagos al importador (Cuentas por Pagar)
+  importer_payment_due_date: string;
+  importer_payment_status: ZeroKmImporterPaymentStatus;
+  amount_paid_to_importer: number;
+  importer_payment_date?: string;
+  importer_payment_account?: string;
+
+  // Estado físico de la unidad
+  unit_delivery_status: ZeroKmDeliveryStatus;
+  unit_delivery_date?: string;
+
+  // Vendedor & Auditoría
+  seller_id?: string;
+  seller_name?: string;
+  seller_commission?: number;
+  notes?: string;
+  is_archived?: boolean;
+  created_at: string;
+  updated_at: string;
 }
 

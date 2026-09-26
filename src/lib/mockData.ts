@@ -22,7 +22,10 @@ import {
   InspectionTariffConfig,
   DealershipVehicle,
   DealershipInquiry,
-  DealershipConfig
+  DealershipConfig,
+  ZeroKmBrandConfig,
+  ZeroKmOrder,
+  ZeroKmCashMovement
 } from '../types';
 
 export const INITIAL_PROFILES: Profile[] = [
@@ -1503,6 +1506,272 @@ export const APPAUTO_OFFICIAL_CATALOG: Partial<DealershipVehicle>[] = [
     images: ['https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop']
   }
 ];
+
+// ==============================================================================
+// COMPLEMENTO 0KM: MARCAS, ÓRDENES Y FONDOS A RENDIR
+// ==============================================================================
+
+export const INITIAL_ZERO_KM_BRANDS: ZeroKmBrandConfig[] = [
+  {
+    id: 'brand-gm',
+    brand: 'Chevrolet',
+    importer_name: 'General Motors Uruguay',
+    profit_scheme: 'margen',
+    payment_terms_days: 15,
+    contact_person: 'Gonzalo Silva (Ventas Concesionarios)',
+    contact_phone: '099 112 233'
+  },
+  {
+    id: 'brand-lestido',
+    brand: 'Volkswagen',
+    importer_name: 'Julio César Lestido S.A.',
+    profit_scheme: 'margen',
+    payment_terms_days: 20,
+    contact_person: 'Federico Rivas',
+    contact_phone: '099 334 455'
+  },
+  {
+    id: 'brand-ayax',
+    brand: 'Toyota',
+    importer_name: 'Ayax S.A.',
+    profit_scheme: 'comision_aparte',
+    default_commission_type: 'percentage',
+    default_commission_value: 4.5,
+    payment_terms_days: 10,
+    contact_person: 'Marcelo Rossi',
+    contact_phone: '098 776 554'
+  },
+  {
+    id: 'brand-byd',
+    brand: 'BYD',
+    importer_name: 'Sadar S.A.',
+    profit_scheme: 'comision_aparte',
+    default_commission_type: 'fixed_amount',
+    default_commission_value: 1500,
+    payment_terms_days: 15,
+    contact_person: 'Alejandro Techera',
+    contact_phone: '099 881 223'
+  },
+  {
+    id: 'brand-suzuki',
+    brand: 'Suzuki',
+    importer_name: 'Curcio Capital',
+    profit_scheme: 'margen',
+    payment_terms_days: 15,
+    contact_person: 'Sebastián Curcio',
+    contact_phone: '099 554 332'
+  },
+  {
+    id: 'brand-peugeot',
+    brand: 'Peugeot',
+    importer_name: 'Sadar S.A.',
+    profit_scheme: 'margen',
+    payment_terms_days: 15,
+    contact_person: 'Rodrigo Varela',
+    contact_phone: '099 667 889'
+  }
+];
+
+export const INITIAL_ZERO_KM_ORDERS: ZeroKmOrder[] = [
+  {
+    id: 'ord-0km-101',
+    empresa_id: 'carvlak',
+    brand: 'Volkswagen',
+    model: 'T-Cross',
+    version: '1.0 TSI Trendline AT',
+    color: 'Blanco Puro',
+    year: 2026,
+    client_id: 'cli-1',
+    client_name: 'Martín Varela',
+    client_phone: '099 444 888',
+    client_email: 'mvarela@gmail.com',
+    importer_name: 'Julio César Lestido S.A.',
+    importer_scheme: 'margen',
+    sale_price_client: 30500,
+    amount_to_pay_importer: 27800,
+    resulting_profit: 2700,
+    client_deposit_amount: 5000,
+    client_deposit_account: 'Banco Santander USD',
+    client_deposit_date: new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10),
+    client_balance_amount: 25500,
+    client_balance_account: 'Banco Santander USD',
+    client_balance_date: new Date(Date.now() - 1 * 86400000).toISOString().slice(0, 10),
+    client_total_collected: 30500,
+    client_payment_status: 'cobrado_total',
+    importer_payment_due_date: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10), // Vence en 3 días (Aviso)
+    importer_payment_status: 'pendiente',
+    amount_paid_to_importer: 0,
+    unit_delivery_status: 'en_transito',
+    seller_id: 'user-maxi',
+    seller_name: 'Maximiliano Irujo',
+    seller_commission: 405, // 15% sobre margen
+    notes: 'Cliente transfirió el 100% a la cuenta Santander. Unidad asignada por Lestido, pendiente pago mayorista.',
+    is_archived: false,
+    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 1 * 86400000).toISOString()
+  },
+  {
+    id: 'ord-0km-102',
+    empresa_id: 'carvlak',
+    brand: 'Toyota',
+    model: 'Hilux',
+    version: '2.4 D/C 4x4 SRV AT',
+    color: 'Plata Metalizado',
+    year: 2026,
+    client_name: 'Agropecuaria El Ombú / Carlos Méndez',
+    client_phone: '098 765 432',
+    importer_name: 'Ayax S.A.',
+    importer_scheme: 'comision_aparte',
+    sale_price_client: 48000,
+    amount_to_pay_importer: 48000,
+    resulting_profit: 2160, // 4.5% de comisión
+    commission_from_importer: 2160,
+    commission_status_from_importer: 'pendiente',
+    client_deposit_amount: 10000,
+    client_deposit_account: 'Banco Itaú USD',
+    client_deposit_date: new Date(Date.now() - 12 * 86400000).toISOString().slice(0, 10),
+    client_balance_amount: 38000,
+    client_balance_account: 'Banco Itaú USD',
+    client_balance_date: new Date(Date.now() - 4 * 86400000).toISOString().slice(0, 10),
+    client_total_collected: 48000,
+    client_payment_status: 'cobrado_total',
+    importer_payment_due_date: new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10),
+    importer_payment_status: 'pagado_total',
+    amount_paid_to_importer: 48000,
+    importer_payment_date: new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10),
+    importer_payment_account: 'Banco Itaú USD',
+    unit_delivery_status: 'entregado',
+    unit_delivery_date: new Date(Date.now() - 1 * 86400000).toISOString().slice(0, 10),
+    seller_id: 'user-diego',
+    seller_name: 'Diego Silva',
+    seller_commission: 324,
+    notes: 'Hilux entregada en salón. Pago a Ayax rendido y cancelado. Pendiente cobrar comisión de USD 2,160 a fin de mes.',
+    is_archived: false,
+    created_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 1 * 86400000).toISOString()
+  },
+  {
+    id: 'ord-0km-103',
+    empresa_id: 'carvlak',
+    brand: 'Chevrolet',
+    model: 'Tracker',
+    version: '1.2 Turbo Premier AT',
+    color: 'Gris Carbón',
+    year: 2026,
+    client_name: 'Valentina Morales',
+    client_phone: '091 223 344',
+    importer_name: 'General Motors Uruguay',
+    importer_scheme: 'margen',
+    sale_price_client: 28400,
+    amount_to_pay_importer: 25900,
+    resulting_profit: 2500,
+    client_deposit_amount: 4000,
+    client_deposit_account: 'Banco Santander USD',
+    client_deposit_date: new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10),
+    client_balance_amount: 0,
+    client_total_collected: 4000,
+    client_payment_status: 'saldo_pendiente',
+    importer_payment_due_date: new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10),
+    importer_payment_status: 'pendiente',
+    amount_paid_to_importer: 0,
+    unit_delivery_status: 'en_salon_preparacion',
+    seller_id: 'user-maxi',
+    seller_name: 'Maximiliano Irujo',
+    seller_commission: 375,
+    notes: 'Seña de USD 4,000 ingresada a Santander (fondos a rendir). Saldo de USD 24,400 a cancelar contra entrega de padrón.',
+    is_archived: false,
+    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 3 * 86400000).toISOString()
+  }
+];
+
+export const INITIAL_ZERO_KM_CASH_MOVEMENTS: ZeroKmCashMovement[] = [
+  {
+    id: 'mov-0km-1',
+    order_id: 'ord-0km-101',
+    order_info: 'Volkswagen T-Cross 0km (Martín Varela)',
+    type: 'ingreso',
+    tag: 'Cobro 0km – fondos a rendir',
+    amount: 5000,
+    currency: 'USD',
+    account: 'Banco Santander USD',
+    date: new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10),
+    receipt_number: 'REC-00129',
+    notes: 'Seña inicial de reserva',
+    created_at: new Date(Date.now() - 5 * 86400000).toISOString()
+  },
+  {
+    id: 'mov-0km-2',
+    order_id: 'ord-0km-101',
+    order_info: 'Volkswagen T-Cross 0km (Martín Varela)',
+    type: 'ingreso',
+    tag: 'Cobro 0km – fondos a rendir',
+    amount: 25500,
+    currency: 'USD',
+    account: 'Banco Santander USD',
+    date: new Date(Date.now() - 1 * 86400000).toISOString().slice(0, 10),
+    receipt_number: 'REC-00142',
+    notes: 'Saldo total del vehículo transferido',
+    created_at: new Date(Date.now() - 1 * 86400000).toISOString()
+  },
+  {
+    id: 'mov-0km-3',
+    order_id: 'ord-0km-102',
+    order_info: 'Toyota Hilux 0km (Agropecuaria El Ombú)',
+    type: 'ingreso',
+    tag: 'Cobro 0km – fondos a rendir',
+    amount: 10000,
+    currency: 'USD',
+    account: 'Banco Itaú USD',
+    date: new Date(Date.now() - 12 * 86400000).toISOString().slice(0, 10),
+    receipt_number: 'REC-00115',
+    notes: 'Seña reserva pick-up',
+    created_at: new Date(Date.now() - 12 * 86400000).toISOString()
+  },
+  {
+    id: 'mov-0km-4',
+    order_id: 'ord-0km-102',
+    order_info: 'Toyota Hilux 0km (Agropecuaria El Ombú)',
+    type: 'ingreso',
+    tag: 'Cobro 0km – fondos a rendir',
+    amount: 38000,
+    currency: 'USD',
+    account: 'Banco Itaú USD',
+    date: new Date(Date.now() - 4 * 86400000).toISOString().slice(0, 10),
+    receipt_number: 'REC-00138',
+    notes: 'Cancelación saldo por transferencia bancaria',
+    created_at: new Date(Date.now() - 4 * 86400000).toISOString()
+  },
+  {
+    id: 'mov-0km-5',
+    order_id: 'ord-0km-102',
+    order_info: 'Toyota Hilux 0km (Pago Ayax S.A.)',
+    type: 'egreso',
+    tag: 'Pago a importador 0km',
+    amount: 48000,
+    currency: 'USD',
+    account: 'Banco Itaú USD',
+    date: new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10),
+    receipt_number: 'TRF-AYAX-491',
+    notes: 'Transferencia total del valor mayorista de lista a Ayax S.A.',
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString()
+  },
+  {
+    id: 'mov-0km-6',
+    order_id: 'ord-0km-103',
+    order_info: 'Chevrolet Tracker 0km (Valentina Morales)',
+    type: 'ingreso',
+    tag: 'Cobro 0km – fondos a rendir',
+    amount: 4000,
+    currency: 'USD',
+    account: 'Banco Santander USD',
+    date: new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10),
+    receipt_number: 'REC-00140',
+    notes: 'Seña reserva unidad',
+    created_at: new Date(Date.now() - 3 * 86400000).toISOString()
+  }
+];
+
 
 
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
   Client,
   Vehicle,
@@ -28,7 +28,14 @@ import {
   DealershipVehicleStatus,
   DealershipInquiry,
   DealershipInquiryStatus,
-  DealershipConfig
+  DealershipConfig,
+  ZeroKmBrandConfig,
+  ZeroKmOrder,
+  ZeroKmCashMovement,
+  ZeroKmDeliveryStatus,
+  ZeroKmPaymentStatus,
+  ZeroKmImporterPaymentStatus,
+  ZeroKmProfitScheme
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -51,7 +58,10 @@ import {
   INITIAL_DEALERSHIP_CONFIG,
   INITIAL_DEALERSHIP_VEHICLES,
   INITIAL_DEALERSHIP_INQUIRIES,
-  APPAUTO_OFFICIAL_CATALOG
+  APPAUTO_OFFICIAL_CATALOG,
+  INITIAL_ZERO_KM_BRANDS,
+  INITIAL_ZERO_KM_ORDERS,
+  INITIAL_ZERO_KM_CASH_MOVEMENTS
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -166,6 +176,22 @@ interface DataContextType {
   updateDealershipConfig: (config: Partial<DealershipConfig>) => void;
   importAppAutoCatalog: () => { importedCount: number; duplicatesCount: number };
   createPosventaDetailingQuote: (dealershipVehicleId: string, buyerName?: string, buyerPhone?: string) => string | null;
+
+  // COMPLEMENTO 0KM & IMPORTADORES
+  zeroKmOrders: ZeroKmOrder[];
+  zeroKmBrandConfigs: ZeroKmBrandConfig[];
+  zeroKmCashMovements: ZeroKmCashMovement[];
+  totalFondosARendir0km: number;
+  totalZeroKmProfit: number;
+  zeroKmAlerts: { id: string; type: 'warning' | 'danger'; title: string; desc: string; orderId: string }[];
+  addZeroKmOrder: (data: Omit<ZeroKmOrder, 'id' | 'created_at' | 'updated_at'>) => ZeroKmOrder;
+  updateZeroKmOrder: (id: string, data: Partial<ZeroKmOrder>) => void;
+  registerClient0kmPayment: (orderId: string, paymentType: 'sena' | 'saldo', amount: number, account: string, date: string, receiptNumber?: string) => void;
+  registerImporterPayment: (orderId: string, amount: number, account: string, date: string, transferRef?: string) => void;
+  collectImporterCommission: (orderId: string, amount: number, account: string, date: string) => void;
+  updateZeroKmDeliveryStatus: (orderId: string, status: ZeroKmDeliveryStatus, deliveryDate?: string) => void;
+  updateZeroKmBrandConfig: (brandId: string, data: Partial<ZeroKmBrandConfig>) => void;
+  addZeroKmBrandConfig: (data: Omit<ZeroKmBrandConfig, 'id'>) => ZeroKmBrandConfig;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -262,6 +288,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return s ? JSON.parse(s) : INITIAL_DEALERSHIP_CONFIG;
   });
 
+  // COMPLEMENTO 0KM
+  const [zeroKmOrders, setZeroKmOrders] = useState<ZeroKmOrder[]>(() => {
+    const s = localStorage.getItem('carvlak_0km_orders');
+    return s ? JSON.parse(s) : INITIAL_ZERO_KM_ORDERS;
+  });
+
+  const [zeroKmBrandConfigs, setZeroKmBrandConfigs] = useState<ZeroKmBrandConfig[]>(() => {
+    const s = localStorage.getItem('carvlak_0km_brands');
+    return s ? JSON.parse(s) : INITIAL_ZERO_KM_BRANDS;
+  });
+
+  const [zeroKmCashMovements, setZeroKmCashMovements] = useState<ZeroKmCashMovement[]>(() => {
+    const s = localStorage.getItem('carvlak_0km_cash_movements');
+    return s ? JSON.parse(s) : INITIAL_ZERO_KM_CASH_MOVEMENTS;
+  });
+
   // Guardar en localStorage
   useEffect(() => {
     localStorage.setItem('carvlak_clients', JSON.stringify(clients));
@@ -330,6 +372,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('carvlak_dealership_config', JSON.stringify(dealershipConfig));
   }, [dealershipConfig]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_0km_orders', JSON.stringify(zeroKmOrders));
+  }, [zeroKmOrders]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_0km_brands', JSON.stringify(zeroKmBrandConfigs));
+  }, [zeroKmBrandConfigs]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_0km_cash_movements', JSON.stringify(zeroKmCashMovements));
+  }, [zeroKmCashMovements]);
 
   // Si Supabase está configurado, sincronizar con la nube
   useEffect(() => {
@@ -1769,6 +1823,366 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newQuote.id;
   };
 
+  // -------------------------------------------------------------
+  // COMPLEMENTO: VENTAS 0KM & IMPORTADORES
+  // -------------------------------------------------------------
+
+  const totalFondosARendir0km = useMemo(() => {
+    return zeroKmOrders
+      .filter((o) => o.unit_delivery_status !== 'cancelado' && o.importer_payment_status !== 'pagado_total')
+      .reduce((acc, o) => {
+        const clientCollected = o.client_total_collected || (o.client_deposit_amount || 0) + (o.client_balance_amount || 0);
+        const importerPaid = o.amount_paid_to_importer || 0;
+        const remainingToPayImporter = Math.max(0, o.amount_to_pay_importer - importerPaid);
+        // Fondos cobrados al cliente que aún deben ser rendidos al importador
+        const fundsOwed = Math.min(clientCollected, remainingToPayImporter);
+        return acc + fundsOwed;
+      }, 0);
+  }, [zeroKmOrders]);
+
+  const totalZeroKmProfit = useMemo(() => {
+    return zeroKmOrders
+      .filter((o) => o.unit_delivery_status !== 'cancelado')
+      .reduce((acc, o) => acc + (o.resulting_profit || 0), 0);
+  }, [zeroKmOrders]);
+
+  const zeroKmAlerts = useMemo(() => {
+    const alerts: { id: string; type: 'warning' | 'danger'; title: string; desc: string; orderId: string }[] = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    zeroKmOrders.forEach((o) => {
+      if (o.unit_delivery_status === 'cancelado') return;
+
+      // 1. Unidad entregada al cliente pero importador NO pagado (Discrepancia crítica)
+      if (o.unit_delivery_status === 'entregado' && o.importer_payment_status !== 'pagado_total') {
+        const pendingToImporter = Math.max(0, o.amount_to_pay_importer - (o.amount_paid_to_importer || 0));
+        alerts.push({
+          id: `deliv-unpaid-${o.id}`,
+          type: 'danger',
+          title: `Unidad entregada sin pago a importador`,
+          desc: `${o.brand} ${o.model} entregado a ${o.client_name}, pero el importador (${o.importer_name}) tiene saldo pendiente de $${pendingToImporter.toLocaleString()} USD.`,
+          orderId: o.id
+        });
+      }
+
+      // 2. Importador pagado pero cliente aún debe saldo (Discrepancia de cobranza)
+      if (o.importer_payment_status === 'pagado_total' && o.client_payment_status !== 'cobrado_total') {
+        const clientCollected = o.client_total_collected || ((o.client_deposit_amount || 0) + (o.client_balance_amount || 0));
+        const pendingFromClient = Math.max(0, o.sale_price_client - clientCollected);
+        alerts.push({
+          id: `imp-paid-client-debt-${o.id}`,
+          type: 'warning',
+          title: `Importador liquidado con saldo cliente pendiente`,
+          desc: `Se pagó el 100% al importador por ${o.brand} ${o.model}, pero ${o.client_name} aún adeuda $${pendingFromClient.toLocaleString()} USD.`,
+          orderId: o.id
+        });
+      }
+
+      // 3. Vencimiento de pago al importador próximo o vencido
+      if (o.importer_payment_status !== 'pagado_total' && o.importer_payment_due_date) {
+        const pendingToImporter = Math.max(0, o.amount_to_pay_importer - (o.amount_paid_to_importer || 0));
+        if (o.importer_payment_due_date < today) {
+          alerts.push({
+            id: `due-overdue-${o.id}`,
+            type: 'danger',
+            title: `Pago vencido a importador`,
+            desc: `Venció el ${o.importer_payment_due_date} el pago a ${o.importer_name} ($${pendingToImporter.toLocaleString()} USD) por ${o.brand} ${o.model}.`,
+            orderId: o.id
+          });
+        } else {
+          const diffDays = Math.ceil((new Date(o.importer_payment_due_date).getTime() - new Date(today).getTime()) / (1000 * 3600 * 24));
+          if (diffDays <= 3) {
+            alerts.push({
+              id: `due-soon-${o.id}`,
+              type: 'warning',
+              title: `Pago a importador próximo a vencer (${diffDays}d)`,
+              desc: `Vence el ${o.importer_payment_due_date} pago a ${o.importer_name} ($${pendingToImporter.toLocaleString()} USD).`,
+              orderId: o.id
+            });
+          }
+        }
+      }
+
+      // 4. Opción B: Comisión pendiente de cobro
+      if (o.importer_scheme === 'comision_aparte' && o.importer_payment_status === 'pagado_total' && o.commission_status_from_importer !== 'cobrado') {
+        alerts.push({
+          id: `comm-pending-${o.id}`,
+          type: 'warning',
+          title: `Comisión pendiente de cobro`,
+          desc: `Importador ${o.importer_name} adeuda liquidación de comisión por $${(o.resulting_profit || 0).toLocaleString()} USD de unidad ${o.brand} ${o.model}.`,
+          orderId: o.id
+        });
+      }
+    });
+
+    return alerts;
+  }, [zeroKmOrders]);
+
+  const addZeroKmOrder = (data: Omit<ZeroKmOrder, 'id' | 'created_at' | 'updated_at'>): ZeroKmOrder => {
+    const id = `zkm-${Date.now()}`;
+    const now = new Date().toISOString();
+    const newOrder: ZeroKmOrder = {
+      ...data,
+      id,
+      created_at: now,
+      updated_at: now
+    };
+
+    setZeroKmOrders((prev) => [newOrder, ...prev]);
+
+    // Si tiene seña inicial cobrada con cuenta, registrar el movimiento de caja de inmediato
+    if (newOrder.client_deposit_amount > 0 && newOrder.client_deposit_account) {
+      const cashMov: ZeroKmCashMovement = {
+        id: `zkm-cash-${Date.now()}`,
+        order_id: id,
+        order_info: `${newOrder.brand} ${newOrder.model} (${newOrder.client_name})`,
+        type: 'ingreso',
+        tag: 'Cobro 0km – fondos a rendir',
+        amount: newOrder.client_deposit_amount,
+        currency: 'USD',
+        account: newOrder.client_deposit_account,
+        date: newOrder.client_deposit_date || now.split('T')[0],
+        receipt_number: `ORD-${id.slice(-6)}`,
+        notes: `Seña 0km – fondos a rendir (${newOrder.brand} ${newOrder.model})`,
+        created_at: now
+      };
+      setZeroKmCashMovements((prev) => [cashMov, ...prev]);
+    }
+
+    logActivity('orden_0km', id, 'create', {
+      description: `Orden 0km creada: ${newOrder.brand} ${newOrder.model} para ${newOrder.client_name} ($${newOrder.sale_price_client.toLocaleString()} USD). Esquema: ${newOrder.importer_scheme === 'margen' ? 'Margen' : 'Comisión'}. Ganancia: $${newOrder.resulting_profit.toLocaleString()} USD.`
+    });
+
+    return newOrder;
+  };
+
+  const updateZeroKmOrder = (id: string, data: Partial<ZeroKmOrder>) => {
+    setZeroKmOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== id) return o;
+        const updated = { ...o, ...data, updated_at: new Date().toISOString() };
+        return updated;
+      })
+    );
+
+    logActivity('orden_0km', id, 'update', {
+      description: `Orden 0km #${id} actualizada.`
+    });
+  };
+
+  const registerClient0kmPayment = (
+    orderId: string,
+    paymentType: 'sena' | 'saldo',
+    amount: number,
+    account: string,
+    date: string,
+    receiptNumber?: string
+  ) => {
+    const order = zeroKmOrders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    const now = new Date().toISOString();
+    let newDeposit = order.client_deposit_amount || 0;
+    let newBalance = order.client_balance_amount || 0;
+
+    if (paymentType === 'sena') {
+      newDeposit += amount;
+    } else {
+      newBalance += amount;
+    }
+
+    const totalPaid = newDeposit + newBalance;
+    let newStatus: ZeroKmPaymentStatus = 'pendiente';
+    if (totalPaid >= order.sale_price_client) {
+      newStatus = 'cobrado_total';
+    } else if (newDeposit > 0 && newBalance === 0) {
+      newStatus = 'sena_cobrada';
+    } else if (totalPaid > 0) {
+      newStatus = 'saldo_pendiente';
+    }
+
+    setZeroKmOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        return {
+          ...o,
+          client_deposit_amount: newDeposit,
+          client_deposit_account: paymentType === 'sena' ? account : o.client_deposit_account,
+          client_deposit_date: paymentType === 'sena' ? date : o.client_deposit_date,
+          client_balance_amount: newBalance,
+          client_balance_account: paymentType === 'saldo' ? account : o.client_balance_account,
+          client_balance_date: paymentType === 'saldo' ? date : o.client_balance_date,
+          client_total_collected: totalPaid,
+          client_payment_status: newStatus,
+          updated_at: now
+        };
+      })
+    );
+
+    // Movimiento de caja estricto: "Cobro 0km – fondos a rendir"
+    const cashMov: ZeroKmCashMovement = {
+      id: `zkm-cash-${Date.now()}`,
+      order_id: orderId,
+      order_info: `${order.brand} ${order.model} (${order.client_name})`,
+      type: 'ingreso',
+      tag: 'Cobro 0km – fondos a rendir',
+      amount,
+      currency: 'USD',
+      account,
+      date,
+      receipt_number: receiptNumber || `REC-${Date.now().toString().slice(-6)}`,
+      notes: `${paymentType === 'sena' ? 'Seña' : 'Saldo'} cobrado – fondos a rendir (${order.brand} ${order.model} - ${order.client_name})`,
+      created_at: now
+    };
+
+    setZeroKmCashMovements((prev) => [cashMov, ...prev]);
+
+    logActivity('caja_0km', cashMov.id, 'create', {
+      description: `Ingreso Caja 0km [Cobro 0km – fondos a rendir]: $${amount.toLocaleString()} USD en ${account} (${paymentType === 'sena' ? 'Seña' : 'Saldo'} cliente ${order.client_name}).`
+    });
+  };
+
+  const registerImporterPayment = (
+    orderId: string,
+    amount: number,
+    account: string,
+    date: string,
+    transferRef?: string
+  ) => {
+    const order = zeroKmOrders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    const now = new Date().toISOString();
+    const newPaidAmount = (order.amount_paid_to_importer || 0) + amount;
+    let newStatus: ZeroKmImporterPaymentStatus = 'pendiente';
+    if (newPaidAmount >= order.amount_to_pay_importer) {
+      newStatus = 'pagado_total';
+    } else if (newPaidAmount > 0) {
+      newStatus = 'pagado_parcial';
+    }
+
+    setZeroKmOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        return {
+          ...o,
+          amount_paid_to_importer: newPaidAmount,
+          importer_payment_date: date,
+          importer_payment_account: account,
+          importer_payment_status: newStatus,
+          updated_at: now
+        };
+      })
+    );
+
+    // Movimiento de caja estricto: "Pago a importador 0km"
+    const cashMov: ZeroKmCashMovement = {
+      id: `zkm-cash-${Date.now()}`,
+      order_id: orderId,
+      order_info: `${order.brand} ${order.model} (${order.importer_name})`,
+      type: 'egreso',
+      tag: 'Pago a importador 0km',
+      amount,
+      currency: 'USD',
+      account,
+      date,
+      receipt_number: transferRef || `TRANS-${Date.now().toString().slice(-6)}`,
+      notes: `Pago a importador (${order.importer_name}) - Unidad ${order.brand} ${order.model}`,
+      created_at: now
+    };
+
+    setZeroKmCashMovements((prev) => [cashMov, ...prev]);
+
+    logActivity('caja_0km', cashMov.id, 'create', {
+      description: `Egreso Caja 0km [Pago a importador 0km]: $${amount.toLocaleString()} USD desde ${account} a ${order.importer_name} (${order.brand} ${order.model}).`
+    });
+  };
+
+  const collectImporterCommission = (
+    orderId: string,
+    amount: number,
+    account: string,
+    date: string
+  ) => {
+    const order = zeroKmOrders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    const now = new Date().toISOString();
+
+    setZeroKmOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        return {
+          ...o,
+          commission_status_from_importer: 'cobrado',
+          commission_collected_date: date,
+          updated_at: now
+        };
+      })
+    );
+
+    // Movimiento de caja: "Comisión cobrada de importador"
+    const cashMov: ZeroKmCashMovement = {
+      id: `zkm-cash-${Date.now()}`,
+      order_id: orderId,
+      order_info: `${order.brand} ${order.model} (${order.importer_name})`,
+      type: 'ingreso',
+      tag: 'Comisión cobrada de importador',
+      amount,
+      currency: 'USD',
+      account,
+      date,
+      receipt_number: `COM-${orderId.slice(-6)}`,
+      notes: `Comisión cobrada de importador (${order.importer_name}) - Unidad ${order.brand} ${order.model}`,
+      created_at: now
+    };
+
+    setZeroKmCashMovements((prev) => [cashMov, ...prev]);
+
+    logActivity('caja_0km', cashMov.id, 'create', {
+      description: `Ingreso Caja 0km [Comisión cobrada de importador]: $${amount.toLocaleString()} USD en ${account} de ${order.importer_name}.`
+    });
+  };
+
+  const updateZeroKmDeliveryStatus = (orderId: string, status: ZeroKmDeliveryStatus, deliveryDate?: string) => {
+    setZeroKmOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        return {
+          ...o,
+          unit_delivery_status: status,
+          unit_delivery_date: deliveryDate || o.unit_delivery_date,
+          updated_at: new Date().toISOString()
+        };
+      })
+    );
+
+    logActivity('orden_0km', orderId, 'update', {
+      description: `Estado de entrega 0km actualizado a '${status}' para orden #${orderId}.`
+    });
+  };
+
+  const updateZeroKmBrandConfig = (brandId: string, data: Partial<ZeroKmBrandConfig>) => {
+    setZeroKmBrandConfigs((prev) =>
+      prev.map((b) => (b.id === brandId ? { ...b, ...data } : b))
+    );
+    logActivity('marca_0km', brandId, 'update', {
+      description: `Configuración de marca/importador 0km actualizada.`
+    });
+  };
+
+  const addZeroKmBrandConfig = (data: Omit<ZeroKmBrandConfig, 'id'>): ZeroKmBrandConfig => {
+    const newBrand: ZeroKmBrandConfig = {
+      ...data,
+      id: `brand-0km-${Date.now()}`
+    };
+    setZeroKmBrandConfigs((prev) => [...prev, newBrand]);
+    logActivity('marca_0km', newBrand.id, 'create', {
+      description: `Nueva marca 0km configurada: ${newBrand.brand} (${newBrand.profit_scheme === 'margen' ? 'Margen' : 'Comisión aparte'}).`
+    });
+    return newBrand;
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -1844,7 +2258,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         archiveDealershipInquiry,
         updateDealershipConfig,
         importAppAutoCatalog,
-        createPosventaDetailingQuote
+        createPosventaDetailingQuote,
+
+        // COMPLEMENTO: VENTAS 0KM & IMPORTADORES
+        zeroKmOrders,
+        zeroKmBrandConfigs,
+        zeroKmCashMovements,
+        totalFondosARendir0km,
+        totalZeroKmProfit,
+        zeroKmAlerts,
+        addZeroKmOrder,
+        updateZeroKmOrder,
+        registerClient0kmPayment,
+        registerImporterPayment,
+        collectImporterCommission,
+        updateZeroKmDeliveryStatus,
+        updateZeroKmBrandConfig,
+        addZeroKmBrandConfig
       }}
     >
       {children}

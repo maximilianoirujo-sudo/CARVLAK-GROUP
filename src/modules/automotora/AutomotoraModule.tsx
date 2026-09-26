@@ -9,7 +9,8 @@ import {
   ExternalLink,
   ShieldCheck,
   Building2,
-  Sparkles
+  Sparkles,
+  BadgePercent
 } from 'lucide-react';
 import { DealershipVehicle } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -23,6 +24,7 @@ import { DealershipCRMSection } from './components/DealershipCRMSection';
 import { DealershipSaleModal } from './components/DealershipSaleModal';
 import { DealershipDashboardSection } from './components/DealershipDashboardSection';
 import { DealershipMigrationModal } from './components/DealershipMigrationModal';
+import { ZeroKmSection } from './components/ZeroKmSection';
 
 // Reutilización de Gastos y Comisiones
 import { DetailingExpensesSection } from '../detailing/components/DetailingExpensesSection';
@@ -39,7 +41,7 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
   const isAdmin = profile?.roles.includes('admin');
 
   // Pestaña activa
-  const [activeTab, setActiveTab] = useState<'stock' | 'crm' | 'gastos' | 'comisiones' | 'dashboard'>('stock');
+  const [activeTab, setActiveTab] = useState<'stock' | 'ventas0km' | 'crm' | 'gastos' | 'comisiones' | 'dashboard'>('stock');
 
   // Modales
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
@@ -140,6 +142,18 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
         </button>
 
         <button
+          onClick={() => setActiveTab('ventas0km')}
+          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'ventas0km'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <BadgePercent className="w-4 h-4" />
+          <span>0km &amp; Importadores</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('crm')}
           className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'crm'
@@ -201,6 +215,8 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
           onOpenPublicCatalog={handleOpenCatalog}
         />
       )}
+
+      {activeTab === 'ventas0km' && <ZeroKmSection />}
 
       {activeTab === 'crm' && (
         <DealershipCRMSection onSelectVehicle={handleSelectVehicle} />

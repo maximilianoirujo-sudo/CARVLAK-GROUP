@@ -197,3 +197,111 @@ CREATE POLICY "Public Create Inquiries" ON public.dealership_inquiries
   FOR INSERT
   TO anon, authenticated
   WITH CHECK (true);
+
+-- ==============================================================================
+-- COMPLEMENTO: VENTAS 0KM, IMPORTADORES & FONDOS A RENDIR
+-- ==============================================================================
+
+-- 1. Configuraciones de Marcas e Importadores
+CREATE TABLE IF NOT EXISTS public.dealership_brand_configs (
+  id TEXT PRIMARY KEY,
+  brand TEXT NOT NULL UNIQUE,
+  importer_name TEXT NOT NULL,
+  profit_scheme TEXT NOT NULL CHECK (profit_scheme IN ('margen', 'comision_aparte')),
+  default_commission_type TEXT CHECK (default_commission_type IN ('percentage', 'fixed_amount')),
+  default_commission_value NUMERIC(10, 2),
+  payment_terms_days INTEGER NOT NULL DEFAULT 15,
+  contact_person TEXT,
+  contact_phone TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.dealership_brand_configs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Tenant Brand Config Access" ON public.dealership_brand_configs
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- 2. Órdenes de Venta 0km
+CREATE TABLE IF NOT EXISTS public.dealership_0km_orders (
+  id TEXT PRIMARY KEY,
+  empresa_id TEXT NOT NULL DEFAULT 'carvlak',
+  brand TEXT NOT NULL,
+  model TEXT NOT NULL,
+  version TEXT NOT NULL,
+  color TEXT,
+  chassis_vin TEXT,
+  year INTEGER NOT NULL,
+
+  -- Cliente
+  client_id TEXT,
+  client_name TEXT NOT NULL,
+  client_phone TEXT NOT NULL,
+  client_email TEXT,
+
+  -- Importador y Esquema
+  importer_name TEXT NOT NULL,
+  importer_scheme TEXT NOT NULL CHECK (importer_scheme IN ('margen', 'comision_aparte')),
+
+  -- Números comerciales (USD)
+  sale_price_client NUMERIC(12, 2) NOT NULL,
+  amount_to_pay_importer NUMERIC(12, 2) NOT NULL,
+  resulting_profit NUMERIC(12, 2) NOT NULL,
+
+  -- Opción B: Comisión del importador
+  commission_from_importer NUMERIC(12, 2),
+  commission_status_from_importer TEXT CHECK (commission_status_from_importer IN ('pendiente', 'cobrado')),
+  commission_collected_date DATE,
+
+  -- Cobros al cliente
+  client_deposit_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  client_deposit_account TEXT,
+  client_deposit_date DATE,
+  client_balance_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  client_balance_account TEXT,
+  client_balance_date DATE,
+  client_total_collected NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  client_payment_status TEXT NOT NULL CHECK (client_payment_status IN ('pendiente', 'sena_cobrada', 'saldo_pendiente', 'cobrado_total')),
+
+  -- Pagos al importador
+  importer_payment_due_date DATE NOT NULL,
+  importer_payment_status TEXT NOT NULL CHECK (importer_payment_status IN ('pendiente', 'pagado_parcial', 'pagado_total')),
+  amount_paid_to_importer NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  importer_payment_date DATE,
+  importer_payment_account TEXT,
+
+  -- Estado de entrega física
+  unit_delivery_status TEXT NOT NULL CHECK (unit_delivery_status IN ('pedido_confirmado', 'en_transito', 'en_salon_preparacion', 'entregado', 'cancelado')),
+  unit_delivery_date DATE,
+
+  -- Vendedor & Auditoría
+  seller_id TEXT,
+  seller_name TEXT,
+  notes TEXT,
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.dealership_0km_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Tenant 0km Orders Access" ON public.dealership_0km_orders
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- 3. Movimientos de Caja 0km
+CREATE TABLE IF NOT EXISTS public.dealership_0km_cash_movements (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES public.dealership_0km_orders(id) ON DELETE CASCADE,
+  order_info TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('ingreso', 'egreso')),
+  tag TEXT NOT NULL CHECK (tag IN ('Cobro 0km – fondos a rendir', 'Pago a importador 0km', 'Comisión cobrada de importador')),
+  amount NUMERIC(12, 2) NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  account TEXT NOT NULL,
+  date DATE NOT NULL,
+  receipt_number TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.dealership_0km_cash_movements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Tenant 0km Cash Movements Access" ON public.dealership_0km_cash_movements
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
