@@ -165,23 +165,64 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
     prep.docs_done
   ].filter(Boolean).length;
 
+  const deliveryChecklist = vehicle.delivery_checklist || {
+    completed: false,
+    items: [
+      { id: 'del-1', label: 'Inspección visual de arribo y estado de carrocería', done: true },
+      { id: 'del-2', label: 'Batería de tracción cargada (mínimo 90%)', done: true },
+      { id: 'del-3', label: 'Retiro de plásticos protectores y embalajes de fábrica', done: false },
+      { id: 'del-4', label: 'Kit de carga doméstica, manuales y duplicado de llave', done: true },
+      { id: 'del-5', label: 'Colocación de matrículas de empadronamiento y libreta', done: false },
+      { id: 'del-6', label: 'Explicación técnica de funciones y entrega formal', done: false }
+    ]
+  };
+
+  const deliveryScore = deliveryChecklist.items.filter((i) => i.done).length;
+
+  const handleToggleDeliveryItem = (itemId: string) => {
+    const updatedItems = deliveryChecklist.items.map((it) =>
+      it.id === itemId ? { ...it, done: !it.done } : it
+    );
+    const allDone = updatedItems.every((it) => it.done);
+    updateDealershipVehicle(vehicle.id, {
+      delivery_checklist: {
+        completed: allDone,
+        items: updatedItems
+      }
+    });
+    showToast('Checklist de entrega 0km actualizado', 'success');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/80 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-2xl h-full bg-[#0D121C] border-l border-slate-800 flex flex-col shadow-2xl overflow-hidden">
         {/* Cabecera */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-sm font-black px-2.5 py-1 rounded-xl bg-slate-950 text-amber-400 border border-slate-800">
-              {vehicle.plate}
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className="font-mono text-xs font-black px-2 py-0.5 rounded-lg bg-slate-950 text-amber-400 border border-slate-800 text-center">
+                {vehicle.plate || (vehicle.chassis_vin ? `VIN: ${vehicle.chassis_vin.slice(-8)}` : '0KM')}
+              </span>
+              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase text-center ${
+                vehicle.condition === '0km' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-300'
+              }`}>
+                {vehicle.condition === '0km' ? '⚡ 0km' : 'Usado'}
+              </span>
+            </div>
             <div>
               <h2 className="text-base sm:text-lg font-black text-white leading-tight">
                 {vehicle.brand} {vehicle.model} {vehicle.version || ''}
               </h2>
-              <div className="text-[11px] text-slate-400 flex items-center gap-2">
+              <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
                 <span>Año {vehicle.year}</span>
                 <span>•</span>
                 <span>{vehicle.mileage.toLocaleString()} km</span>
+                {vehicle.autonomy_km ? (
+                  <>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-bold">🔋 {vehicle.autonomy_km} km</span>
+                  </>
+                ) : null}
                 <span>•</span>
                 <span>{vehicle.category}</span>
               </div>
@@ -214,6 +255,26 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
         {/* Contenido scrolleable */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          {/* Banner de Datos Incompletos */}
+          {vehicle.incomplete_data && (
+            <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-3 text-amber-200">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                <div>
+                  <div className="text-xs font-black text-amber-300">Ficha con datos internos pendientes</div>
+                  <div className="text-[11px] text-slate-300">
+                    Completá precio de compra, proveedor y documentación para cerrar la rentabilidad de esta unidad.
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => onEdit(vehicle)}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shrink-0 transition-colors shadow-md"
+              >
+                Completar Ficha
+              </button>
+            </div>
+          )}
           {/* Portada & Galería */}
           <div className="space-y-3">
             <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 aspect-video shadow-xl">
@@ -305,89 +366,146 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             </div>
           </div>
 
-          {/* Checklist de Preparación (5 Puntos) */}
-          <div className="p-4 rounded-3xl bg-[#111622] border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                  <span>Checklist de Alistamiento ({prepScore}/5)</span>
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  Completá los 5 pasos para habilitar la publicación automática en el catálogo
-                </p>
+          {/* Checklist de Preparación (Usados) o Entrega (0km) */}
+          {vehicle.condition === '0km' ? (
+            <div className="p-4 rounded-3xl bg-[#0e1b18] border border-emerald-500/30 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Checklist de Entrega 0km ({deliveryScore}/{deliveryChecklist.items.length})</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Alistamiento y verificación de unidad 0km previa a la entrega al cliente final
+                  </p>
+                </div>
+
+                {vehicle.status === 'preparacion' && deliveryScore >= 4 && (
+                  <button
+                    onClick={handlePublishVehicle}
+                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+                  >
+                    ¡Publicar Ahora!
+                  </button>
+                )}
               </div>
 
-              {vehicle.status === 'preparacion' && prepScore >= 4 && (
-                <button
-                  onClick={handlePublishVehicle}
-                  className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
-                >
-                  ¡Publicar Ahora!
-                </button>
-              )}
-            </div>
+              {/* Barra de Progreso */}
+              <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400 transition-all duration-500"
+                  style={{ width: `${(deliveryScore / deliveryChecklist.items.length) * 100}%` }}
+                />
+              </div>
 
-            {/* Barra de Progreso */}
-            <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ${
-                  prepScore === 5 ? 'bg-emerald-400' : 'bg-amber-400'
-                }`}
-                style={{ width: `${(prepScore / 5) * 100}%` }}
-              />
+              <div className="space-y-2 text-xs">
+                {deliveryChecklist.items.map((item) => (
+                  <label
+                    key={item.id}
+                    className={`flex items-start gap-3 p-2.5 rounded-2xl border transition-colors cursor-pointer ${
+                      item.done
+                        ? 'bg-emerald-950/20 border-emerald-500/40 text-white'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={() => handleToggleDeliveryItem(item.id)}
+                      className="mt-0.5 rounded border-slate-700 text-emerald-500 focus:ring-0"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-xs">{item.label}</div>
+                    </div>
+                    {item.done && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                  </label>
+                ))}
+              </div>
             </div>
+          ) : (
+            <div className="p-4 rounded-3xl bg-[#111622] border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                    <span>Checklist de Alistamiento ({prepScore}/5)</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Completá los 5 pasos para habilitar la publicación automática en el catálogo
+                  </p>
+                </div>
 
-            <div className="space-y-2 text-xs">
-              {[
-                {
-                  key: 'inspection_done',
-                  label: '1. Peritaje técnico realizado y aprobado',
-                  desc: linkedInspection
-                    ? `Peritaje ${linkedInspection.traffic_light} (Puntaje: ${linkedInspection.score}/100)`
-                    : 'Aún no se ha realizado peritaje de Fase 3'
-                },
-                {
-                  key: 'detailing_done',
-                  label: '2. Limpieza profunda y alistamiento (DetailVlak)',
-                  desc: linkedDetailing
-                    ? `Estado en taller: ${linkedDetailing.status}`
-                    : 'Lavado interior y vano motor interno'
-                },
-                {
-                  key: 'repairs_done',
-                  label: '3. Reparaciones mecánicas / chapa terminadas',
-                  desc: 'Mecánica ligera, frenos y fluidos en orden'
-                },
-                {
-                  key: 'photos_done',
-                  label: '4. Sesión de fotos HD para catálogo web',
-                  desc: `${imagesList.length} fotos cargadas actualmente`
-                },
-                {
-                  key: 'docs_done',
-                  label: '5. Documentación y SUCIVE al día verificados',
-                  desc: 'Libreta, títulos y libre deudas listos para transferir'
-                }
-              ].map((item) => (
-                <label
-                  key={item.key}
-                  className="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:border-slate-700 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={Boolean(prep[item.key as keyof DealershipPrepChecklist])}
-                    onChange={() => handleToggleChecklist(item.key as keyof DealershipPrepChecklist)}
-                    className="mt-0.5 rounded border-slate-700 text-amber-500 focus:ring-0"
-                  />
-                  <div className="flex-1">
-                    <div className="font-bold text-white text-xs">{item.label}</div>
-                    <div className="text-[11px] text-slate-400">{item.desc}</div>
-                  </div>
-                </label>
-              ))}
+                {vehicle.status === 'preparacion' && prepScore >= 4 && (
+                  <button
+                    onClick={handlePublishVehicle}
+                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+                  >
+                    ¡Publicar Ahora!
+                  </button>
+                )}
+              </div>
+
+              {/* Barra de Progreso */}
+              <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    prepScore === 5 ? 'bg-emerald-400' : 'bg-amber-400'
+                  }`}
+                  style={{ width: `${(prepScore / 5) * 100}%` }}
+                />
+              </div>
+
+              <div className="space-y-2 text-xs">
+                {[
+                  {
+                    key: 'inspection_done',
+                    label: '1. Peritaje técnico realizado y aprobado',
+                    desc: linkedInspection
+                      ? `Peritaje ${linkedInspection.traffic_light} (Puntaje: ${linkedInspection.score}/100)`
+                      : 'Aún no se ha realizado peritaje de Fase 3'
+                  },
+                  {
+                    key: 'detailing_done',
+                    label: '2. Limpieza profunda y alistamiento (DetailVlak)',
+                    desc: linkedDetailing
+                      ? `Estado en taller: ${linkedDetailing.status}`
+                      : 'Lavado interior y vano motor interno'
+                  },
+                  {
+                    key: 'repairs_done',
+                    label: '3. Reparaciones mecánicas / chapa terminadas',
+                    desc: 'Mecánica ligera, frenos y fluidos en orden'
+                  },
+                  {
+                    key: 'photos_done',
+                    label: '4. Sesión de fotos HD para catálogo web',
+                    desc: `${imagesList.length} fotos cargadas actualmente`
+                  },
+                  {
+                    key: 'docs_done',
+                    label: '5. Documentación y SUCIVE al día verificados',
+                    desc: 'Libreta, títulos y libre deudas listos para transferir'
+                  }
+                ].map((item) => (
+                  <label
+                    key={item.key}
+                    className="flex items-start gap-3 p-2.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 cursor-pointer hover:border-slate-700 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(prep[item.key as keyof DealershipPrepChecklist])}
+                      onChange={() => handleToggleChecklist(item.key as keyof DealershipPrepChecklist)}
+                      className="mt-0.5 rounded border-slate-700 text-amber-500 focus:ring-0"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-white text-xs">{item.label}</div>
+                      <div className="text-[11px] text-slate-400">{item.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Conexión con Módulos: Peritaje & Detailing */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -583,6 +701,35 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   Recalcular Costo Total
                 </button>
               </div>
+
+              {/* Cuenta por Pagar al Proveedor / Importador */}
+              {vehicle.supplier_payable && (
+                <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+                      Cuenta por Pagar al Proveedor
+                    </div>
+                    <div className="font-black text-white text-sm mt-0.5">
+                      {vehicle.supplier_payable.supplier_name}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Vence: {vehicle.supplier_payable.due_date}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-black text-amber-300">
+                      USD {vehicle.supplier_payable.amount.toLocaleString()}
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${
+                      vehicle.supplier_payable.is_paid
+                        ? 'bg-emerald-500/20 text-emerald-300'
+                        : 'bg-amber-500/20 text-amber-300'
+                    }`}>
+                      {vehicle.supplier_payable.is_paid ? 'PAGADO' : 'PENDIENTE'}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Totales y Margen Final */}
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">

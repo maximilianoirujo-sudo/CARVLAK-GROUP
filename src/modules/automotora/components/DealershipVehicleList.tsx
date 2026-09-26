@@ -19,7 +19,8 @@ import {
   Share2,
   Grid,
   List as ListIcon,
-  Download
+  Download,
+  Zap
 } from 'lucide-react';
 import { DealershipVehicle, DealershipVehicleStatus, PurchaseOrigin } from '../../../types';
 import { useData } from '../../../context/DataContext';
@@ -52,6 +53,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
+  const [conditionFilter, setConditionFilter] = useState<'todos' | 'usado' | '0km' | 'incompletos'>('todos');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [originFilter, setOriginFilter] = useState<string>('todos');
   const [onlyOverdueStock, setOnlyOverdueStock] = useState(false);
@@ -73,12 +75,24 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
   // Filtrado
   const filteredVehicles = useMemo(() => {
     return dealershipVehicles.filter((v) => {
+      const plateStr = v.plate || '';
+      const vinStr = v.chassis_vin || '';
       const matchesSearch =
-        v.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        plateStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vinStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (v.version && v.version.toLowerCase().includes(searchTerm.toLowerCase())) ||
         v.year.toString().includes(searchTerm);
+
+      const matchesCondition =
+        conditionFilter === 'todos'
+          ? true
+          : conditionFilter === 'usado'
+          ? v.condition === 'usado'
+          : conditionFilter === '0km'
+          ? v.condition === '0km'
+          : Boolean(v.incomplete_data);
 
       const matchesStatus =
         statusFilter === 'todos'
@@ -95,14 +109,17 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
         ? v.status !== 'vendido' && days >= alertDaysThreshold
         : true;
 
-      return matchesSearch && matchesStatus && matchesOrigin && matchesOverdue;
+      return matchesSearch && matchesCondition && matchesStatus && matchesOrigin && matchesOverdue;
     });
-  }, [dealershipVehicles, searchTerm, statusFilter, originFilter, onlyOverdueStock, alertDaysThreshold]);
+  }, [dealershipVehicles, searchTerm, conditionFilter, statusFilter, originFilter, onlyOverdueStock, alertDaysThreshold]);
 
-  // Contadores por estado
+  // Contadores por estado y condición
   const counts = useMemo(() => {
     return {
       todos: dealershipVehicles.length,
+      usados: dealershipVehicles.filter((v) => v.condition === 'usado').length,
+      ceroKm: dealershipVehicles.filter((v) => v.condition === '0km').length,
+      incompletos: dealershipVehicles.filter((v) => Boolean(v.incomplete_data)).length,
       en_stock: dealershipVehicles.filter((v) =>
         ['comprado', 'preparacion', 'publicado', 'reservado'].includes(v.status)
       ).length,
@@ -258,6 +275,59 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
         </div>
       </div>
 
+      {/* Selector de Segmento / Condición: Usados vs 0km vs Incompletos */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+        <button
+          onClick={() => setConditionFilter('todos')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+            conditionFilter === 'todos'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <span>Todos</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/20">{counts.todos}</span>
+        </button>
+
+        <button
+          onClick={() => setConditionFilter('usado')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+            conditionFilter === 'usado'
+              ? 'bg-blue-500 text-white shadow-md shadow-blue-500/10'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Car className="w-3.5 h-3.5" />
+          <span>Usados Seleccionados</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-950/40 text-blue-200">{counts.usados}</span>
+        </button>
+
+        <button
+          onClick={() => setConditionFilter('0km')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+            conditionFilter === '0km'
+              ? 'bg-purple-500 text-white shadow-md shadow-purple-500/10'
+              : 'text-purple-300 hover:text-white'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5 text-purple-400" />
+          <span>Eléctricos 0km</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-950/40 text-purple-200">{counts.ceroKm}</span>
+        </button>
+
+        <button
+          onClick={() => setConditionFilter('incompletos')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+            conditionFilter === 'incompletos'
+              ? 'bg-amber-500/30 text-amber-200 border border-amber-500/60'
+              : 'text-amber-400/80 hover:text-amber-300'
+          }`}
+        >
+          <span>⚠️ Datos Incompletos</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300">{counts.incompletos}</span>
+        </button>
+      </div>
+
       {/* Tabs de Estado de Vehículos */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-800/80">
         {[
@@ -380,9 +450,25 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     </div>
                   )}
 
-                  {/* Estado Badge */}
-                  <div className="absolute top-2.5 left-2.5">
+                  {/* Estado Badge + 0km + Autonomía + Datos Incompletos */}
+                  <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 max-w-[70%]">
                     {getStatusBadge(car.status)}
+                    {car.condition === '0km' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-950/90 text-purple-300 border border-purple-500/60 backdrop-blur-md flex items-center gap-1 shadow-sm">
+                        <Zap className="w-2.5 h-2.5 text-purple-400" />
+                        0KM
+                      </span>
+                    )}
+                    {car.fuel === 'Eléctrico' && car.autonomy_km && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 backdrop-blur-md shadow-sm">
+                        🔋 {car.autonomy_km} km
+                      </span>
+                    )}
+                    {car.incomplete_data && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/60 backdrop-blur-md shadow-sm">
+                        ⚠️ Datos incompletos
+                      </span>
+                    )}
                   </div>
 
                   {/* Alerta de Días en Stock */}
@@ -405,11 +491,18 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     )}
                   </div>
 
-                  {/* Matrícula Flotante */}
-                  <div className="absolute bottom-2.5 left-2.5">
-                    <span className="font-mono text-xs font-black px-2 py-1 rounded-lg bg-slate-950/90 backdrop-blur-md text-amber-400 border border-slate-800 shadow-md">
-                      {car.plate}
-                    </span>
+                  {/* Matrícula o Chasis Flotante */}
+                  <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
+                    {car.plate ? (
+                      <span className="font-mono text-xs font-black px-2 py-1 rounded-lg bg-slate-950/90 backdrop-blur-md text-amber-400 border border-slate-800 shadow-md">
+                        {car.plate}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-[11px] font-black px-2 py-1 rounded-lg bg-slate-950/90 backdrop-blur-md text-purple-300 border border-purple-500/40 shadow-md flex items-center gap-1">
+                        <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-purple-500/30 text-purple-200">0km</span>
+                        <span>{car.chassis_vin || 'Sin chasis'}</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Indicador de Origen */}
@@ -554,10 +647,26 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                           )}
                         </div>
                         <div>
-                          <div className="font-bold text-white">
-                            {car.brand} {car.model}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono text-[10px] text-amber-400">
+                              {car.plate || car.chassis_vin || 'Sin matrícula'}
+                            </span>
+                            {car.condition === '0km' && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-500/20 text-purple-300">
+                                0KM
+                              </span>
+                            )}
+                            {car.fuel === 'Eléctrico' && car.autonomy_km && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300">
+                                🔋 {car.autonomy_km}km
+                              </span>
+                            )}
+                            {car.incomplete_data && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">
+                                ⚠️ Incompleto
+                              </span>
+                            )}
                           </div>
-                          <div className="font-mono text-[10px] text-amber-400">{car.plate}</div>
                         </div>
                       </div>
                     </td>

@@ -32,8 +32,11 @@ CREATE TABLE IF NOT EXISTS public.dealership_vehicles (
   id TEXT PRIMARY KEY DEFAULT ('auto-' || FLOOR(EXTRACT(EPOCH FROM NOW()) * 1000)::text),
   empresa_id TEXT NOT NULL DEFAULT 'carvlak',
   
-  -- Ficha del Vehículo
-  plate TEXT NOT NULL,
+  -- Ficha del Vehículo & Condición (Usado vs 0km)
+  condition TEXT NOT NULL DEFAULT 'usado' CHECK (condition IN ('usado', '0km')),
+  plate TEXT DEFAULT '', -- Opcional en 0km hasta empadronamiento
+  chassis_vin TEXT,     -- Identificador primario en 0km
+  autonomy_km INTEGER,  -- Autonomía en eléctricos
   brand TEXT NOT NULL,
   model TEXT NOT NULL,
   version TEXT,
@@ -46,6 +49,8 @@ CREATE TABLE IF NOT EXISTS public.dealership_vehicles (
   color_exterior TEXT,
   padron TEXT,
   vin TEXT,
+  tiendanube_id TEXT,
+  incomplete_data BOOLEAN NOT NULL DEFAULT FALSE,
   
   -- Estado en el embudo
   status TEXT NOT NULL DEFAULT 'evaluacion' CHECK (
@@ -65,8 +70,9 @@ CREATE TABLE IF NOT EXISTS public.dealership_vehicles (
   purchase_currency TEXT NOT NULL DEFAULT 'USD',
   exchange_rate NUMERIC NOT NULL DEFAULT 43.50,
   purchase_origin TEXT NOT NULL DEFAULT 'particular' CHECK (
-    purchase_origin IN ('particular', 'concesionaria', 'parte_de_pago', 'consignacion')
+    purchase_origin IN ('particular', 'concesionaria', 'importador', 'mayorista', 'parte_de_pago', 'consignacion')
   ),
+  supplier_payable JSONB, -- Cuentas por pagar a proveedor / importador
   docs_received JSONB NOT NULL DEFAULT '{"titulo": false, "libreta": true, "cedula": true, "sucive_al_dia": true, "multas_al_dia": true, "llave_duplicado": false}'::jsonb,
   
   -- Datos de Venta & Financiación
@@ -86,8 +92,9 @@ CREATE TABLE IF NOT EXISTS public.dealership_vehicles (
   paperwork_cost NUMERIC NOT NULL DEFAULT 0,
   other_expenses_cost NUMERIC NOT NULL DEFAULT 0,
   
-  -- Checklist de Alistamiento (5 Puntos)
-  prep_checklist JSONB NOT NULL DEFAULT '{"inspection_done": false, "repairs_done": false, "detailing_done": false, "photos_done": false, "docs_done": false}'::jsonb,
+  -- Checklists (Preparación para usados, Entrega para 0km)
+  prep_checklist JSONB DEFAULT '{"inspection_done": false, "repairs_done": false, "detailing_done": false, "photos_done": false, "docs_done": false}'::jsonb,
+  delivery_checklist JSONB,
   
   -- Reserva o Venta
   reservation JSONB,
@@ -143,7 +150,10 @@ CREATE OR REPLACE VIEW public.public_dealership_catalog AS
 SELECT
   id,
   empresa_id,
+  condition,
   plate,
+  chassis_vin,
+  autonomy_km,
   brand,
   model,
   version,
@@ -198,110 +208,8 @@ CREATE POLICY "Public Create Inquiries" ON public.dealership_inquiries
   TO anon, authenticated
   WITH CHECK (true);
 
--- ==============================================================================
--- COMPLEMENTO: VENTAS 0KM, IMPORTADORES & FONDOS A RENDIR
--- ==============================================================================
-
--- 1. Configuraciones de Marcas e Importadores
-CREATE TABLE IF NOT EXISTS public.dealership_brand_configs (
-  id TEXT PRIMARY KEY,
-  brand TEXT NOT NULL UNIQUE,
-  importer_name TEXT NOT NULL,
-  profit_scheme TEXT NOT NULL CHECK (profit_scheme IN ('margen', 'comision_aparte')),
-  default_commission_type TEXT CHECK (default_commission_type IN ('percentage', 'fixed_amount')),
-  default_commission_value NUMERIC(10, 2),
-  payment_terms_days INTEGER NOT NULL DEFAULT 15,
-  contact_person TEXT,
-  contact_phone TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
-);
-
-ALTER TABLE public.dealership_brand_configs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant Brand Config Access" ON public.dealership_brand_configs
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- 2. Órdenes de Venta 0km
-CREATE TABLE IF NOT EXISTS public.dealership_0km_orders (
-  id TEXT PRIMARY KEY,
-  empresa_id TEXT NOT NULL DEFAULT 'carvlak',
-  brand TEXT NOT NULL,
-  model TEXT NOT NULL,
-  version TEXT NOT NULL,
-  color TEXT,
-  chassis_vin TEXT,
-  year INTEGER NOT NULL,
-
-  -- Cliente
-  client_id TEXT,
-  client_name TEXT NOT NULL,
-  client_phone TEXT NOT NULL,
-  client_email TEXT,
-
-  -- Importador y Esquema
-  importer_name TEXT NOT NULL,
-  importer_scheme TEXT NOT NULL CHECK (importer_scheme IN ('margen', 'comision_aparte')),
-
-  -- Números comerciales (USD)
-  sale_price_client NUMERIC(12, 2) NOT NULL,
-  amount_to_pay_importer NUMERIC(12, 2) NOT NULL,
-  resulting_profit NUMERIC(12, 2) NOT NULL,
-
-  -- Opción B: Comisión del importador
-  commission_from_importer NUMERIC(12, 2),
-  commission_status_from_importer TEXT CHECK (commission_status_from_importer IN ('pendiente', 'cobrado')),
-  commission_collected_date DATE,
-
-  -- Cobros al cliente
-  client_deposit_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
-  client_deposit_account TEXT,
-  client_deposit_date DATE,
-  client_balance_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
-  client_balance_account TEXT,
-  client_balance_date DATE,
-  client_total_collected NUMERIC(12, 2) NOT NULL DEFAULT 0,
-  client_payment_status TEXT NOT NULL CHECK (client_payment_status IN ('pendiente', 'sena_cobrada', 'saldo_pendiente', 'cobrado_total')),
-
-  -- Pagos al importador
-  importer_payment_due_date DATE NOT NULL,
-  importer_payment_status TEXT NOT NULL CHECK (importer_payment_status IN ('pendiente', 'pagado_parcial', 'pagado_total')),
-  amount_paid_to_importer NUMERIC(12, 2) NOT NULL DEFAULT 0,
-  importer_payment_date DATE,
-  importer_payment_account TEXT,
-
-  -- Estado de entrega física
-  unit_delivery_status TEXT NOT NULL CHECK (unit_delivery_status IN ('pedido_confirmado', 'en_transito', 'en_salon_preparacion', 'entregado', 'cancelado')),
-  unit_delivery_date DATE,
-
-  -- Vendedor & Auditoría
-  seller_id TEXT,
-  seller_name TEXT,
-  notes TEXT,
-  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
-);
-
-ALTER TABLE public.dealership_0km_orders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant 0km Orders Access" ON public.dealership_0km_orders
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- 3. Movimientos de Caja 0km
-CREATE TABLE IF NOT EXISTS public.dealership_0km_cash_movements (
-  id TEXT PRIMARY KEY,
-  order_id TEXT NOT NULL REFERENCES public.dealership_0km_orders(id) ON DELETE CASCADE,
-  order_info TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('ingreso', 'egreso')),
-  tag TEXT NOT NULL CHECK (tag IN ('Cobro 0km – fondos a rendir', 'Pago a importador 0km', 'Comisión cobrada de importador')),
-  amount NUMERIC(12, 2) NOT NULL,
-  currency TEXT NOT NULL DEFAULT 'USD',
-  account TEXT NOT NULL,
-  date DATE NOT NULL,
-  receipt_number TEXT,
-  notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
-);
-
-ALTER TABLE public.dealership_0km_cash_movements ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant 0km Cash Movements Access" ON public.dealership_0km_cash_movements
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- 6. Eliminación de tablas obsoletas de intermediación 0km
+-- (Los vehículos 0km se gestionan como stock propio dentro de public.dealership_vehicles con condition = '0km')
+DROP TABLE IF EXISTS public.dealership_0km_cash_movements CASCADE;
+DROP TABLE IF EXISTS public.dealership_0km_orders CASCADE;
+DROP TABLE IF EXISTS public.dealership_brand_configs CASCADE;

@@ -14,11 +14,14 @@ import {
   AlertCircle,
   HelpCircle,
   ShieldCheck,
-  Star
+  Star,
+  Zap
 } from 'lucide-react';
 import {
   DealershipVehicle,
   DealershipVehicleStatus,
+  DealershipVehicleCondition,
+  DealershipDeliveryChecklist,
   PurchaseOrigin,
   VehicleCategory,
   Currency,
@@ -46,10 +49,13 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   const isAdmin = profile?.roles.includes('admin');
 
   // Form State
-  const [activeTab, setActiveTab] = useState<'info' | 'compra' | 'venta' | 'fotos' | 'equipamiento'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'compra' | 'venta' | 'fotos' | 'equipamiento' | 'entrega'>('info');
 
   // Ficha Básica
+  const [condition, setCondition] = useState<DealershipVehicleCondition>('usado');
   const [plate, setPlate] = useState('');
+  const [chassisVin, setChassisVin] = useState('');
+  const [autonomyKm, setAutonomyKm] = useState<number>(0);
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [version, setVersion] = useState('');
@@ -66,10 +72,27 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
   // Datos de Compra
   const [purchaseOrigin, setPurchaseOrigin] = useState<PurchaseOrigin>('particular');
+  const [supplierName, setSupplierName] = useState('');
+  const [supplierPhone, setSupplierPhone] = useState('');
+  const [isSupplierPayable, setIsSupplierPayable] = useState(false);
+  const [payableDueDate, setPayableDueDate] = useState(() => new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10));
   const [purchaseDate, setPurchaseDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [purchaseCurrency, setPurchaseCurrency] = useState<Currency>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(() => dealershipConfig?.default_exchange_rate || 43.50);
+
+  // Checklist de Entrega para 0km
+  const [deliveryChecklist, setDeliveryChecklist] = useState<DealershipDeliveryChecklist>({
+    completed: false,
+    items: [
+      { id: 'del-1', label: 'Inspección visual de arribo y estado de carrocería', done: true },
+      { id: 'del-2', label: 'Batería de tracción cargada (mínimo 90%)', done: true },
+      { id: 'del-3', label: 'Retiro de plásticos protectores y embalajes de fábrica', done: false },
+      { id: 'del-4', label: 'Kit de carga doméstica, manuales y duplicado de llave', done: true },
+      { id: 'del-5', label: 'Colocación de matrículas de empadronamiento y libreta', done: false },
+      { id: 'del-6', label: 'Explicación técnica de funciones y entrega formal', done: false }
+    ]
+  });
 
   // Documentación recibida
   const [docsReceived, setDocsReceived] = useState<DealershipDocsReceived>({
@@ -103,7 +126,10 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   // Cargar datos en edición
   useEffect(() => {
     if (vehicleToEdit) {
+      setCondition(vehicleToEdit.condition || 'usado');
       setPlate(vehicleToEdit.plate || '');
+      setChassisVin(vehicleToEdit.chassis_vin || '');
+      setAutonomyKm(vehicleToEdit.autonomy_km || 0);
       setBrand(vehicleToEdit.brand || '');
       setModel(vehicleToEdit.model || '');
       setVersion(vehicleToEdit.version || '');
@@ -123,6 +149,13 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
       setPurchasePrice(vehicleToEdit.purchase_price || 0);
       setPurchaseCurrency(vehicleToEdit.purchase_currency || 'USD');
       setExchangeRate(vehicleToEdit.exchange_rate || 43.50);
+      setSupplierName(vehicleToEdit.supplier_payable?.supplier_name || '');
+      setIsSupplierPayable(Boolean(vehicleToEdit.supplier_payable));
+      setPayableDueDate(vehicleToEdit.supplier_payable?.due_date || new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10));
+
+      if (vehicleToEdit.delivery_checklist) {
+        setDeliveryChecklist(vehicleToEdit.delivery_checklist);
+      }
 
       setDocsReceived(
         vehicleToEdit.docs_received || {
@@ -149,7 +182,10 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
       setCoverImage(vehicleToEdit.cover_image || (vehicleToEdit.images && vehicleToEdit.images[0]));
     } else {
       // Defaults para nuevo auto
+      setCondition('usado');
       setPlate('');
+      setChassisVin('');
+      setAutonomyKm(0);
       setBrand('');
       setModel('');
       setVersion('');
@@ -169,6 +205,20 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
       setPurchasePrice(8000);
       setPurchaseCurrency('USD');
       setExchangeRate(dealershipConfig?.default_exchange_rate || 43.50);
+      setSupplierName('');
+      setIsSupplierPayable(false);
+      setPayableDueDate(new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10));
+      setDeliveryChecklist({
+        completed: false,
+        items: [
+          { id: 'del-1', label: 'Inspección visual de arribo y estado de carrocería', done: true },
+          { id: 'del-2', label: 'Batería de tracción cargada (mínimo 90%)', done: true },
+          { id: 'del-3', label: 'Retiro de plásticos protectores y embalajes de fábrica', done: false },
+          { id: 'del-4', label: 'Kit de carga doméstica, manuales y duplicado de llave', done: true },
+          { id: 'del-5', label: 'Colocación de matrículas de empadronamiento y libreta', done: false },
+          { id: 'del-6', label: 'Explicación técnica de funciones y entrega formal', done: false }
+        ]
+      });
 
       setSalePrice(10500);
       setSaleCurrency('USD');
@@ -225,14 +275,32 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!plate.trim() || !brand.trim() || !model.trim()) {
-      showToast('Por favor completá la matrícula, marca y modelo', 'error');
-      return;
+    if (condition === '0km') {
+      if (!brand.trim() || !model.trim()) {
+        showToast('Por favor completá la marca y el modelo del vehículo', 'error');
+        return;
+      }
+      if (!plate.trim() && !chassisVin.trim()) {
+        showToast('En vehículos 0km, ingresá la matrícula o el número de chasis (VIN)', 'error');
+        return;
+      }
+    } else {
+      if (!plate.trim() || !brand.trim() || !model.trim()) {
+        showToast('Por favor completá la matrícula, marca y modelo', 'error');
+        return;
+      }
     }
+
+    const purchasePriceInUSD = purchaseCurrency === 'USD'
+      ? Number(purchasePrice)
+      : Math.round(Number(purchasePrice) / (Number(exchangeRate) || 43.50));
 
     const payload: Partial<DealershipVehicle> = {
       empresa_id: vehicleToEdit?.empresa_id || 'carvlak',
+      condition,
       plate: plate.trim().toUpperCase(),
+      chassis_vin: chassisVin.trim().toUpperCase() || undefined,
+      autonomy_km: autonomyKm > 0 ? Number(autonomyKm) : undefined,
       brand: brand.trim(),
       model: model.trim(),
       version: version.trim(),
@@ -252,6 +320,14 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
       purchase_price: Number(purchasePrice),
       purchase_currency: purchaseCurrency,
       exchange_rate: Number(exchangeRate) || 43.50,
+      supplier_payable: isSupplierPayable && supplierName.trim() ? {
+        supplier_name: supplierName.trim(),
+        due_date: payableDueDate,
+        amount: purchasePriceInUSD,
+        is_paid: false
+      } : undefined,
+      delivery_checklist: condition === '0km' ? deliveryChecklist : undefined,
+      incomplete_data: false, // Ficha completada y confirmada
       docs_received: docsReceived,
       sale_price: Number(salePrice),
       sale_currency: saleCurrency,
@@ -308,7 +384,10 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
             { id: 'compra', label: '2. Compra & Docs', icon: FileText },
             { id: 'venta', label: '3. Precio & Venta', icon: DollarSign },
             { id: 'equipamiento', label: '4. Equipamiento', icon: Tag },
-            { id: 'fotos', label: '5. Galería HD', icon: ImageIcon }
+            { id: 'fotos', label: '5. Galería HD', icon: ImageIcon },
+            ...(condition === '0km'
+              ? [{ id: 'entrega', label: '6. Checklist Entrega 0km', icon: CheckSquare }]
+              : [])
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -334,18 +413,77 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           {/* TAB 1: FICHA TÉCNICA */}
           {activeTab === 'info' && (
             <div className="space-y-4">
+              {/* Selector Condición: Usado vs 0km */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-black text-white flex items-center gap-1.5">
+                    <span>Condición del Vehículo:</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                      condition === '0km' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                    }`}>
+                      {condition === '0km' ? '⚡ 0km Stock Propio' : '🚗 Usado Seleccionado'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {condition === '0km'
+                      ? 'Stock propio CARVLAK. No requiere matrícula inmediata hasta empadronar. Usa checklist de entrega formal.'
+                      : 'Vehículo usado verificado. Requiere matrícula para chequeo de padrón, SUCIVE e historial de service.'}
+                  </p>
+                </div>
+                <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCondition('usado')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      condition === 'usado'
+                        ? 'bg-amber-500 text-slate-950 shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Usado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCondition('0km');
+                      if (mileage > 500) setMileage(0);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      condition === '0km'
+                        ? 'bg-emerald-500 text-slate-950 shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    ⚡ 0km
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Matrícula *
+                    Matrícula {condition === '0km' ? '(Opcional hasta empadronar)' : '*'}
                   </label>
                   <input
                     type="text"
-                    required
-                    placeholder="SBA 1234"
+                    required={condition !== '0km'}
+                    placeholder={condition === '0km' ? 'Pendiente empadronamiento' : 'SBA 1234'}
                     value={plate}
                     onChange={(e) => setPlate(e.target.value.toUpperCase())}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono font-black text-amber-400 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Chasis / VIN {condition === '0km' && !plate ? '*' : '(Opcional)'}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 9BWZZZ377VT004..."
+                    value={chassisVin}
+                    onChange={(e) => setChassisVin(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
@@ -356,13 +494,15 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Ej: Volkswagen"
+                    placeholder="Ej: Volkswagen / Changan"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     Modelo *
@@ -370,22 +510,20 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Ej: Golf"
+                    placeholder="Ej: Golf / E-Star"
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     Versión
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: 1.4 TSI Highline"
+                    placeholder="Ej: 1.4 TSI Highline / EV"
                     value={version}
                     onChange={(e) => setVersion(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
@@ -413,7 +551,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    step="500"
+                    step="100"
                     value={mileage}
                     onChange={(e) => setMileage(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
@@ -488,6 +626,30 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </select>
                 </div>
               </div>
+
+              {(fuel === 'Eléctrico' || condition === '0km') && (
+                <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="text-xs font-black text-white">Autonomía Eléctrica Estimada (km)</div>
+                      <div className="text-[11px] text-slate-400">Rango de batería por ciclo completo de carga</div>
+                    </div>
+                  </div>
+                  <div className="relative w-36 shrink-0">
+                    <input
+                      type="number"
+                      min="0"
+                      step="10"
+                      placeholder="Ej: 301"
+                      value={autonomyKm || ''}
+                      onChange={(e) => setAutonomyKm(Number(e.target.value))}
+                      className="w-full px-3 py-2 pr-10 bg-slate-900 border border-emerald-500/50 rounded-xl text-xs font-black text-emerald-400 focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">km</span>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -570,6 +732,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   >
                     <option value="particular">Particular</option>
                     <option value="concesionaria">Concesionaria Aliada</option>
+                    <option value="importador">Importador Directo / Mayorista</option>
                     <option value="parte_de_pago">Tomado en Parte de Pago (Permuta)</option>
                     <option value="consignacion">Consignación</option>
                   </select>
@@ -635,6 +798,60 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Sección Cuentas por Pagar Proveedor / Importador */}
+              <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-xs font-black text-white uppercase tracking-wider">
+                        Pago al Proveedor / Importador
+                      </span>
+                      <p className="text-[11px] text-slate-400">
+                        Permite registrar la compra al contado o diferir el saldo en Cuentas por Pagar.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <input
+                      type="checkbox"
+                      checked={isSupplierPayable}
+                      onChange={(e) => setIsSupplierPayable(e.target.checked)}
+                      className="rounded border-slate-700 text-amber-500 focus:ring-0"
+                    />
+                    <span className="text-xs text-amber-400 font-bold">Cuentas por Pagar</span>
+                  </label>
+                </div>
+
+                {isSupplierPayable && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                        Nombre del Proveedor o Importador *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Sadar / Homero De León / Particular"
+                        value={supplierName}
+                        onChange={(e) => setSupplierName(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                        Fecha Límite de Vencimiento de Pago
+                      </label>
+                      <input
+                        type="date"
+                        value={payableDueDate}
+                        onChange={(e) => setPayableDueDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Checklist de Documentación Recibida */}
@@ -996,6 +1213,53 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     No se han añadido fotos aún. Pegá una URL arriba para agregar la primera foto.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: CHECKLIST DE ENTREGA 0KM */}
+          {activeTab === 'entrega' && condition === '0km' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
+                <div>
+                  <strong>Checklist de Entrega 0km:</strong> Verificación de arribo, batería, accesorios y entrega formal al cliente final.
+                </div>
+                <span className="font-mono font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs shrink-0">
+                  {deliveryChecklist.items.filter(i => i.done).length} / {deliveryChecklist.items.length} Completados
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {deliveryChecklist.items.map((item) => (
+                  <label
+                    key={item.id}
+                    className={`flex items-start gap-3 p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                      item.done
+                        ? 'bg-emerald-950/20 border-emerald-500/40 text-white'
+                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      onChange={(e) => {
+                        const updatedItems = deliveryChecklist.items.map((it) =>
+                          it.id === item.id ? { ...it, done: e.target.checked } : it
+                        );
+                        const allDone = updatedItems.every((it) => it.done);
+                        setDeliveryChecklist({
+                          completed: allDone,
+                          items: updatedItems
+                        });
+                      }}
+                      className="mt-0.5 rounded border-slate-700 text-emerald-500 focus:ring-0"
+                    />
+                    <div className="flex-1">
+                      <div className="text-xs font-bold">{item.label}</div>
+                    </div>
+                    {item.done && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                  </label>
+                ))}
               </div>
             </div>
           )}

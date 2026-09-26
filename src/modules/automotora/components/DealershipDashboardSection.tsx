@@ -4,16 +4,13 @@ import {
   TrendingUp,
   Car,
   Clock,
-  AlertTriangle,
   Award,
   Users,
-  Calendar,
-  Filter,
   BarChart3,
-  CheckCircle2,
   Lock,
-  ArrowUpRight,
-  ShieldAlert
+  Layers,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { DealershipVehicle } from '../../../types';
 import { useData } from '../../../context/DataContext';
@@ -22,56 +19,67 @@ import { useAuth } from '../../../context/AuthContext';
 export const DealershipDashboardSection: React.FC = () => {
   const {
     dealershipVehicles,
-    dealershipInquiries,
-    zeroKmOrders,
-    totalZeroKmProfit,
-    totalFondosARendir0km
+    dealershipInquiries
   } = useData();
   const { profile } = useAuth();
 
   const isAdmin = profile?.roles.includes('admin');
 
-  // Filtro de Mes
+  // Filtros
   const [selectedMonth, setSelectedMonth] = useState<string>(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [useAllTime, setUseAllTime] = useState(false);
+  const [conditionFilter, setConditionFilter] = useState<'todos' | 'usado' | '0km'>('todos');
 
   // 1. Stock Activo (no vendido ni descartado)
-  const activeStock = useMemo(() => {
+  const allActiveStock = useMemo(() => {
     return dealershipVehicles.filter((v) =>
       ['comprado', 'preparacion', 'publicado', 'reservado'].includes(v.status)
     );
   }, [dealershipVehicles]);
 
-  // 2. Capital Inmovilizado en Stock (Total USD)
-  const totalCapitalTiedUp = useMemo(() => {
-    return activeStock.reduce((acc, car) => acc + (car.total_real_cost_usd || car.purchase_price || 0), 0);
-  }, [activeStock]);
+  // Desglose por condición (Usados vs 0km)
+  const usedActiveStock = useMemo(() => {
+    return allActiveStock.filter((v) => v.condition === 'usado');
+  }, [allActiveStock]);
 
-  // 3. Margen Proyectado en Stock
-  const totalProjectedMargin = useMemo(() => {
-    return activeStock.reduce((acc, car) => acc + (car.estimated_margin_usd || 0), 0);
-  }, [activeStock]);
+  const zeroKmActiveStock = useMemo(() => {
+    return allActiveStock.filter((v) => v.condition === '0km');
+  }, [allActiveStock]);
 
-  // 4. Promedio de Días en Stock
-  const averageDaysInStock = useMemo(() => {
-    if (activeStock.length === 0) return 0;
-    const totalDays = activeStock.reduce((acc, car) => {
-      const start = new Date(car.purchase_date || car.created_at).getTime();
+  // Stock activo filtrado según selección del usuario
+  const activeStock = useMemo(() => {
+    if (conditionFilter === 'usado') return usedActiveStock;
+    if (conditionFilter === '0km') return zeroKmActiveStock;
+    return allActiveStock;
+  }, [conditionFilter, usedActiveStock, zeroKmActiveStock, allActiveStock]);
+
+  // Cálculos de métricas para un conjunto de vehículos
+  const calcMetrics = (cars: DealershipVehicle[]) => {
+    const totalCapital = cars.reduce(
+      (acc, c) => acc + (c.total_real_cost_usd || c.purchase_price || 0),
+      0
+    );
+    const totalMargin = cars.reduce(
+      (acc, c) => acc + (c.estimated_margin_usd || 0),
+      0
+    );
+    const totalDays = cars.reduce((acc, c) => {
+      const start = new Date(c.purchase_date || c.created_at).getTime();
       const days = Math.max(0, Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24)));
       return acc + days;
     }, 0);
-    return Math.round(totalDays / activeStock.length);
-  }, [activeStock]);
+    const avgDays = cars.length > 0 ? Math.round(totalDays / cars.length) : 0;
+    return { count: cars.length, totalCapital, totalMargin, avgDays };
+  };
 
-  // 5. Antigüedad del Stock (Distribución)
+  const metricsAll = useMemo(() => calcMetrics(allActiveStock), [allActiveStock]);
+  const metricsUsed = useMemo(() => calcMetrics(usedActiveStock), [usedActiveStock]);
+  const metricsZeroKm = useMemo(() => calcMetrics(zeroKmActiveStock), [zeroKmActiveStock]);
+  const metricsCurrent = useMemo(() => calcMetrics(activeStock), [activeStock]);
+
+  // Antigüedad del Stock (Distribución)
   const stockAgeBuckets = useMemo(() => {
-    const buckets = {
-      under30: 0,
-      days30to60: 0,
-      days60to90: 0,
-      over90: 0
-    };
-
+    const buckets = { under30: 0, days30to60: 0, days60to90: 0, over90: 0 };
     activeStock.forEach((car) => {
       const start = new Date(car.purchase_date || car.created_at).getTime();
       const days = Math.max(0, Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24)));
@@ -80,19 +88,19 @@ export const DealershipDashboardSection: React.FC = () => {
       else if (days <= 90) buckets.days60to90++;
       else buckets.over90++;
     });
-
     return buckets;
   }, [activeStock]);
 
-  // 6. Ventas del Período Seleccionado
+  // Ventas del Período
   const soldVehicles = useMemo(() => {
     return dealershipVehicles.filter((v) => {
       if (v.status !== 'vendido') return false;
+      if (conditionFilter !== 'todos' && v.condition !== conditionFilter) return false;
       if (useAllTime) return true;
       const saleDate = v.sale_record?.sale_date || v.updated_at;
       return saleDate.startsWith(selectedMonth);
     });
-  }, [dealershipVehicles, selectedMonth, useAllTime]);
+  }, [dealershipVehicles, selectedMonth, useAllTime, conditionFilter]);
 
   const salesVolumeUsd = useMemo(() => {
     return soldVehicles.reduce((acc, car) => acc + (car.sale_record?.sale_price || car.sale_price || 0), 0);
@@ -111,25 +119,12 @@ export const DealershipDashboardSection: React.FC = () => {
     return soldVehicles.reduce((acc, car) => acc + (car.sale_record?.commission_amount || 0), 0);
   }, [soldVehicles]);
 
-  // 7. Conversión CRM
+  // Conversión CRM
   const crmConversionRate = useMemo(() => {
     if (dealershipInquiries.length === 0) return 0;
     const wonInquiries = dealershipInquiries.filter((i) => i.status === 'Ganada' || i.status === 'Vendido').length;
     return ((wonInquiries / dealershipInquiries.length) * 100).toFixed(1);
   }, [dealershipInquiries]);
-
-  // 8. Ventas 0km Computables
-  const periodZeroKmOrders = useMemo(() => {
-    return zeroKmOrders.filter((o) => {
-      if (o.unit_delivery_status === 'cancelado') return false;
-      if (useAllTime) return true;
-      return (o.created_at || '').startsWith(selectedMonth);
-    });
-  }, [zeroKmOrders, selectedMonth, useAllTime]);
-
-  const periodZeroKmProfit = useMemo(() => {
-    return periodZeroKmOrders.reduce((acc, o) => acc + (o.resulting_profit || 0), 0);
-  }, [periodZeroKmOrders]);
 
   if (!isAdmin) {
     return (
@@ -147,7 +142,7 @@ export const DealershipDashboardSection: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Cabecera & Selector de Período */}
+      {/* Cabecera & Controles de Período y Filtro */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -157,16 +152,51 @@ export const DealershipDashboardSection: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Capital inmovilizado, rotación de stock, comisiones y rentabilidad neta de la Automotora.
+            Capital propio inmovilizado, rotación de stock, comisiones y rentabilidad de Usados vs 0km.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Toggle Usados / 0km / Todos */}
+          <div className="flex p-1 rounded-2xl bg-slate-900 border border-slate-800 text-xs font-black">
+            <button
+              onClick={() => setConditionFilter('todos')}
+              className={`px-3 py-1.5 rounded-xl transition-all ${
+                conditionFilter === 'todos'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Todos ({allActiveStock.length})
+            </button>
+            <button
+              onClick={() => setConditionFilter('usado')}
+              className={`px-3 py-1.5 rounded-xl transition-all ${
+                conditionFilter === 'usado'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Usados ({usedActiveStock.length})
+            </button>
+            <button
+              onClick={() => setConditionFilter('0km')}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                conditionFilter === '0km'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Zap className="w-3 h-3" />
+              <span>0km ({zeroKmActiveStock.length})</span>
+            </button>
+          </div>
+
           <button
             onClick={() => setUseAllTime(!useAllTime)}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               useAllTime
-                ? 'bg-amber-500 text-slate-950 font-black'
+                ? 'bg-slate-700 text-white font-black'
                 : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
             }`}
           >
@@ -184,19 +214,136 @@ export const DealershipDashboardSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Tarjetas Principales de KPI */}
+      {/* Tabla Comparativa: Usados vs 0km (Stock Propio) */}
+      <div className="p-5 rounded-3xl bg-[#101622] border border-slate-800 space-y-3 shadow-lg">
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-amber-400" />
+            <h3 className="text-xs font-black text-white uppercase tracking-wider">
+              Comparativa de Inventario: Usados vs Eléctricos 0km
+            </h3>
+          </div>
+          <span className="text-[10px] text-slate-400 font-bold">Stock Propio CARVLAK</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          {/* Card Usados */}
+          <div
+            onClick={() => setConditionFilter('usado')}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+              conditionFilter === 'usado'
+                ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/5'
+                : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-black text-slate-200 uppercase text-[11px] flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-blue-400" />
+                Usados Seleccionados
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold text-[10px]">
+                {metricsUsed.count} unidades
+              </span>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Capital Invertido:</span>
+                <strong className="text-white font-mono">USD {Math.round(metricsUsed.totalCapital).toLocaleString()}</strong>
+              </div>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Margen Proyectado:</span>
+                <strong className="text-emerald-400 font-mono">+USD {Math.round(metricsUsed.totalMargin).toLocaleString()}</strong>
+              </div>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Días Promedio Stock:</span>
+                <strong className="text-cyan-300 font-mono">{metricsUsed.avgDays} días</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 0km */}
+          <div
+            onClick={() => setConditionFilter('0km')}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+              conditionFilter === '0km'
+                ? 'bg-amber-500/10 border-amber-500/50 shadow-md shadow-amber-500/5'
+                : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-black text-slate-200 uppercase text-[11px] flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                Eléctricos 0km
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
+                {metricsZeroKm.count} unidades
+              </span>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Capital Invertido:</span>
+                <strong className="text-white font-mono">USD {Math.round(metricsZeroKm.totalCapital).toLocaleString()}</strong>
+              </div>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Margen Proyectado:</span>
+                <strong className="text-emerald-400 font-mono">+USD {Math.round(metricsZeroKm.totalMargin).toLocaleString()}</strong>
+              </div>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Días Promedio Stock:</span>
+                <strong className="text-cyan-300 font-mono">{metricsZeroKm.avgDays} días</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Card Total Consolidado */}
+          <div
+            onClick={() => setConditionFilter('todos')}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+              conditionFilter === 'todos'
+                ? 'bg-amber-500/15 border-amber-500/60 shadow-md shadow-amber-500/10'
+                : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-black text-amber-300 uppercase text-[11px] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                Total Flota Global
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px]">
+                {metricsAll.count} unidades
+              </span>
+            </div>
+            <div className="mt-3 space-y-1.5">
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Capital Invertido:</span>
+                <strong className="text-amber-200 font-mono">USD {Math.round(metricsAll.totalCapital).toLocaleString()}</strong>
+              </div>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Margen Proyectado:</span>
+                <strong className="text-emerald-300 font-mono">+USD {Math.round(metricsAll.totalMargin).toLocaleString()}</strong>
+              </div>
+              <div className="flex justify-between text-slate-400 text-[11px]">
+                <span>Días Promedio Stock:</span>
+                <strong className="text-white font-mono">{metricsAll.avgDays} días</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tarjetas Principales de KPI filtradas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Capital Inmovilizado */}
         <div className="p-4 sm:p-5 rounded-3xl bg-[#101622] border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold">Capital en Stock</span>
+            <span className="text-xs font-bold">Capital en Stock ({conditionFilter})</span>
             <DollarSign className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-xl sm:text-2xl font-black text-white">
-            USD {Math.round(totalCapitalTiedUp).toLocaleString()}
+            USD {Math.round(metricsCurrent.totalCapital).toLocaleString()}
           </div>
           <div className="text-[11px] text-slate-400">
-            En {activeStock.length} unidades disponibles
+            En {metricsCurrent.count} unidades disponibles
           </div>
         </div>
 
@@ -207,7 +354,7 @@ export const DealershipDashboardSection: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-xl sm:text-2xl font-black text-emerald-400">
-            +USD {Math.round(totalProjectedMargin).toLocaleString()}
+            +USD {Math.round(metricsCurrent.totalMargin).toLocaleString()}
           </div>
           <div className="text-[11px] text-slate-400">
             Ganancia bruta esperada del inventario
@@ -218,17 +365,17 @@ export const DealershipDashboardSection: React.FC = () => {
         <div className="p-4 sm:p-5 rounded-3xl bg-[#101622] border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold">Días Promedio Stock</span>
-            <Clock className={`w-4 h-4 ${averageDaysInStock > 60 ? 'text-amber-400' : 'text-cyan-400'}`} />
+            <Clock className={`w-4 h-4 ${metricsCurrent.avgDays > 60 ? 'text-amber-400' : 'text-cyan-400'}`} />
           </div>
           <div
             className={`text-xl sm:text-2xl font-black ${
-              averageDaysInStock > 60 ? 'text-amber-400' : 'text-white'
+              metricsCurrent.avgDays > 60 ? 'text-amber-400' : 'text-white'
             }`}
           >
-            {averageDaysInStock} días
+            {metricsCurrent.avgDays} días
           </div>
           <div className="text-[11px] text-slate-400">
-            {averageDaysInStock > 60 ? '⚠️ Rotación lenta (>60 días)' : '✓ Rotación saludable'}
+            {metricsCurrent.avgDays > 60 ? '⚠️ Rotación lenta (>60 días)' : '✓ Rotación saludable'}
           </div>
         </div>
 
@@ -257,13 +404,13 @@ export const DealershipDashboardSection: React.FC = () => {
             </span>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300">
-            {soldVehicles.length} usados + {periodZeroKmOrders.length} unidades 0km
+            {soldVehicles.length} unidades vendidas
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">Facturación Usados</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase">Facturación Total</div>
             <div className="text-xl font-black text-white mt-1">
               USD {salesVolumeUsd.toLocaleString()}
             </div>
@@ -271,49 +418,21 @@ export const DealershipDashboardSection: React.FC = () => {
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <div className="text-[11px] font-bold text-slate-400 uppercase">Margen Usados</div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase">Margen Bruto Realizado</div>
             <div className="text-xl font-black text-emerald-400 mt-1">
               +USD {Math.round(realizedGrossProfitUsd).toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              Margen neto post costos de taller
-            </p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Margen neto post costos internos</p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30">
-            <div className="text-[11px] font-bold text-amber-400 uppercase">Ganancia Neta 0km</div>
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 bg-amber-950/10">
+            <div className="text-[11px] font-bold text-amber-400 uppercase">Comisiones Vendedores</div>
             <div className="text-xl font-black text-amber-300 mt-1">
-              +USD {Math.round(periodZeroKmProfit).toLocaleString()}
+              USD {Math.round(totalCommissionsUsd).toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Margen neto e ingresos de comisión
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-emerald-500/40 bg-emerald-950/20">
-            <div className="text-[11px] font-bold text-emerald-400 uppercase">Ganancia Total Automotora</div>
-            <div className="text-xl font-black text-emerald-300 mt-1">
-              +USD {Math.round(realizedGrossProfitUsd + periodZeroKmProfit).toLocaleString()}
-            </div>
-            <p className="text-[10px] text-emerald-400/80 mt-0.5">Usados + 0km computables</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Comisiones liquidadas por ventas</p>
           </div>
         </div>
-
-        {/* Recordatorio de Fondos a Rendir */}
-        {totalFondosARendir0km > 0 && (
-          <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/40 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-slate-300">
-                Fondos de 0km en custodia a rendir a importadores:{' '}
-                <strong className="text-amber-300 font-bold">${totalFondosARendir0km.toLocaleString()} USD</strong>.
-              </span>
-            </div>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 uppercase">
-              No es liquidez disponible
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Widget: Distribución por Antigüedad del Stock */}
@@ -321,9 +440,9 @@ export const DealershipDashboardSection: React.FC = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-amber-400" />
-            <span>Antigüedad del Stock Actual ({activeStock.length} unidades)</span>
+            <span>Antigüedad del Stock ({activeStock.length} unidades {conditionFilter !== 'todos' ? `• ${conditionFilter}` : ''})</span>
           </h3>
-          <span className="text-[11px] text-slate-400">Control de riesgo de inmovilización</span>
+          <span className="text-[11px] text-slate-400">Control de rotación e inmovilización</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
@@ -365,7 +484,8 @@ export const DealershipDashboardSection: React.FC = () => {
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-wider">
                   <th className="p-2.5">Fecha</th>
-                  <th className="p-2.5">Auto / Matrícula</th>
+                  <th className="p-2.5">Auto / Matrícula o Chasis</th>
+                  <th className="p-2.5">Condición</th>
                   <th className="p-2.5">Comprador</th>
                   <th className="p-2.5">Medio de Pago</th>
                   <th className="p-2.5 text-right">Precio Venta</th>
@@ -385,7 +505,16 @@ export const DealershipDashboardSection: React.FC = () => {
                         <div className="font-bold text-white">
                           {car.brand} {car.model}
                         </div>
-                        <div className="font-mono text-[10px] text-amber-400">{car.plate}</div>
+                        <div className="font-mono text-[10px] text-amber-400">
+                          {car.plate || car.chassis_vin || 'Sin matrícula'}
+                        </div>
+                      </td>
+                      <td className="p-2.5">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                          car.condition === '0km' ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'
+                        }`}>
+                          {car.condition === '0km' ? '0km' : 'Usado'}
+                        </span>
                       </td>
                       <td className="p-2.5">
                         <div className="text-slate-200 font-medium">{sale?.buyer_name || 'Comprador'}</div>

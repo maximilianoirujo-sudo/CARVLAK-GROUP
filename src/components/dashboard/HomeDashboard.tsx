@@ -51,11 +51,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     inspections,
     dealershipVehicles,
     dealershipInquiries,
-    dealershipConfig,
-    totalFondosARendir0km,
-    totalZeroKmProfit,
-    zeroKmAlerts,
-    zeroKmOrders
+    dealershipConfig
   } = useData();
 
   const isBoss = isEncargado(profile);
@@ -157,76 +153,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       </div>
 
-      {/* Banner Destacado: Fondos de 0km a Rendir */}
-      {totalFondosARendir0km > 0 && (
-        <div
-          onClick={() => onNavigate('mod-automotora')}
-          className="p-4 rounded-3xl bg-gradient-to-r from-amber-950/50 via-[#1A181F] to-[#12161F] border-2 border-amber-500/60 cursor-pointer hover:border-amber-400 transition-all flex items-center justify-between gap-4 shadow-xl group"
-        >
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0 border border-amber-500/30">
-              <ShieldAlert className="w-6 h-6 animate-pulse" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                  Control Financiero 0km
-                </span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
-                  FONDOS A RENDIR
-                </span>
-              </div>
-              <div className="text-sm sm:text-base font-black text-white mt-0.5 group-hover:text-amber-300 transition-colors">
-                ${totalFondosARendir0km.toLocaleString()} USD cobrados a clientes pendientes de pago a importadores
-              </div>
-              <p className="text-[11px] text-amber-200/80 mt-0.5">
-                Dinero en custodia transitoria: <strong className="underline decoration-amber-500">no constituye liquidez disponible de la empresa</strong>.
-              </p>
-            </div>
-          </div>
-          <div className="text-xs font-bold text-amber-400 flex items-center gap-1 shrink-0">
-            <span>Gestionar 0km</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </div>
-        </div>
-      )}
 
-      {/* Alertas Críticas 0km (Discrepancias / Vencimientos) */}
-      {zeroKmAlerts.length > 0 && isBoss && (
-        <div className="space-y-2">
-          {zeroKmAlerts.slice(0, 2).map((alert) => (
-            <div
-              key={alert.id}
-              onClick={() => onNavigate('mod-automotora')}
-              className={`p-3.5 rounded-2xl border cursor-pointer hover:opacity-90 transition-all flex items-center justify-between gap-3 shadow-md ${
-                alert.type === 'danger'
-                  ? 'bg-rose-950/30 border-rose-500/50 text-rose-200'
-                  : 'bg-amber-950/30 border-amber-500/50 text-amber-200'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-2 rounded-xl shrink-0 ${
-                    alert.type === 'danger' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'
-                  }`}
-                >
-                  {alert.type === 'danger' ? <AlertOctagon className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                </div>
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                    {alert.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">{alert.desc}</p>
-                </div>
-              </div>
-              <div className="text-xs font-bold text-slate-400 flex items-center gap-1 shrink-0">
-                <span>Ver</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Alerta de Presupuestos Pendientes DetailVlak */}
       {pendingQuotes.length > 0 && isBoss && (

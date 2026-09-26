@@ -121,7 +121,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'orden_0km' | 'marca_0km' | 'caja_0km';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -428,7 +428,7 @@ export type DealershipVehicleStatus =
   | 'vendido'
   | 'descartado';
 
-export type PurchaseOrigin = 'particular' | 'concesionaria' | 'parte_de_pago' | 'consignacion';
+export type PurchaseOrigin = 'particular' | 'concesionaria' | 'parte_de_pago' | 'consignacion' | 'importador' | 'mayorista';
 
 export type DealershipPaymentMethod =
   | 'contado'
@@ -526,16 +526,38 @@ export interface DealershipSaleRecord {
   notes?: string;
 }
 
+export type DealershipVehicleCondition = 'usado' | '0km';
+export type DealershipVehicleType = 'auto' | 'moto' | 'todoterreno';
+
+export interface DealershipDeliveryChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+export interface DealershipDeliveryChecklist {
+  items: DealershipDeliveryChecklistItem[];
+  completed: boolean;
+  delivery_date?: string;
+  notes?: string;
+}
+
 export interface DealershipVehicle {
   id: string;
   empresa_id: string; // Multi-tenant SaaS ready, default 'carvlak'
   vehicle_id?: string; // Vinculación opcional a base común
-  plate: string;
+  plate?: string; // En 0km es opcional hasta que se empadrona
+  chassis_vin?: string; // Identificador principal si no hay matrícula en 0km
+  condition: DealershipVehicleCondition; // 'usado' | '0km'
+  vehicle_type?: DealershipVehicleType; // 'auto' | 'moto' | 'todoterreno'
+  autonomy_km?: number; // Autonomía en km para eléctricos
+  tiendanube_id?: string; // ID de producto en Tiendanube
+  incomplete_data?: boolean; // Flag para completar datos faltantes desde el celular
   brand: string;
   model: string;
   version?: string;
   year: number;
-  mileage: number;
+  mileage: number; // 0 por defecto para 0km
   category: VehicleCategory;
   body_type?: string; // Hatchback, Sedán, SUV, Pick-up, etc.
   transmission?: 'Manual' | 'Automática' | string;
@@ -559,6 +581,14 @@ export interface DealershipVehicle {
   purchase_currency: Currency;
   exchange_rate: number; // Ej: 43.50 UYU por USD
   docs_received: DealershipDocsReceived;
+  supplier_payable?: {
+    supplier_name: string;
+    due_date: string;
+    amount: number;
+    is_paid: boolean;
+    payment_date?: string;
+    account?: string;
+  };
 
   // Datos de venta
   sale_price: number; // Precio de lista en USD o UYU
@@ -581,13 +611,14 @@ export interface DealershipVehicle {
   paperwork_cost: number;
   other_expenses_cost: number;
 
-  total_real_cost_usd: number;
-  estimated_margin_usd: number;
-  estimated_margin_percent: number;
+  total_real_cost_usd?: number;
+  estimated_margin_usd?: number;
+  estimated_margin_percent?: number;
 
-  // Preparación
-  prep_checklist: DealershipPrepChecklist;
+  // Preparación (Usados) o Entrega (0km)
+  prep_checklist?: DealershipPrepChecklist;
   prep_assigned_to?: string;
+  delivery_checklist?: DealershipDeliveryChecklist;
 
   // Reserva y Venta
   reservation?: DealershipReservation;
@@ -634,122 +665,5 @@ export interface DealershipConfig {
   commission_basis: 'total_sale' | 'margin';
   default_commission_rate: number; // % ej: 1.5%
   seller_commission_percentage?: number;
-}
-
-// ==============================================================================
-// COMPLEMENTO 0KM: MODELO DE GANANCIA POR MARCA, CAJA & FONDOS A RENDIR
-// ==============================================================================
-
-export type ZeroKmProfitScheme = 'margen' | 'comision_aparte';
-
-export interface ZeroKmBrandConfig {
-  id: string;
-  brand: string;
-  importer_name: string;
-  profit_scheme: ZeroKmProfitScheme;
-  default_commission_type?: 'percentage' | 'fixed_amount';
-  default_commission_value?: number; // e.g. 4.5% o USD 1200
-  payment_terms_days: number; // e.g. 15 o 30 días
-  contact_person?: string;
-  contact_phone?: string;
-}
-
-export type ZeroKmDeliveryStatus =
-  | 'pedido_confirmado'
-  | 'en_transito'
-  | 'en_salon_preparacion'
-  | 'entregado'
-  | 'cancelado';
-
-export type ZeroKmPaymentStatus =
-  | 'pendiente'
-  | 'sena_cobrada'
-  | 'saldo_pendiente'
-  | 'cobrado_total';
-
-export type ZeroKmImporterPaymentStatus =
-  | 'pendiente'
-  | 'pagado_parcial'
-  | 'pagado_total';
-
-export type ZeroKmCashMovementTag =
-  | 'Cobro 0km – fondos a rendir'
-  | 'Pago a importador 0km'
-  | 'Comisión cobrada de importador';
-
-export interface ZeroKmCashMovement {
-  id: string;
-  order_id: string;
-  order_info: string;
-  type: 'ingreso' | 'egreso';
-  tag: ZeroKmCashMovementTag;
-  amount: number;
-  currency: Currency;
-  account: string; // e.g. 'Santander USD', 'Itaú USD', 'Caja Efectivo USD'
-  date: string;
-  receipt_number?: string;
-  notes?: string;
-  created_at: string;
-}
-
-export interface ZeroKmOrder {
-  id: string;
-  empresa_id: string; // Multi-tenant SaaS ready, default 'carvlak'
-  brand: string;
-  model: string;
-  version: string;
-  color?: string;
-  chassis_vin?: string;
-  year: number;
-
-  // Cliente
-  client_id?: string;
-  client_name: string;
-  client_phone: string;
-  client_email?: string;
-
-  // Importador & Esquema
-  importer_name: string;
-  importer_scheme: ZeroKmProfitScheme;
-
-  // Números comerciales (USD)
-  sale_price_client: number; // Precio de venta total acordado con cliente
-  amount_to_pay_importer: number; // Monto a pagar al importador
-  resulting_profit: number; // Ganancia computable para CARVLAK (Margen o Comisión)
-
-  // En Opción B: Comisión del importador
-  commission_from_importer?: number;
-  commission_status_from_importer?: 'pendiente' | 'cobrado';
-  commission_collected_date?: string;
-
-  // Cobranzas al cliente (Seña y Saldo)
-  client_deposit_amount: number;
-  client_deposit_account?: string;
-  client_deposit_date?: string;
-  client_balance_amount: number;
-  client_balance_account?: string;
-  client_balance_date?: string;
-  client_total_collected: number;
-  client_payment_status: ZeroKmPaymentStatus;
-
-  // Pagos al importador (Cuentas por Pagar)
-  importer_payment_due_date: string;
-  importer_payment_status: ZeroKmImporterPaymentStatus;
-  amount_paid_to_importer: number;
-  importer_payment_date?: string;
-  importer_payment_account?: string;
-
-  // Estado físico de la unidad
-  unit_delivery_status: ZeroKmDeliveryStatus;
-  unit_delivery_date?: string;
-
-  // Vendedor & Auditoría
-  seller_id?: string;
-  seller_name?: string;
-  seller_commission?: number;
-  notes?: string;
-  is_archived?: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
