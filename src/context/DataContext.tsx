@@ -17,7 +17,13 @@ import {
   Expense,
   CommissionRecord,
   WhatsAppTemplate,
-  WhatsAppTemplateKey
+  WhatsAppTemplateKey,
+  VehicleInspection,
+  InspectionTariffConfig,
+  InspectionStatus,
+  InspectionTrafficLight,
+  InspectionChecklistItem,
+  CarPanelInspection
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -32,7 +38,11 @@ import {
   INITIAL_DETAILING_QUOTES,
   INITIAL_COMMISSIONS,
   INITIAL_WHATSAPP_TEMPLATES,
-  INITIAL_PROFILES
+  INITIAL_PROFILES,
+  INITIAL_INSPECTIONS,
+  INITIAL_INSPECTION_TARIFFS,
+  DEFAULT_CHECKLIST_TEMPLATE,
+  DEFAULT_CAR_PANELS
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -114,6 +124,23 @@ interface DataContextType {
     importedExpensesCount: number;
     duplicatesDetected: number;
   };
+
+  // FASE 3: INSPECCIÓN VEHICULAR (PERITAJE)
+  inspections: VehicleInspection[];
+  inspectionTariffs: InspectionTariffConfig;
+  addInspection: (
+    data: Omit<VehicleInspection, 'id' | 'created_at' | 'updated_at' | 'token' | 'checklist' | 'panels'> & {
+      token?: string;
+      checklist?: InspectionChecklistItem[];
+      panels?: CarPanelInspection[];
+    }
+  ) => VehicleInspection;
+  updateInspection: (id: string, data: Partial<VehicleInspection>) => void;
+  updateInspectionStatus: (id: string, newStatus: InspectionStatus, appointmentDetails?: { date: string; assigned_to?: string }) => void;
+  archiveInspection: (id: string) => void;
+  updateInspectionTariffs: (tariffs: Partial<InspectionTariffConfig>) => void;
+  getInspectionByToken: (token: string) => VehicleInspection | undefined;
+  createDetailingQuoteFromInspection: (inspectionId: string) => string | null;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -183,6 +210,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return s ? JSON.parse(s) : INITIAL_WHATSAPP_TEMPLATES;
   });
 
+  // FASE 3: Estados Inspecciones Vehiculares (Peritaje)
+  const [inspections, setInspections] = useState<VehicleInspection[]>(() => {
+    const s = localStorage.getItem('carvlak_inspections');
+    return s ? JSON.parse(s) : INITIAL_INSPECTIONS;
+  });
+
+  const [inspectionTariffs, setInspectionTariffs] = useState<InspectionTariffConfig>(() => {
+    const s = localStorage.getItem('carvlak_inspection_tariffs');
+    return s ? JSON.parse(s) : INITIAL_INSPECTION_TARIFFS;
+  });
+
   // Guardar en localStorage
   useEffect(() => {
     localStorage.setItem('carvlak_clients', JSON.stringify(clients));
@@ -231,6 +269,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('carvlak_whatsapp_templates', JSON.stringify(whatsappTemplates));
   }, [whatsappTemplates]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_inspections', JSON.stringify(inspections));
+  }, [inspections]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_inspection_tariffs', JSON.stringify(inspectionTariffs));
+  }, [inspectionTariffs]);
 
   // Si Supabase está configurado, sincronizar con la nube
   useEffect(() => {
@@ -880,6 +926,302 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
+  // Helper para cálculo automático de puntaje y semáforo
+  const calculateScoreAndTraffic = (
+    checklist: InspectionChecklistItem[],
+    panels: CarPanelInspection[]
+  ): { score: number; traffic_light: InspectionTrafficLight } => {
+    let score = 100;
+    let hasCriticalFail = false;
+
+    checklist.forEach((item) => {
+      if (item.status === 'falla') {
+        if (item.isCritical) {
+          score -= 15;
+          hasCriticalFail = true;
+        } else {
+          score -= 6;
+        }
+      } else if (item.status === 'observacion') {
+        score -= 2.5;
+      }
+    });
+
+    panels.forEach((p) => {
+      if (p.state === 'repintado') score -= 2;
+      else if (p.state === 'masillado') score -= 4;
+      else if (p.state === 'danado') score -= 5;
+    });
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+    let traffic_light: InspectionTrafficLight = 'Recomendable';
+    if (score < 65 || hasCriticalFail) {
+      traffic_light = 'No recomendable';
+    } else if (score < 85) {
+      traffic_light = 'Con reparos';
+    }
+    return { score, traffic_light };
+  };
+
+  // FASE 3: INSPECCIONES
+  const addInspection = (
+    data: Omit<VehicleInspection, 'id' | 'created_at' | 'updated_at' | 'token' | 'checklist' | 'panels'> & {
+      token?: string;
+      checklist?: InspectionChecklistItem[];
+      panels?: CarPanelInspection[];
+    }
+  ): VehicleInspection => {
+    const generatedToken = data.token || `tk_${Math.random().toString(36).substring(2, 9)}_${Date.now().toString(36)}`;
+    const initialChecklist = data.checklist && data.checklist.length > 0
+      ? data.checklist
+      : JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_TEMPLATE));
+    const initialPanels = data.panels && data.panels.length > 0
+      ? data.panels
+      : JSON.parse(JSON.stringify(DEFAULT_CAR_PANELS));
+
+    const { score, traffic_light } = calculateScoreAndTraffic(initialChecklist, initialPanels);
+
+    const newInsp: VehicleInspection = {
+      ...data,
+      id: `insp-${Date.now()}`,
+      token: generatedToken,
+      checklist: initialChecklist,
+      panels: initialPanels,
+      score: data.score !== undefined && data.score > 0 ? data.score : score,
+      traffic_light: data.traffic_light || traffic_light,
+      created_by: profile?.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setInspections((prev) => [newInsp, ...prev]);
+    logActivity('inspeccion', newInsp.id, 'create', {
+      type: newInsp.type,
+      plate: newInsp.vehicle_plate,
+      status: newInsp.status,
+      total_price: newInsp.total_price
+    });
+    return newInsp;
+  };
+
+  const updateInspection = (id: string, data: Partial<VehicleInspection>) => {
+    setInspections((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...data, updated_at: new Date().toISOString() };
+        if ((data.checklist || data.panels) && data.score === undefined) {
+          const calc = calculateScoreAndTraffic(updated.checklist, updated.panels);
+          updated.score = calc.score;
+          if (!data.traffic_light) {
+            updated.traffic_light = calc.traffic_light;
+          }
+        }
+        return updated;
+      })
+    );
+    logActivity('inspeccion', id, 'update', { updatedKeys: Object.keys(data) });
+  };
+
+  const updateInspectionStatus = (
+    id: string,
+    newStatus: InspectionStatus,
+    appointmentDetails?: { date: string; assigned_to?: string }
+  ) => {
+    const current = inspections.find((i) => i.id === id);
+    if (!current) return;
+
+    const updatedFields: Partial<VehicleInspection> = {
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Al pasar a 'Agendada' -> crear turno en Agenda Unificada
+    if (newStatus === 'Agendada') {
+      const apptDate = appointmentDetails?.date || current.scheduled_at || new Date().toISOString();
+      const inspectorId = appointmentDetails?.assigned_to || current.assigned_to || profile?.id;
+
+      addAppointment({
+        business: 'inspeccion',
+        client_id: current.client_id,
+        vehicle_id: current.vehicle_id,
+        assigned_to: inspectorId,
+        start_time: apptDate,
+        duration_minutes: 120,
+        status: 'Confirmado',
+        title: `Peritaje: ${current.vehicle_info || current.vehicle_plate} (${current.type === 'precompra' ? 'Precompra' : 'Interna'})`,
+        notes: `Ubicación: ${current.is_home_visit ? `A domicilio: ${current.home_address || ''}` : 'Taller Shangrilá'}. ${current.inspector_conclusion || ''}`,
+        price_amount: current.total_price,
+        price_currency: current.price_currency
+      });
+
+      updatedFields.scheduled_at = apptDate;
+      if (inspectorId) updatedFields.assigned_to = inspectorId;
+    }
+
+    // 2. Al pasar a 'Completada' -> Registro en historial de vehículo y comisión para inspector
+    if (newStatus === 'Completada') {
+      updatedFields.completed_at = new Date().toISOString();
+
+      if (current.vehicle_id) {
+        addVehicleHistory(
+          current.vehicle_id,
+          'inspeccion',
+          'Peritaje Vehicular Completado',
+          `Tipo: ${current.type === 'precompra' ? 'Precompra' : 'Interna CARVLAK'}. Puntaje: ${current.score}/100 (${current.traffic_light}). ${current.automotora_decision ? `Dictamen compra: ${current.automotora_decision.toUpperCase()}` : ''}`
+        );
+      }
+
+      if (current.type === 'precompra' && current.total_price > 0) {
+        const inspectorId = current.assigned_to || profile?.id;
+        const inspectorProfile = INITIAL_PROFILES.find((p) => p.id === inspectorId) || profile;
+        const rate = inspectorProfile?.commissions?.inspeccion ?? (inspectorId === 'user-diego' ? 15 : 0);
+
+        if (rate > 0) {
+          const commAmount = Math.round(current.total_price * (rate / 100));
+          const newComm: CommissionRecord = {
+            id: `comm-insp-${Date.now()}`,
+            business: 'inspeccion',
+            employee_id: inspectorId || 'user-diego',
+            employee_name: inspectorProfile?.full_name || 'Inspector Peritaje',
+            quote_id: current.id,
+            client_name: current.buyer_name || 'Cliente Inspección',
+            vehicle_description: `${current.vehicle_info} (${current.vehicle_plate})`,
+            amount_charged: current.total_price,
+            commission_rate: rate,
+            commission_amount: commAmount,
+            status: 'Pendiente',
+            created_at: new Date().toISOString()
+          };
+          setCommissions((prev) => [...prev.filter((c) => c.quote_id !== current.id), newComm]);
+        }
+      }
+    } else if (current.status === 'Completada') {
+      setCommissions((prev) => prev.filter((c) => c.quote_id !== current.id));
+    }
+
+    setInspections((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...updatedFields } : i))
+    );
+    logActivity('inspeccion', id, 'status_change', { from: current.status, to: newStatus });
+  };
+
+  const archiveInspection = (id: string) => {
+    setInspections((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, is_archived: true, updated_at: new Date().toISOString() } : i))
+    );
+    logActivity('inspeccion', id, 'archive', { is_archived: true });
+  };
+
+  const updateInspectionTariffs = (newTariffs: Partial<InspectionTariffConfig>) => {
+    setInspectionTariffs((prev) => ({
+      ...prev,
+      ...newTariffs,
+      prices: {
+        ...prev.prices,
+        ...(newTariffs.prices || {})
+      }
+    }));
+    logActivity('inspeccion', 'tariffs', 'update', newTariffs);
+  };
+
+  const getInspectionByToken = (token: string): VehicleInspection | undefined => {
+    return inspections.find((i) => i.token === token && !i.is_archived);
+  };
+
+  const createDetailingQuoteFromInspection = (inspectionId: string): string | null => {
+    const inspection = inspections.find((i) => i.id === inspectionId);
+    if (!inspection) return null;
+
+    if (inspection.detailing_quote_id) {
+      return inspection.detailing_quote_id;
+    }
+
+    const suggestedServices: { serviceId: string; serviceName: string; price: number }[] = [];
+    const cat = inspection.vehicle_category || 'Mediano';
+
+    const hasPaintIssue = inspection.panels.some((p) => p.state === 'repintado' || p.state === 'masillado' || p.state === 'danado')
+      || inspection.checklist.some((c) => c.section === 'Carrocería y pintura' && (c.status === 'observacion' || c.status === 'falla'));
+    
+    const hasInteriorIssue = inspection.checklist.some((c) => c.section === 'Interior' && (c.status === 'observacion' || c.status === 'falla'));
+
+    const hasOpticsIssue = inspection.checklist.some((c) => (c.name.toLowerCase().includes('óptica') || c.name.toLowerCase().includes('faros')) && (c.status === 'observacion' || c.status === 'falla'));
+
+    if (hasPaintIssue) {
+      const t = detailingTariffs.find((tar) => tar.id === 'ceramico' || tar.id === 'pulido');
+      if (t) {
+        suggestedServices.push({
+          serviceId: t.id,
+          serviceName: t.name,
+          price: t.prices[cat] || 8500
+        });
+      }
+    }
+
+    if (hasInteriorIssue) {
+      const t = detailingTariffs.find((tar) => tar.id === 'interior');
+      if (t) {
+        suggestedServices.push({
+          serviceId: t.id,
+          serviceName: t.name,
+          price: t.prices[cat] || 4200
+        });
+      }
+    }
+
+    if (hasOpticsIssue) {
+      const t = detailingTariffs.find((tar) => tar.id === 'opticas');
+      if (t) {
+        suggestedServices.push({
+          serviceId: t.id,
+          serviceName: t.name,
+          price: t.prices[cat] || 2500
+        });
+      }
+    }
+
+    if (suggestedServices.length === 0) {
+      const t1 = detailingTariffs.find((tar) => tar.id === 'ceramico');
+      const t2 = detailingTariffs.find((tar) => tar.id === 'interior');
+      if (t1) suggestedServices.push({ serviceId: t1.id, serviceName: t1.name, price: t1.prices[cat] || 8500 });
+      if (t2) suggestedServices.push({ serviceId: t2.id, serviceName: t2.name, price: t2.prices[cat] || 4200 });
+    }
+
+    const subtotal = suggestedServices.reduce((sum, s) => sum + s.price, 0);
+    const discountAmount = Math.round(subtotal * 0.1);
+    const totalAmount = subtotal - discountAmount;
+
+    const newQuote = addDetailingQuote({
+      client_id: inspection.client_id,
+      vehicle_id: inspection.vehicle_id,
+      client_name: inspection.buyer_name || inspection.client?.full_name || 'Cliente CARVLAK',
+      client_phone: inspection.buyer_phone || inspection.client?.phone || '',
+      vehicle_info: inspection.vehicle_info,
+      vehicle_plate: inspection.vehicle_plate,
+      vehicle_category: inspection.vehicle_category,
+      selected_services: suggestedServices,
+      subtotal,
+      discount_type: 'combo_10',
+      discount_amount: discountAmount,
+      extreme_dirt_surcharge: 0,
+      total_amount: totalAmount,
+      estimated_time: '1 a 2 días',
+      assigned_to: profile?.id || 'user-maxi',
+      origin: 'Presencial',
+      notes: `Generado automáticamente desde Peritaje #${inspection.id}. Hallazgos estéticos derivados para embellecimiento.`,
+      priority_zones: 'Zonas observadas en peritaje técnico',
+      status: 'Por Cotizar'
+    });
+
+    updateInspection(inspection.id, { detailing_quote_id: newQuote.id });
+
+    logActivity('inspeccion', inspection.id, 'update', {
+      action: 'Cross-selling Detailing generado',
+      quote_id: newQuote.id
+    });
+
+    return newQuote.id;
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -928,7 +1270,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markCommissionPaid,
         whatsappTemplates,
         updateWhatsAppTemplate,
-        importDetailVlakData
+        importDetailVlakData,
+
+        // FASE 3: Inspecciones
+        inspections: inspections.filter((i) => !i.is_archived),
+        inspectionTariffs,
+        addInspection,
+        updateInspection,
+        updateInspectionStatus,
+        archiveInspection,
+        updateInspectionTariffs,
+        getInspectionByToken,
+        createDetailingQuoteFromInspection
       }}
     >
       {children}

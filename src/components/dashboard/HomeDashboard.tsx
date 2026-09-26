@@ -36,7 +36,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onSelectAppointment
 }) => {
   const { profile } = useAuth();
-  const { appointments, tasks, vehicles, clients, updateTaskStatus, detailingQuotes } = useData();
+  const { appointments, tasks, vehicles, clients, updateTaskStatus, detailingQuotes, inspections } = useData();
 
   const isBoss = isEncargado(profile);
 
@@ -44,6 +44,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const pendingQuotes = useMemo(() => {
     return detailingQuotes.filter((q) => q.status === 'Por Cotizar');
   }, [detailingQuotes]);
+
+  // Inspecciones pendientes o en curso
+  const pendingInspections = useMemo(() => {
+    return inspections.filter((i) => i.status === 'Solicitada' || i.status === 'En curso');
+  }, [inspections]);
 
   // Filtrar turnos de hoy
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -145,6 +150,40 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
           <div className="text-xs font-bold text-purple-400 flex items-center gap-1 shrink-0">
             <span>Ver y Cotizar</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )}
+
+      {/* Alerta de Peritajes Pendientes / En Curso CARVLAK */}
+      {pendingInspections.length > 0 && (
+        <div
+          onClick={() => onNavigate('mod-inspeccion')}
+          className="p-4 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-[#0A1612] border border-emerald-500/40 cursor-pointer hover:border-emerald-400 transition-all flex items-center justify-between gap-3 shadow-xl group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-lg shrink-0">
+              🔍
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                  Peritaje & Inspección
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200">
+                  {pendingInspections.length} activos
+                </span>
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-white mt-0.5 group-hover:text-emerald-300 transition-colors">
+                Tenés {pendingInspections.length} peritaje{pendingInspections.length > 1 ? 's' : ''} pendiente{pendingInspections.length > 1 ? 's' : ''} o en curso
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Próximo: {pendingInspections[0]?.vehicle_plate} • {pendingInspections[0]?.vehicle_info} ({pendingInspections[0]?.status})
+              </p>
+            </div>
+          </div>
+          <div className="text-xs font-bold text-emerald-400 flex items-center gap-1 shrink-0">
+            <span>Abrir Peritaje</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </div>

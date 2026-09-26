@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Calendar, Car, Users, CheckSquare, Sparkles } from 'lucide-react';
+import { Home, Calendar, Car, Users, CheckSquare, Sparkles, ClipboardCheck } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -11,8 +11,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
     { id: 'mod-detailing', label: 'Detailing', icon: Sparkles, color: 'text-purple-400' },
-    { id: 'vehiculos', label: 'Autos', icon: Car },
-    { id: 'clientes', label: 'Clientes', icon: Users }
+    { id: 'mod-inspeccion', label: 'Peritaje', icon: ClipboardCheck, color: 'text-emerald-400' },
+    { id: 'vehiculos', label: 'Autos', icon: Car }
   ];
 
   return (
@@ -26,10 +26,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
             <button
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all ${
                 isActive
                   ? tab.id === 'mod-detailing'
                     ? 'text-purple-400 bg-purple-500/15 font-bold'
+                    : tab.id === 'mod-inspeccion'
+                    ? 'text-emerald-400 bg-emerald-500/15 font-bold'
                     : 'text-amber-400 bg-amber-500/10 font-bold'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
@@ -38,6 +40,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
                 isActive
                   ? tab.id === 'mod-detailing'
                     ? 'scale-110 text-purple-400'
+                    : tab.id === 'mod-inspeccion'
+                    ? 'scale-110 text-emerald-400'
                     : 'scale-110 text-amber-400'
                   : ''
               } transition-transform`} />

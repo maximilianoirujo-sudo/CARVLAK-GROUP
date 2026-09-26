@@ -32,7 +32,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
   ];
 
   const futureModules = [
-    { id: 'mod-inspeccion', label: 'Inspección & Patio', phase: 'Fase 3', icon: ClipboardCheck, color: 'text-emerald-400' },
     { id: 'mod-automotora', label: 'Automotora Multi-SaaS', phase: 'Fase 4', icon: Building2, color: 'text-amber-400' }
   ];
 
@@ -74,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             }`}
           >
             <UserCog className="w-4 h-4 text-slate-400" />
-            <span>Equipo &amp; Permisos</span>
+            <span>Equipo & Permisos</span>
           </button>
         )}
       </div>
@@ -83,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
       <div className="pt-3 border-t border-slate-800/80 space-y-1">
         <div className="px-3 text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center justify-between">
           <span>Taller Shangrilá</span>
-          <span className="text-[10px] text-emerald-400 font-extrabold">Fase 2 Activa</span>
+          <span className="text-[10px] text-purple-300 font-extrabold bg-purple-500/20 px-1.5 py-0.5 rounded">Fase 2 Activa</span>
         </div>
 
         <button
@@ -104,12 +103,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
         </button>
       </div>
 
+      {/* FASE 3: Módulo Inspección & Patio */}
+      <div className="pt-3 border-t border-slate-800/80 space-y-1">
+        <div className="px-3 text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Peritaje & Patio</span>
+          <span className="text-[10px] text-emerald-300 font-extrabold bg-emerald-500/20 px-1.5 py-0.5 rounded">Fase 3 Activa</span>
+        </div>
+
+        <button
+          onClick={() => onSelectTab('mod-inspeccion')}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
+            currentTab === 'mod-inspeccion'
+              ? 'bg-emerald-500/20 text-emerald-300 font-black border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+              : 'text-slate-300 hover:bg-emerald-950/20 hover:text-white border border-transparent'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <ClipboardCheck className="w-4 h-4 text-emerald-400" />
+            <span>Inspección Vehicular</span>
+          </div>
+          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+            PERITAJE
+          </span>
+        </button>
+      </div>
+
       {/* Próximas Fases */}
       <div className="pt-3 border-t border-slate-800/80 space-y-1">
         <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Próximas Fases</span>
+          <span>Próxima Fase</span>
           <span className="text-[10px] text-slate-500 font-extrabold flex items-center gap-1">
-            <Lock className="w-3 h-3" /> Fases 3 y 4
+            <Lock className="w-3 h-3" /> Fase 4
           </span>
         </div>
 

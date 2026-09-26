@@ -15,7 +15,11 @@ import {
   StockItem,
   Expense,
   CommissionRecord,
-  WhatsAppTemplate
+  WhatsAppTemplate,
+  VehicleInspection,
+  InspectionChecklistItem,
+  CarPanelInspection,
+  InspectionTariffConfig
 } from '../types';
 
 export const INITIAL_PROFILES: Profile[] = [
@@ -729,4 +733,208 @@ Estamos cerrando la agenda de la semana y nos quedan los últimos cupos disponib
 ¡Muchas gracias por confiar en nosotros! Nos vemos pronto.`
   }
 ];
+
+// ==============================================================================
+// FASE 3: INSPECCIONES & PERITAJE VEHICULAR - DATOS SEMILLA
+// ==============================================================================
+
+export const DEFAULT_CHECKLIST_TEMPLATE: InspectionChecklistItem[] = [
+  // 1. Documentación
+  { id: 'doc-1', section: 'Documentación', name: 'Título de propiedad y libreta municipal', status: 'ok' },
+  { id: 'doc-2', section: 'Documentación', name: 'Deuda de patente y multas SUCIVE al día', status: 'ok' },
+  { id: 'doc-3', section: 'Documentación', name: 'Kilometraje declarado vs. desgaste observable', status: 'ok' },
+
+  // 2. Carrocería y pintura
+  { id: 'car-1', section: 'Carrocería y pintura', name: 'Alineación de luces, capot, puertas y portón', status: 'ok' },
+  { id: 'car-2', section: 'Carrocería y pintura', name: 'Estado de pintura, microrayones y brillo', status: 'observacion', isCosmetic: true, comment: 'Microrayones de lavado en laca y marcas de agua en capot.' },
+  { id: 'car-3', section: 'Carrocería y pintura', name: 'Ópticas delanteras y faros traseros (sin opacidad)', status: 'ok', isCosmetic: true },
+  { id: 'car-4', section: 'Carrocería y pintura', name: 'Parabrisas, luneta y cristales (grabado reglamentario)', status: 'ok' },
+
+  // 3. Motor
+  { id: 'mot-1', section: 'Motor', name: 'Fugas visibles de aceite, refrigerante o líquido hidráulico', status: 'ok' },
+  { id: 'mot-2', section: 'Motor', name: 'Nivel y color de aceite y líquido refrigerante', status: 'ok' },
+  { id: 'mot-3', section: 'Motor', name: 'Ralentí parejo, sin ruidos de taqués ni humo de escape', status: 'ok' },
+  { id: 'mot-4', section: 'Motor', name: 'Estado de correas, mangueras y bornes de batería', status: 'ok' },
+
+  // 4. Transmisión
+  { id: 'tra-1', section: 'Transmisión', name: 'Acople y tacto de embrague (sin patinar)', status: 'ok' },
+  { id: 'tra-2', section: 'Transmisión', name: 'Paso fluido de marchas (manual o caja automática)', status: 'ok' },
+  { id: 'tra-3', section: 'Transmisión', name: 'Semiejes, fuelles y homocinéticas sin juego', status: 'ok' },
+
+  // 5. Suspensión y dirección
+  { id: 'sus-1', section: 'Suspensión y dirección', name: 'Amortiguadores y espirales (sin pérdidas ni rebotes)', status: 'ok' },
+  { id: 'sus-2', section: 'Suspensión y dirección', name: 'Juego de dirección, extremos y cremallera', status: 'ok' },
+  { id: 'sus-3', section: 'Suspensión y dirección', name: 'Bujes de parrilla y bieletas estabilizadoras', status: 'ok' },
+
+  // 6. Frenos
+  { id: 'fre-1', section: 'Frenos', name: 'Espesor de pastillas y estado de discos delanteros', status: 'ok' },
+  { id: 'fre-2', section: 'Frenos', name: 'Tacto firme de pedal y líquido de frenos', status: 'ok' },
+  { id: 'fre-3', section: 'Frenos', name: 'Freno de mano y respuesta del módulo ABS', status: 'ok' },
+
+  // 7. Neumáticos
+  { id: 'neu-1', section: 'Neumáticos', name: 'Profundidad de dibujo (> 2.5 mm parejo)', status: 'ok' },
+  { id: 'neu-2', section: 'Neumáticos', name: 'Desgaste simétrico (sin problemas de alineación)', status: 'ok' },
+  { id: 'neu-3', section: 'Neumáticos', name: 'Antigüedad DOT y rueda de auxilio con herramientas', status: 'ok' },
+
+  // 8. Interior
+  { id: 'int-1', section: 'Interior', name: 'Estado de tapizados, butacas y techo', status: 'observacion', isCosmetic: true, comment: 'Tapizado de tela con aureolas de humedad que requieren limpieza a vapor.' },
+  { id: 'int-2', section: 'Interior', name: 'Aire acondicionado y calefacción en funcionamiento', status: 'ok' },
+  { id: 'int-3', section: 'Interior', name: 'Cinturones de seguridad, anclajes y testigos de airbag', status: 'ok' },
+  { id: 'int-4', section: 'Interior', name: 'Levantavidrios, espejos eléctricos y cierre centralizado', status: 'ok' },
+
+  // 9. Electricidad
+  { id: 'ele-1', section: 'Electricidad', name: 'Luces altas, bajas, señaleros y luces de freno', status: 'ok' },
+  { id: 'ele-2', section: 'Electricidad', name: 'Carga de alternador y estado de batería', status: 'ok' },
+  { id: 'ele-3', section: 'Electricidad', name: 'Escaneo computarizado OBD-II (sin códigos activos)', status: 'ok' },
+
+  // 10. Prueba de manejo
+  { id: 'pru-1', section: 'Prueba de manejo', name: 'Respuesta en aceleración y entrega de potencia', status: 'ok' },
+  { id: 'pru-2', section: 'Prueba de manejo', name: 'Frenada en línea recta sin desviaciones', status: 'ok' },
+  { id: 'pru-3', section: 'Prueba de manejo', name: 'Ausencia de vibraciones a velocidad y ruidos de rodaje', status: 'ok' }
+];
+
+export const DEFAULT_CAR_PANELS: CarPanelInspection[] = [
+  { panelId: 'capot', name: 'Capot', state: 'original', thicknessMicrons: 115 },
+  { panelId: 'techo', name: 'Techo', state: 'original', thicknessMicrons: 110 },
+  { panelId: 'baul', name: 'Baúl / Portón', state: 'original', thicknessMicrons: 120 },
+  { panelId: 'guardabarro_del_izq', name: 'Guardabarro Del. Izq.', state: 'original', thicknessMicrons: 125 },
+  { panelId: 'guardabarro_del_der', name: 'Guardabarro Del. Der.', state: 'original', thicknessMicrons: 118 },
+  { panelId: 'puerta_del_izq', name: 'Puerta Del. Izq.', state: 'original', thicknessMicrons: 120 },
+  { panelId: 'puerta_del_der', name: 'Puerta Del. Der.', state: 'repintado', thicknessMicrons: 235, notes: 'Repintado superficial sin masilla' },
+  { panelId: 'puerta_tras_izq', name: 'Puerta Tras. Izq.', state: 'original', thicknessMicrons: 115 },
+  { panelId: 'puerta_tras_der', name: 'Puerta Tras. Der.', state: 'original', thicknessMicrons: 122 },
+  { panelId: 'guardabarro_tras_izq', name: 'Guardabarro Tras. Izq.', state: 'original', thicknessMicrons: 118 },
+  { panelId: 'guardabarro_tras_der', name: 'Guardabarro Tras. Der.', state: 'original', thicknessMicrons: 125 },
+  { panelId: 'paragolpe_del', name: 'Paragolpe Delantero', state: 'original', notes: 'Pequeño raspón de estacionamiento' },
+  { panelId: 'paragolpe_tras', name: 'Paragolpe Trasero', state: 'original' },
+  { panelId: 'zocalo_izq', name: 'Zócalo Izquierdo', state: 'original' },
+  { panelId: 'zocalo_der', name: 'Zócalo Derecho', state: 'original' }
+];
+
+export const INITIAL_INSPECTION_TARIFFS: InspectionTariffConfig = {
+  prices: {
+    'Chico': 3200,
+    'Mediano': 3800,
+    'SUV/Rural': 4400,
+    'Pick-up': 5200,
+    'Moto': 2200
+  },
+  homeVisitSurcharge: 1200,
+  internalCost: 1500
+};
+
+export const INITIAL_INSPECTIONS: VehicleInspection[] = [
+  {
+    id: 'insp-1',
+    type: 'precompra',
+    token: 'tk_precompra_varela_bmw_78a',
+    client_id: 'cli-2',
+    client: undefined,
+    vehicle_id: 'veh-1',
+    vehicle_plate: 'SBX 1234',
+    vehicle_info: 'BMW 320i M-Sport (2021)',
+    vehicle_category: 'Mediano',
+    buyer_name: 'Nicolás Varela',
+    buyer_phone: '098 765 432',
+    seller_name: 'Martín Cabrera',
+    seller_phone: '099 111 222',
+    assigned_to: 'user-diego',
+    status: 'Completada',
+    scheduled_at: '2026-09-23T10:00:00Z',
+    completed_at: '2026-09-23T11:45:00Z',
+    is_home_visit: false,
+    price_amount: 3800,
+    price_currency: 'UYU',
+    home_visit_surcharge: 0,
+    total_price: 3800,
+    checklist: DEFAULT_CHECKLIST_TEMPLATE,
+    panels: DEFAULT_CAR_PANELS,
+    obd_codes: ['Sin códigos de falla'],
+    obd_notes: 'Escáner Launch X431: ECM, TCM y ABS sin errores registrados.',
+    sucive_debt: 0,
+    sucive_status: 'Al día (Patente y multas canceladas)',
+    mileage_declared: 45000,
+    mileage_observed: 45210,
+    mileage_tampered: false,
+    score: 89,
+    traffic_light: 'Recomendable',
+    inspector_conclusion: 'Unidad en excelente estado mecánico y estructural. Mantenimientos oficiales comprobables. Presenta única repintada estética en puerta delantera derecha sin daño de chasis ni airbags disparados. Muy recomendable.',
+    estimated_repair_cost: 0,
+    photos: [
+      'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&auto=format&fit=crop'
+    ],
+    inspector_signature: 'Diego Silva (Perito CARVLAK)',
+    created_by: 'user-maxi',
+    created_at: '2026-09-22T16:00:00Z',
+    updated_at: '2026-09-23T11:45:00Z'
+  },
+  {
+    id: 'insp-2',
+    type: 'interna',
+    token: 'tk_interna_hilux_patio_42b',
+    client_id: 'cli-1',
+    vehicle_id: 'veh-2',
+    vehicle_plate: 'AAT 8920',
+    vehicle_info: 'Toyota Hilux SRV 4x4 (2023)',
+    vehicle_category: 'Pick-up',
+    buyer_name: 'Automotora CARVLAK',
+    buyer_phone: '099 267 964',
+    seller_name: 'Estudio Jurídico Alvear',
+    seller_phone: '099 123 456',
+    assigned_to: 'user-jonathan',
+    status: 'En curso',
+    scheduled_at: `${todayIso}T14:30:00Z`,
+    is_home_visit: false,
+    price_amount: 1500, // Costo interno
+    price_currency: 'UYU',
+    home_visit_surcharge: 0,
+    total_price: 1500,
+    checklist: DEFAULT_CHECKLIST_TEMPLATE,
+    panels: DEFAULT_CAR_PANELS,
+    obd_codes: [],
+    score: 94,
+    traffic_light: 'Recomendable',
+    inspector_conclusion: 'Peritaje en patio para toma de trade-in. Chasis intacto, 4x4 operando impecable.',
+    estimated_repair_cost: 4500,
+    repair_details: 'Detallado de chasis y tapizados antes de entrar a showroom.',
+    automotora_decision: 'comprar',
+    automotora_suggested_price: 36500,
+    automotora_currency: 'USD',
+    created_by: 'user-jonathan',
+    created_at: '2026-09-24T12:00:00Z',
+    updated_at: '2026-09-24T12:00:00Z'
+  },
+  {
+    id: 'insp-3',
+    type: 'precompra',
+    token: 'tk_precompra_golf_solicitada_99c',
+    client_id: 'cli-3',
+    vehicle_id: 'veh-3',
+    vehicle_plate: 'SCA 4321',
+    vehicle_info: 'Volkswagen Golf GTI Mk7 (2018)',
+    vehicle_category: 'Chico',
+    buyer_name: 'Lucía Fernández',
+    buyer_phone: '094 555 789',
+    assigned_to: 'user-diego',
+    status: 'Solicitada',
+    scheduled_at: `${todayIso}T16:00:00Z`,
+    is_home_visit: true,
+    home_address: 'Rambla República de México 5420, Carrasco',
+    price_amount: 3200,
+    price_currency: 'UYU',
+    home_visit_surcharge: 1200,
+    total_price: 4400,
+    checklist: DEFAULT_CHECKLIST_TEMPLATE,
+    panels: DEFAULT_CAR_PANELS,
+    obd_codes: [],
+    score: 0,
+    traffic_light: 'Recomendable',
+    inspector_conclusion: '',
+    estimated_repair_cost: 0,
+    created_by: 'user-maxi',
+    created_at: '2026-09-24T14:00:00Z',
+    updated_at: '2026-09-24T14:00:00Z'
+  }
+];
+
 

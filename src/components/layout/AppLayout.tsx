@@ -18,6 +18,7 @@ import { AutomotoraModule } from '../../modules/automotora/AutomotoraModule';
 import { DetailingModule } from '../../modules/detailing/DetailingModule';
 import { InspeccionModule } from '../../modules/inspecciones/InspeccionModule';
 import { PublicQuoteRequestPage } from '../public/PublicQuoteRequestPage';
+import { InspectionPublicReportPage } from '../../modules/inspecciones/components/InspectionPublicReportPage';
 import { Vehicle, Client, Appointment } from '../../types';
 
 export const AppLayout: React.FC = () => {
@@ -30,6 +31,11 @@ export const AppLayout: React.FC = () => {
       window.location.search.includes('public=detailing')
     );
   });
+
+  // Vista Pública de Informe de Inspección (?informe=tk_xxxx)
+  const publicReportToken = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('informe')
+    : null;
 
   // Modales Globales
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
@@ -60,6 +66,11 @@ export const AppLayout: React.FC = () => {
     setVehicleDefaultClientId(c.id);
     setIsVehicleFormOpen(true);
   };
+
+  // Si se accede con token de informe público (?informe=...)
+  if (publicReportToken) {
+    return <InspectionPublicReportPage token={publicReportToken} />;
+  }
 
   // Si está activa la vista pública de formulario de presupuesto (reemplazo de Google Form)
   if (isPublicFormView) {
@@ -114,7 +125,9 @@ export const AppLayout: React.FC = () => {
           {currentTab === 'mod-detailing' && (
             <DetailingModule onOpenPublicForm={() => setIsPublicFormView(true)} />
           )}
-          {currentTab === 'mod-inspeccion' && <InspeccionModule />}
+          {currentTab === 'mod-inspeccion' && (
+            <InspeccionModule onNavigateToDetailing={() => setCurrentTab('mod-detailing')} />
+          )}
         </main>
       </div>
 

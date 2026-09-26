@@ -121,7 +121,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -287,3 +287,131 @@ export interface WhatsAppTemplate {
   description: string;
   template: string;
 }
+
+// ==============================================================================
+// FASE 3: INSPECCIONES & PERITAJE VEHICULAR - TIPOS
+// ==============================================================================
+
+export type InspectionType = 'precompra' | 'interna';
+
+export type InspectionStatus = 
+  | 'Solicitada' 
+  | 'Agendada' 
+  | 'En curso' 
+  | 'Completada' 
+  | 'Cancelada';
+
+export type InspectionTrafficLight = 'Recomendable' | 'Con reparos' | 'No recomendable';
+
+export type InspectionItemStatus = 'ok' | 'observacion' | 'falla';
+
+export type InspectionChecklistSection = 
+  | 'Documentación' 
+  | 'Carrocería y pintura' 
+  | 'Motor' 
+  | 'Transmisión' 
+  | 'Suspensión y dirección' 
+  | 'Frenos' 
+  | 'Neumáticos' 
+  | 'Interior' 
+  | 'Electricidad' 
+  | 'Prueba de manejo';
+
+export interface InspectionChecklistItem {
+  id: string;
+  section: InspectionChecklistSection;
+  name: string;
+  status: InspectionItemStatus;
+  comment?: string;
+  photos?: string[];
+  isCosmetic?: boolean; // Para sugerir Detailing
+  isCritical?: boolean; // Puntas de chasis, airbags, motor fundido
+}
+
+export type CarPanelId = 
+  | 'capot' 
+  | 'techo' 
+  | 'baul' 
+  | 'guardabarro_del_izq' 
+  | 'guardabarro_del_der' 
+  | 'puerta_del_izq' 
+  | 'puerta_del_der' 
+  | 'puerta_tras_izq' 
+  | 'puerta_tras_der' 
+  | 'guardabarro_tras_izq' 
+  | 'guardabarro_tras_der' 
+  | 'paragolpe_del' 
+  | 'paragolpe_tras' 
+  | 'zocalo_izq' 
+  | 'zocalo_der';
+
+export type CarPanelState = 'original' | 'repintado' | 'masillado' | 'danado';
+
+export interface CarPanelInspection {
+  panelId: CarPanelId;
+  name: string;
+  state: CarPanelState;
+  thicknessMicrons?: number; // Ej: 110 µm original, 220 µm repintado, 500 µm masilla
+  notes?: string;
+}
+
+export type AutomotoraDecision = 'comprar' | 'negociar' | 'no_comprar';
+
+export interface VehicleInspection {
+  id: string;
+  type: InspectionType;
+  token: string; // Token único seguro para el informe público (ej: 'tk_9f82a1...')
+  client_id?: string;
+  client?: Client;
+  vehicle_id?: string;
+  vehicle?: Vehicle;
+  vehicle_plate: string;
+  vehicle_info: string;
+  vehicle_category: VehicleCategory;
+  buyer_name?: string;
+  buyer_phone?: string;
+  seller_name?: string;
+  seller_phone?: string;
+  assigned_to?: string; // ID del inspector
+  assignee?: Profile;
+  status: InspectionStatus;
+  scheduled_at?: string; // ISO string
+  completed_at?: string; // ISO string
+  is_home_visit: boolean;
+  home_address?: string;
+  price_amount: number; // Precio precompra o costo interno
+  price_currency: Currency;
+  home_visit_surcharge: number;
+  total_price: number;
+  checklist: InspectionChecklistItem[];
+  panels: CarPanelInspection[];
+  obd_codes: string[]; // Códigos OBD-II
+  obd_notes?: string;
+  sucive_debt?: number;
+  sucive_status?: string;
+  mileage_declared?: number;
+  mileage_observed?: number;
+  mileage_tampered?: boolean;
+  score: number; // 0 - 100
+  traffic_light: InspectionTrafficLight;
+  inspector_conclusion: string;
+  estimated_repair_cost: number;
+  repair_details?: string;
+  automotora_decision?: AutomotoraDecision;
+  automotora_suggested_price?: number;
+  automotora_currency?: Currency;
+  detailing_quote_id?: string; // Enlace si se generó cotización de detailing
+  photos?: string[];
+  inspector_signature?: string;
+  is_archived?: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InspectionTariffConfig {
+  prices: Record<VehicleCategory, number>;
+  homeVisitSurcharge: number;
+  internalCost: number;
+}
+
