@@ -19,6 +19,7 @@ import { DetailingModule } from '../../modules/detailing/DetailingModule';
 import { InspeccionModule } from '../../modules/inspecciones/InspeccionModule';
 import { PublicQuoteRequestPage } from '../public/PublicQuoteRequestPage';
 import { InspectionPublicReportPage } from '../../modules/inspecciones/components/InspectionPublicReportPage';
+import { DealershipPublicCatalogPage } from '../../modules/automotora/components/DealershipPublicCatalogPage';
 import { Vehicle, Client, Appointment } from '../../types';
 
 export const AppLayout: React.FC = () => {
@@ -29,6 +30,14 @@ export const AppLayout: React.FC = () => {
     return typeof window !== 'undefined' && (
       window.location.search.includes('public=presupuesto') || 
       window.location.search.includes('public=detailing')
+    );
+  });
+
+  // Vista Pública de Catálogo de Automotora (?catalogo=autos)
+  const [isPublicCatalogView, setIsPublicCatalogView] = useState(() => {
+    return typeof window !== 'undefined' && (
+      window.location.search.includes('catalogo=autos') ||
+      window.location.search.includes('catalogo=true')
     );
   });
 
@@ -77,6 +86,11 @@ export const AppLayout: React.FC = () => {
     return <PublicQuoteRequestPage onBackToApp={() => setIsPublicFormView(false)} />;
   }
 
+  // Si está activa la vista pública del catálogo de autos (?catalogo=autos)
+  if (isPublicCatalogView) {
+    return <DealershipPublicCatalogPage onBackToApp={() => setIsPublicCatalogView(false)} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#070A0E] text-slate-100">
       
@@ -121,7 +135,9 @@ export const AppLayout: React.FC = () => {
 
           {currentTab === 'empleados' && <EmployeeList />}
 
-          {currentTab === 'mod-automotora' && <AutomotoraModule />}
+          {currentTab === 'mod-automotora' && (
+            <AutomotoraModule onOpenPublicCatalog={() => setIsPublicCatalogView(true)} />
+          )}
           {currentTab === 'mod-detailing' && (
             <DetailingModule onOpenPublicForm={() => setIsPublicFormView(true)} />
           )}

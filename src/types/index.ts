@@ -121,7 +121,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -413,5 +413,226 @@ export interface InspectionTariffConfig {
   prices: Record<VehicleCategory, number>;
   homeVisitSurcharge: number;
   internalCost: number;
+}
+
+// ==============================================================================
+// FASE 4: AUTOMOTORA CARVLAK (MULTI-EMPRESA SAAS READY)
+// ==============================================================================
+
+export type DealershipVehicleStatus =
+  | 'evaluacion'
+  | 'comprado'
+  | 'preparacion'
+  | 'publicado'
+  | 'reservado'
+  | 'vendido'
+  | 'descartado';
+
+export type PurchaseOrigin = 'particular' | 'concesionaria' | 'parte_de_pago' | 'consignacion';
+
+export type DealershipPaymentMethod =
+  | 'contado'
+  | 'transferencia'
+  | 'financiacion'
+  | 'permuta'
+  | 'combinado';
+
+export type DealershipInquiryOrigin =
+  | 'Catalogo web'
+  | 'WhatsApp'
+  | 'Instagram'
+  | 'Marketplace'
+  | 'Presencial';
+
+export type DealershipInquiryStatus =
+  | 'Nuevo'
+  | 'Contactado'
+  | 'Visita agendada'
+  | 'Prueba de manejo'
+  | 'Negociando'
+  | 'En negociacion'
+  | 'Perdido'
+  | 'Perdida'
+  | 'Vendido'
+  | 'Ganada';
+
+export interface DealershipPrepChecklist {
+  inspection_done: boolean;
+  repairs_done: boolean;
+  detailing_done: boolean;
+  photos_done: boolean;
+  docs_done: boolean;
+}
+
+export interface DealershipDocsReceived {
+  titulo: boolean;
+  libreta: boolean;
+  cedula: boolean;
+  sucive_al_dia: boolean;
+  multas_al_dia: boolean;
+  llave_duplicado: boolean;
+  convenio_pago?: boolean;
+}
+
+export interface DealershipReservation {
+  amount?: number;
+  currency?: Currency;
+  deposit_amount?: number;
+  deposit_currency?: Currency;
+  client_id?: string;
+  client_name?: string;
+  client_phone?: string;
+  buyer_name?: string;
+  buyer_phone?: string;
+  date?: string;
+  reserved_at?: string;
+  expiration_date?: string;
+  expires_at?: string;
+  notes?: string;
+}
+
+export interface DealershipSaleRecord {
+  sale_date: string;
+  buyer_client_id?: string;
+  buyer_name: string;
+  buyer_phone: string;
+  buyer_email?: string;
+  buyer_document?: string;
+  final_price?: number;
+  sale_price?: number;
+  currency?: Currency;
+  sale_currency?: Currency;
+  exchange_rate?: number;
+  payment_method: DealershipPaymentMethod;
+  gross_profit_usd?: number;
+  commission_amount?: number;
+  commission_paid?: boolean;
+  trade_in?: {
+    brand?: string;
+    model?: string;
+    year?: number;
+    plate?: string;
+    mileage?: number;
+    trade_in_valuation_usd?: number;
+  };
+  trade_in_vehicle_id?: string;
+  trade_in_plate?: string;
+  trade_in_valuation?: number;
+  seller_id?: string;
+  seller_employee_id?: string;
+  seller_employee_name?: string;
+  seller_commission_amount?: number;
+  paperwork_status?: 'pendiente' | 'en_tramite' | 'completado';
+  notes?: string;
+}
+
+export interface DealershipVehicle {
+  id: string;
+  empresa_id: string; // Multi-tenant SaaS ready, default 'carvlak'
+  vehicle_id?: string; // Vinculación opcional a base común
+  plate: string;
+  brand: string;
+  model: string;
+  version?: string;
+  year: number;
+  mileage: number;
+  category: VehicleCategory;
+  body_type?: string; // Hatchback, Sedán, SUV, Pick-up, etc.
+  transmission?: 'Manual' | 'Automática' | string;
+  fuel?: 'Nafta' | 'Diesel' | 'Híbrido' | 'Eléctrico' | string;
+  color_exterior?: string;
+  padron?: string;
+  vin?: string;
+  status: DealershipVehicleStatus;
+  is_featured?: boolean;
+  features: string[];
+  images: string[];
+  cover_image?: string;
+  catalog_description?: string;
+
+  // Datos de compra
+  purchase_date?: string;
+  purchase_origin?: PurchaseOrigin;
+  supplier_name?: string;
+  supplier_phone?: string;
+  purchase_price: number;
+  purchase_currency: Currency;
+  exchange_rate: number; // Ej: 43.50 UYU por USD
+  docs_received: DealershipDocsReceived;
+
+  // Datos de venta
+  sale_price: number; // Precio de lista en USD o UYU
+  sale_currency: Currency;
+  min_acceptable_price: number; // Solo Admin
+  financing_available?: boolean;
+  min_down_payment_usd?: number;
+  monthly_installment_estimate_usd?: number;
+
+  // Costos e Integraciones
+  inspection_id?: string; // Vinculado a Fase 3
+  inspection_cost: number; // Costo interno
+  inspection_score?: number;
+  inspection_traffic_light?: InspectionTrafficLight;
+
+  detailing_quote_id?: string; // Vinculado a Fase 2
+  detailing_cost: number; // Costo interno
+
+  repairs_cost: number;
+  paperwork_cost: number;
+  other_expenses_cost: number;
+
+  total_real_cost_usd: number;
+  estimated_margin_usd: number;
+  estimated_margin_percent: number;
+
+  // Preparación
+  prep_checklist: DealershipPrepChecklist;
+  prep_assigned_to?: string;
+
+  // Reserva y Venta
+  reservation?: DealershipReservation;
+  sale_record?: DealershipSaleRecord;
+
+  // Auditoría
+  is_archived: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DealershipInquiry {
+  id: string;
+  empresa_id: string;
+  dealership_vehicle_id?: string;
+  vehicle_info: string;
+  vehicle_plate?: string;
+  client_id?: string;
+  client_name: string;
+  client_phone: string;
+  client_email?: string;
+  origin: DealershipInquiryOrigin;
+  status: DealershipInquiryStatus;
+  budget_usd?: number;
+  trade_in_vehicle_info?: string;
+  notes?: string;
+  assigned_to?: string;
+  appointment_id?: string; // Vinculado a turno en Agenda Unificada
+  last_contact_at?: string;
+  is_archived?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DealershipConfig {
+  empresa_id: string;
+  company_name: string;
+  days_alert_threshold: number; // Ej: 60 días
+  days_in_stock_alert_threshold?: number;
+  default_exchange_rate: number; // Ej: 43.50
+  default_internal_inspection_cost: number; // Ej: 1500
+  default_internal_detailing_cost: number; // Ej: 2500
+  commission_basis: 'total_sale' | 'margin';
+  default_commission_rate: number; // % ej: 1.5%
+  seller_commission_percentage?: number;
 }
 

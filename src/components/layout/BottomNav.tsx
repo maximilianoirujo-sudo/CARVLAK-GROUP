@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Calendar, Car, Users, CheckSquare, Sparkles, ClipboardCheck } from 'lucide-react';
+import { Home, Calendar, Car, Users, CheckSquare, Sparkles, ClipboardCheck, Building2 } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -10,9 +10,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
   const tabs = [
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
+    { id: 'mod-automotora', label: 'Automotora', icon: Building2, color: 'text-amber-400' },
     { id: 'mod-detailing', label: 'Detailing', icon: Sparkles, color: 'text-purple-400' },
-    { id: 'mod-inspeccion', label: 'Peritaje', icon: ClipboardCheck, color: 'text-emerald-400' },
-    { id: 'vehiculos', label: 'Autos', icon: Car }
+    { id: 'mod-inspeccion', label: 'Peritaje', icon: ClipboardCheck, color: 'text-emerald-400' }
   ];
 
   return (

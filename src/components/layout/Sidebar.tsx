@@ -128,39 +128,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
         </button>
       </div>
 
-      {/* Próximas Fases */}
+      {/* FASE 4: Módulo Automotora CARVLAK */}
       <div className="pt-3 border-t border-slate-800/80 space-y-1">
-        <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Próxima Fase</span>
-          <span className="text-[10px] text-slate-500 font-extrabold flex items-center gap-1">
-            <Lock className="w-3 h-3" /> Fase 4
-          </span>
+        <div className="px-3 text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Automotora &amp; Stock</span>
+          <span className="text-[10px] text-amber-300 font-extrabold bg-amber-500/20 px-1.5 py-0.5 rounded">Fase 4 Activa</span>
         </div>
 
-        {futureModules.map((mod) => {
-          const Icon = mod.icon;
-          const isActive = currentTab === mod.id;
-
-          return (
-            <button
-              key={mod.id}
-              onClick={() => onSelectTab(mod.id)}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
-                isActive
-                  ? 'bg-slate-800 text-white font-bold'
-                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${mod.color}`} />
-                <span className="font-medium text-slate-400">{mod.label}</span>
-              </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500">
-                {mod.phase}
-              </span>
-            </button>
-          );
-        })}
+        <button
+          onClick={() => onSelectTab('mod-automotora')}
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
+            currentTab === 'mod-automotora'
+              ? 'bg-amber-500/20 text-amber-300 font-black border border-amber-500/40 shadow-lg shadow-amber-500/10'
+              : 'text-slate-300 hover:bg-amber-950/20 hover:text-white border border-transparent'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Building2 className="w-4 h-4 text-amber-400" />
+            <span>Automotora CARVLAK</span>
+          </div>
+          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+            STOCK
+          </span>
+        </button>
       </div>
 
       {/*  */}

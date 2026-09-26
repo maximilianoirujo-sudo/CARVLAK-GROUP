@@ -19,7 +19,10 @@ import {
   VehicleInspection,
   InspectionChecklistItem,
   CarPanelInspection,
-  InspectionTariffConfig
+  InspectionTariffConfig,
+  DealershipVehicle,
+  DealershipInquiry,
+  DealershipConfig
 } from '../types';
 
 export const INITIAL_PROFILES: Profile[] = [
@@ -936,5 +939,570 @@ export const INITIAL_INSPECTIONS: VehicleInspection[] = [
     updated_at: '2026-09-24T14:00:00Z'
   }
 ];
+
+// ==============================================================================
+// FASE 4: AUTOMOTORA CARVLAK - MOCK DATA
+// ==============================================================================
+
+export const INITIAL_DEALERSHIP_CONFIG: DealershipConfig = {
+  empresa_id: 'carvlak',
+  company_name: 'Automotora CARVLAK',
+  days_alert_threshold: 60,
+  default_exchange_rate: 43.50,
+  default_internal_inspection_cost: 1500,
+  default_internal_detailing_cost: 2500,
+  commission_basis: 'margin',
+  default_commission_rate: 15 // 15% sobre margen o 1.5% sobre venta total
+};
+
+export const INITIAL_DEALERSHIP_VEHICLES: DealershipVehicle[] = [
+  {
+    id: 'dveh-1',
+    empresa_id: 'carvlak',
+    vehicle_id: 'veh-1',
+    plate: 'SBX 1234',
+    brand: 'Fiat',
+    model: 'Uno Way',
+    version: '1.4 EVO Way',
+    year: 2014,
+    mileage: 152000,
+    category: 'Chico',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    status: 'publicado',
+    is_featured: true,
+    features: [
+      'Motor Fire 1.4 EVO',
+      'Aire acondicionado',
+      'Dirección asistida',
+      'Vidrios eléctricos delanteros',
+      'Faros antiniebla camineros',
+      'Barras de techo originales'
+    ],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/fiat-uno-way-2014-blanco-ce4009d9f7d94168a517774703389288-1024-1024.webp',
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/whatsapp-image-2026-04-28-at-11-06-30-am-f525ee231b2f14b37b17774703274551-1024-1024.webp',
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/whatsapp-image-2026-04-28-at-11-06-33-am-1-1071a68d53a631e50917774703272053-1024-1024.webp'
+    ],
+    cover_image: 'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/fiat-uno-way-2014-blanco-ce4009d9f7d94168a517774703389288-1024-1024.webp',
+    catalog_description: 'Excelente estado general. Unidad seleccionada con services oficiales. Cubiertas con 80% de vida útil, interior impecable y mecánica sin detalles.',
+    purchase_date: '2026-09-01',
+    purchase_origin: 'particular',
+    supplier_name: 'Martín Cabrera',
+    supplier_phone: '099 111 222',
+    purchase_price: 5200,
+    purchase_currency: 'USD',
+    exchange_rate: 43.50,
+    docs_received: {
+      titulo: true,
+      libreta: true,
+      cedula: true,
+      sucive_al_dia: true,
+      multas_al_dia: true,
+      llave_duplicado: true
+    },
+    sale_price: 6870,
+    sale_currency: 'USD',
+    min_acceptable_price: 6500,
+    inspection_id: 'insp-1',
+    inspection_cost: 1500, // $U 1.500 (~34.5 USD)
+    inspection_score: 89,
+    inspection_traffic_light: 'Recomendable',
+    detailing_cost: 2500, // $U 2.500 (~57.5 USD)
+    repairs_cost: 3200, // $U 3.200 (~73.5 USD)
+    paperwork_cost: 2000, // $U 2.000 (~46 USD)
+    other_expenses_cost: 0,
+    total_real_cost_usd: 5411,
+    estimated_margin_usd: 1459,
+    estimated_margin_percent: 21.2,
+    prep_checklist: {
+      inspection_done: true,
+      repairs_done: true,
+      detailing_done: true,
+      photos_done: true,
+      docs_done: true
+    },
+    prep_assigned_to: 'user-maxi',
+    is_archived: false,
+    created_at: '2026-09-01T10:00:00Z',
+    updated_at: '2026-09-24T12:00:00Z'
+  },
+  {
+    id: 'dveh-2',
+    empresa_id: 'carvlak',
+    vehicle_id: 'veh-2',
+    plate: 'AAT 8920',
+    brand: 'Faw',
+    model: 'N7',
+    version: '1.3 16V Extra Full',
+    year: 2017,
+    mileage: 89000,
+    category: 'Chico',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    status: 'preparacion',
+    is_featured: false,
+    features: [
+      'Motor 1.3 16V eficiente',
+      'Aire acondicionado',
+      'Doble airbag frontal',
+      'Frenos ABS + EBD',
+      'Llantas de aleación'
+    ],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-n7-2017-blanco-6e03eba2e1b2e3c99117889646778099-1024-1024.webp',
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/20260908_172926-jpg-dadaab636ac09500e817889646924198-1024-1024.webp'
+    ],
+    cover_image: 'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-n7-2017-blanco-6e03eba2e1b2e3c99117889646778099-1024-1024.webp',
+    catalog_description: 'Económico y espacioso. Ideal para primer auto o uso diario en ciudad. Bajo consumo comprobado.',
+    purchase_date: '2026-09-18',
+    purchase_origin: 'particular',
+    supplier_name: 'Estudio Jurídico Alvear',
+    supplier_phone: '099 123 456',
+    purchase_price: 6000,
+    purchase_currency: 'USD',
+    exchange_rate: 43.50,
+    docs_received: {
+      titulo: true,
+      libreta: true,
+      cedula: true,
+      sucive_al_dia: true,
+      multas_al_dia: true,
+      llave_duplicado: false
+    },
+    sale_price: 7500,
+    sale_currency: 'USD',
+    min_acceptable_price: 7200,
+    inspection_cost: 1500,
+    detailing_cost: 2500,
+    repairs_cost: 1800,
+    paperwork_cost: 0,
+    other_expenses_cost: 0,
+    total_real_cost_usd: 6133,
+    estimated_margin_usd: 1367,
+    estimated_margin_percent: 18.2,
+    prep_checklist: {
+      inspection_done: true,
+      repairs_done: true,
+      detailing_done: false, // En detailing
+      photos_done: false,
+      docs_done: true
+    },
+    prep_assigned_to: 'user-matias',
+    is_archived: false,
+    created_at: '2026-09-18T14:30:00Z',
+    updated_at: '2026-09-24T12:00:00Z'
+  },
+  {
+    id: 'dveh-3',
+    empresa_id: 'carvlak',
+    vehicle_id: 'veh-3',
+    plate: 'SCA 4321',
+    brand: 'Faw',
+    model: 'Oley',
+    version: '1.5 VCT Sedán',
+    year: 2015,
+    mileage: 149000,
+    category: 'Mediano',
+    body_type: 'Sedán',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    status: 'reservado',
+    is_featured: false,
+    features: [
+      'Motor 1.5 VCT',
+      'Gran baúl familiar',
+      'Aire acondicionado',
+      'Frenos ABS',
+      'Vidrios en 4 puertas'
+    ],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-oley-26589ebfbcbbc106a017857881393392-1024-1024.webp'
+    ],
+    cover_image: 'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-oley-26589ebfbcbbc106a017857881393392-1024-1024.webp',
+    purchase_date: '2026-08-10',
+    purchase_origin: 'concesionaria',
+    purchase_price: 6300,
+    purchase_currency: 'USD',
+    exchange_rate: 43.50,
+    docs_received: {
+      titulo: true,
+      libreta: true,
+      cedula: true,
+      sucive_al_dia: true,
+      multas_al_dia: true,
+      llave_duplicado: true
+    },
+    sale_price: 7900,
+    sale_currency: 'USD',
+    min_acceptable_price: 7500,
+    inspection_cost: 1500,
+    detailing_cost: 2500,
+    repairs_cost: 0,
+    paperwork_cost: 1800,
+    other_expenses_cost: 0,
+    total_real_cost_usd: 6433,
+    estimated_margin_usd: 1467,
+    estimated_margin_percent: 18.5,
+    prep_checklist: {
+      inspection_done: true,
+      repairs_done: true,
+      detailing_done: true,
+      photos_done: true,
+      docs_done: true
+    },
+    reservation: {
+      amount: 500,
+      currency: 'USD',
+      client_name: 'Lucía Fernández',
+      client_phone: '094 555 789',
+      date: '2026-09-23',
+      expiration_date: '2026-09-30',
+      notes: 'Seña de USD 500 por transferencia Itaú. Esperando resolución de crédito bancario.'
+    },
+    is_archived: false,
+    created_at: '2026-08-10T11:00:00Z',
+    updated_at: '2026-09-23T15:00:00Z'
+  },
+  {
+    id: 'dveh-4',
+    empresa_id: 'carvlak',
+    plate: 'SBZ 9988',
+    brand: 'BYD',
+    model: 'F0 GLX-i',
+    version: '1.0 GLX-I Extra Full',
+    year: 2015,
+    mileage: 91000,
+    category: 'Chico',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    status: 'vendido',
+    is_featured: false,
+    features: ['Motor 1.0 súper rendidor', 'Dirección asistida', 'Vidrios eléctricos', 'Aire acondicionado'],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/byf-f0-rojo-3b6ca2b621c5a440a417794684652785-1024-1024.webp'
+    ],
+    cover_image: 'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/byf-f0-rojo-3b6ca2b621c5a440a417794684652785-1024-1024.webp',
+    purchase_date: '2026-08-25',
+    purchase_origin: 'particular',
+    purchase_price: 6400,
+    purchase_currency: 'USD',
+    exchange_rate: 43.50,
+    docs_received: {
+      titulo: true,
+      libreta: true,
+      cedula: true,
+      sucive_al_dia: true,
+      multas_al_dia: true,
+      llave_duplicado: true
+    },
+    sale_price: 7900,
+    sale_currency: 'USD',
+    min_acceptable_price: 7600,
+    inspection_cost: 1500,
+    detailing_cost: 2500,
+    repairs_cost: 0,
+    paperwork_cost: 1500,
+    other_expenses_cost: 0,
+    total_real_cost_usd: 6526,
+    estimated_margin_usd: 1274,
+    estimated_margin_percent: 16.3,
+    prep_checklist: {
+      inspection_done: true,
+      repairs_done: true,
+      detailing_done: true,
+      photos_done: true,
+      docs_done: true
+    },
+    sale_record: {
+      sale_date: '2026-09-22',
+      buyer_name: 'Santiago Morales',
+      buyer_phone: '098 333 444',
+      final_price: 7800,
+      currency: 'USD',
+      exchange_rate: 43.50,
+      payment_method: 'contado',
+      seller_employee_id: 'user-diego',
+      seller_employee_name: 'Diego Silva',
+      seller_commission_amount: 191, // 15% sobre margen de USD 1.274
+      paperwork_status: 'en_tramite',
+      notes: 'Transferencia inmediata realizada ante Escribanía Bonilla.'
+    },
+    is_archived: false,
+    created_at: '2026-08-25T09:00:00Z',
+    updated_at: '2026-09-22T17:00:00Z'
+  },
+  {
+    id: 'dveh-5',
+    empresa_id: 'carvlak',
+    plate: 'SAD 5566',
+    brand: 'Volkswagen',
+    model: 'Gol Trend',
+    version: '1.6 MSI Trendline',
+    year: 2019,
+    mileage: 68000,
+    category: 'Chico',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Gris Plata',
+    status: 'evaluacion',
+    is_featured: false,
+    features: ['Motor 1.6 MSI', 'Doble airbag', 'Frenos ABS', 'Bluetooth', 'Computadora de abordo'],
+    images: [
+      'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop'
+    ],
+    cover_image: 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop',
+    catalog_description: 'Propuesta de toma en parte de pago. Pendiente peritaje técnico en patio.',
+    purchase_origin: 'parte_de_pago',
+    supplier_name: 'Carlos Benítez',
+    supplier_phone: '099 888 777',
+    purchase_price: 9800,
+    purchase_currency: 'USD',
+    exchange_rate: 43.50,
+    docs_received: {
+      titulo: true,
+      libreta: true,
+      cedula: true,
+      sucive_al_dia: true,
+      multas_al_dia: true,
+      llave_duplicado: false
+    },
+    sale_price: 11900,
+    sale_currency: 'USD',
+    min_acceptable_price: 11200,
+    inspection_id: 'insp-2',
+    inspection_cost: 1500,
+    inspection_score: 94,
+    inspection_traffic_light: 'Recomendable',
+    detailing_cost: 0,
+    repairs_cost: 0,
+    paperwork_cost: 0,
+    other_expenses_cost: 0,
+    total_real_cost_usd: 9834,
+    estimated_margin_usd: 2066,
+    estimated_margin_percent: 17.3,
+    prep_checklist: {
+      inspection_done: true,
+      repairs_done: false,
+      detailing_done: false,
+      photos_done: false,
+      docs_done: false
+    },
+    prep_assigned_to: 'user-jonathan',
+    is_archived: false,
+    created_at: '2026-09-24T10:00:00Z',
+    updated_at: '2026-09-24T10:00:00Z'
+  }
+];
+
+export const INITIAL_DEALERSHIP_INQUIRIES: DealershipInquiry[] = [
+  {
+    id: 'inq-1',
+    empresa_id: 'carvlak',
+    dealership_vehicle_id: 'dveh-1',
+    vehicle_info: 'Fiat Uno Way (2014)',
+    vehicle_plate: 'SBX 1234',
+    client_name: 'Pablo Techera',
+    client_phone: '099 444 555',
+    origin: 'Catalogo web',
+    status: 'Nuevo',
+    notes: 'Consulta recibida desde el catálogo web: ¿Aceptan permuta por moto Honda 125 y diferencia contado?',
+    assigned_to: 'user-diego',
+    is_archived: false,
+    created_at: '2026-09-24T12:30:00Z',
+    updated_at: '2026-09-24T12:30:00Z'
+  },
+  {
+    id: 'inq-2',
+    empresa_id: 'carvlak',
+    dealership_vehicle_id: 'dveh-2',
+    vehicle_info: 'Faw N7 1.3 (2017)',
+    vehicle_plate: 'AAT 8920',
+    client_name: 'Mariana Duarte',
+    client_phone: '098 777 888',
+    origin: 'WhatsApp',
+    status: 'Visita agendada',
+    notes: 'Viene el sábado de tarde a probar el auto en Shangrilá. Busca financiación bancaria.',
+    assigned_to: 'user-diego',
+    appointment_id: 'app-1',
+    is_archived: false,
+    created_at: '2026-09-23T16:00:00Z',
+    updated_at: '2026-09-24T10:00:00Z'
+  },
+  {
+    id: 'inq-3',
+    empresa_id: 'carvlak',
+    dealership_vehicle_id: 'dveh-3',
+    vehicle_info: 'Faw Oley 1.5 (2015)',
+    vehicle_plate: 'SCA 4321',
+    client_name: 'Lucía Fernández',
+    client_phone: '094 555 789',
+    origin: 'Instagram',
+    status: 'Negociando',
+    notes: 'Dejó seña de USD 500 para reservar la unidad hasta fin de mes.',
+    assigned_to: 'user-maxi',
+    is_archived: false,
+    created_at: '2026-09-22T11:00:00Z',
+    updated_at: '2026-09-23T15:00:00Z'
+  }
+];
+
+// 44 autos oficiales de CARVLAK extraídos de appauto para importación instantánea
+export const APPAUTO_OFFICIAL_CATALOG: Partial<DealershipVehicle>[] = [
+  {
+    plate: 'SBU 101',
+    brand: 'Fiat',
+    model: 'Uno Way',
+    version: '1.4 EVO Way',
+    category: 'Chico',
+    year: 2014,
+    mileage: 152000,
+    sale_price: 6870,
+    sale_currency: 'USD',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    features: ['Motor Fire 1.4 EVO', 'Aire acondicionado', 'Dirección hidráulica', 'Vidrios eléctricos delanteros', 'Faros antiniebla'],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/fiat-uno-way-2014-blanco-ce4009d9f7d94168a517774703389288-1024-1024.webp',
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/whatsapp-image-2026-04-28-at-11-06-30-am-f525ee231b2f14b37b17774703274551-1024-1024.webp'
+    ]
+  },
+  {
+    plate: 'SBU 102',
+    brand: 'Faw',
+    model: 'N7',
+    version: '1.3 16V Extra Full',
+    category: 'Chico',
+    year: 2017,
+    mileage: 89000,
+    sale_price: 7500,
+    sale_currency: 'USD',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    features: ['Motor 1.3 16V eficiente', 'Aire acondicionado', 'Doble airbag frontal', 'Frenos ABS + EBD'],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-n7-2017-blanco-6e03eba2e1b2e3c99117889646778099-1024-1024.webp'
+    ]
+  },
+  {
+    plate: 'SBU 103',
+    brand: 'Faw',
+    model: 'Oley',
+    version: '1.5 VCT Sedán',
+    category: 'Mediano',
+    year: 2015,
+    mileage: 149000,
+    sale_price: 7900,
+    sale_currency: 'USD',
+    body_type: 'Sedán',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    features: ['Motor 1.5 VCT', 'Gran capacidad de baúl', 'Aire acondicionado', 'Frenos ABS'],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-oley-26589ebfbcbbc106a017857881393392-1024-1024.webp'
+    ]
+  },
+  {
+    plate: 'SBU 104',
+    brand: 'BYD',
+    model: 'F0 GLX-i',
+    version: '1.0 GLX-I Extra Full',
+    category: 'Chico',
+    year: 2015,
+    mileage: 91000,
+    sale_price: 7900,
+    sale_currency: 'USD',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Blanco',
+    features: ['Motor 1.0 12V muy económico', 'Aire acondicionado', 'Dirección asistida'],
+    images: [
+      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/byf-f0-rojo-3b6ca2b621c5a440a417794684652785-1024-1024.webp'
+    ]
+  },
+  {
+    plate: 'SBU 105',
+    brand: 'Chevrolet',
+    model: 'Prisma Joy',
+    version: '1.0 Sedán',
+    category: 'Mediano',
+    year: 2018,
+    mileage: 110000,
+    sale_price: 11800,
+    sale_currency: 'USD',
+    body_type: 'Sedán',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Gris Plata',
+    features: ['Motor 1.0 económico', 'Doble airbag', 'Frenos ABS', 'Gran baúl'],
+    images: ['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop']
+  },
+  {
+    plate: 'SBU 106',
+    brand: 'Volkswagen',
+    model: 'Up!',
+    version: '1.0 Take Up!',
+    category: 'Chico',
+    year: 2016,
+    mileage: 95000,
+    sale_price: 9900,
+    sale_currency: 'USD',
+    body_type: 'Hatchback',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Rojo',
+    features: ['Motor 1.0 3 cilindros', '5 estrellas Latin NCAP', 'Aire acondicionado'],
+    images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop']
+  },
+  {
+    plate: 'SBU 107',
+    brand: 'Renault',
+    model: 'Duster',
+    version: '1.6 Expression 4x2',
+    category: 'SUV/Rural',
+    year: 2017,
+    mileage: 115000,
+    sale_price: 13900,
+    sale_currency: 'USD',
+    body_type: 'SUV',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Marrón Safari',
+    features: ['Excelente despeje del suelo', 'Gran espacio interior', 'Doble airbag', 'ABS'],
+    images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop']
+  },
+  {
+    plate: 'SBU 108',
+    brand: 'Nissan',
+    model: 'Versa',
+    version: '1.6 Advance MT',
+    category: 'Mediano',
+    year: 2019,
+    mileage: 72000,
+    sale_price: 14500,
+    sale_currency: 'USD',
+    body_type: 'Sedán',
+    transmission: 'Manual',
+    fuel: 'Nafta',
+    color_exterior: 'Gris Oscuro',
+    features: ['Pantalla táctil con cámara', 'Llave inteligente', 'Control de velocidad crucero'],
+    images: ['https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop']
+  }
+];
+
 
 

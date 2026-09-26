@@ -23,7 +23,12 @@ import {
   InspectionStatus,
   InspectionTrafficLight,
   InspectionChecklistItem,
-  CarPanelInspection
+  CarPanelInspection,
+  DealershipVehicle,
+  DealershipVehicleStatus,
+  DealershipInquiry,
+  DealershipInquiryStatus,
+  DealershipConfig
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -42,7 +47,11 @@ import {
   INITIAL_INSPECTIONS,
   INITIAL_INSPECTION_TARIFFS,
   DEFAULT_CHECKLIST_TEMPLATE,
-  DEFAULT_CAR_PANELS
+  DEFAULT_CAR_PANELS,
+  INITIAL_DEALERSHIP_CONFIG,
+  INITIAL_DEALERSHIP_VEHICLES,
+  INITIAL_DEALERSHIP_INQUIRIES,
+  APPAUTO_OFFICIAL_CATALOG
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -141,6 +150,22 @@ interface DataContextType {
   updateInspectionTariffs: (tariffs: Partial<InspectionTariffConfig>) => void;
   getInspectionByToken: (token: string) => VehicleInspection | undefined;
   createDetailingQuoteFromInspection: (inspectionId: string) => string | null;
+
+  // FASE 4: AUTOMOTORA CARVLAK
+  dealershipVehicles: DealershipVehicle[];
+  dealershipInquiries: DealershipInquiry[];
+  dealershipConfig: DealershipConfig;
+  addDealershipVehicle: (data: Omit<DealershipVehicle, 'id' | 'created_at' | 'updated_at' | 'total_real_cost_usd' | 'estimated_margin_usd' | 'estimated_margin_percent'>) => DealershipVehicle;
+  updateDealershipVehicle: (id: string, data: Partial<DealershipVehicle>) => void;
+  updateDealershipVehicleStatus: (id: string, newStatus: DealershipVehicleStatus, extraData?: Record<string, any>) => void;
+  archiveDealershipVehicle: (id: string) => void;
+  addDealershipInquiry: (data: Omit<DealershipInquiry, 'id' | 'created_at' | 'updated_at'>) => DealershipInquiry;
+  updateDealershipInquiry: (id: string, data: Partial<DealershipInquiry>) => void;
+  updateDealershipInquiryStatus: (id: string, newStatus: DealershipInquiryStatus, appointmentDetails?: { date: string; assigned_to?: string; title?: string }) => void;
+  archiveDealershipInquiry: (id: string) => void;
+  updateDealershipConfig: (config: Partial<DealershipConfig>) => void;
+  importAppAutoCatalog: () => { importedCount: number; duplicatesCount: number };
+  createPosventaDetailingQuote: (dealershipVehicleId: string, buyerName?: string, buyerPhone?: string) => string | null;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -221,6 +246,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return s ? JSON.parse(s) : INITIAL_INSPECTION_TARIFFS;
   });
 
+  // FASE 4: Estados Automotora CARVLAK
+  const [dealershipVehicles, setDealershipVehicles] = useState<DealershipVehicle[]>(() => {
+    const s = localStorage.getItem('carvlak_dealership_vehicles');
+    return s ? JSON.parse(s) : INITIAL_DEALERSHIP_VEHICLES;
+  });
+
+  const [dealershipInquiries, setDealershipInquiries] = useState<DealershipInquiry[]>(() => {
+    const s = localStorage.getItem('carvlak_dealership_inquiries');
+    return s ? JSON.parse(s) : INITIAL_DEALERSHIP_INQUIRIES;
+  });
+
+  const [dealershipConfig, setDealershipConfig] = useState<DealershipConfig>(() => {
+    const s = localStorage.getItem('carvlak_dealership_config');
+    return s ? JSON.parse(s) : INITIAL_DEALERSHIP_CONFIG;
+  });
+
   // Guardar en localStorage
   useEffect(() => {
     localStorage.setItem('carvlak_clients', JSON.stringify(clients));
@@ -277,6 +318,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('carvlak_inspection_tariffs', JSON.stringify(inspectionTariffs));
   }, [inspectionTariffs]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_dealership_vehicles', JSON.stringify(dealershipVehicles));
+  }, [dealershipVehicles]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_dealership_inquiries', JSON.stringify(dealershipInquiries));
+  }, [dealershipInquiries]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_dealership_config', JSON.stringify(dealershipConfig));
+  }, [dealershipConfig]);
 
   // Si Supabase está configurado, sincronizar con la nube
   useEffect(() => {
@@ -1222,6 +1275,500 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newQuote.id;
   };
 
+  // ============================================================================
+  // FASE 4: AUTOMOTORA CARVLAK
+  // ============================================================================
+
+  // Helper de cálculo de costo real y margen
+  const calculateVehicleFinancials = (
+    v: Partial<DealershipVehicle>,
+    cfg: DealershipConfig = dealershipConfig
+  ) => {
+    const rate = v.exchange_rate || cfg.default_exchange_rate || 43.50;
+
+    const purchaseUsd = v.purchase_currency === 'USD'
+      ? (v.purchase_price || 0)
+      : Math.round(((v.purchase_price || 0) / rate) * 100) / 100;
+
+    const internalCostsUyu =
+      (v.inspection_cost || 0) +
+      (v.detailing_cost || 0) +
+      (v.repairs_cost || 0) +
+      (v.paperwork_cost || 0) +
+      (v.other_expenses_cost || 0);
+
+    const internalCostsUsd = Math.round((internalCostsUyu / rate) * 100) / 100;
+    const totalRealCostUsd = Math.round((purchaseUsd + internalCostsUsd) * 100) / 100;
+
+    const saleUsd = v.sale_currency === 'USD'
+      ? (v.sale_price || 0)
+      : Math.round(((v.sale_price || 0) / rate) * 100) / 100;
+
+    const estimatedMarginUsd = Math.round((saleUsd - totalRealCostUsd) * 100) / 100;
+    const estimatedMarginPercent = saleUsd > 0
+      ? Math.round((estimatedMarginUsd / saleUsd) * 1000) / 10
+      : 0;
+
+    return { totalRealCostUsd, estimatedMarginUsd, estimatedMarginPercent };
+  };
+
+  const addDealershipVehicle = (
+    data: Omit<DealershipVehicle, 'id' | 'created_at' | 'updated_at' | 'total_real_cost_usd' | 'estimated_margin_usd' | 'estimated_margin_percent'>
+  ): DealershipVehicle => {
+    const financials = calculateVehicleFinancials(data);
+
+    const newVehicle: DealershipVehicle = {
+      ...data,
+      id: `dveh-${Date.now()}`,
+      empresa_id: data.empresa_id || 'carvlak',
+      status: data.status || 'evaluacion',
+      total_real_cost_usd: financials.totalRealCostUsd,
+      estimated_margin_usd: financials.estimatedMarginUsd,
+      estimated_margin_percent: financials.estimatedMarginPercent,
+      prep_checklist: data.prep_checklist || {
+        inspection_done: false,
+        repairs_done: false,
+        detailing_done: false,
+        photos_done: false,
+        docs_done: false
+      },
+      is_archived: false,
+      created_by: profile?.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setDealershipVehicles((prev) => [newVehicle, ...prev]);
+    logActivity('automotora', newVehicle.id, 'create', {
+      plate: newVehicle.plate,
+      brand: newVehicle.brand,
+      model: newVehicle.model,
+      status: newVehicle.status
+    });
+    return newVehicle;
+  };
+
+  const updateDealershipVehicle = (id: string, data: Partial<DealershipVehicle>) => {
+    setDealershipVehicles((prev) =>
+      prev.map((v) => {
+        if (v.id !== id) return v;
+        const merged = { ...v, ...data, updated_at: new Date().toISOString() };
+        const financials = calculateVehicleFinancials(merged);
+        return {
+          ...merged,
+          total_real_cost_usd: financials.totalRealCostUsd,
+          estimated_margin_usd: financials.estimatedMarginUsd,
+          estimated_margin_percent: financials.estimatedMarginPercent
+        };
+      })
+    );
+    logActivity('automotora', id, 'update', data);
+  };
+
+  const updateDealershipVehicleStatus = (
+    id: string,
+    newStatus: DealershipVehicleStatus,
+    extraData?: Record<string, any>
+  ) => {
+    const current = dealershipVehicles.find((v) => v.id === id);
+    if (!current) return;
+
+    const updatedFields: Partial<DealershipVehicle> = {
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Al pasar a 'evaluacion' -> Ofrecer peritaje interno de Fase 3
+    if (newStatus === 'evaluacion') {
+      if (extraData?.triggerInspection && !current.inspection_id) {
+        const newInsp = addInspection({
+          type: 'interna',
+          status: 'Solicitada',
+          vehicle_plate: current.plate,
+          vehicle_info: `${current.brand} ${current.model} (${current.year})`,
+          vehicle_category: current.category,
+          price_amount: dealershipConfig.default_internal_inspection_cost,
+          price_currency: 'UYU',
+          home_visit_surcharge: 0,
+          total_price: dealershipConfig.default_internal_inspection_cost,
+          buyer_name: 'Automotora CARVLAK',
+          assigned_to: extraData.inspector_id || 'user-diego',
+          is_home_visit: false,
+          score: 0,
+          traffic_light: 'Recomendable',
+          inspector_conclusion: 'Pendiente de inspección técnica interna',
+          estimated_repair_cost: 0,
+          obd_codes: []
+        });
+        updatedFields.inspection_id = newInsp.id;
+        updatedFields.inspection_cost = dealershipConfig.default_internal_inspection_cost;
+      }
+    }
+
+    // 2. Al pasar a 'comprado' -> Crear orden de detailing interna a costo interno y tareas de alistamiento
+    if (newStatus === 'comprado') {
+      const detailingCost = dealershipConfig.default_internal_detailing_cost || 2500;
+      updatedFields.detailing_cost = detailingCost;
+
+      // Crear cotización interna de detailing
+      const newDetailingQuote = addDetailingQuote({
+        client_id: 'client-carvlak-automotora',
+        client_name: 'Automotora CARVLAK (Stock)',
+        client_phone: '099 267 964',
+        vehicle_info: `${current.brand} ${current.model} (${current.year})`,
+        vehicle_plate: current.plate,
+        vehicle_category: current.category,
+        selected_services: [
+          { serviceId: 'interior', serviceName: 'Limpieza profunda de interior (Alistamiento)', price: detailingCost }
+        ],
+        subtotal: detailingCost,
+        discount_type: 'none',
+        discount_amount: 0,
+        extreme_dirt_surcharge: 0,
+        total_amount: detailingCost,
+        estimated_time: '1 día',
+        assigned_to: 'user-matias',
+        origin: 'Presencial',
+        notes: `Alistamiento interno para showroom de Automotora: ${current.plate}`,
+        priority_zones: 'Todo el habitáculo y vano motor',
+        status: 'Turno Confirmado'
+      });
+      updatedFields.detailing_quote_id = newDetailingQuote.id;
+
+      // Tareas de preparación para el equipo
+      addTask({
+        title: `Alistamiento mecánico & revisión de fluidos: ${current.brand} ${current.model} (${current.plate})`,
+        business: 'automotora',
+        assigned_to: 'user-maxi',
+        due_date: new Date(Date.now() + 172800000).toISOString().slice(0, 10),
+        status: 'Pendiente'
+      });
+
+      addTask({
+        title: `Sesión de fotos HD para catálogo web: ${current.brand} ${current.model} (${current.plate})`,
+        business: 'automotora',
+        assigned_to: 'user-matias',
+        due_date: new Date(Date.now() + 259200000).toISOString().slice(0, 10),
+        status: 'Pendiente'
+      });
+    }
+
+    // 3. Al pasar a 'reservado'
+    if (newStatus === 'reservado' && extraData?.reservation) {
+      updatedFields.reservation = extraData.reservation;
+    }
+
+    // 4. Al pasar a 'vendido' -> Liquidar comisión, historial y auto en permuta si corresponde
+    if (newStatus === 'vendido') {
+      if (extraData?.saleRecord) {
+        updatedFields.sale_record = extraData.saleRecord;
+
+        // Generar comisión del vendedor
+        const sellerId = extraData.saleRecord.seller_employee_id || profile?.id || 'user-diego';
+        const sellerProfile = INITIAL_PROFILES.find((p) => p.id === sellerId) || profile;
+        const commRate = sellerProfile?.commissions?.automotora || dealershipConfig.default_commission_rate || 15;
+
+        // Comisión sobre margen o sobre venta
+        let commAmount = 0;
+        if (dealershipConfig.commission_basis === 'margin') {
+          const marginUsd = current.estimated_margin_usd || 1000;
+          commAmount = Math.round(marginUsd * (commRate / 100));
+        } else {
+          const saleUsd = extraData.saleRecord.final_price || current.sale_price || 0;
+          commAmount = Math.round(saleUsd * (commRate / 100));
+        }
+
+        const newComm: CommissionRecord = {
+          id: `comm-auto-${Date.now()}`,
+          business: 'automotora',
+          employee_id: sellerId,
+          employee_name: sellerProfile?.full_name || 'Vendedor Automotora',
+          quote_id: current.id,
+          client_name: extraData.saleRecord.buyer_name,
+          vehicle_description: `${current.brand} ${current.model} (${current.plate})`,
+          amount_charged: extraData.saleRecord.final_price,
+          commission_rate: commRate,
+          commission_amount: commAmount,
+          status: 'Pendiente',
+          created_at: new Date().toISOString()
+        };
+        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== current.id), newComm]);
+
+        // Si se recibió un auto en parte de pago (permuta), crear automáticamente en stock como 'evaluacion'
+        if (extraData.tradeIn && extraData.tradeIn.plate) {
+          addDealershipVehicle({
+            empresa_id: current.empresa_id || 'carvlak',
+            plate: extraData.tradeIn.plate.toUpperCase(),
+            brand: extraData.tradeIn.brand || 'Vehículo',
+            model: extraData.tradeIn.model || 'Parte de pago',
+            year: extraData.tradeIn.year || new Date().getFullYear(),
+            mileage: extraData.tradeIn.mileage || 0,
+            category: extraData.tradeIn.category || 'Mediano',
+            status: 'evaluacion',
+            features: [],
+            images: extraData.tradeIn.photos || [],
+            purchase_origin: 'parte_de_pago',
+            supplier_name: extraData.saleRecord.buyer_name,
+            supplier_phone: extraData.saleRecord.buyer_phone,
+            purchase_price: extraData.tradeIn.valuation || 0,
+            purchase_currency: 'USD',
+            exchange_rate: current.exchange_rate || 43.50,
+            docs_received: {
+              titulo: false,
+              libreta: true,
+              cedula: true,
+              sucive_al_dia: true,
+              multas_al_dia: true,
+              llave_duplicado: false
+            },
+            sale_price: Math.round((extraData.tradeIn.valuation || 0) * 1.22),
+            sale_currency: 'USD',
+            min_acceptable_price: extraData.tradeIn.valuation || 0,
+            inspection_cost: 0,
+            detailing_cost: 0,
+            repairs_cost: 0,
+            paperwork_cost: 0,
+            other_expenses_cost: 0,
+            prep_checklist: {
+              inspection_done: false,
+              repairs_done: false,
+              detailing_done: false,
+              photos_done: false,
+              docs_done: false
+            },
+            catalog_description: `Tomado en parte de pago de ${current.brand} ${current.model}. Pendiente peritaje técnico y preparación.`,
+            is_archived: false
+          });
+        }
+
+        // Historial en Vehículo y Cliente
+        addVehicleHistory(
+          current.vehicle_id || current.plate,
+          'automotora',
+          'Venta de Vehículo Concretada',
+          `Vendido a ${extraData.saleRecord.buyer_name} por USD ${extraData.saleRecord.final_price?.toLocaleString('es-UY')}. Vendedor: ${sellerProfile?.full_name}. Trámite: ${extraData.saleRecord.paperwork_status}.`
+        );
+      }
+    } else if (current.status === 'vendido') {
+      // Reversión de venta: eliminar comisión generada
+      setCommissions((prev) => prev.filter((c) => c.quote_id !== current.id));
+    }
+
+    setDealershipVehicles((prev) =>
+      prev.map((v) => {
+        if (v.id !== id) return v;
+        const merged = { ...v, ...updatedFields };
+        const financials = calculateVehicleFinancials(merged);
+        return {
+          ...merged,
+          total_real_cost_usd: financials.totalRealCostUsd,
+          estimated_margin_usd: financials.estimatedMarginUsd,
+          estimated_margin_percent: financials.estimatedMarginPercent
+        };
+      })
+    );
+
+    logActivity('automotora', id, 'status_change', { from: current.status, to: newStatus });
+  };
+
+  const archiveDealershipVehicle = (id: string) => {
+    setDealershipVehicles((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, is_archived: true, updated_at: new Date().toISOString() } : v))
+    );
+    logActivity('automotora', id, 'archive', { is_archived: true });
+  };
+
+  // CRM Interesados
+  const addDealershipInquiry = (
+    data: Omit<DealershipInquiry, 'id' | 'created_at' | 'updated_at'>
+  ): DealershipInquiry => {
+    const newInq: DealershipInquiry = {
+      ...data,
+      id: `inq-${Date.now()}`,
+      empresa_id: data.empresa_id || 'carvlak',
+      status: data.status || 'Nuevo',
+      is_archived: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setDealershipInquiries((prev) => [newInq, ...prev]);
+    logActivity('consulta_automotora', newInq.id, 'create', {
+      client: newInq.client_name,
+      vehicle: newInq.vehicle_info,
+      origin: newInq.origin
+    });
+    return newInq;
+  };
+
+  const updateDealershipInquiry = (id: string, data: Partial<DealershipInquiry>) => {
+    setDealershipInquiries((prev) =>
+      prev.map((inq) => (inq.id === id ? { ...inq, ...data, updated_at: new Date().toISOString() } : inq))
+    );
+    logActivity('consulta_automotora', id, 'update', data);
+  };
+
+  const updateDealershipInquiryStatus = (
+    id: string,
+    newStatus: DealershipInquiryStatus,
+    appointmentDetails?: { date: string; assigned_to?: string; title?: string }
+  ) => {
+    const current = dealershipInquiries.find((inq) => inq.id === id);
+    if (!current) return;
+
+    const updatedFields: Partial<DealershipInquiry> = {
+      status: newStatus,
+      last_contact_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Si pasa a Visita agendada o Prueba de manejo, agendar en Agenda Unificada
+    if (newStatus === 'Visita agendada' || newStatus === 'Prueba de manejo') {
+      const apptDate = appointmentDetails?.date || new Date().toISOString();
+      const newAppt = addAppointment({
+        business: 'automotora',
+        client_id: current.client_id || 'client-walkin',
+        start_time: apptDate,
+        duration_minutes: 60,
+        status: 'Confirmado',
+        title: `${newStatus}: ${current.vehicle_info} con ${current.client_name}`,
+        notes: `Interesado: ${current.client_name} (${current.client_phone}). Origen: ${current.origin}. ${current.notes || ''}`,
+        assigned_to: appointmentDetails?.assigned_to || current.assigned_to || profile?.id,
+        price_amount: 0,
+        price_currency: 'USD'
+      });
+      updatedFields.appointment_id = newAppt.id;
+    }
+
+    setDealershipInquiries((prev) =>
+      prev.map((inq) => (inq.id === id ? { ...inq, ...updatedFields } : inq))
+    );
+    logActivity('consulta_automotora', id, 'status_change', { from: current.status, to: newStatus });
+  };
+
+  const archiveDealershipInquiry = (id: string) => {
+    setDealershipInquiries((prev) =>
+      prev.map((inq) => (inq.id === id ? { ...inq, is_archived: true, updated_at: new Date().toISOString() } : inq))
+    );
+    logActivity('consulta_automotora', id, 'archive', { is_archived: true });
+  };
+
+  const updateDealershipConfig = (config: Partial<DealershipConfig>) => {
+    setDealershipConfig((prev) => ({ ...prev, ...config }));
+    logActivity('automotora', 'config', 'update', config);
+  };
+
+  // Importar catálogo oficial de AppAuto (44 autos)
+  const importAppAutoCatalog = (): { importedCount: number; duplicatesCount: number } => {
+    let importedCount = 0;
+    let duplicatesCount = 0;
+
+    APPAUTO_OFFICIAL_CATALOG.forEach((car, index) => {
+      const plate = (car.plate || `CAR-${100 + index}`).toUpperCase();
+      const exists = dealershipVehicles.some((v) => v.plate.toUpperCase() === plate);
+
+      if (exists) {
+        duplicatesCount++;
+      } else {
+        const purchasePrice = Math.round((car.sale_price || 8000) * 0.78);
+        addDealershipVehicle({
+          empresa_id: 'carvlak',
+          plate,
+          brand: car.brand || 'Vehículo',
+          model: car.model || '',
+          version: car.version || '',
+          year: car.year || 2017,
+          mileage: car.mileage || 100000,
+          category: car.category || 'Mediano',
+          body_type: car.body_type || 'Hatchback',
+          transmission: car.transmission || 'Manual',
+          fuel: car.fuel || 'Nafta',
+          color_exterior: car.color_exterior || 'Blanco',
+          status: 'publicado',
+          is_featured: index < 4,
+          features: car.features || [],
+          images: car.images || [],
+          cover_image: car.images && car.images[0] ? car.images[0] : undefined,
+          catalog_description: `${car.brand} ${car.model} ${car.version || ''} (${car.year}). Excelente oportunidad en CARVLAK. Garantía técnica y documentación en regla.`,
+          purchase_price: purchasePrice,
+          purchase_currency: 'USD',
+          exchange_rate: 43.50,
+          purchase_origin: 'particular',
+          docs_received: {
+            titulo: true,
+            libreta: true,
+            cedula: true,
+            sucive_al_dia: true,
+            multas_al_dia: true,
+            llave_duplicado: true
+          },
+          sale_price: car.sale_price || 8000,
+          sale_currency: 'USD',
+          min_acceptable_price: Math.round((car.sale_price || 8000) * 0.95),
+          inspection_cost: 1500,
+          detailing_cost: 2500,
+          repairs_cost: 0,
+          paperwork_cost: 1500,
+          other_expenses_cost: 0,
+          prep_checklist: {
+            inspection_done: true,
+            repairs_done: true,
+            detailing_done: true,
+            photos_done: true,
+            docs_done: true
+          },
+          is_archived: false
+        });
+        importedCount++;
+      }
+    });
+
+    return { importedCount, duplicatesCount };
+  };
+
+  // Posventa: Crear cotización de detailing con descuento (20% OFF)
+  const createPosventaDetailingQuote = (
+    dealershipVehicleId: string,
+    buyerName?: string,
+    buyerPhone?: string
+  ): string | null => {
+    const car = dealershipVehicles.find((v) => v.id === dealershipVehicleId);
+    if (!car) return null;
+
+    const t = detailingTariffs.find((tar) => tar.id === 'ceramico') || detailingTariffs[0];
+    const cat = car.category || 'Mediano';
+    const basePrice = t ? (t.prices[cat] || 8500) : 8500;
+    const discount = Math.round(basePrice * 0.2); // 20% descuento posventa
+
+    const newQuote = addDetailingQuote({
+      client_id: 'client-carvlak-automotora',
+      client_name: buyerName || car.sale_record?.buyer_name || 'Comprador CARVLAK',
+      client_phone: buyerPhone || car.sale_record?.buyer_phone || '',
+      vehicle_info: `${car.brand} ${car.model} (${car.year})`,
+      vehicle_plate: car.plate,
+      vehicle_category: car.category,
+      selected_services: [
+        {
+          serviceId: t ? t.id : 'ceramico',
+          serviceName: t ? t.name : 'Sellado Cerámico Posventa',
+          price: basePrice
+        }
+      ],
+      subtotal: basePrice,
+      discount_type: 'special_15',
+      discount_amount: discount,
+      extreme_dirt_surcharge: 0,
+      total_amount: basePrice - discount,
+      estimated_time: '1 a 2 días',
+      assigned_to: profile?.id || 'user-maxi',
+      origin: 'Presencial',
+      notes: `Beneficio fidelización posventa 20% OFF por compra de unidad ${car.plate} en Automotora CARVLAK.`,
+      priority_zones: 'Todo el exterior y protección de pintura',
+      status: 'Por Cotizar'
+    });
+
+    return newQuote.id;
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -1281,7 +1828,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         archiveInspection,
         updateInspectionTariffs,
         getInspectionByToken,
-        createDetailingQuoteFromInspection
+        createDetailingQuoteFromInspection,
+
+        // FASE 4: Automotora
+        dealershipVehicles: dealershipVehicles.filter((v) => !v.is_archived),
+        dealershipInquiries: dealershipInquiries.filter((inq) => !inq.is_archived),
+        dealershipConfig,
+        addDealershipVehicle,
+        updateDealershipVehicle,
+        updateDealershipVehicleStatus,
+        archiveDealershipVehicle,
+        addDealershipInquiry,
+        updateDealershipInquiry,
+        updateDealershipInquiryStatus,
+        archiveDealershipInquiry,
+        updateDealershipConfig,
+        importAppAutoCatalog,
+        createPosventaDetailingQuote
       }}
     >
       {children}

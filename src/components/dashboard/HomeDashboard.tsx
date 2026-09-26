@@ -10,7 +10,9 @@ import {
   Sparkles,
   Phone,
   MessageCircle,
-  ShieldCheck
+  ShieldCheck,
+  Building2,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -36,7 +38,18 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onSelectAppointment
 }) => {
   const { profile } = useAuth();
-  const { appointments, tasks, vehicles, clients, updateTaskStatus, detailingQuotes, inspections } = useData();
+  const {
+    appointments,
+    tasks,
+    vehicles,
+    clients,
+    updateTaskStatus,
+    detailingQuotes,
+    inspections,
+    dealershipVehicles,
+    dealershipInquiries,
+    dealershipConfig
+  } = useData();
 
   const isBoss = isEncargado(profile);
 
@@ -49,6 +62,22 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const pendingInspections = useMemo(() => {
     return inspections.filter((i) => i.status === 'Solicitada' || i.status === 'En curso');
   }, [inspections]);
+
+  // Automotora: Autos inmovilizados (>60 días)
+  const overdueVehicles = useMemo(() => {
+    const threshold = dealershipConfig?.days_in_stock_alert_threshold || dealershipConfig?.days_alert_threshold || 60;
+    return dealershipVehicles.filter((v) => {
+      if (v.status === 'vendido') return false;
+      const start = new Date(v.purchase_date || v.created_at).getTime();
+      const days = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24));
+      return days >= threshold;
+    });
+  }, [dealershipVehicles, dealershipConfig]);
+
+  // Automotora: Consultas nuevas en CRM
+  const newInquiries = useMemo(() => {
+    return dealershipInquiries.filter((inq) => inq.status === 'Nuevo');
+  }, [dealershipInquiries]);
 
   // Filtrar turnos de hoy
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -184,6 +213,74 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
           <div className="text-xs font-bold text-emerald-400 flex items-center gap-1 shrink-0">
             <span>Abrir Peritaje</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )}
+
+      {/* Alerta de Nuevos Interesados CRM Automotora */}
+      {newInquiries.length > 0 && (
+        <div
+          onClick={() => onNavigate('mod-automotora')}
+          className="p-4 rounded-3xl bg-gradient-to-r from-blue-950/40 via-slate-900 to-[#0A131C] border border-blue-500/40 cursor-pointer hover:border-blue-400 transition-all flex items-center justify-between gap-3 shadow-xl group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-lg shrink-0">
+              💬
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">
+                  CRM Automotora
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/30 text-blue-200">
+                  {newInquiries.length} nuevo{newInquiries.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-white mt-0.5 group-hover:text-blue-300 transition-colors">
+                Tenés {newInquiries.length} consulta{newInquiries.length > 1 ? 's' : ''} nueva{newInquiries.length > 1 ? 's' : ''} de compradores por responder
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Última: {newInquiries[0]?.client_name} ({newInquiries[0]?.vehicle_info}) por {newInquiries[0]?.origin}
+              </p>
+            </div>
+          </div>
+          <div className="text-xs font-bold text-blue-400 flex items-center gap-1 shrink-0">
+            <span>Atender Leads</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )}
+
+      {/* Alerta de Stock Inmovilizado (> 60 días) */}
+      {overdueVehicles.length > 0 && isBoss && (
+        <div
+          onClick={() => onNavigate('mod-automotora')}
+          className="p-4 rounded-3xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-[#1C160A] border border-amber-500/40 cursor-pointer hover:border-amber-400 transition-all flex items-center justify-between gap-3 shadow-xl group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-lg shrink-0">
+              ⚠️
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                  Control de Stock Automotora
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200">
+                  {overdueVehicles.length} inmovilizado{overdueVehicles.length > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-white mt-0.5 group-hover:text-amber-300 transition-colors">
+                {overdueVehicles.length} vehículo{overdueVehicles.length > 1 ? 's tienen' : ' tiene'} más de 60 días en inventario
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Revisá precios de lista, ofertas o promociones para acelerar la rotación de capital.
+              </p>
+            </div>
+          </div>
+          <div className="text-xs font-bold text-amber-400 flex items-center gap-1 shrink-0">
+            <span>Ver Inventario</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </div>
