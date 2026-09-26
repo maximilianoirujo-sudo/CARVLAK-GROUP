@@ -21,7 +21,10 @@ import {
   TrendingUp,
   Image as ImageIcon,
   Key,
-  BadgeDollarSign
+  BadgeDollarSign,
+  Copy,
+  History,
+  Globe
 } from 'lucide-react';
 import {
   DealershipVehicle,
@@ -31,6 +34,7 @@ import {
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { DealershipConfirmStatusDialog } from './DealershipConfirmStatusDialog';
 
 interface DealershipVehicleDetailDrawerProps {
   vehicle: DealershipVehicle | null;
@@ -54,6 +58,8 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   const {
     updateDealershipVehicle,
     updateDealershipVehicleStatus,
+    duplicateDealershipVehicle,
+    canEditDealershipStock,
     inspections,
     detailingQuotes,
     createPosventaDetailingQuote,
@@ -63,6 +69,42 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   const { showToast } = useToast();
 
   const isAdmin = profile?.roles.includes('admin');
+  const canEdit = canEditDealershipStock(profile?.roles);
+
+  const [activeTab, setActiveTab] = useState<'detalle' | 'historial'>('detalle');
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [targetStatusPending, setTargetStatusPending] = useState<DealershipVehicleStatus | null>(null);
+
+  const handleDuplicate = () => {
+    if (!canEdit) {
+      showToast('No tenés permisos para duplicar vehículos', 'error');
+      return;
+    }
+    const dup = duplicateDealershipVehicle(vehicle.id);
+    if (dup) {
+      showToast(`Vehículo duplicado: ${dup.brand} ${dup.model}`, 'success');
+      onClose();
+    }
+  };
+
+  const handleRequestStatusChange = (newStatus: DealershipVehicleStatus) => {
+    if (!canEdit) {
+      showToast('No tenés permisos para cambiar el estado de vehículos', 'error');
+      return;
+    }
+    if (newStatus === vehicle.status) return;
+    setTargetStatusPending(newStatus);
+    setConfirmModalOpen(true);
+  };
+
+  const handleConfirmStatusChange = () => {
+    if (targetStatusPending) {
+      updateDealershipVehicleStatus(vehicle.id, targetStatusPending);
+      showToast(`Estado cambiado a ${targetStatusPending}`, 'success');
+      setConfirmModalOpen(false);
+      setTargetStatusPending(null);
+    }
+  };
 
   // Estado activo de imagen
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
@@ -230,13 +272,24 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => onEdit(vehicle)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
-              title="Editar Ficha"
-            >
-              <Edit className="w-4 h-4" />
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => onEdit(vehicle)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                title="Editar Ficha"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+            )}
+            {canEdit && (
+              <button
+                onClick={handleDuplicate}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                title="Duplicar Vehículo"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={handleShareWhatsApp}
               className="p-2 rounded-xl text-emerald-400 hover:bg-emerald-500/10"
@@ -253,9 +306,36 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
           </div>
         </div>
 
+        {/* Subtabs del Drawer */}
+        <div className="flex items-center gap-4 px-6 border-b border-slate-800 bg-slate-900/40 pt-2 text-xs shrink-0">
+          <button
+            onClick={() => setActiveTab('detalle')}
+            className={`pb-2.5 font-bold transition-all border-b-2 ${
+              activeTab === 'detalle'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            Ficha &amp; Alistamiento
+          </button>
+          <button
+            onClick={() => setActiveTab('historial')}
+            className={`pb-2.5 font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'historial'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Historial de Cambios ({vehicle.history?.length || 0})</span>
+          </button>
+        </div>
+
         {/* Contenido scrolleable */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          {/* Banner de Datos Incompletos */}
+          {activeTab === 'detalle' ? (
+            <>
+              {/* Banner de Datos Incompletos */}
           {vehicle.incomplete_data && (
             <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-3 text-amber-200">
               <div className="flex items-center gap-3">
@@ -351,7 +431,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                 return (
                   <button
                     key={st.id}
-                    onClick={() => updateDealershipVehicleStatus(vehicle.id, st.id as DealershipVehicleStatus)}
+                    onClick={() => handleRequestStatusChange(st.id as DealershipVehicleStatus)}
                     className={`p-2 rounded-xl text-[10px] font-black flex flex-col items-center gap-1 transition-all ${
                       isCurrent
                         ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400'
@@ -802,28 +882,146 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               </div>
             </div>
           )}
-        </div>
 
-        {/* Footer con Acciones */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
-          >
-            Cerrar
-          </button>
+          {/* Sincronización Tiendanube */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs">
+            <div className="flex items-center gap-2.5">
+              <Globe className="w-4 h-4 text-cyan-400" />
+              <div>
+                <span className="font-bold text-white block">Catálogo Web &amp; Tiendanube</span>
+                <span className="text-[11px] text-slate-400">
+                  {vehicle.status === 'publicado' ? 'Visible en catálogo público' : 'No publicado (oculto)'}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="inline-block px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                {vehicle.tiendanube_synced_at
+                  ? `Sincronizado ${new Date(vehicle.tiendanube_synced_at).toLocaleDateString('es-UY')}`
+                  : 'Listo para sincronizar'}
+              </span>
+            </div>
+          </div>
 
-          {vehicle.status !== 'vendido' && (
-            <button
-              onClick={() => onOpenSaleModal(vehicle)}
-              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all"
-            >
-              <DollarSign className="w-4 h-4" />
-              <span>{vehicle.status === 'reservado' ? 'Liquidar Venta' : 'Vender / Seña'}</span>
-            </button>
+          {/* Campos Personalizados */}
+          {vehicle.custom_fields && Object.keys(vehicle.custom_fields).length > 0 && (
+            <div className="p-4 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-2">
+              <div className="text-xs font-black text-white uppercase tracking-wider">
+                Campos Personalizados
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {Object.entries(vehicle.custom_fields).map(([key, val]) => {
+                  const def = (dealershipConfig.custom_fields || []).find((f) => f.id === key);
+                  const label = def?.name || key;
+                  const displayVal = typeof val === 'boolean' ? (val ? 'Sí' : 'No') : String(val);
+                  return (
+                    <div key={key} className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80">
+                      <span className="text-[10px] text-slate-400 block font-medium">{label}</span>
+                      <span className="font-bold text-white text-xs mt-0.5 block">{displayVal}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        /* Historial de Cambios */
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+            <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <History className="w-4 h-4 text-amber-400" />
+              <span>Auditoría de Modificaciones ({vehicle.history?.length || 0})</span>
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Registro detallado de cambios realizados sobre esta unidad: campo modificado, valor previo, nuevo valor, usuario y hora.
+            </p>
+          </div>
+
+          {(!vehicle.history || vehicle.history.length === 0) ? (
+            <div className="p-8 text-center border-2 border-dashed border-slate-800 rounded-3xl text-slate-500 text-xs">
+              Aún no hay cambios registrados en el historial de este vehículo. Cada edición de precio, estado o ficha técnica quedará registrada aquí automáticamente.
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {vehicle.history.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="p-3.5 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-2 text-xs"
+                >
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      {entry.field_label || entry.field}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {new Date(entry.timestamp).toLocaleString('es-UY', {
+                        dateStyle: 'short',
+                        timeStyle: 'short'
+                      })}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 p-2 bg-slate-950/80 rounded-xl border border-slate-800/80 text-[11px]">
+                    <div>
+                      <span className="text-[9px] text-slate-500 block uppercase font-bold">Valor anterior</span>
+                      <span className="text-rose-400 font-mono line-through truncate block">
+                        {typeof entry.old_value === 'object' ? JSON.stringify(entry.old_value) : String(entry.old_value)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-slate-500 block uppercase font-bold">Nuevo valor</span>
+                      <span className="text-emerald-400 font-mono font-bold truncate block">
+                        {typeof entry.new_value === 'object' ? JSON.stringify(entry.new_value) : String(entry.new_value)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between">
+                    <span>Modificado por: <strong className="text-slate-300">{entry.user_name}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      </div>
+      )}
     </div>
+
+    {/* Footer con Acciones */}
+    <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3">
+      <button
+        onClick={onClose}
+        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+      >
+        Cerrar
+      </button>
+
+      {vehicle.status !== 'vendido' && (
+        <button
+          onClick={() => onOpenSaleModal(vehicle)}
+          className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all"
+        >
+          <DollarSign className="w-4 h-4" />
+          <span>{vehicle.status === 'reservado' ? 'Liquidar Venta' : 'Vender / Seña'}</span>
+        </button>
+      )}
+    </div>
+
+    {/* Modal de confirmación de cambio de estado */}
+    {confirmModalOpen && (
+      <DealershipConfirmStatusDialog
+        isOpen={confirmModalOpen}
+        vehicle={vehicle}
+        targetStatus={targetStatusPending}
+        onConfirm={handleConfirmStatusChange}
+        onCancel={() => {
+          setConfirmModalOpen(false);
+          setTargetStatusPending(null);
+        }}
+      />
+    )}
+  </div>
+</div>
   );
 };

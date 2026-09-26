@@ -24,8 +24,10 @@ import {
   InspectionTrafficLight,
   InspectionChecklistItem,
   CarPanelInspection,
+  Role,
   DealershipVehicle,
   DealershipVehicleStatus,
+  DealershipVehicleHistoryEntry,
   DealershipInquiry,
   DealershipInquiryStatus,
   DealershipConfig
@@ -155,8 +157,12 @@ interface DataContextType {
   dealershipVehicles: DealershipVehicle[];
   dealershipInquiries: DealershipInquiry[];
   dealershipConfig: DealershipConfig;
+  canEditDealershipStock: (userRoles?: Role[]) => boolean;
   addDealershipVehicle: (data: Omit<DealershipVehicle, 'id' | 'created_at' | 'updated_at' | 'total_real_cost_usd' | 'estimated_margin_usd' | 'estimated_margin_percent'>) => DealershipVehicle;
   updateDealershipVehicle: (id: string, data: Partial<DealershipVehicle>) => void;
+  duplicateDealershipVehicle: (id: string) => DealershipVehicle | null;
+  bulkUpdateDealershipVehicles: (ids: string[], updates: Partial<DealershipVehicle>) => void;
+  bulkAdjustVehiclePrices: (ids: string[], adjustmentType: 'percent' | 'fixed', amount: number) => void;
   updateDealershipVehicleStatus: (id: string, newStatus: DealershipVehicleStatus, extraData?: Record<string, any>) => void;
   archiveDealershipVehicle: (id: string) => void;
   addDealershipInquiry: (data: Omit<DealershipInquiry, 'id' | 'created_at' | 'updated_at'>) => DealershipInquiry;
@@ -266,7 +272,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [dealershipConfig, setDealershipConfig] = useState<DealershipConfig>(() => {
     const s = localStorage.getItem('carvlak_dealership_config');
-    return s ? JSON.parse(s) : INITIAL_DEALERSHIP_CONFIG;
+    if (s) {
+      try {
+        const parsed = JSON.parse(s);
+        return { ...INITIAL_DEALERSHIP_CONFIG, ...parsed };
+      } catch {
+        return INITIAL_DEALERSHIP_CONFIG;
+      }
+    }
+    return INITIAL_DEALERSHIP_CONFIG;
   });
 
   // Guardar en localStorage
@@ -1356,11 +1370,102 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newVehicle;
   };
 
+  const DEALERSHIP_FIELD_LABELS: Record<string, string> = {
+    brand: 'Marca',
+    model: 'Modelo',
+    version: 'Versión',
+    year: 'Año',
+    condition: 'Condición',
+    vehicle_type: 'Tipo de vehículo',
+    plate: 'Matrícula',
+    chassis_vin: 'Chasis / VIN',
+    color_exterior: 'Color exterior',
+    color_interior: 'Color interior',
+    mileage: 'Kilometraje',
+    fuel: 'Combustible',
+    transmission: 'Transmisión',
+    range_km: 'Autonomía',
+    engine: 'Motorización',
+    doors: 'Puertas',
+    features: 'Equipamiento',
+    catalog_description: 'Descripción pública',
+    sale_price: 'Precio de venta',
+    sale_currency: 'Moneda de venta',
+    min_acceptable_price: 'Precio mínimo aceptable',
+    purchase_price: 'Precio de compra',
+    status: 'Estado',
+    docs_received: 'Documentación',
+    internal_notes: 'Notas internas',
+    images: 'Fotos',
+    cover_image: 'Foto de portada',
+    custom_fields: 'Campos personalizados',
+    is_featured: 'Destacado'
+  };
+
+  const canEditDealershipStock = (userRoles?: Role[]): boolean => {
+    const roles = userRoles || profile?.roles || [];
+    if (roles.includes('admin') || roles.includes('encargado')) return true;
+    if (roles.includes('vendedor') && dealershipConfig.sellers_can_edit) return true;
+    return false;
+  };
+
   const updateDealershipVehicle = (id: string, data: Partial<DealershipVehicle>) => {
     setDealershipVehicles((prev) =>
       prev.map((v) => {
         if (v.id !== id) return v;
-        const merged = { ...v, ...data, updated_at: new Date().toISOString() };
+
+        // Diff tracking
+        const newHistoryEntries: DealershipVehicleHistoryEntry[] = [];
+        const ignoredKeys = new Set([
+          'history',
+          'updated_at',
+          'created_at',
+          'id',
+          'total_real_cost_usd',
+          'estimated_margin_usd',
+          'estimated_margin_percent',
+          'tiendanube_synced_at'
+        ]);
+
+        for (const [key, newVal] of Object.entries(data)) {
+          if (ignoredKeys.has(key)) continue;
+          const oldVal = (v as any)[key];
+          if (newVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+            newHistoryEntries.push({
+              id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              timestamp: new Date().toISOString(),
+              user_id: profile?.id,
+              user_name: profile?.full_name || 'Usuario',
+              field: key,
+              field_label: DEALERSHIP_FIELD_LABELS[key] || key,
+              old_value: oldVal ?? '—',
+              new_value: newVal ?? '—'
+            });
+          }
+        }
+
+        // Detectar si cambió algún dato público para simular sync con Tiendanube
+        const publicKeys = [
+          'brand', 'model', 'version', 'year', 'condition', 'vehicle_type',
+          'color_exterior', 'mileage', 'fuel', 'transmission', 'autonomy_km',
+          'engine', 'doors', 'features', 'catalog_description', 'sale_price',
+          'sale_currency', 'images', 'cover_image', 'status', 'is_featured'
+        ];
+        const isPublicChanged = Object.keys(data).some(
+          (k) => publicKeys.includes(k) && JSON.stringify((v as any)[k]) !== JSON.stringify((data as any)[k])
+        );
+
+        const updatedHistory = [...newHistoryEntries, ...(v.history || [])].slice(0, 50);
+
+        const merged: DealershipVehicle = {
+          ...v,
+          ...data,
+          history: updatedHistory,
+          tiendanube_synced_at: isPublicChanged
+            ? new Date().toISOString()
+            : (data.tiendanube_synced_at || v.tiendanube_synced_at),
+          updated_at: new Date().toISOString()
+        };
         const financials = calculateVehicleFinancials(merged);
         return {
           ...merged,
@@ -1371,6 +1476,179 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
     logActivity('automotora', id, 'update', data);
+  };
+
+  const duplicateDealershipVehicle = (id: string): DealershipVehicle | null => {
+    const original = dealershipVehicles.find((v) => v.id === id);
+    if (!original) return null;
+
+    const newVehicleData: Omit<DealershipVehicle, 'id' | 'created_at' | 'updated_at' | 'total_real_cost_usd' | 'estimated_margin_usd' | 'estimated_margin_percent'> = {
+      empresa_id: original.empresa_id || 'carvlak',
+      condition: original.condition,
+      vehicle_type: original.vehicle_type,
+      plate: '',
+      chassis_vin: '',
+      brand: original.brand,
+      model: `${original.model} (Copia)`,
+      version: original.version,
+      year: original.year,
+      mileage: 0,
+      engine: original.engine,
+      doors: original.doors,
+      category: original.category,
+      body_type: original.body_type,
+      transmission: original.transmission,
+      fuel: original.fuel,
+      autonomy_km: original.autonomy_km,
+      color_exterior: original.color_exterior,
+      status: 'evaluacion',
+      is_featured: false,
+      features: [...(original.features || [])],
+      images: [],
+      cover_image: undefined,
+      catalog_description: original.catalog_description,
+      purchase_price: original.purchase_price,
+      purchase_currency: original.purchase_currency,
+      exchange_rate: original.exchange_rate,
+      purchase_origin: original.purchase_origin,
+      supplier_name: original.supplier_name,
+      supplier_phone: original.supplier_phone,
+      docs_received: {
+        titulo: false,
+        libreta: false,
+        cedula: false,
+        sucive_al_dia: false,
+        multas_al_dia: false,
+        llave_duplicado: false
+      },
+      sale_price: original.sale_price,
+      sale_currency: original.sale_currency,
+      min_acceptable_price: original.min_acceptable_price,
+      inspection_cost: 0,
+      detailing_cost: 0,
+      repairs_cost: 0,
+      paperwork_cost: 0,
+      other_expenses_cost: 0,
+      prep_checklist: {
+        inspection_done: false,
+        repairs_done: false,
+        detailing_done: false,
+        photos_done: false,
+        docs_done: false
+      },
+      custom_fields: original.custom_fields ? { ...original.custom_fields } : {},
+      internal_notes: `Duplicado a partir de ${original.brand} ${original.model} (${original.plate || 'sin matrícula'}).`,
+      history: [
+        {
+          id: `hist-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          user_id: profile?.id,
+          user_name: profile?.full_name || 'Usuario',
+          field: 'status',
+          field_label: 'Vehículo duplicado',
+          old_value: '—',
+          new_value: `Copia creada a partir de ${original.brand} ${original.model} (${original.plate || 'sin matrícula'})`
+        }
+      ],
+      is_archived: false
+    };
+
+    return addDealershipVehicle(newVehicleData);
+  };
+
+  const bulkUpdateDealershipVehicles = (ids: string[], updates: Partial<DealershipVehicle>) => {
+    setDealershipVehicles((prev) =>
+      prev.map((v) => {
+        if (!ids.includes(v.id)) return v;
+
+        const newHistoryEntries: DealershipVehicleHistoryEntry[] = [];
+        for (const [key, newVal] of Object.entries(updates)) {
+          const oldVal = (v as any)[key];
+          if (newVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+            newHistoryEntries.push({
+              id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              timestamp: new Date().toISOString(),
+              user_id: profile?.id,
+              user_name: profile?.full_name || 'Usuario',
+              field: key,
+              field_label: DEALERSHIP_FIELD_LABELS[key] || key,
+              old_value: oldVal ?? '—',
+              new_value: newVal ?? '—'
+            });
+          }
+        }
+
+        const merged: DealershipVehicle = {
+          ...v,
+          ...updates,
+          history: [...newHistoryEntries, ...(v.history || [])].slice(0, 50),
+          tiendanube_synced_at: updates.status || updates.sale_price ? new Date().toISOString() : v.tiendanube_synced_at,
+          updated_at: new Date().toISOString()
+        };
+        const financials = calculateVehicleFinancials(merged);
+        return {
+          ...merged,
+          total_real_cost_usd: financials.totalRealCostUsd,
+          estimated_margin_usd: financials.estimatedMarginUsd,
+          estimated_margin_percent: financials.estimatedMarginPercent
+        };
+      })
+    );
+    ids.forEach((id) => {
+      logActivity('automotora', id, 'update', updates);
+    });
+  };
+
+  const bulkAdjustVehiclePrices = (
+    ids: string[],
+    adjustmentType: 'percent' | 'fixed',
+    amount: number
+  ) => {
+    setDealershipVehicles((prev) =>
+      prev.map((v) => {
+        if (!ids.includes(v.id)) return v;
+        const oldPrice = v.sale_price;
+        let newPrice = oldPrice;
+        if (adjustmentType === 'percent') {
+          newPrice = Math.round(oldPrice * (1 + amount / 100));
+        } else {
+          newPrice = Math.max(0, Math.round(oldPrice + amount));
+        }
+
+        const historyEntry: DealershipVehicleHistoryEntry = {
+          id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          timestamp: new Date().toISOString(),
+          user_id: profile?.id,
+          user_name: profile?.full_name || 'Usuario',
+          field: 'sale_price',
+          field_label: 'Precio de venta (Ajuste masivo)',
+          old_value: `$ ${oldPrice.toLocaleString('es-UY')}`,
+          new_value: `$ ${newPrice.toLocaleString('es-UY')} (${
+            adjustmentType === 'percent'
+              ? (amount >= 0 ? `+${amount}%` : `${amount}%`)
+              : (amount >= 0 ? `+USD ${amount}` : `-USD ${Math.abs(amount)}`)
+          })`
+        };
+
+        const merged: DealershipVehicle = {
+          ...v,
+          sale_price: newPrice,
+          history: [historyEntry, ...(v.history || [])].slice(0, 50),
+          tiendanube_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        const financials = calculateVehicleFinancials(merged);
+        return {
+          ...merged,
+          total_real_cost_usd: financials.totalRealCostUsd,
+          estimated_margin_usd: financials.estimatedMarginUsd,
+          estimated_margin_percent: financials.estimatedMarginPercent
+        };
+      })
+    );
+    ids.forEach((id) => {
+      logActivity('automotora', id, 'update', { bulkPriceAdjustment: { adjustmentType, amount } });
+    });
   };
 
   const updateDealershipVehicleStatus = (
@@ -1871,8 +2149,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dealershipVehicles: dealershipVehicles.filter((v) => !v.is_archived),
         dealershipInquiries: dealershipInquiries.filter((inq) => !inq.is_archived),
         dealershipConfig,
+        canEditDealershipStock,
         addDealershipVehicle,
         updateDealershipVehicle,
+        duplicateDealershipVehicle,
+        bulkUpdateDealershipVehicles,
+        bulkAdjustVehiclePrices,
         updateDealershipVehicleStatus,
         archiveDealershipVehicle,
         addDealershipInquiry,

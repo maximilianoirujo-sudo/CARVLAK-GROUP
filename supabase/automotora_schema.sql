@@ -100,10 +100,28 @@ CREATE TABLE IF NOT EXISTS public.dealership_vehicles (
   reservation JSONB,
   sale_record JSONB,
   
+  -- Campos extendidos y auditoría
+  engine TEXT,
+  doors INTEGER DEFAULT 4,
+  internal_notes TEXT, -- Confidencial taller / directiva (Admin only)
+  custom_fields JSONB DEFAULT '{}'::jsonb,
+  history JSONB DEFAULT '[]'::jsonb,
+  tiendanube_synced_at TIMESTAMP WITH TIME ZONE,
+  
   is_archived BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migraciones idempotentes para bases ya desplegadas
+ALTER TABLE public.dealership_vehicles ADD COLUMN IF NOT EXISTS engine TEXT;
+ALTER TABLE public.dealership_vehicles ADD COLUMN IF NOT EXISTS doors INTEGER DEFAULT 4;
+ALTER TABLE public.dealership_vehicles ADD COLUMN IF NOT EXISTS internal_notes TEXT;
+ALTER TABLE public.dealership_vehicles ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.dealership_vehicles ADD COLUMN IF NOT EXISTS history JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.dealership_vehicles ADD COLUMN IF NOT EXISTS tiendanube_synced_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.dealership_configs ADD COLUMN IF NOT EXISTS sellers_can_edit BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.dealership_configs ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '[]'::jsonb;
 
 -- Índices para búsqueda rápida y catálogo público
 CREATE INDEX IF NOT EXISTS idx_dealership_vehicles_empresa_status ON public.dealership_vehicles(empresa_id, status);

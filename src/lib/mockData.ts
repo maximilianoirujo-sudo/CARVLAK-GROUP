@@ -952,7 +952,134 @@ export const INITIAL_DEALERSHIP_CONFIG: DealershipConfig = {
   default_internal_inspection_cost: 1500,
   default_internal_detailing_cost: 2500,
   commission_basis: 'margin',
-  default_commission_rate: 15 // 15% sobre margen o 1.5% sobre venta total
+  default_commission_rate: 15, // 15% sobre margen o 1.5% sobre venta total
+  sellers_can_edit: false,
+
+  brands: [
+    'Audi',
+    'BMW',
+    'Changan',
+    'Chevrolet',
+    'Citroën',
+    'Dongfeng',
+    'Fiat',
+    'Ford',
+    'Geely',
+    'Honda',
+    'Hyundai',
+    'JAC',
+    'Jeep',
+    'Kia',
+    'Mercedes-Benz',
+    'Mitsubishi',
+    'Nissan',
+    'Peugeot',
+    'Renault',
+    'Suzuki',
+    'Toyota',
+    'Volkswagen'
+  ],
+
+  models_by_brand: {
+    'Volkswagen': ['Golf', 'Gol', 'Polo', 'T-Cross', 'Taos', 'Amarok', 'Nivus', 'Vento', 'Virtus', 'Up!'],
+    'Audi': ['A1', 'A3', 'A4', 'Q2', 'Q3', 'Q5'],
+    'BMW': ['Serie 1', 'Serie 3', 'X1', 'X3'],
+    'Changan': ['Lumin', 'E-Star', 'CS15', 'CS35 Plus', 'CS55 Plus', 'Honor EV', 'Alsvin'],
+    'Chevrolet': ['Onix', 'Tracker', 'Cruze', 'Montana', 'S10'],
+    'Citroën': ['C3', 'C3 Aircross', 'C4 Cactus'],
+    'Dongfeng': ['Box', 'Rich 6 EV', 'Aeolus'],
+    'Fiat': ['Uno', 'Palio', 'Strada', 'Toro', 'Cronos', 'Pulse', 'Fastback', '500'],
+    'Ford': ['Fiesta', 'Focus', 'EcoSport', 'Ranger', 'Territory', 'Mustang Mach-E'],
+    'Geely': ['GX3 Pro', 'Coolray', 'Geometry C'],
+    'Honda': ['Fit', 'Civic', 'HR-V', 'CR-V'],
+    'Hyundai': ['HB20', 'Creta', 'Tucson', 'Ioniq 5', 'Kona'],
+    'JAC': ['E-S2', 'E-JS1', 'T8 Pro', 'S2', 'S4'],
+    'Jeep': ['Renegade', 'Compass', 'Commander'],
+    'Kia': ['Picanto', 'Rio', 'Seltos', 'Sportage', 'EV6'],
+    'Mercedes-Benz': ['Clase A', 'Clase C', 'GLA', 'GLC', 'EQA'],
+    'Mitsubishi': ['L200', 'Outlander', 'ASX'],
+    'Nissan': ['March', 'Versa', 'Kicks', 'Sentra', 'Frontier', 'Leaf'],
+    'Peugeot': ['208', '2008', '3008', 'Partner'],
+    'Renault': ['Kwid', 'Sandero', 'Stepway', 'Duster', 'Oroch', 'Kwid E-Tech'],
+    'Suzuki': ['Alto', 'Celerio', 'Swift', 'Baleno', 'Vitara', 'Jimny'],
+    'Toyota': ['Corolla', 'Corolla Cross', 'Yaris', 'Hilux', 'RAV4', 'bZ4X']
+  },
+
+  vehicle_types: ['Hatchback', 'Sedán', 'SUV', 'Pick-up', 'Coupé', 'Utilitario', 'Moto'],
+  fuel_types: ['Nafta', 'Diésel', 'Híbrido', 'Eléctrico'],
+  transmission_types: ['Manual', 'Automática', 'Secuencial'],
+  colors: [
+    'Blanco',
+    'Blanco Perlado',
+    'Gris Plata',
+    'Gris Grafito',
+    'Gris Plomo',
+    'Negro',
+    'Negro Metalizado',
+    'Rojo',
+    'Azul',
+    'Azul Marino',
+    'Verde',
+    'Bordó',
+    'Beige',
+    'Amarillo',
+    'Naranja'
+  ],
+
+  equipment_items: [
+    'Aire acondicionado',
+    'Climatizador automático bi-zona',
+    'Dirección hidráulica / eléctrica',
+    'Airbags frontales',
+    'Airbags laterales y de cortina',
+    'Frenos ABS con EBD',
+    'Control de estabilidad (ESP)',
+    'Control de tracción (ASR)',
+    'Cámara de marcha atrás con guías',
+    'Sensores de estacionamiento traseros',
+    'Sensores de estacionamiento delanteros',
+    'Pantalla táctil multimedia',
+    'Apple CarPlay / Android Auto',
+    'Bluetooth y manos libres con audio streaming',
+    'Llantas de aleación',
+    'Techo solar eléctrico panorámico',
+    'Tapizado en cuero legítimo',
+    'Velocidad crucero adaptativo',
+    'Botón de arranque Start/Stop',
+    'Acceso sin llave Keyless Entry',
+    'Faros delanteros LED / Xenón',
+    'Cristales eléctricos x4 con one-touch',
+    'Espejos retrovisores eléctricos con plegado',
+    'Volante multifunción en cuero regulable',
+    'Anclajes ISOFIX para sillas infantiles'
+  ],
+
+  required_documents: [
+    { key: 'titulo', label: 'Título de propiedad original o certificado notarial', default_required: true },
+    { key: 'libreta', label: 'Libreta de propiedad vehicular al día', default_required: true },
+    { key: 'cedula', label: 'Cédula de identidad vigente del titular vendedor', default_required: true },
+    { key: 'sucive_al_dia', label: 'Constancia SUCIVE libre de deudas de patente', default_required: true },
+    { key: 'multas_al_dia', label: 'Libre de multas (Policía Caminera e Intendencia)', default_required: true },
+    { key: 'llave_duplicado', label: 'Duplicado de llaves original', default_required: false },
+    { key: 'convenio_pago', label: 'Levantamiento de prendas o convenios bancarios', default_required: false }
+  ],
+
+  statuses: [
+    { id: 'evaluacion', label: 'En Evaluación', icon: '🔍', description: 'Revisión técnica o peritaje de precompra en curso' },
+    { id: 'comprado', label: 'Comprado', icon: '📥', description: 'Adquirido o recibido en permuta, pendiente de alistamiento' },
+    { id: 'preparacion', label: 'En Preparación', icon: '⚙️', description: 'Alistamiento estético en taller DetailVlak y fotos HD' },
+    { id: 'publicado', label: 'Publicado', icon: '🌐', description: 'Disponible para la venta y visible en el catálogo público' },
+    { id: 'reservado', label: 'Reservado', icon: '🔒', description: 'Seña recibida con unidad bloqueada de venta a otros clientes' },
+    { id: 'vendido', label: 'Vendido', icon: '🤝', description: 'Operación cerrada y vehículo entregado al nuevo propietario' },
+    { id: 'descartado', label: 'Descartado', icon: '❌', description: 'Unidad no adquirida o descartada tras evaluación' }
+  ],
+
+  custom_fields: [
+    { id: 'cf-1', name: 'Garantía Otorgada', type: 'text', show_in_catalog: true, required: false },
+    { id: 'cf-2', name: 'Ubicación en Salón / Depósito', type: 'select', options: ['Salón Principal Showroom', 'Patio Exterior', 'Taller Shangrilá', 'En Tránsito'], show_in_catalog: false, required: false },
+    { id: 'cf-3', name: 'Único Dueño Comprobado', type: 'boolean', show_in_catalog: true, required: false },
+    { id: 'cf-4', name: 'Service Oficial Sellado', type: 'boolean', show_in_catalog: true, required: false }
+  ]
 };
 
 export { INITIAL_DEALERSHIP_VEHICLES } from './dealershipInitialVehicles';

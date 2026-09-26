@@ -542,6 +542,26 @@ export interface DealershipDeliveryChecklist {
   notes?: string;
 }
 
+export interface DealershipVehicleHistoryEntry {
+  id: string;
+  timestamp: string;
+  user_id?: string;
+  user_name: string;
+  field: string;
+  field_label: string;
+  old_value: any;
+  new_value: any;
+}
+
+export interface DealershipCustomFieldDef {
+  id: string;
+  name: string;
+  type: 'text' | 'number' | 'boolean' | 'select';
+  options?: string[];
+  show_in_catalog: boolean; // Si se muestra en Tiendanube/catálogo público o es solo interno
+  required?: boolean;
+}
+
 export interface DealershipVehicle {
   id: string;
   empresa_id: string; // Multi-tenant SaaS ready, default 'carvlak'
@@ -552,6 +572,7 @@ export interface DealershipVehicle {
   vehicle_type?: DealershipVehicleType; // 'auto' | 'moto' | 'todoterreno'
   autonomy_km?: number; // Autonomía en km para eléctricos
   tiendanube_id?: string; // ID de producto en Tiendanube
+  tiendanube_synced_at?: string; // Última sincronización con Tiendanube
   incomplete_data?: boolean; // Flag para completar datos faltantes desde el celular
   brand: string;
   model: string;
@@ -560,6 +581,8 @@ export interface DealershipVehicle {
   mileage: number; // 0 por defecto para 0km
   category: VehicleCategory;
   body_type?: string; // Hatchback, Sedán, SUV, Pick-up, etc.
+  engine?: string; // Motorización (ej: 1.4 TSI, 1.0 Turbo, 160kW Dual Motor)
+  doors?: number; // Cantidad de puertas (ej: 2, 4, 5)
   transmission?: 'Manual' | 'Automática' | string;
   fuel?: 'Nafta' | 'Diesel' | 'Híbrido' | 'Eléctrico' | string;
   color_exterior?: string;
@@ -571,6 +594,8 @@ export interface DealershipVehicle {
   images: string[];
   cover_image?: string;
   catalog_description?: string;
+  internal_notes?: string; // Notas internas confidenciales de taller o directiva
+  custom_fields?: Record<string, any>; // Valores dinámicos de campos personalizados
 
   // Datos de compra
   purchase_date?: string;
@@ -624,6 +649,9 @@ export interface DealershipVehicle {
   reservation?: DealershipReservation;
   sale_record?: DealershipSaleRecord;
 
+  // Historial de Cambios / Auditoría
+  history?: DealershipVehicleHistoryEntry[];
+
   // Auditoría
   is_archived: boolean;
   created_by?: string;
@@ -665,5 +693,20 @@ export interface DealershipConfig {
   commission_basis: 'total_sale' | 'margin';
   default_commission_rate: number; // % ej: 1.5%
   seller_commission_percentage?: number;
+  sellers_can_edit: boolean; // ¿Los vendedores tienen permiso para editar stock?
+
+  // Listas editables
+  brands: string[];
+  models_by_brand: Record<string, string[]>;
+  vehicle_types: string[];
+  fuel_types: string[];
+  transmission_types: string[];
+  colors: string[];
+  equipment_items: string[];
+  required_documents: Array<{ key: string; label: string; default_required: boolean }>;
+  statuses: Array<{ id: DealershipVehicleStatus; label: string; icon: string; description: string }>;
+
+  // Campos personalizados
+  custom_fields: DealershipCustomFieldDef[];
 }
 

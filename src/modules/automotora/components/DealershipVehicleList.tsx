@@ -20,13 +20,25 @@ import {
   Grid,
   List as ListIcon,
   Download,
-  Zap
+  Zap,
+  Copy,
+  Layers,
+  Check,
+  X,
+  CheckSquare,
+  Square
 } from 'lucide-react';
-import { DealershipVehicle, DealershipVehicleStatus, PurchaseOrigin } from '../../../types';
+import {
+  DealershipVehicle,
+  DealershipVehicleStatus,
+  DealershipVehicleType,
+  PurchaseOrigin
+} from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { formatCurrency } from '../../../lib/formatters';
+import { DealershipBulkActionModal } from './DealershipBulkActionModal';
+import { DealershipConfirmStatusDialog } from './DealershipConfirmStatusDialog';
 
 interface DealershipVehicleListProps {
   onSelectVehicle: (vehicle: DealershipVehicle) => void;
@@ -45,21 +57,46 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
   onOpenMigrationModal,
   onOpenPublicCatalog
 }) => {
-  const { dealershipVehicles, dealershipConfig } = useData();
+  const {
+    dealershipVehicles,
+    dealershipConfig,
+    updateDealershipVehicle,
+    updateDealershipVehicleStatus,
+    duplicateDealershipVehicle,
+    bulkUpdateDealershipVehicles,
+    bulkAdjustVehiclePrices,
+    canEditDealershipStock
+  } = useData();
   const { profile } = useAuth();
   const { showToast } = useToast();
 
   const isAdmin = profile?.roles.includes('admin');
+  const canEdit = canEditDealershipStock(profile?.roles);
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [conditionFilter, setConditionFilter] = useState<'todos' | 'usado' | '0km' | 'incompletos'>('todos');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
+  const [brandFilter, setBrandFilter] = useState<string>('todos');
+  const [typeFilter, setTypeFilter] = useState<string>('todos');
   const [originFilter, setOriginFilter] = useState<string>('todos');
   const [onlyOverdueStock, setOnlyOverdueStock] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
-  const alertDaysThreshold = dealershipConfig?.days_in_stock_alert_threshold || dealershipConfig?.days_alert_threshold || 60;
+  // Multi-selección para acciones masivas
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+
+  // Edición rápida inline de precio
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editingPriceVal, setEditingPriceVal] = useState<number>(0);
+
+  // Confirmación de cambio de estado
+  const [confirmStatusVehicle, setConfirmStatusVehicle] = useState<DealershipVehicle | null>(null);
+  const [confirmTargetStatus, setConfirmTargetStatus] = useState<DealershipVehicleStatus | null>(null);
+
+  const alertDaysThreshold =
+    dealershipConfig?.days_in_stock_alert_threshold || dealershipConfig?.days_alert_threshold || 60;
 
   // Cálculo de días en stock
   const calculateDaysInStock = (vehicle: DealershipVehicle) => {
@@ -101,6 +138,14 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           ? ['comprado', 'preparacion', 'publicado', 'reservado'].includes(v.status)
           : v.status === statusFilter;
 
+      const matchesBrand =
+        brandFilter === 'todos' ? true : v.brand.toLowerCase() === brandFilter.toLowerCase();
+
+      const matchesType =
+        typeFilter === 'todos'
+          ? true
+          : (v.vehicle_type || 'auto').toLowerCase() === typeFilter.toLowerCase();
+
       const matchesOrigin =
         originFilter === 'todos' ? true : v.purchase_origin === originFilter;
 
@@ -109,9 +154,36 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
         ? v.status !== 'vendido' && days >= alertDaysThreshold
         : true;
 
-      return matchesSearch && matchesCondition && matchesStatus && matchesOrigin && matchesOverdue;
+      return (
+        matchesSearch &&
+        matchesCondition &&
+        matchesStatus &&
+        matchesBrand &&
+        matchesType &&
+        matchesOrigin &&
+        matchesOverdue
+      );
     });
-  }, [dealershipVehicles, searchTerm, conditionFilter, statusFilter, originFilter, onlyOverdueStock, alertDaysThreshold]);
+  }, [
+    dealershipVehicles,
+    searchTerm,
+    conditionFilter,
+    statusFilter,
+    brandFilter,
+    typeFilter,
+    originFilter,
+    onlyOverdueStock,
+    alertDaysThreshold
+  ]);
+
+  // Lista de marcas y tipos disponibles en stock para filtros
+  const availableBrands = useMemo(() => {
+    const set = new Set<string>();
+    dealershipVehicles.forEach((v) => {
+      if (v.brand) set.add(v.brand);
+    });
+    return Array.from(set).sort();
+  }, [dealershipVehicles]);
 
   // Contadores por estado y condición
   const counts = useMemo(() => {
@@ -119,7 +191,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
       todos: dealershipVehicles.length,
       usados: dealershipVehicles.filter((v) => v.condition === 'usado').length,
       ceroKm: dealershipVehicles.filter((v) => v.condition === '0km').length,
-      incompletos: dealershipVehicles.filter((v) => Boolean(v.incomplete_data)).length,
+      incompletos: dealershipVehicles.filter((v) => v.incomplete_data).length,
       en_stock: dealershipVehicles.filter((v) =>
         ['comprado', 'preparacion', 'publicado', 'reservado'].includes(v.status)
       ).length,
@@ -134,6 +206,99 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
       ).length
     };
   }, [dealershipVehicles, alertDaysThreshold]);
+
+  // Manejo de Selección Masiva
+  const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredVehicles.map((v) => v.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Duplicar auto
+  const handleDuplicate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canEdit) {
+      showToast('No tenés permisos para duplicar vehículos', 'error');
+      return;
+    }
+    const dup = duplicateDealershipVehicle(id);
+    if (dup) {
+      showToast(`Vehículo duplicado como borrador: ${dup.brand} ${dup.model}`, 'success');
+    }
+  };
+
+  // Cambio rápido inline de precio
+  const startEditingPrice = (car: DealershipVehicle, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canEdit) return;
+    setEditingPriceId(car.id);
+    setEditingPriceVal(car.sale_price);
+  };
+
+  const saveEditingPrice = (id: string, e: React.MouseEvent | React.FormEvent) => {
+    e.stopPropagation();
+    if (editingPriceVal <= 0) return;
+    updateDealershipVehicle(id, { sale_price: Number(editingPriceVal) });
+    setEditingPriceId(null);
+    showToast('Precio actualizado correctamente', 'success');
+  };
+
+  const cancelEditingPrice = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingPriceId(null);
+  };
+
+  // Cambio de estado con confirmación
+  const handleQuickStatusChange = (car: DealershipVehicle, newStatus: DealershipVehicleStatus, e: React.MouseEvent | React.ChangeEvent<HTMLSelectElement>) => {
+    e.stopPropagation();
+    if (!canEdit) {
+      showToast('No tenés permisos para cambiar el estado', 'error');
+      return;
+    }
+    if (newStatus === car.status) return;
+    setConfirmStatusVehicle(car);
+    setConfirmTargetStatus(newStatus);
+  };
+
+  const handleConfirmStatusChange = () => {
+    if (confirmStatusVehicle && confirmTargetStatus) {
+      updateDealershipVehicleStatus(confirmStatusVehicle.id, confirmTargetStatus);
+      showToast(`Estado de ${confirmStatusVehicle.brand} ${confirmStatusVehicle.model} cambiado a ${confirmTargetStatus}`, 'success');
+      setConfirmStatusVehicle(null);
+      setConfirmTargetStatus(null);
+    }
+  };
+
+  // Bulk actions handlers
+  const handleApplyBulkStatus = (newStatus: DealershipVehicleStatus) => {
+    bulkUpdateDealershipVehicles(Array.from(selectedIds), { status: newStatus });
+    showToast(`Estado actualizado en ${selectedIds.size} vehículos`, 'success');
+    setIsBulkModalOpen(false);
+    clearSelection();
+  };
+
+  const handleApplyBulkPrices = (type: 'percent' | 'fixed', amount: number) => {
+    bulkAdjustVehiclePrices(Array.from(selectedIds), type, amount);
+    showToast(`Ajuste de precio aplicado a ${selectedIds.size} vehículos`, 'success');
+    setIsBulkModalOpen(false);
+    clearSelection();
+  };
 
   const getStatusBadge = (status: DealershipVehicleStatus) => {
     switch (status) {
@@ -196,7 +361,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Alerta de autos estancados en stock (> 60 días) */}
       {counts.overdue > 0 && (
         <div
@@ -218,33 +383,30 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
               <div className="text-sm font-bold text-white mt-0.5">
                 Hay {counts.overdue} auto{counts.overdue > 1 ? 's' : ''} con más de {alertDaysThreshold} días en stock
               </div>
-              <p className="text-[11px] text-slate-400">
-                Hacé clic para {onlyOverdueStock ? 'ver todo el stock' : 'filtrar solo los vehículos inmovilizados y evaluar descuento o promoción'}.
-              </p>
             </div>
           </div>
-          <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 shrink-0">
-            {onlyOverdueStock ? 'Mostrar Todos' : 'Filtrar Críticos'}
+          <span className="text-xs font-bold px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            {onlyOverdueStock ? 'Mostrar Todos' : 'Filtrar Estancados'}
           </span>
         </div>
       )}
 
-      {/* Barra Superior con Acciones Principales */}
+      {/* Barra de Acciones Superiores */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-white flex items-center gap-2">
-            <span>Inventario &amp; Stock de Autos</span>
-            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
-              {filteredVehicles.length} unidades
+          <h2 className="text-base font-black text-white flex items-center gap-2">
+            Inventario de Vehículos
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+              {filteredVehicles.length} de {dealershipVehicles.length}
             </span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Gestión completa de compra, alistamiento, publicación y venta con fotos HD y control de margen.
+          <p className="text-xs text-slate-400">
+            Administración completa de stock, fichas, fotos y sincronización web.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Botón Catálogo Público */}
+          {/* Botón Catálogo Web */}
           <button
             onClick={onOpenPublicCatalog}
             className="px-3 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all shadow-sm"
@@ -265,13 +427,15 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           </button>
 
           {/* Botón Nuevo Auto */}
-          <button
-            onClick={onNewVehicle}
-            className="px-4 py-2 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Auto</span>
-          </button>
+          {canEdit && (
+            <button
+              onClick={onNewVehicle}
+              className="px-4 py-2 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Auto</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -298,7 +462,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           }`}
         >
           <Car className="w-3.5 h-3.5" />
-          <span>Usados Seleccionados</span>
+          <span>Usados</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-950/40 text-blue-200">{counts.usados}</span>
         </button>
 
@@ -311,7 +475,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           }`}
         >
           <Zap className="w-3.5 h-3.5 text-purple-400" />
-          <span>Eléctricos 0km</span>
+          <span>0km</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-950/40 text-purple-200">{counts.ceroKm}</span>
         </button>
 
@@ -323,7 +487,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
               : 'text-amber-400/80 hover:text-amber-300'
           }`}
         >
-          <span>⚠️ Datos Incompletos</span>
+          <span>⚠️ Incompletos</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300">{counts.incompletos}</span>
         </button>
       </div>
@@ -363,7 +527,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
         ))}
       </div>
 
-      {/* Barra de Filtros y Búsqueda */}
+      {/* Barra de Filtros Adicionales y Búsqueda */}
       <div className="p-4 rounded-3xl bg-[#0E131C] border border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -377,21 +541,62 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Selector de Marca */}
+          <select
+            value={brandFilter}
+            onChange={(e) => setBrandFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+          >
+            <option value="todos">Todas las marcas</option>
+            {availableBrands.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+
+          {/* Selector de Tipo */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+          >
+            <option value="todos">Todos los tipos</option>
+            {(dealershipConfig.vehicle_types || ['Auto', 'Moto', 'Todoterreno']).map((vt) => (
+              <option key={vt} value={vt.toLowerCase().replace(/[^a-z]/g, '')}>{vt}</option>
+            ))}
+          </select>
+
           {/* Selector de Origen */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400">Origen:</span>
-            <select
-              value={originFilter}
-              onChange={(e) => setOriginFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+          <select
+            value={originFilter}
+            onChange={(e) => setOriginFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-500"
+          >
+            <option value="todos">Todos los orígenes</option>
+            <option value="particular">Particular</option>
+            <option value="concesionaria">Concesionaria</option>
+            <option value="parte_de_pago">Parte de Pago / Permuta</option>
+            <option value="consignacion">Consignación</option>
+          </select>
+
+          {/* Seleccionar Todos Toggle */}
+          {canEdit && filteredVehicles.length > 0 && (
+            <button
+              onClick={toggleSelectAllVisible}
+              className={`p-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0
+                  ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+              }`}
+              title="Seleccionar todos los visibles"
             >
-              <option value="todos">Todos los orígenes</option>
-              <option value="particular">Particular</option>
-              <option value="concesionaria">Concesionaria</option>
-              <option value="parte_de_pago">Parte de Pago / Permuta</option>
-              <option value="consignacion">Consignación</option>
-            </select>
-          </div>
+              {selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0 ? (
+                <CheckSquare className="w-4 h-4 text-blue-400" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">Seleccionar todo</span>
+            </button>
+          )}
 
           {/* Toggle Grid / Tabla */}
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5">
@@ -424,12 +629,18 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             const daysInStock = calculateDaysInStock(car);
             const isOverdue = car.status !== 'vendido' && daysInStock >= alertDaysThreshold;
             const cover = car.cover_image || (car.images && car.images[0]) || '';
+            const isSelected = selectedIds.has(car.id);
+            const isEditingThisPrice = editingPriceId === car.id;
 
             return (
               <div
                 key={car.id}
-                className={`group rounded-3xl bg-[#101520] border transition-all flex flex-col overflow-hidden hover:border-slate-700 shadow-xl ${
-                  isOverdue ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-slate-800'
+                className={`group rounded-3xl bg-[#101520] border transition-all flex flex-col overflow-hidden hover:border-slate-700 shadow-xl relative ${
+                  isSelected
+                    ? 'border-blue-500 ring-2 ring-blue-500/30'
+                    : isOverdue
+                    ? 'border-amber-500/40 ring-1 ring-amber-500/20'
+                    : 'border-slate-800'
                 }`}
               >
                 {/* Portada con Imagen y Badges */}
@@ -450,7 +661,26 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     </div>
                   )}
 
-                  {/* Estado Badge + 0km + Autonomía + Datos Incompletos */}
+                  {/* Checkbox de Selección Masiva */}
+                  {canEdit && (
+                    <div
+                      onClick={(e) => toggleSelectOne(car.id, e)}
+                      className="absolute top-2.5 right-2.5 z-10"
+                    >
+                      <button
+                        type="button"
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center backdrop-blur-md transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40'
+                            : 'bg-black/60 text-gray-400 hover:text-white border border-gray-700'
+                        }`}
+                      >
+                        {isSelected ? <Check className="w-4 h-4 stroke-[3]" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Estado Badge + 0km + Autonomía */}
                   <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 max-w-[70%]">
                     {getStatusBadge(car.status)}
                     {car.condition === '0km' && (
@@ -466,29 +696,23 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     )}
                     {car.incomplete_data && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/60 backdrop-blur-md shadow-sm">
-                        ⚠️ Datos incompletos
+                        ⚠️ Incompleto
                       </span>
                     )}
                   </div>
 
                   {/* Alerta de Días en Stock */}
-                  <div className="absolute top-2.5 right-2.5">
-                    {car.status === 'vendido' ? (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-950/80 backdrop-blur-md text-slate-300 border border-slate-700">
-                        Vendido en {daysInStock} d
-                      </span>
-                    ) : (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md border flex items-center gap-1 ${
-                          isOverdue
-                            ? 'bg-amber-950/90 text-amber-300 border-amber-500/60 font-black animate-pulse'
-                            : 'bg-slate-950/80 text-slate-300 border-slate-700'
-                        }`}
-                      >
-                        <Clock className="w-3 h-3" />
-                        <span>{daysInStock} días</span>
-                      </span>
-                    )}
+                  <div className="absolute bottom-2.5 right-2.5">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md border flex items-center gap-1 ${
+                        isOverdue
+                          ? 'bg-amber-950/90 text-amber-300 border-amber-500/60 font-black animate-pulse'
+                          : 'bg-slate-950/80 text-slate-300 border-slate-700'
+                      }`}
+                    >
+                      <Clock className="w-3 h-3" />
+                      <span>{daysInStock} días</span>
+                    </span>
                   </div>
 
                   {/* Matrícula o Chasis Flotante */}
@@ -504,13 +728,6 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       </span>
                     )}
                   </div>
-
-                  {/* Indicador de Origen */}
-                  <div className="absolute bottom-2.5 right-2.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md text-slate-300 border border-slate-800">
-                      {getOriginLabel(car.purchase_origin)}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Contenido de la Ficha */}
@@ -524,7 +741,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       <h3 className="text-sm font-black text-white leading-tight">
                         {car.brand} {car.model} {car.version || ''}
                       </h3>
-                      <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                      <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
                         <span>Año {car.year}</span>
                         <span>•</span>
                         <span>{car.mileage.toLocaleString()} km</span>
@@ -535,16 +752,62 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       </div>
                     </div>
 
-                    {/* Precios y Margen (Margen solo para Admin) */}
+                    {/* Precios y Margen con Edición Rápida Inline */}
                     <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-end justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                           Precio de Venta
+                          {canEdit && !isEditingThisPrice && (
+                            <button
+                              onClick={(e) => startEditingPrice(car, e)}
+                              className="text-gray-500 hover:text-emerald-400 transition-colors p-0.5"
+                              title="Editar precio rápido"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
-                        <div className="text-base font-black text-emerald-400">
-                          {car.sale_currency === 'USD' ? 'USD ' : '$U '}
-                          {car.sale_price.toLocaleString()}
-                        </div>
+
+                        {isEditingThisPrice ? (
+                          <div className="flex items-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">USD</span>
+                              <input
+                                type="number"
+                                autoFocus
+                                value={editingPriceVal || ''}
+                                onChange={(e) => setEditingPriceVal(parseInt(e.target.value) || 0)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveEditingPrice(car.id, e);
+                                  if (e.key === 'Escape') cancelEditingPrice(e as any);
+                                }}
+                                className="w-28 pl-9 pr-2 py-1 bg-zinc-900 border border-emerald-500 rounded-lg text-xs font-mono font-bold text-white focus:outline-none"
+                              />
+                            </div>
+                            <button
+                              onClick={(e) => saveEditingPrice(car.id, e)}
+                              className="p-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white"
+                              title="Guardar precio"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={cancelEditingPrice}
+                              className="p-1 rounded-md bg-zinc-800 text-gray-400 hover:text-white"
+                              title="Cancelar"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={(e) => canEdit && startEditingPrice(car, e)}
+                            className={`text-base font-black text-emerald-400 ${canEdit ? 'cursor-pointer hover:underline' : ''}`}
+                            title={canEdit ? 'Click para editar precio rápidamente' : undefined}
+                          >
+                            USD {car.sale_price.toLocaleString('es-UY')}
+                          </div>
+                        )}
                       </div>
 
                       {isAdmin && (
@@ -582,13 +845,25 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       <span>Ficha</span>
                     </button>
 
-                    <button
-                      onClick={() => onEditVehicle(car)}
-                      className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
-                      title="Editar Datos"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={() => onEditVehicle(car)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
+                        title="Editar Ficha Completa"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {canEdit && (
+                      <button
+                        onClick={(e) => handleDuplicate(car.id, e)}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
+                        title="Duplicar unidad"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    )}
 
                     {car.status !== 'vendido' && (
                       <button
@@ -596,7 +871,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1 transition-all"
                       >
                         <DollarSign className="w-3.5 h-3.5" />
-                        <span>{car.status === 'reservado' ? 'Liquidar Venta' : 'Vender / Seña'}</span>
+                        <span>{car.status === 'reservado' ? 'Liquidar Venta' : 'Vender'}</span>
                       </button>
                     )}
                   </div>
@@ -613,6 +888,21 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-wider bg-slate-900/50">
+                {canEdit && (
+                  <th className="p-3 w-8">
+                    <button
+                      onClick={toggleSelectAllVisible}
+                      className="text-gray-400 hover:text-white transition-colors"
+                      title="Seleccionar todos"
+                    >
+                      {selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0 ? (
+                        <CheckSquare className="w-4 h-4 text-blue-400" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                )}
                 <th className="p-3">Auto / Matrícula</th>
                 <th className="p-3">Año / Km</th>
                 <th className="p-3">Estado</th>
@@ -628,9 +918,30 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
               {filteredVehicles.map((car) => {
                 const days = calculateDaysInStock(car);
                 const isOverdue = car.status !== 'vendido' && days >= alertDaysThreshold;
+                const isSelected = selectedIds.has(car.id);
+                const isEditingThisPrice = editingPriceId === car.id;
 
                 return (
-                  <tr key={car.id} className="hover:bg-slate-900/40 transition-colors">
+                  <tr
+                    key={car.id}
+                    className={`transition-colors ${isSelected ? 'bg-blue-600/10' : 'hover:bg-slate-900/40'}`}
+                  >
+                    {canEdit && (
+                      <td className="p-3 w-8">
+                        <button
+                          type="button"
+                          onClick={(e) => toggleSelectOne(car.id, e)}
+                          className="text-gray-400 hover:text-white transition-colors"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-blue-400" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
+                    )}
+
                     <td className="p-3">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-slate-900 overflow-hidden shrink-0 border border-slate-800">
@@ -647,6 +958,12 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                           )}
                         </div>
                         <div>
+                          <div
+                            onClick={() => onSelectVehicle(car)}
+                            className="font-bold text-white cursor-pointer hover:text-amber-400"
+                          >
+                            {car.brand} {car.model} {car.version || ''}
+                          </div>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-mono text-[10px] text-amber-400">
                               {car.plate || car.chassis_vin || 'Sin matrícula'}
@@ -661,11 +978,6 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                                 🔋 {car.autonomy_km}km
                               </span>
                             )}
-                            {car.incomplete_data && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">
-                                ⚠️ Incompleto
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -676,7 +988,25 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       <div className="text-[10px] text-slate-500">{car.mileage.toLocaleString()} km</div>
                     </td>
 
-                    <td className="p-3">{getStatusBadge(car.status)}</td>
+                    <td className="p-3">
+                      {canEdit ? (
+                        <select
+                          value={car.status}
+                          onChange={(e) => handleQuickStatusChange(car, e.target.value as DealershipVehicleStatus, e)}
+                          className="bg-zinc-900 border border-gray-700 text-xs rounded-lg px-2 py-1 text-white focus:outline-none focus:border-amber-500"
+                        >
+                          <option value="evaluacion">En evaluación</option>
+                          <option value="comprado">Comprado</option>
+                          <option value="preparacion">En preparación</option>
+                          <option value="publicado">Publicado</option>
+                          <option value="reservado">Reservado</option>
+                          <option value="vendido">Vendido</option>
+                          <option value="descartado">Descartado</option>
+                        </select>
+                      ) : (
+                        getStatusBadge(car.status)
+                      )}
+                    </td>
 
                     <td className="p-3">
                       <span
@@ -692,8 +1022,45 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       {getOriginLabel(car.purchase_origin)}
                     </td>
 
-                    <td className="p-3 text-right font-black text-emerald-400">
-                      USD {car.sale_price.toLocaleString()}
+                    <td className="p-3 text-right">
+                      {isEditingThisPrice ? (
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="number"
+                            autoFocus
+                            value={editingPriceVal || ''}
+                            onChange={(e) => setEditingPriceVal(parseInt(e.target.value) || 0)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEditingPrice(car.id, e);
+                              if (e.key === 'Escape') cancelEditingPrice(e as any);
+                            }}
+                            className="w-24 px-2 py-0.5 bg-zinc-900 border border-emerald-500 rounded text-xs font-mono font-bold text-white focus:outline-none"
+                          />
+                          <button
+                            onClick={(e) => saveEditingPrice(car.id, e)}
+                            className="p-1 rounded bg-emerald-600 text-white"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={cancelEditingPrice}
+                            className="p-1 rounded bg-zinc-800 text-gray-400"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={(e) => canEdit && startEditingPrice(car, e)}
+                          className={`font-black text-emerald-400 flex items-center justify-end gap-1 ${
+                            canEdit ? 'cursor-pointer hover:underline' : ''
+                          }`}
+                          title={canEdit ? 'Click para editar precio' : undefined}
+                        >
+                          <span>USD {car.sale_price.toLocaleString('es-UY')}</span>
+                          {canEdit && <Edit className="w-3 h-3 text-gray-500 opacity-60 hover:opacity-100" />}
+                        </div>
+                      )}
                     </td>
 
                     {isAdmin && (
@@ -724,13 +1091,27 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         >
                           <Eye className="w-3.5 h-3.5 text-amber-400" />
                         </button>
-                        <button
-                          onClick={() => onEditVehicle(car)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-                          title="Editar"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
+
+                        {canEdit && (
+                          <button
+                            onClick={() => onEditVehicle(car)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                            title="Editar"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {canEdit && (
+                          <button
+                            onClick={(e) => handleDuplicate(car.id, e)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                            title="Duplicar"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
                         {car.status !== 'vendido' && (
                           <button
                             onClick={() => onOpenSaleModal(car)}
@@ -761,6 +1142,64 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             Probá ajustando los filtros de búsqueda o cargá un nuevo auto en el inventario.
           </p>
         </div>
+      )}
+
+      {/* BARRA FLOTANTE DE ACCIONES MASIVAS */}
+      {canEdit && selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#18181b]/95 backdrop-blur-md border border-gray-700 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+              {selectedIds.size}
+            </span>
+            <span className="text-xs font-semibold text-white">
+              vehículo{selectedIds.size === 1 ? '' : 's'} seleccionado{selectedIds.size === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-gray-700" />
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsBulkModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Acciones Masivas</span>
+            </button>
+
+            <button
+              onClick={clearSelection}
+              className="px-2.5 py-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-zinc-800 text-xs transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE ACCIONES MASIVAS */}
+      {isBulkModalOpen && (
+        <DealershipBulkActionModal
+          isOpen={isBulkModalOpen}
+          selectedVehicles={dealershipVehicles.filter((v) => selectedIds.has(v.id))}
+          onClose={() => setIsBulkModalOpen(false)}
+          onApplyStatus={handleApplyBulkStatus}
+          onApplyPriceAdjustment={handleApplyBulkPrices}
+        />
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN DE CAMBIO DE ESTADO INDIVIDUAL */}
+      {confirmStatusVehicle && confirmTargetStatus && (
+        <DealershipConfirmStatusDialog
+          isOpen={Boolean(confirmStatusVehicle && confirmTargetStatus)}
+          vehicle={confirmStatusVehicle}
+          targetStatus={confirmTargetStatus}
+          onConfirm={handleConfirmStatusChange}
+          onCancel={() => {
+            setConfirmStatusVehicle(null);
+            setConfirmTargetStatus(null);
+          }}
+        />
       )}
     </div>
   );
