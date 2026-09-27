@@ -107,34 +107,34 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-panel border border-borde rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-panel border border-borde text-white flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-rojo" />
+            <div className="w-10 h-10 rounded-xl bg-[#FDF2F2] border border-[#F0D5D5] text-[#D7141A] flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-[#D7141A]" />
             </div>
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                Plantillas WhatsApp DetailVlak
+              <h3 className="text-base font-bold text-[#161616] flex items-center gap-2">
+                Plantillas de WhatsApp DetailVlak
               </h3>
-              <p className="text-xs text-gris-texto">
-                Para: <strong className="text-white">{quote.client_name}</strong> ({quote.client_phone})
+              <p className="text-xs text-[#6B6B6B]">
+                Para: <strong className="text-[#161616]">{quote.client_name}</strong> ({quote.client_phone})
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-panel hover:bg-negro text-gris-texto hover:text-white flex items-center justify-center transition-colors border border-borde"
+            className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Selector de pestañas de plantillas */}
-        <div className="px-4 pt-3 pb-2 border-b border-borde bg-negro overflow-x-auto flex gap-3 no-scrollbar">
+        <div className="px-4 pt-3 pb-2 border-b border-[#E5E5E3] bg-[#F5F5F4] overflow-x-auto flex gap-3 no-scrollbar">
           {whatsappTemplates.map((t) => (
             <button
               key={t.key}
@@ -142,10 +142,10 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
                 setActiveKey(t.key);
                 setIsEditingTemplate(false);
               }}
-              className={`pb-2 text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border-b-2 ${
+              className={`pb-2 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 border-b-2 ${
                 activeKey === t.key
-                  ? 'text-white border-rojo'
-                  : 'text-gris-texto hover:text-white border-transparent'
+                  ? 'text-[#161616] border-[#D7141A]'
+                  : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
               }`}
             >
               <span>{t.title}</span>
@@ -157,13 +157,13 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
         <div className="p-4 sm:p-5 flex-1 overflow-y-auto space-y-4">
           
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gris-texto">
+            <p className="text-xs text-[#6B6B6B]">
               {currentTemplateObj?.description}
             </p>
             {profile?.roles.includes('admin') && (
               <button
                 onClick={() => setIsEditingTemplate(!isEditingTemplate)}
-                className="text-[11px] font-bold text-white hover:text-rojo flex items-center gap-1"
+                className="text-[11px] font-semibold text-[#161616] hover:text-[#D7141A] flex items-center gap-1"
               >
                 <Settings className="w-3.5 h-3.5" />
                 <span>{isEditingTemplate ? 'Ver mensaje compilado' : 'Editar plantilla base'}</span>
@@ -173,21 +173,21 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
 
           {isEditingTemplate ? (
             <div className="space-y-3">
-              <div className="p-2.5 rounded-xl bg-negro border border-borde text-[11px] text-gris-texto">
+              <div className="p-2.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[11px] text-[#6B6B6B]">
                 Variables disponibles: <code>{'{{cliente}}'}</code>, <code>{'{{vehiculo}}'}</code>, <code>{'{{operador}}'}</code>, <code>{'{{total}}'}</code>, <code>{'{{tiempo}}'}</code>, <code>{'{{servicios}}'}</code>, <code>{'{{servicios_resumen}}'}</code>
               </div>
               <textarea
                 value={rawTemplate}
                 onChange={(e) => setRawTemplate(e.target.value)}
                 rows={9}
-                className="w-full bg-negro border border-borde rounded-xl p-3.5 text-xs text-white font-mono focus:border-rojo focus:outline-none leading-relaxed"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl p-3.5 text-xs text-[#161616] font-mono focus:border-[#D7141A] focus:outline-none leading-relaxed"
               />
               <Button
                 variant="primary"
                 size="sm"
                 onClick={handleSaveTemplate}
               >
-                Guardar Plantilla
+                Guardar plantilla
               </Button>
             </div>
           ) : (
@@ -196,38 +196,38 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
                 value={compiledMessage}
                 onChange={(e) => setCompiledMessage(e.target.value)}
                 rows={11}
-                className="w-full bg-negro border border-borde rounded-xl p-4 text-xs text-white font-sans focus:border-rojo focus:outline-none leading-relaxed"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl p-4 text-xs text-[#161616] font-sans focus:border-[#D7141A] focus:outline-none leading-relaxed"
               />
-              <div className="absolute right-3 bottom-3 text-[10px] text-gris-texto">
+              <div className="absolute right-3 bottom-3 text-[10px] text-[#9A9A9A]">
                 Podés editar este texto antes de enviar
               </div>
             </div>
           )}
 
           {/* Tarjeta resumen rápida de la cotización */}
-          <div className="p-3 rounded-xl bg-negro border border-borde flex items-center justify-between text-xs">
+          <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <Car className="w-4 h-4 text-white" />
-              <span className="text-white font-bold">{quote.vehicle_info}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-panel border border-borde text-gris-texto font-bold">
+              <Car className="w-4 h-4 text-[#161616]" />
+              <span className="text-[#161616] font-bold">{quote.vehicle_info}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-white border border-[#E5E5E3] text-[#6B6B6B] font-semibold">
                 {quote.vehicle_category}
               </span>
             </div>
-            <div className="font-black text-white font-mono text-sm">
+            <div className="font-bold text-[#161616] font-mono text-sm">
               {formatCurrency(quote.total_amount, 'UYU')}
             </div>
           </div>
         </div>
 
         {/* Barra de acciones */}
-        <div className="p-4 sm:p-5 border-t border-borde bg-negro flex items-center justify-end gap-3">
+        <div className="p-4 sm:p-5 border-t border-[#E5E5E3] bg-[#F5F5F4] flex items-center justify-end gap-3">
           <Button
             variant="secondary"
             size="sm"
             onClick={handleCopy}
           >
-            {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
-            <span>{copied ? '¡Copiado!' : 'Copiar Mensaje'}</span>
+            {copied ? <Check className="w-4 h-4 text-[#161616]" /> : <Copy className="w-4 h-4" />}
+            <span>{copied ? '¡Copiado!' : 'Copiar mensaje'}</span>
           </Button>
 
           <Button

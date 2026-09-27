@@ -445,7 +445,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           onClick={() => setConditionFilter('todos')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
             conditionFilter === 'todos'
-              ? 'bg-[#000000] text-white shadow-xs'
+              ? 'bg-[#161616] text-white shadow-xs'
               : 'text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]'
           }`}
         >
@@ -459,7 +459,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           onClick={() => setConditionFilter('usado')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
             conditionFilter === 'usado'
-              ? 'bg-[#000000] text-white shadow-xs'
+              ? 'bg-[#161616] text-white shadow-xs'
               : 'text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]'
           }`}
         >
@@ -474,7 +474,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           onClick={() => setConditionFilter('0km')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
             conditionFilter === '0km'
-              ? 'bg-[#000000] text-white shadow-xs'
+              ? 'bg-[#161616] text-white shadow-xs'
               : 'text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]'
           }`}
         >

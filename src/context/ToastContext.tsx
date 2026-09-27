@@ -37,10 +37,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       <div className="fixed bottom-20 md:bottom-6 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
         {toasts.map((toast) => {
           const icons = {
-            success: <CheckCircle2 className="w-5 h-5 text-white shrink-0" />,
+            success: <CheckCircle2 className="w-5 h-5 text-[#1E6B43] shrink-0" />,
             warning: <AlertTriangle className="w-5 h-5 text-[#D7141A] shrink-0" />,
             error: <AlertCircle className="w-5 h-5 text-[#D7141A] shrink-0" />,
-            info: <Info className="w-5 h-5 text-white shrink-0" />
+            info: <Info className="w-5 h-5 text-[#161616] shrink-0" />
           };
 
           const isAlert = toast.type === 'error' || toast.type === 'warning';
@@ -48,8 +48,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-2xl backdrop-blur-xl bg-[#141414] ${
-                isAlert ? 'border-[#D7141A] text-white' : 'border-[#2A2A2A] text-white'
+              className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-lg bg-white ${
+                isAlert ? 'border-[#F0D5D5] bg-[#FDF2F2] text-[#B80E14]' : 'border-[#E5E5E3] text-[#161616]'
               } transition-all animate-fade-in`}
             >
               <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold">
@@ -59,7 +59,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               <button
                 type="button"
                 onClick={() => removeToast(toast.id)}
-                className="text-[#8A8A8A] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                className="text-[#6B6B6B] hover:text-[#161616] p-1 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

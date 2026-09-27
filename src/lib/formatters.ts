@@ -81,28 +81,28 @@ export const BUSINESS_CONFIG: Record<Business, { name: string; shortName: string
   automotora: {
     name: 'CARVLAK Automotores',
     shortName: 'Automotora',
-    color: '#000000',
-    bgLight: 'bg-[#F2F2F2] dark:bg-[#1A1A1A]',
-    textClass: 'text-black dark:text-white',
-    borderClass: 'border-[#D9D9D9] dark:border-[#333333]',
+    color: '#161616',
+    bgLight: 'bg-[#F5F5F4]',
+    textClass: 'text-[#161616]',
+    borderClass: 'border-[#E5E5E3]',
     iconName: 'Car'
   },
   detailing: {
     name: 'DetailVlak Shangrilá',
     shortName: 'Detailing',
-    color: '#000000',
-    bgLight: 'bg-[#F2F2F2] dark:bg-[#1E1E1E]',
-    textClass: 'text-black dark:text-white',
-    borderClass: 'border-[#D9D9D9] dark:border-[#404040]',
+    color: '#161616',
+    bgLight: 'bg-[#F5F5F4]',
+    textClass: 'text-[#161616]',
+    borderClass: 'border-[#E5E5E3]',
     iconName: 'Droplets'
   },
   inspeccion: {
     name: 'Inspección Vehicular',
     shortName: 'Inspección',
-    color: '#000000',
-    bgLight: 'bg-[#F2F2F2] dark:bg-[#161616]',
-    textClass: 'text-black dark:text-white',
-    borderClass: 'border-[#D9D9D9] dark:border-[#2A2A2A]',
+    color: '#161616',
+    bgLight: 'bg-[#F5F5F4]',
+    textClass: 'text-[#161616]',
+    borderClass: 'border-[#E5E5E3]',
     iconName: 'ClipboardCheck'
   }
 };
