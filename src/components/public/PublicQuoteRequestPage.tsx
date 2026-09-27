@@ -16,6 +16,7 @@ import {
 import { useData } from '../../context/DataContext';
 import { VehicleCategory } from '../../types';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../../lib/formatters';
+import { Button } from '../ui/Button';
 
 interface PublicQuoteRequestPageProps {
   onBackToApp?: () => void;
@@ -155,10 +156,10 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2] dark:bg-[#000000] text-black dark:text-white flex flex-col justify-between antialiased selection:bg-[#D7141A]/20 selection:text-[#D7141A]">
+    <div className="min-h-screen bg-negro text-white flex flex-col justify-between antialiased selection:bg-rojo/20 selection:text-rojo">
       
       {/* Barra Superior con Logo Oficial CARVLAK */}
-      <header className="border-b border-[#222222] bg-[#000000] sticky top-0 z-40 px-4 py-3">
+      <header className="border-b border-borde bg-negro sticky top-0 z-40 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
@@ -166,25 +167,26 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
               alt="CARVLAK Group"
               className="h-7 w-auto object-contain"
             />
-            <div className="border-l border-[#222222] pl-3">
+            <div className="border-l border-borde pl-3">
               <div className="text-xs font-semibold text-white flex items-center gap-1.5">
                 <span>DetailVlak</span>
-                <span className="text-[10px] font-title font-bold px-1.5 py-0.5 rounded bg-[#222222] text-[#D9D9D9] border border-[#333333]">
+                <span className="text-[10px] font-title font-bold px-1.5 py-0.5 rounded bg-negro text-gris-texto border border-borde">
                   Taller
                 </span>
               </div>
-              <div className="text-[10px] text-[#6B6B6B]">Estética automotriz • Shangrilá</div>
+              <div className="text-[10px] text-gris-texto">Estética automotriz • Shangrilá</div>
             </div>
           </div>
 
           {onBackToApp && (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onBackToApp}
-              className="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Volver al Hub</span>
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -193,36 +195,37 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
       <main className="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-6 my-4">
         
         {isSubmitted ? (
-          <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-b from-[#121826] to-[#0A0D15] border border-purple-500/30 text-center space-y-6 shadow-2xl animate-fade-in">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/10">
+          <div className="p-8 sm:p-10 rounded-xl bg-panel border border-borde text-center space-y-6 shadow-2xl animate-fade-in">
+            <div className="w-16 h-16 rounded-xl bg-negro border border-borde text-rojo flex items-center justify-center mx-auto text-3xl shadow-sm">
               ✨
             </div>
 
             <div>
               <h2 className="text-2xl font-black text-white">¡Solicitud recibida con éxito!</h2>
-              <p className="text-xs text-slate-300 max-w-md mx-auto mt-2 leading-relaxed">
-                Muchas gracias <strong className="text-white">{name}</strong>. Evaluaremos el tratamiento ideal para tu <strong className="text-purple-300">{vehicleBrand} {vehicleModel}</strong> y nos contactaremos a la brevedad por WhatsApp con tu presupuesto detallado.
+              <p className="text-xs text-gris-texto max-w-md mx-auto mt-2 leading-relaxed">
+                Muchas gracias <strong className="text-white">{name}</strong>. Evaluaremos el tratamiento ideal para tu <strong className="text-white">{vehicleBrand} {vehicleModel}</strong> y nos contactaremos a la brevedad por WhatsApp con tu presupuesto detallado.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#070A0E] border border-slate-800 text-left space-y-2 text-xs text-slate-400">
-              <div className="flex items-center gap-2 text-slate-300 font-bold">
-                <MapPin className="w-4 h-4 text-purple-400 shrink-0" />
+            <div className="p-4 rounded-xl bg-negro border border-borde text-left space-y-2 text-xs text-gris-texto">
+              <div className="flex items-center gap-2 text-white font-bold">
+                <MapPin className="w-4 h-4 text-rojo shrink-0" />
                 <span>Av. Giannattasio y, Shangrilá, Canelones</span>
               </div>
-              <div className="flex items-center gap-2 text-slate-300 font-bold">
-                <Clock className="w-4 h-4 text-purple-400 shrink-0" />
+              <div className="flex items-center gap-2 text-white font-bold">
+                <Clock className="w-4 h-4 text-rojo shrink-0" />
                 <span>Lunes a Sábados con agenda previa</span>
               </div>
             </div>
 
-            <button
+            <Button
+              variant="whatsapp"
+              className="w-full py-3.5 text-sm"
               onClick={handleOpenDirectWhatsApp}
-              className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/30 transition-all"
             >
               <MessageCircle className="w-5 h-5" />
               <span>Avisarnos por WhatsApp ahora mismo</span>
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-6 animate-fade-in">
@@ -232,7 +235,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 Solicitá tu Presupuesto de Detailing
               </h1>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-gris-texto leading-relaxed">
                 Completá los datos de tu auto y seleccioná los tratamientos que te interesan. Te enviaremos la cotización exacta sin costo.
               </p>
             </div>
@@ -252,33 +255,33 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
               </div>
 
               {/* 1. Datos Personales */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#121826] border border-slate-800 space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" />
+              <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-rojo" />
                   <span>1. Tus Datos de Contacto</span>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Tu Nombre y Apellido *</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">Tu Nombre y Apellido *</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Ej: Juan Pérez"
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-purple-500 focus:outline-none"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2.5 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">WhatsApp / Celular *</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">WhatsApp / Celular *</label>
                     <input
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="Ej: 099 123 456"
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-purple-500 focus:outline-none"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2.5 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                       required
                     />
                   </div>
@@ -286,56 +289,56 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
               </div>
 
               {/* 2. Datos del Vehículo */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#121826] border border-slate-800 space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5" />
+              <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-rojo" />
                   <span>2. Tu Vehículo</span>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Marca *</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">Marca *</label>
                     <input
                       type="text"
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
                       placeholder="Ej: Volkswagen"
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Modelo *</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">Modelo *</label>
                     <input
                       type="text"
                       value={vehicleModel}
                       onChange={(e) => setVehicleModel(e.target.value)}
                       placeholder="Ej: Golf GTI"
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Año</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">Año</label>
                     <input
                       type="text"
                       value={vehicleYear}
                       onChange={(e) => setVehicleYear(e.target.value)}
                       placeholder="Ej: 2021"
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Tamaño / Categoría Aproximada</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">Tamaño / Categoría Aproximada</label>
                     <select
                       value={vehicleCategory}
                       onChange={(e) => setVehicleCategory(e.target.value as VehicleCategory)}
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white font-bold focus:border-rojo focus:outline-none"
                     >
                       <option value="Chico">Chico (Hatchback / Celerio, Gol, Onix)</option>
                       <option value="Mediano">Mediano (Sedán / Corolla, Cruze, Vento)</option>
@@ -346,26 +349,26 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Matrícula (opcional)</label>
+                    <label className="text-[11px] font-semibold text-gris-texto block mb-1">Matrícula (opcional)</label>
                     <input
                       type="text"
                       value={vehiclePlate}
                       onChange={(e) => setVehiclePlate(e.target.value)}
                       placeholder="Ej: SBX 1234"
-                      className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono uppercase"
+                      className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white font-mono uppercase placeholder-gris-texto focus:border-rojo focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 3. Tratamientos de Interés */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#121826] border border-slate-800 space-y-3">
+              <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-rojo" />
                     <span>3. Tratamientos que te interesan</span>
                   </h3>
-                  <span className="text-[10px] text-slate-500">Marcá todos los que apliquen</span>
+                  <span className="text-[10px] text-gris-texto">Marcá todos los que apliquen</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -376,21 +379,21 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
                       <div
                         key={t.id}
                         onClick={() => toggleService(t.id)}
-                        className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-start gap-2.5 ${
+                        className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
                           isSelected
-                            ? 'bg-purple-950/40 border-purple-500 text-white'
-                            : 'bg-[#070A0E] border-slate-800 text-slate-300 hover:border-slate-700'
+                            ? 'bg-panel border-rojo text-white'
+                            : 'bg-negro border-borde text-gris-texto hover:border-gris-texto/50'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => {}}
-                          className="mt-0.5 w-4 h-4 rounded text-purple-600 bg-slate-900 border-slate-700 pointer-events-none"
+                          className="mt-0.5 w-4 h-4 rounded text-rojo bg-negro border-borde pointer-events-none"
                         />
                         <div>
-                          <div className="font-bold text-xs">{t.shortName || t.name}</div>
-                          <p className="text-[10px] text-slate-400 line-clamp-1">{t.description}</p>
+                          <div className="font-bold text-xs text-white">{t.shortName || t.name}</div>
+                          <p className="text-[10px] text-gris-texto line-clamp-1">{t.description}</p>
                         </div>
                       </div>
                     );
@@ -399,13 +402,13 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
               </div>
 
               {/* 4. Comentarios y Fotos */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-[#121826] border border-slate-800 space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-purple-400">
+              <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">
                   4. Detalles del Estado Actual
                 </h3>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  <label className="text-[11px] font-semibold text-gris-texto block mb-1">
                     ¿Tiene rayones, manchas difíciles o algo especial a tratar?
                   </label>
                   <textarea
@@ -413,13 +416,13 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
                     onChange={(e) => setComments(e.target.value)}
                     placeholder="Contanos brevemente qué te gustaría mejorar de la pintura o el interior..."
                     rows={3}
-                    className="w-full bg-[#070A0E] border border-slate-700 rounded-xl p-3 text-xs text-white"
+                    className="w-full bg-negro border border-borde rounded-xl p-3 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1 flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5 text-purple-400" />
+                  <label className="text-[11px] font-semibold text-gris-texto block mb-1 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-white" />
                     <span>Enlace a foto del vehículo (Google Drive, Imgur, etc. - opcional)</span>
                   </label>
                   <input
@@ -427,23 +430,24 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
                     value={photoUrl}
                     onChange={(e) => setPhotoUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full bg-[#070A0E] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Botón de Envío */}
-              <button
+              <Button
+                variant="primary"
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-purple-600/25 transition-all disabled:opacity-50"
+                className="w-full py-4 text-sm"
               >
                 <Send className="w-4 h-4" />
                 <span>{isSubmitting ? 'Enviando solicitud...' : 'Solicitar Presupuesto Gratuito'}</span>
-              </button>
+              </Button>
 
-              <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+              <div className="flex items-center justify-center gap-2 text-[11px] text-gris-texto">
+                <ShieldCheck className="w-4 h-4 text-white" />
                 <span>Tus datos son privados y se usan exclusivamente para coordinar tu presupuesto.</span>
               </div>
 
@@ -454,7 +458,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
       </main>
 
       {/* Pie de página */}
-      <footer className="border-t border-slate-800/60 bg-[#0B0F19] py-4 px-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-borde bg-negro py-4 px-4 text-center text-xs text-gris-texto">
         <div><strong>DetailVlak</strong> • Shangrilá, Canelones • Miembro de <strong>CARVLAK Group</strong></div>
       </footer>
 

@@ -65,32 +65,32 @@ export const WhatsAppReminderModal: React.FC<WhatsAppReminderModalProps> = ({
       maxWidth="max-w-md"
     >
       <div className="space-y-3">
-        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+        <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider">
           Mensaje pre-armado
         </label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={9}
-          className="w-full bg-[#131924] border border-slate-700 rounded-2xl p-3 text-xs sm:text-sm text-slate-200 leading-relaxed focus:outline-none focus:border-amber-400"
+          className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-xs sm:text-sm text-white leading-relaxed focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
         />
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+        <div className="flex items-center justify-between pt-2 border-t border-[#2A2A2A]">
           <button
             type="button"
             onClick={handleCopy}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4 text-white" />}
             <span>{copied ? 'Copiado' : 'Copiar texto'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleSend}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all"
+            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4 text-white" />
             <span>Abrir en WhatsApp</span>
           </button>
         </div>

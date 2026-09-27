@@ -6,16 +6,14 @@ import {
   CreditCard,
   Tag,
   Trash2,
-  Filter,
-  FileText,
-  X,
-  PieChart
+  X
 } from 'lucide-react';
 import { Expense, ExpenseCategory, PaymentMethod, Business } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { formatCurrency } from '../../../lib/formatters';
+import { Button } from '../../../components/ui/Button';
 
 interface DetailingExpensesSectionProps {
   businessFilter?: Business;
@@ -101,26 +99,26 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
       
       {/* Resumen Superior */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-[#121826] border border-slate-800">
-          <div className="text-[11px] font-bold text-slate-400">Total Gastos ({selectedMonth})</div>
-          <div className="text-2xl font-black text-rose-400 font-mono mt-0.5">
+        <div className="p-4 rounded-xl bg-panel border border-borde">
+          <div className="text-[11px] font-bold text-gris-texto">Total Gastos ({selectedMonth})</div>
+          <div className="text-2xl font-black text-rojo font-mono mt-0.5">
             {formatCurrency(totalAmount, 'UYU')}
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">
+          <p className="text-[10px] text-gris-texto mt-0.5">
             {filteredExpenses.length} comprobantes cargados
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#121826] border border-slate-800 sm:col-span-2">
-          <div className="text-[11px] font-bold text-slate-400 mb-2">Desglose por Categoría</div>
+        <div className="p-4 rounded-xl bg-panel border border-borde sm:col-span-2">
+          <div className="text-[11px] font-bold text-gris-texto mb-2">Desglose por Categoría</div>
           {breakdownByCategory.length === 0 ? (
-            <p className="text-xs text-slate-500">Sin gastos para el mes seleccionado</p>
+            <p className="text-xs text-gris-texto">Sin gastos para el mes seleccionado</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {breakdownByCategory.map(([cat, total]) => (
-                <div key={cat} className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs flex items-center gap-1.5">
-                  <span className="text-slate-300 font-medium">{cat}:</span>
-                  <span className="font-bold text-rose-400 font-mono">{formatCurrency(total, 'UYU')}</span>
+                <div key={cat} className="px-2.5 py-1 rounded-xl bg-negro border border-borde text-xs flex items-center gap-1.5">
+                  <span className="text-gris-texto font-medium">{cat}:</span>
+                  <span className="font-bold text-rojo font-mono">{formatCurrency(total, 'UYU')}</span>
                 </div>
               ))}
             </div>
@@ -131,8 +129,8 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
       {/* Controles de Filtro y Botón Nuevo */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-[#121826] border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
-            <Calendar className="w-3.5 h-3.5 text-purple-400" />
+          <div className="flex items-center gap-1.5 bg-panel border border-borde rounded-xl px-3 py-1.5 text-xs text-white">
+            <Calendar className="w-3.5 h-3.5 text-rojo" />
             <input
               type="month"
               value={selectedMonth}
@@ -144,7 +142,7 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-[#121826] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+            className="bg-panel border border-borde rounded-xl px-3 py-2 text-xs text-white focus:border-rojo focus:outline-none"
           >
             <option value="all">Todas las categorías</option>
             <option value="Insumos">Insumos</option>
@@ -156,45 +154,46 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
           </select>
         </div>
 
-        <button
+        <Button
+          variant="primary"
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/20 transition-all shrink-0"
+          className="shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          <span>+ Cargar Gasto</span>
-        </button>
+          <Plus className="w-4 h-4 mr-1.5" />
+          <span>Cargar Gasto</span>
+        </Button>
       </div>
 
       {/* Lista de Gastos */}
       {filteredExpenses.length === 0 ? (
-        <div className="p-8 rounded-3xl bg-[#121826] border border-slate-800 text-center text-slate-400">
-          <DollarSign className="w-10 h-10 mx-auto mb-2 opacity-30 text-purple-400" />
-          <p className="text-sm font-bold text-slate-300">No hay gastos registrados en este período</p>
-          <p className="text-xs text-slate-500 mt-1">Podés cargar uno nuevo con el botón superior.</p>
+        <div className="p-8 rounded-xl bg-panel border border-borde text-center text-gris-texto">
+          <DollarSign className="w-10 h-10 mx-auto mb-2 opacity-30 text-rojo" />
+          <p className="text-sm font-bold text-white">No hay gastos registrados en este período</p>
+          <p className="text-xs text-gris-texto mt-1">Podés cargar uno nuevo con el botón superior.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {filteredExpenses.map((exp) => (
             <div
               key={exp.id}
-              className="p-3.5 rounded-2xl bg-[#121826] border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-between gap-3"
+              className="p-3.5 rounded-xl bg-panel border border-borde hover:border-rojo/50 transition-all flex items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-negro border border-borde text-rojo flex items-center justify-center shrink-0">
                   <Tag className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white text-xs truncate">{exp.description}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold shrink-0">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-negro border border-borde text-gris-texto font-semibold shrink-0">
                       {exp.category}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                  <div className="flex items-center gap-2 text-[10px] text-gris-texto mt-0.5">
                     <span>{exp.date}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
-                      <CreditCard className="w-3 h-3 text-slate-500" />
+                      <CreditCard className="w-3 h-3 text-gris-texto" />
                       {exp.payment_method}
                     </span>
                     {exp.invoice_number && (
@@ -209,7 +208,7 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
 
               <div className="flex items-center gap-3 shrink-0">
                 <div className="text-right">
-                  <span className="text-sm font-black font-mono text-rose-400">
+                  <span className="text-sm font-black font-mono text-rojo">
                     -{formatCurrency(exp.amount, 'UYU')}
                   </span>
                 </div>
@@ -221,7 +220,7 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
                         showToast('Gasto eliminado', 'info');
                       }
                     }}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                    className="p-1.5 rounded-lg text-gris-texto hover:text-rojo hover:bg-negro transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -234,16 +233,16 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
 
       {/* Modal Carga Rápida de Gasto */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#0E131F] border border-slate-700 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-[#121826]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-panel border border-borde rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-borde flex items-center justify-between bg-negro">
               <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-purple-400" />
-                <span>Cargar Gasto Operativo (Detailing)</span>
+                <DollarSign className="w-4 h-4 text-rojo" />
+                <span>Cargar Gasto Operativo</span>
               </h4>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center"
+                className="p-1.5 rounded-lg text-gris-texto hover:text-white hover:bg-panel transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -252,14 +251,14 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
             <form onSubmit={handleCreateExpense} className="p-4 sm:p-5 space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Monto en $UYU</label>
+                  <label className="text-[11px] font-semibold text-gris-texto block mb-1">Monto en $UYU</label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-[10px] text-slate-500 font-bold">$U</span>
+                    <span className="absolute left-2.5 top-2 text-[10px] text-gris-texto font-bold">$U</span>
                     <input
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(Number(e.target.value))}
-                      className="w-full bg-[#121826] border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-white font-mono text-sm font-bold"
+                      className="w-full bg-negro border border-borde rounded-xl pl-8 pr-3 py-2 text-white font-mono text-sm font-bold focus:border-rojo focus:outline-none"
                       required
                       autoFocus
                     />
@@ -267,36 +266,36 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Fecha</label>
+                  <label className="text-[11px] font-semibold text-gris-texto block mb-1">Fecha</label>
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-[#121826] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Descripción</label>
+                <label className="text-[11px] font-semibold text-gris-texto block mb-1">Descripción</label>
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="ej: Compra de microfibras, Reparación de hidrolavadora..."
-                  className="w-full bg-[#121826] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Categoría</label>
+                  <label className="text-[11px] font-semibold text-gris-texto block mb-1">Categoría</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
-                    className="w-full bg-[#121826] border border-slate-700 rounded-xl px-3 py-2 text-white font-medium"
+                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white font-medium focus:border-rojo focus:outline-none"
                   >
                     <option value="Insumos">Insumos</option>
                     <option value="Alquiler/Servicios">Alquiler / Servicios</option>
@@ -308,11 +307,11 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">Medio de Pago</label>
+                  <label className="text-[11px] font-semibold text-gris-texto block mb-1">Medio de Pago</label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full bg-[#121826] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
                   >
                     <option value="Transferencia">Transferencia bancaria</option>
                     <option value="Efectivo">Efectivo</option>
@@ -322,30 +321,30 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Nº Comprobante / Factura (opcional)</label>
+                <label className="text-[11px] font-semibold text-gris-texto block mb-1">Nº Comprobante / Factura (opcional)</label>
                 <input
                   type="text"
                   value={invoiceNumber}
                   onChange={(e) => setInvoiceNumber(e.target.value)}
                   placeholder="ej: A-00492"
-                  className="w-full bg-[#121826] border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
                 />
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">
-                <button
+                <Button
+                  variant="secondary"
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
                 >
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg"
                 >
                   Guardar Gasto
-                </button>
+                </Button>
               </div>
             </form>
           </div>

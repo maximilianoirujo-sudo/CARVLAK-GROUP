@@ -24,6 +24,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { sanitizePhoneForWhatsApp } from '../../../lib/formatters';
+import { Button } from '../../../components/ui/Button';
 
 interface InspectionReportViewProps {
   inspection: VehicleInspection;
@@ -118,110 +119,109 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-16 print:p-0 print:space-y-4">
       {/* BARRA SUPERIOR DE ACCIONES (NO IMPRIMIBLE) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-[#0F1420] border border-slate-800 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-panel border border-borde print:hidden">
         <div className="flex items-center gap-2">
           {onBack && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onBack}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 hover:text-white"
             >
               ← Volver
-            </button>
+            </Button>
           )}
-          <span className="text-xs font-bold text-slate-400">
+          <span className="text-xs font-bold text-gris-texto">
             Peritaje #{inspection.id.slice(-6)}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* WhatsApp Cliente */}
-          <button
-            type="button"
+          <Button
+            variant="whatsapp"
+            size="sm"
             onClick={handleShareWhatsApp}
-            className="px-3.5 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-xs font-bold text-emerald-300 hover:bg-emerald-600/30 flex items-center gap-1.5"
           >
-            <Share2 className="w-3.5 h-3.5" />
             <span>Compartir WhatsApp</span>
-          </button>
+          </Button>
 
           {/* Enviar a Jonathan (Automotora) */}
-          <button
-            type="button"
+          <Button
+            variant="whatsapp"
+            size="sm"
             onClick={handleSendToJonathan}
-            className="px-3.5 py-2 rounded-xl bg-blue-600/20 border border-blue-500/40 text-xs font-bold text-blue-300 hover:bg-blue-600/30 flex items-center gap-1.5"
           >
-            <span>📱 Enviar a Jonathan (+598)</span>
-          </button>
+            <span>Enviar a Jonathan (+598)</span>
+          </Button>
 
           {/* Copiar Link */}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleCopyLink}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-200 hover:bg-slate-700 flex items-center gap-1.5"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>{copiedLink ? '¡Link Copiado!' : 'Copiar Link'}</span>
-          </button>
+          </Button>
 
           {/* Imprimir / PDF */}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => window.print()}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-200 hover:bg-slate-700 flex items-center gap-1.5"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Imprimir / PDF</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* BANNER DE CROSS-SELLING DETAILVLAK (1 TOQUE) */}
-      <div className="p-4 sm:p-5 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
+      <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-gris-texto">
               Servicio adicional sugerido
             </span>
           </div>
-          <h4 className="text-sm font-title font-bold text-black dark:text-white">
+          <h4 className="text-sm font-title font-bold text-white">
             ¿Mejora estética recomendada para este vehículo?
           </h4>
-          <p className="text-xs text-[#6B6B6B]">
+          <p className="text-xs text-gris-texto">
             Crea una cotización en DetailVlak pre-cargada con el cliente, el vehículo y los servicios sugeridos (Tratamiento cerámico, Limpieza de tapizados, Ópticas).
           </p>
         </div>
 
         {createdQuoteId ? (
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold text-black dark:text-white bg-[#F2F2F2] dark:bg-[#222222] px-3 py-2 rounded-md border border-[#D9D9D9] dark:border-[#333333] flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Cotización #{createdQuoteId.slice(-6)} Creada
+            <span className="text-xs font-semibold text-white bg-negro px-3 py-2 rounded-lg border border-borde flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-white" /> Cotización #{createdQuoteId.slice(-6)} Creada
             </span>
             {onNavigateToDetailing && (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => onNavigateToDetailing(createdQuoteId)}
-                className="px-4 py-2 rounded-md bg-black dark:bg-white text-white dark:text-black font-semibold text-xs hover:bg-[#222222] flex items-center gap-1 min-h-[40px]"
               >
                 <span>Ver en Detailing</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             )}
           </div>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleGenerateDetailing}
-            className="shrink-0 px-4 py-2.5 rounded-md bg-[#D7141A] hover:bg-[#B50F14] text-white font-title font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px] flex items-center gap-2 shadow-sm"
           >
             <Sparkles className="w-4 h-4" />
             <span>Crear cotización en DetailVlak</span>
-          </button>
+          </Button>
         )}
       </div>
 
       {/* DOCUMENTO FORMAL DE INFORME TÉCNICO (APTO PARA PRINT / PDF) */}
-      <div className="p-6 sm:p-8 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
+      <div className="p-6 sm:p-8 rounded-xl bg-panel border border-borde space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
         {/* ENCABEZADO DEL INFORME CON LOGO OFICIAL */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D9D9D9] dark:border-[#2A2A2A] print:border-[#D9D9D9] pb-6">
           <div className="space-y-2">
@@ -282,7 +282,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
               }`}
             >
               <span className="text-2xl leading-none">{inspection.score}</span>
-              <span className="text-[9px] uppercase tracking-wider text-slate-400">/ 100</span>
+              <span className="text-[9px] uppercase tracking-wider text-gris-texto">/ 100</span>
             </div>
           </div>
         </div>
@@ -290,39 +290,39 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         {/* FICHA TÉCNICA DEL VEHÍCULO & INTERVINIENTES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Vehículo */}
-          <div className="p-4 rounded-2xl bg-[#090D14] border border-slate-800/80 print:bg-slate-50 print:border-slate-300 space-y-2">
-            <span className="text-[10px] font-black uppercase text-emerald-400 print:text-emerald-700 tracking-wider flex items-center gap-1.5">
-              <Car className="w-3.5 h-3.5" /> Vehículo Verificado
+          <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
+            <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5 text-gris-texto" /> Vehículo Verificado
             </span>
             <div className="space-y-1">
-              <div className="text-base font-black text-white print:text-black">
+              <div className="text-base font-title font-bold text-white print:text-black">
                 {inspection.vehicle_info}
               </div>
-              <div className="font-mono text-sm font-bold text-emerald-400 print:text-emerald-700">
+              <div className="font-mono text-sm font-bold text-white print:text-black">
                 {inspection.vehicle_plate}
               </div>
-              <div className="text-xs text-slate-400 print:text-slate-600">
-                Categoría: <strong>{inspection.vehicle_category}</strong>
+              <div className="text-xs text-gris-texto print:text-slate-600">
+                Categoría: <strong className="text-white print:text-black">{inspection.vehicle_category}</strong>
               </div>
             </div>
           </div>
 
           {/* Comprador / Solicitante */}
-          <div className="p-4 rounded-2xl bg-[#090D14] border border-slate-800/80 print:bg-slate-50 print:border-slate-300 space-y-2">
-            <span className="text-[10px] font-black uppercase text-emerald-400 print:text-emerald-700 tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5" /> Solicitante / Cliente
+          <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
+            <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-gris-texto" /> Solicitante / Cliente
             </span>
             <div className="space-y-1">
-              <div className="text-sm font-bold text-white print:text-black">
+              <div className="text-sm font-title font-bold text-white print:text-black">
                 {inspection.buyer_name || 'Automotora CARVLAK'}
               </div>
               {inspection.buyer_phone && (
-                <div className="text-xs font-mono text-slate-400 print:text-slate-600">
+                <div className="text-xs font-mono text-gris-texto print:text-slate-600">
                   Tel: {inspection.buyer_phone}
                 </div>
               )}
               {inspection.seller_name && (
-                <div className="text-xs text-slate-400 print:text-slate-600 pt-1 border-t border-slate-800/50 print:border-slate-200">
+                <div className="text-xs text-gris-texto print:text-slate-600 pt-1 border-t border-borde print:border-slate-200">
                   Vendedor: {inspection.seller_name} ({inspection.seller_phone || 'S/D'})
                 </div>
               )}
@@ -330,9 +330,9 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
           </div>
 
           {/* Odómetro & Documentación */}
-          <div className="p-4 rounded-2xl bg-[#090D14] border border-slate-800/80 print:bg-slate-50 print:border-slate-300 space-y-2">
-            <span className="text-[10px] font-black uppercase text-emerald-400 print:text-emerald-700 tracking-wider flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5" /> Odómetro & SUCIVE
+          <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
+            <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-gris-texto" /> Odómetro & SUCIVE
             </span>
             <div className="space-y-1 text-xs">
               <div className="text-white print:text-black">
@@ -343,20 +343,20 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                     : 'No registrado'}
                 </strong>
                 {inspection.mileage_tampered && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded bg-red-600/30 text-red-300 text-[10px] font-bold">
+                  <span className="ml-2 px-1.5 py-0.5 rounded bg-rojo/20 text-rojo border border-rojo/40 text-[10px] font-bold">
                     Sospecha Adulteración
                   </span>
                 )}
               </div>
-              <div className="text-slate-400 print:text-slate-600">
+              <div className="text-gris-texto print:text-slate-600">
                 SUCIVE:{' '}
-                <strong>
+                <strong className="text-white print:text-black">
                   {inspection.sucive_debt === 0
                     ? 'Al día ($0 deuda)'
                     : `$U ${inspection.sucive_debt?.toLocaleString('es-UY') || 0} de deuda`}
                 </strong>
               </div>
-              <div className="text-slate-400 print:text-slate-600 truncate">
+              <div className="text-gris-texto print:text-slate-600 truncate">
                 {inspection.sucive_status || 'Sin multas detectadas'}
               </div>
             </div>
@@ -364,25 +364,25 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         </div>
 
         {/* CONCLUSIÓN PRINCIPAL & COSTO DE ARREGLOS */}
-        <div className="p-5 rounded-2xl bg-[#090D14] border border-slate-800 print:bg-slate-50 print:border-slate-300 space-y-3">
-          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 print:text-emerald-700">
+        <div className="p-5 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-3">
+          <span className="text-[10px] font-title font-bold uppercase tracking-widest text-gris-texto print:text-slate-700">
             Conclusión del Perito
           </span>
-          <p className="text-xs sm:text-sm text-slate-200 print:text-slate-800 leading-relaxed italic">
+          <p className="text-xs sm:text-sm text-white print:text-slate-800 leading-relaxed italic">
             "{inspection.inspector_conclusion || 'Inspección completada con éxito sin observaciones críticas.'}"
           </p>
 
           {/* Arreglos requeridos */}
-          <div className="pt-3 border-t border-slate-800 print:border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="pt-3 border-t border-borde print:border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div>
-              <span className="font-bold text-slate-400 print:text-slate-600">
+              <span className="font-bold text-gris-texto print:text-slate-600">
                 Costo Estimado de Reparaciones Inmediatas:
               </span>{' '}
-              <span className="font-mono font-black text-amber-400 print:text-amber-800 text-sm">
+              <span className="font-mono font-bold text-white print:text-black text-sm">
                 $U {inspection.estimated_repair_cost.toLocaleString('es-UY')}
               </span>
               {inspection.repair_details && (
-                <span className="text-slate-400 print:text-slate-600 ml-2">
+                <span className="text-gris-texto print:text-slate-600 ml-2">
                   ({inspection.repair_details})
                 </span>
               )}
@@ -391,20 +391,20 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             {/* Dictamen Automotora */}
             {inspection.automotora_decision && (
               <div className="flex items-center gap-1.5 font-bold">
-                <span className="text-slate-400 print:text-slate-600">Decisión de Compra:</span>
+                <span className="text-gris-texto print:text-slate-600">Decisión de Compra:</span>
                 <span
                   className={`px-2 py-0.5 rounded text-[11px] uppercase ${
                     inspection.automotora_decision === 'comprar'
-                      ? 'bg-emerald-500/20 text-emerald-300'
+                      ? 'bg-panel border border-borde text-white'
                       : inspection.automotora_decision === 'negociar'
-                      ? 'bg-amber-500/20 text-amber-300'
-                      : 'bg-red-500/20 text-red-300'
+                      ? 'bg-panel border border-borde text-gris-texto'
+                      : 'bg-rojo/20 text-rojo border border-rojo/40'
                   }`}
                 >
                   {inspection.automotora_decision}
                 </span>
                 {inspection.automotora_suggested_price && (
-                  <span className="font-mono text-emerald-400">
+                  <span className="font-mono text-white">
                     ({inspection.automotora_currency || 'USD'} {inspection.automotora_suggested_price.toLocaleString('es-UY')})
                   </span>
                 )}
@@ -415,40 +415,40 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
 
         {/* MAPA DE PINTURA (15 PANELES) */}
         <div className="space-y-3">
-          <h3 className="text-sm font-black text-white print:text-black flex items-center gap-2">
-            <Layers className="w-4 h-4 text-emerald-400 print:text-emerald-700" />
+          <h3 className="text-sm font-title font-bold text-white print:text-black flex items-center gap-2">
+            <Layers className="w-4 h-4 text-white print:text-black" />
             Mapeo de Carrocería y Espesor de Pintura (Micrones µm)
           </h3>
           <CarPanelsDiagram panels={inspection.panels} readOnly={true} />
         </div>
 
         {/* RESUMEN OBD-II */}
-        <div className="p-4 rounded-2xl bg-[#090D14] border border-slate-800 print:bg-slate-50 print:border-slate-300 space-y-2">
-          <span className="text-[10px] font-black uppercase text-emerald-400 print:text-emerald-700 tracking-wider flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5" /> Diagnóstico Electrónico OBD-II
+        <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
+          <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-gris-texto" /> Diagnóstico Electrónico OBD-II
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {inspection.obd_codes && inspection.obd_codes.length > 0 ? (
               inspection.obd_codes.map((c, i) => (
                 <span
                   key={i}
-                  className={`px-2.5 py-1 rounded-lg font-mono font-bold text-xs ${
+                  className={`px-2.5 py-1 rounded-md font-mono font-bold text-xs ${
                     c.includes('Sin')
-                      ? 'bg-emerald-500/20 text-emerald-300 print:bg-emerald-100 print:text-emerald-800'
-                      : 'bg-red-500/20 text-red-300 print:bg-red-100 print:text-red-800'
+                      ? 'bg-panel text-white border border-borde'
+                      : 'bg-rojo/20 text-rojo border border-rojo/40'
                   }`}
                 >
                   {c}
                 </span>
               ))
             ) : (
-              <span className="text-xs text-slate-400 print:text-slate-600">
+              <span className="text-xs text-gris-texto print:text-slate-600">
                 Sin códigos de falla registrados en módulos ECM/ABS/Airbag.
               </span>
             )}
           </div>
           {inspection.obd_notes && (
-            <p className="text-xs text-slate-400 print:text-slate-600 italic">
+            <p className="text-xs text-gris-texto print:text-slate-600 italic">
               {inspection.obd_notes}
             </p>
           )}
@@ -456,7 +456,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
 
         {/* DESGLOSE POR SECCIONES DEL CHECKLIST */}
         <div className="space-y-3">
-          <h3 className="text-sm font-black text-white print:text-black">
+          <h3 className="text-sm font-title font-bold text-white print:text-black">
             Detalle de Puntos Inspeccionados
           </h3>
 
@@ -470,76 +470,76 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
               return (
                 <div
                   key={sectionName}
-                  className="rounded-2xl border border-slate-800/80 bg-[#090D14] print:bg-slate-50 print:border-slate-300 overflow-hidden"
+                  className="rounded-xl border border-borde bg-negro print:bg-slate-50 print:border-slate-300 overflow-hidden"
                 >
                   <button
                     type="button"
                     onClick={() => toggleSection(sectionName)}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-800/30 print:hover:bg-slate-100 transition-colors"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-panel print:hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white print:text-black">
+                      <span className="text-xs font-title font-bold text-white print:text-black">
                         {sectionName}
                       </span>
-                      <span className="text-[10px] text-slate-400 print:text-slate-600">
+                      <span className="text-[10px] text-gris-texto print:text-slate-600">
                         ({items.length} puntos)
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {fails.length > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-red-600/30 text-red-300 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-rojo/20 text-rojo border border-rojo/40 text-[10px] font-bold">
                           {fails.length} falla{fails.length > 1 ? 's' : ''}
                         </span>
                       )}
                       {obs.length > 0 && (
-                        <span className="px-2 py-0.5 rounded bg-amber-600/30 text-amber-300 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-panel border border-borde text-gris-texto text-[10px] font-bold">
                           {obs.length} obs.
                         </span>
                       )}
                       {fails.length === 0 && obs.length === 0 && (
-                        <span className="px-2 py-0.5 rounded bg-emerald-600/20 text-emerald-300 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-panel border border-borde text-white text-[10px] font-bold">
                           OK ({oks.length})
                         </span>
                       )}
                       {isOpen ? (
-                        <ChevronUp className="w-4 h-4 text-slate-400" />
+                        <ChevronUp className="w-4 h-4 text-gris-texto" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                        <ChevronDown className="w-4 h-4 text-gris-texto" />
                       )}
                     </div>
                   </button>
 
                   {isOpen && (
-                    <div className="p-3.5 pt-0 border-t border-slate-800/50 print:border-slate-200 space-y-2">
+                    <div className="p-3.5 pt-0 border-t border-borde print:border-slate-200 space-y-2">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                         {items.map((item) => (
                           <div
                             key={item.id}
-                            className={`p-2.5 rounded-xl border text-xs flex flex-col justify-between ${
+                            className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between ${
                               item.status === 'falla'
-                                ? 'bg-red-950/20 border-red-500/40 text-red-200 print:bg-red-50 print:text-red-900'
+                                ? 'bg-rojo/10 border-rojo/40 text-rojo'
                                 : item.status === 'observacion'
-                                ? 'bg-amber-950/20 border-amber-500/40 text-amber-200 print:bg-amber-50 print:text-amber-900'
-                                : 'bg-[#0D121D] border-slate-800/80 text-slate-300 print:bg-white print:text-slate-800'
+                                ? 'bg-panel border-borde text-gris-texto'
+                                : 'bg-negro border-borde text-white'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-1">
-                              <span className="font-medium">{item.name}</span>
+                              <span className="font-medium text-white">{item.name}</span>
                               <span
-                                className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                                className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                                   item.status === 'falla'
-                                    ? 'bg-red-600 text-white'
+                                    ? 'bg-rojo text-white'
                                     : item.status === 'observacion'
-                                    ? 'bg-amber-500 text-slate-950'
-                                    : 'bg-emerald-500/20 text-emerald-400'
+                                    ? 'bg-negro border border-borde text-gris-texto'
+                                    : 'bg-negro border border-borde text-white'
                                 }`}
                               >
                                 {item.status?.toUpperCase() || 'OK'}
                               </span>
                             </div>
                             {item.comment && (
-                              <p className="mt-1 text-[11px] text-slate-400 italic">
+                              <p className="mt-1 text-[11px] text-gris-texto italic">
                                 Nota: {item.comment}
                               </p>
                             )}
@@ -555,24 +555,24 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         </div>
 
         {/* FIRMA Y RESPONSABLE TÉCNICO */}
-        <div className="pt-6 border-t border-slate-800 print:border-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+        <div className="pt-6 border-t border-borde print:border-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
           <div className="space-y-1">
-            <span className="font-bold text-slate-400 print:text-slate-600">
+            <span className="font-bold text-gris-texto print:text-slate-600">
               Inspector Responsable:
             </span>
-            <div className="font-bold text-white print:text-black">
+            <div className="font-title font-bold text-white print:text-black">
               {inspection.inspector_signature || 'Diego Silva (Perito Técnico CARVLAK)'}
             </div>
-            <div className="text-[11px] text-slate-400 print:text-slate-600">
+            <div className="text-[11px] text-gris-texto print:text-slate-600">
               Av. Giannattasio & Calcagno, Shangrilá, Canelones
             </div>
           </div>
 
           <div className="text-right">
-            <span className="font-mono text-[10px] text-slate-500">
+            <span className="font-mono text-[10px] text-gris-texto">
               Token de verificación: {inspection.token}
             </span>
-            <p className="text-[10px] text-emerald-400 print:text-emerald-700 font-bold">
+            <p className="text-[10px] text-white print:text-black font-bold">
               ✓ Documento Oficial CARVLAK Group
             </p>
           </div>

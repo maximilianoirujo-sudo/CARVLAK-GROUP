@@ -100,7 +100,7 @@ export const AppLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F2F2F2] dark:bg-[#000000] text-black dark:text-white">
+    <div className="min-h-screen flex flex-col bg-black text-white">
       
       {/*  */}
       <TopBar onOpenQuickSearch={() => setIsQuickSearchOpen(true)} />

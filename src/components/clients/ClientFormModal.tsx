@@ -107,40 +107,39 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         
-        {/*  */}
+        {/* Nombre */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Nombre y Apellido *</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Nombre y Apellido *</label>
           <input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Ej: Nicolás Varela"
             required
-            className="w-full bg-[#131924] border border-slate-700 rounded-xl p-3 text-sm text-white font-semibold focus:outline-none focus:border-amber-400"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-sm text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
           />
         </div>
 
-        {/*  */}
+        {/* Teléfono */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Teléfono / WhatsApp *</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Teléfono / WhatsApp *</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder="Ej: 099 123 456"
             required
-            className={`w-full bg-[#131924] border rounded-xl p-3 text-sm text-white font-mono focus:outline-none ${
-              duplicateClient ? 'border-amber-500 ring-1 ring-amber-500' : 'border-slate-700 focus:border-amber-400'
+            className={`w-full bg-black border rounded-xl p-3 text-sm text-white font-mono placeholder-[#8A8A8A] focus:outline-none ${
+              duplicateClient ? 'border-[#D7141A] ring-1 ring-[#D7141A]' : 'border-[#2A2A2A] focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]'
             }`}
           />
 
-          {/*  */}
           {duplicateClient && (
-            <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start gap-2 animate-fade-in">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="mt-2 p-2.5 rounded-xl bg-[#D7141A]/10 border border-[#D7141A]/30 text-white flex items-start gap-2 animate-fade-in">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#D7141A]" />
               <div>
-                <p className="font-bold text-[11px]">¡Número ya registrado!</p>
-                <p className="text-[10px] text-amber-200/90 mt-0.5">
+                <p className="font-bold text-[11px] text-[#D7141A]">¡Número ya registrado!</p>
+                <p className="text-[10px] text-white/90 mt-0.5">
                   Pertenece a <strong>{duplicateClient.full_name}</strong>. Podés editar el cliente existente para no duplicar datos.
                 </p>
               </div>
@@ -148,43 +147,43 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
           )}
         </div>
 
-        {/*  */}
+        {/* Email y Cédula */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Email</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="cliente@gmail.com"
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Cédula de Identidad</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Cédula de Identidad</label>
             <input
               type="text"
               value={cedula}
               onChange={(e) => setCedula(e.target.value)}
               placeholder="Ej: 4.582.119-4"
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
             />
           </div>
         </div>
 
-        {/*  */}
+        {/* Origen */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1.5">Origen / Canal de Llegada</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1.5">Origen / Canal de Llegada</label>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 text-center">
             {(['WhatsApp', 'Instagram', 'Presencial', 'Referido', 'Google Form'] as ClientOrigin[]).map((ch) => (
               <button
                 key={ch}
                 type="button"
                 onClick={() => setOrigin(ch)}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all ${
+                className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
                   origin === ch
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 font-black'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-[#D7141A] text-white border-[#D7141A]'
+                    : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
                 }`}
               >
                 {ch}
@@ -193,30 +192,30 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
           </div>
         </div>
 
-        {/*  */}
+        {/* Notas */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Notas u Observaciones</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Notas u Observaciones</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             placeholder="Preferencias del cliente, servicios de interés, etc..."
-            className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
           />
         </div>
 
-        {/*  */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        {/* Acciones */}
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A2A]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
+            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold border border-white transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/20"
+            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm transition-colors cursor-pointer"
           >
             {clientToEdit ? 'Guardar Cambios' : 'Registrar Cliente'}
           </button>

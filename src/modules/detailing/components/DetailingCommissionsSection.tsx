@@ -14,6 +14,7 @@ import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { formatCurrency } from '../../../lib/formatters';
+import { Button } from '../../../components/ui/Button';
 
 interface DetailingCommissionsSectionProps {
   businessFilter?: Business;
@@ -75,36 +76,36 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
       
       {/* Banner de resumen de comisiones */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-[#121826] border border-amber-500/30">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+        <div className="p-4 rounded-xl bg-panel border border-rojo">
+          <div className="flex items-center justify-between text-[11px] font-bold text-gris-texto">
             <span>Comisiones Pendientes</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-rojo" />
           </div>
-          <div className="text-2xl font-black text-amber-400 font-mono mt-0.5">
+          <div className="text-2xl font-black text-rojo font-mono mt-0.5">
             {formatCurrency(totalPending, 'UYU')}
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">
+          <p className="text-[10px] text-gris-texto mt-0.5">
             Por liquidar ({filteredCommissions.filter((c) => c.status === 'Pendiente').length} trabajos)
           </p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#121826] border border-slate-800">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+        <div className="p-4 rounded-xl bg-panel border border-borde">
+          <div className="flex items-center justify-between text-[11px] font-bold text-gris-texto">
             <span>Comisiones Pagadas</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-white" />
           </div>
-          <div className="text-2xl font-black text-emerald-400 font-mono mt-0.5">
+          <div className="text-2xl font-black text-white font-mono mt-0.5">
             {formatCurrency(totalPaid, 'UYU')}
           </div>
-          <p className="text-[10px] text-slate-400 mt-0.5">Liquidadas este mes</p>
+          <p className="text-[10px] text-gris-texto mt-0.5">Liquidadas este mes</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#121826] border border-slate-800">
-          <div className="text-[11px] font-bold text-slate-400">Total Facturado en Trabajos</div>
+        <div className="p-4 rounded-xl bg-panel border border-borde">
+          <div className="text-[11px] font-bold text-gris-texto">Total Facturado en Trabajos</div>
           <div className="text-2xl font-black text-white font-mono mt-0.5">
             {formatCurrency(totalBilled, 'UYU')}
           </div>
-          <p className="text-[10px] text-purple-400 mt-0.5">
+          <p className="text-[10px] text-gris-texto mt-0.5">
             Base sobre la cual se calculan comisiones
           </p>
         </div>
@@ -113,8 +114,8 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
       {/* Controles de Filtros */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-[#121826] border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
-            <Calendar className="w-3.5 h-3.5 text-purple-400" />
+          <div className="flex items-center gap-1.5 bg-negro border border-borde rounded-xl px-3 py-1.5 text-xs text-white">
+            <Calendar className="w-3.5 h-3.5 text-gris-texto" />
             <input
               type="month"
               value={selectedMonth}
@@ -126,7 +127,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-[#121826] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+            className="bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white focus:border-rojo focus:outline-none"
           >
             <option value="all">Todos los estados</option>
             <option value="Pendiente">Pendientes de cobro</option>
@@ -137,7 +138,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
             <select
               value={employeeFilter}
               onChange={(e) => setEmployeeFilter(e.target.value)}
-              className="bg-[#121826] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none"
+              className="bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white focus:border-rojo focus:outline-none"
             >
               <option value="all">Todos los colaboradores</option>
               <option value="user-maxi">Maximiliano Irujo (30%)</option>
@@ -146,17 +147,17 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
           )}
         </div>
 
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-gris-texto">
           Mostrando <strong>{filteredCommissions.length}</strong> liquidaciones
         </div>
       </div>
 
       {/* Lista de Comisiones */}
       {filteredCommissions.length === 0 ? (
-        <div className="p-8 rounded-3xl bg-[#121826] border border-slate-800 text-center text-slate-400">
-          <Award className="w-10 h-10 mx-auto mb-2 opacity-30 text-purple-400" />
-          <p className="text-sm font-bold text-slate-300">No hay comisiones en este período</p>
-          <p className="text-xs text-slate-500 mt-1">
+        <div className="p-8 rounded-xl bg-panel border border-borde text-center text-gris-texto">
+          <Award className="w-10 h-10 mx-auto mb-2 opacity-30 text-white" />
+          <p className="text-sm font-bold text-white">No hay comisiones en este período</p>
+          <p className="text-xs text-gris-texto mt-1">
             Las comisiones se generan automáticamente al marcar una cotización como "Trabajo Completado".
           </p>
         </div>
@@ -168,54 +169,53 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
             return (
               <div
                 key={comm.id}
-                className="p-4 rounded-2xl bg-[#121826] border border-slate-800 hover:border-slate-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="p-4 rounded-xl bg-panel border border-borde hover:border-rojo/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                    isPending ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                  }`}>
-                    <Award className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-negro border border-borde text-white flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 text-rojo" />
                   </div>
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-white text-xs">{comm.employee_name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-negro border border-borde text-gris-texto font-bold">
                         {comm.commission_rate}% comisión
                       </span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                        isPending ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        isPending ? 'bg-rojo/10 text-rojo border border-rojo/30' : 'bg-negro text-white border border-borde'
                       }`}>
                         {comm.status}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-1">
-                      <span>Cliente: <strong className="text-slate-200">{comm.client_name}</strong></span>
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-gris-texto mt-1">
+                      <span>Cliente: <strong className="text-white">{comm.client_name}</strong></span>
                       <span>•</span>
-                      <span>Auto: <strong className="text-slate-200">{comm.vehicle_description}</strong></span>
+                      <span>Auto: <strong className="text-white">{comm.vehicle_description}</strong></span>
                       <span>•</span>
                       <span>Cobrado: {formatCurrency(comm.amount_charged, 'UYU')}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-slate-800">
+                <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-borde">
                   <div className="text-left sm:text-right">
-                    <div className="text-[10px] text-slate-500 uppercase font-bold">Monto Comisión</div>
-                    <div className="text-base font-black font-mono text-amber-400">
+                    <div className="text-[10px] text-gris-texto uppercase font-bold">Monto Comisión</div>
+                    <div className="text-base font-black font-mono text-white">
                       {formatCurrency(comm.commission_amount, 'UYU')}
                     </div>
                   </div>
 
                   {isAdmin && isPending && (
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => handleTogglePaid(comm)}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                       <span>Marcar Pagada</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

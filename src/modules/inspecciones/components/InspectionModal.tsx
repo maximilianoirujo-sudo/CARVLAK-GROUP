@@ -9,6 +9,7 @@ import {
 } from '../../../types';
 import { INITIAL_PROFILES } from '../../../lib/mockData';
 import { X, Search, Plus, MapPin, DollarSign, Calendar, User, Car, ShieldCheck } from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
 
 interface InspectionModalProps {
   isOpen: boolean;
@@ -249,18 +250,18 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="w-full max-w-2xl rounded-3xl bg-[#0F141F] border border-slate-700 shadow-2xl p-5 sm:p-6 space-y-5 my-8">
+      <div className="w-full max-w-2xl rounded-xl bg-panel border border-borde shadow-2xl p-5 sm:p-6 space-y-5 my-8">
         {/* Cabecera */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-borde pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+            <div className="w-10 h-10 rounded-lg bg-negro border border-borde text-rojo flex items-center justify-center text-xl">
               🔍
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+              <span className="text-[10px] font-title font-bold uppercase tracking-wider text-gris-texto">
                 Fase 3 • Peritaje Vehicular
               </span>
-              <h2 className="text-lg sm:text-xl font-bold text-white">
+              <h2 className="text-lg sm:text-xl font-title font-bold text-white">
                 {inspectionToEdit ? 'Editar Inspección' : 'Nueva Inspección'}
               </h2>
             </div>
@@ -268,7 +269,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-lg bg-negro border border-borde text-gris-texto hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -278,15 +279,15 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
           {/* 1. TIPO DE INSPECCIÓN & ESTADO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Tipo de Inspección</label>
+              <label className="text-xs font-semibold text-gris-texto">Tipo de Inspección</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setType('precompra')}
-                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center ${
+                  className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all text-center ${
                     type === 'precompra'
-                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/30'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-rojo text-white border-rojo'
+                      : 'bg-negro border-borde text-gris-texto hover:text-white'
                   }`}
                 >
                   Precompra (Cliente)
@@ -294,10 +295,10 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setType('interna')}
-                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center ${
+                  className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all text-center ${
                     type === 'interna'
-                      ? 'bg-blue-500/20 border-blue-500 text-blue-300 ring-2 ring-blue-500/30'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-rojo text-white border-rojo'
+                      : 'bg-negro border-borde text-gris-texto hover:text-white'
                   }`}
                 >
                   Interna Automotora
@@ -306,11 +307,11 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Estado Inicial</label>
+              <label className="text-xs font-semibold text-gris-texto">Estado Inicial</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as InspectionStatus)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2.5 rounded-lg bg-negro border border-borde text-white text-xs font-semibold focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
               >
                 <option value="Solicitada">Solicitada (A coordinar)</option>
                 <option value="Agendada">Agendada (Crea turno en Agenda)</option>
@@ -322,10 +323,10 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
           </div>
 
           {/* 2. CLIENTE / COMPRADOR & VENDEDOR */}
-          <div className="p-4 rounded-2xl bg-[#090D14] border border-slate-800 space-y-3">
+          <div className="p-4 rounded-xl bg-negro border border-borde space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                <User className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center gap-2 text-xs font-bold text-white">
+                <User className="w-4 h-4 text-gris-texto" />
                 <span>
                   {type === 'precompra' ? 'Comprador / Solicitante' : 'Entidad Solicitante'}
                 </span>
@@ -334,7 +335,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsNewClient(!isNewClient)}
-                  className="text-[11px] text-emerald-400 hover:underline font-bold"
+                  className="text-[11px] text-white hover:underline font-bold"
                 >
                   {isNewClient ? 'Seleccionar existente' : '+ Crear nuevo'}
                 </button>
@@ -346,7 +347,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                 <select
                   value={clientId}
                   onChange={(e) => handleSelectClient(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 >
                   <option value="">-- Seleccionar cliente existente --</option>
                   {clients.map((c) => (
@@ -363,7 +364,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                     value={buyerName}
                     onChange={(e) => setBuyerName(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                   />
                   <input
                     type="tel"
@@ -371,19 +372,19 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                     value={buyerPhone}
                     onChange={(e) => setBuyerPhone(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                    className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                   />
                 </div>
               )
             ) : (
-              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
-                <strong>Automotora CARVLAK</strong> • Evaluación para stock o toma en permuta (Jonathan Kaitazoff / Patio).
+              <div className="p-2.5 rounded-lg bg-panel border border-borde text-xs text-gris-texto">
+                <strong className="text-white">Automotora CARVLAK</strong> • Evaluación para stock o toma en permuta (Jonathan Kaitazoff / Patio).
               </div>
             )}
 
             {/* Datos del vendedor (opcional) */}
-            <div className="pt-2 border-t border-slate-800/80">
-              <label className="text-[11px] font-semibold text-slate-400 block mb-1.5">
+            <div className="pt-2 border-t border-borde">
+              <label className="text-[11px] font-semibold text-gris-texto block mb-1.5">
                 Vendedor del auto / Titular actual (Opcional)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -392,30 +393,30 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   placeholder="Nombre del vendedor"
                   value={sellerName}
                   onChange={(e) => setSellerName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 />
                 <input
                   type="tel"
                   placeholder="Teléfono del vendedor"
                   value={sellerPhone}
                   onChange={(e) => setSellerPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 />
               </div>
             </div>
           </div>
 
           {/* 3. VEHÍCULO */}
-          <div className="p-4 rounded-2xl bg-[#090D14] border border-slate-800 space-y-3">
+          <div className="p-4 rounded-xl bg-negro border border-borde space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                <Car className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center gap-2 text-xs font-bold text-white">
+                <Car className="w-4 h-4 text-gris-texto" />
                 <span>Vehículo a Inspeccionar</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsNewVehicle(!isNewVehicle)}
-                className="text-[11px] text-emerald-400 hover:underline font-bold"
+                className="text-[11px] text-white hover:underline font-bold"
               >
                 {isNewVehicle ? 'Seleccionar de flota' : '+ Cargar manual'}
               </button>
@@ -425,7 +426,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
               <select
                 value={vehicleId}
                 onChange={(e) => handleSelectVehicle(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
               >
                 <option value="">-- Seleccionar vehículo registrado --</option>
                 {vehicles.map((v) => (
@@ -442,7 +443,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   value={vehiclePlate}
                   onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-xs focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto font-mono text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 />
                 <input
                   type="text"
@@ -450,14 +451,14 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   value={vehicleInfo}
                   onChange={(e) => setVehicleInfo(e.target.value)}
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 />
               </div>
             )}
 
             {/* Categoría para tarifario */}
             <div className="space-y-1.5 pt-1">
-              <label className="text-[11px] font-semibold text-slate-400">
+              <label className="text-[11px] font-semibold text-gris-texto">
                 Categoría (Define tarifa precompra)
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
@@ -467,10 +468,10 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                       key={cat}
                       type="button"
                       onClick={() => setVehicleCategory(cat)}
-                      className={`py-1.5 px-2 rounded-xl text-[11px] font-bold border transition-all ${
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
                         vehicleCategory === cat
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                          ? 'bg-rojo text-white border-rojo'
+                          : 'bg-panel border-borde text-gris-texto hover:text-white'
                       }`}
                     >
                       {cat}
@@ -484,11 +485,11 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
           {/* 4. INSPECTOR, FECHA & TRASLADO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Inspector Asignado</label>
+              <label className="text-xs font-semibold text-gris-texto">Inspector Asignado</label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-semibold focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2.5 rounded-lg bg-negro border border-borde text-white text-xs font-semibold focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
               >
                 {INITIAL_PROFILES.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -499,21 +500,21 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Fecha y Hora</label>
+              <label className="text-xs font-semibold text-gris-texto">Fecha y Hora</label>
               <input
                 type="datetime-local"
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg bg-negro border border-borde text-white text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
               />
             </div>
           </div>
 
           {/* TRASLADO A DOMICILIO */}
-          <div className="p-3.5 rounded-2xl bg-[#090D14] border border-slate-800 space-y-2">
+          <div className="p-3.5 rounded-xl bg-negro border border-borde space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-400" />
+                <MapPin className="w-4 h-4 text-gris-texto" />
                 <span className="text-xs font-bold text-white">Inspección a Domicilio</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -523,7 +524,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   onChange={(e) => setIsHomeVisit(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                <div className="w-9 h-5 bg-panel border border-borde peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rojo"></div>
               </label>
             </div>
 
@@ -535,22 +536,22 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
                   value={homeAddress}
                   onChange={(e) => setHomeAddress(e.target.value)}
                   required={isHomeVisit}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 />
-                <p className="text-[11px] text-amber-300">
-                  Recargo por traslado configurado: +$U {inspectionTariffs.homeVisitSurcharge.toLocaleString('es-UY')}
+                <p className="text-[11px] text-gris-texto">
+                  Recargo por traslado: +$U {inspectionTariffs.homeVisitSurcharge.toLocaleString('es-UY')}
                 </p>
               </div>
             )}
           </div>
 
           {/* 5. RESUMEN DE COBRO */}
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-panel border border-borde flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+              <span className="text-[11px] font-title font-bold text-gris-texto uppercase tracking-wider">
                 {type === 'precompra' ? 'Total a Cobrar al Cliente' : 'Costo Interno Registrado'}
               </span>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-gris-texto">
                 {type === 'precompra'
                   ? `Tarifa ${vehicleCategory} ($U ${priceAmount.toLocaleString('es-UY')}) ${
                       isHomeVisit ? `+ Traslado ($U ${surcharge.toLocaleString('es-UY')})` : ''
@@ -559,7 +560,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
               </p>
             </div>
             <div className="text-right font-mono">
-              <span className="text-2xl font-black text-emerald-400">
+              <span className="text-2xl font-title font-bold text-white">
                 $U {totalPrice.toLocaleString('es-UY')}
               </span>
             </div>
@@ -567,19 +568,19 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
 
           {/* 6. BOTONES DE ACCIÓN */}
           <div className="flex items-center justify-end gap-3 pt-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-700"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-emerald-500 text-xs font-black text-slate-950 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
+              variant="primary"
             >
               {inspectionToEdit ? 'Guardar Cambios' : 'Crear Inspección'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

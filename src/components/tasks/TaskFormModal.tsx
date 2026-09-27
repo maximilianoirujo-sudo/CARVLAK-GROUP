@@ -88,35 +88,35 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Título de la Tarea *</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Título de la Tarea *</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ej: Calibrar sensor, Comprar sellador cerámico..."
             required
-            className="w-full bg-[#131924] border border-slate-700 rounded-xl p-3 text-sm text-white font-semibold focus:outline-none focus:border-amber-400"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-sm text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
           />
         </div>
 
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Descripción / Detalles</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Descripción / Detalles</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Indicaciones específicas para quien realice la tarea..."
-            className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Negocio</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Negocio</label>
             <select
               value={business}
               onChange={(e) => setBusiness(e.target.value as any)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="general">🏢 General / Todo el grupo</option>
               <option value="detailing">✨ DetailVlak</option>
@@ -126,11 +126,11 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Asignar a Empleado</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Asignar a Empleado</label>
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="">Sin asignar</option>
               {availableProfiles.map((p) => (
@@ -144,40 +144,40 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Fecha Límite</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Fecha Límite</label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A]"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Estado</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Estado</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
-              <option value="Pendiente">🟡 Pendiente</option>
-              <option value="En curso">🔵 En curso</option>
-              <option value="Hecha">✅ Hecha / Finalizada</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En curso">En curso</option>
+              <option value="Hecha">Hecha / Finalizada</option>
             </select>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A2A]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
+            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold border border-white transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/20"
+            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm transition-colors cursor-pointer"
           >
             {taskToEdit ? 'Guardar Cambios' : 'Crear Tarea'}
           </button>

@@ -111,50 +111,50 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         
-        {/*  */}
+        {/* Matrícula */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Matrícula (Patente) *</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Matrícula (Patente) *</label>
           <input
             type="text"
             value={plate}
             onChange={(e) => setPlate(e.target.value.toUpperCase())}
             placeholder="Ej: SBX 1234"
             required
-            className="w-full bg-[#131924] border border-amber-500/30 rounded-xl p-3 text-base font-black text-amber-400 uppercase tracking-widest focus:outline-none focus:border-amber-400"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-base font-black text-white uppercase tracking-widest font-mono focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
           />
-          <p className="text-[10px] text-slate-500 mt-1">Se normaliza automáticamente en mayúsculas.</p>
+          <p className="text-[10px] text-[#8A8A8A] mt-1">Se normaliza automáticamente en mayúsculas.</p>
         </div>
 
-        {/*  */}
+        {/* Marca y Modelo */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Marca *</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Marca *</label>
             <input
               type="text"
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="Ej: Volkswagen, BMW, Toyota..."
               required
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Modelo *</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Modelo *</label>
             <input
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="Ej: Golf GTI, Hilux, Serie 3..."
               required
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
             />
           </div>
         </div>
 
-        {/*  */}
+        {/* Año, Color, Kilómetros */}
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Año</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Año</label>
             <input
               type="number"
               value={year || ''}
@@ -162,44 +162,44 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               placeholder="2020"
               min="1980"
               max="2027"
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Color</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Color</label>
             <input
               type="text"
               value={color}
               onChange={(e) => setColor(e.target.value)}
               placeholder="Ej: Blanco"
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Kilómetros</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Kilómetros</label>
             <input
               type="number"
               value={mileage || ''}
               onChange={(e) => setMileage(Number(e.target.value))}
               placeholder="Ej: 54000"
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-amber-400"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-[#D7141A]"
             />
           </div>
         </div>
 
-        {/*  */}
+        {/* Categoría */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Categoría de Vehículo *</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Categoría de Vehículo *</label>
           <div className="grid grid-cols-5 gap-1.5 text-center">
             {(['Chico', 'Mediano', 'SUV/Rural', 'Pick-up', 'Moto'] as VehicleCategory[]).map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategory(cat)}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all ${
+                className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
                   category === cat
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 font-black'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-[#D7141A] text-white border-[#D7141A]'
+                    : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
                 }`}
               >
                 {cat}
@@ -208,17 +208,17 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
           </div>
         </div>
 
-        {/*  */}
-        <div className="pt-2 border-t border-slate-800 space-y-3">
-          <label className="block text-slate-400 font-bold">Titularidad / Dueño</label>
+        {/* Titularidad */}
+        <div className="pt-2 border-t border-[#2A2A2A] space-y-3">
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider">Titularidad / Dueño</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setOwnership('client')}
-              className={`py-2 px-3 rounded-xl font-bold border transition-all ${
+              className={`py-2 px-3 rounded-xl font-bold border transition-all cursor-pointer ${
                 ownership === 'client'
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500'
-                  : 'bg-slate-900 border-slate-800 text-slate-400'
+                  ? 'bg-transparent text-white border-white'
+                  : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
               }`}
             >
               👤 Cliente Particular
@@ -226,10 +226,10 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             <button
               type="button"
               onClick={() => setOwnership('dealership')}
-              className={`py-2 px-3 rounded-xl font-bold border transition-all ${
+              className={`py-2 px-3 rounded-xl font-bold border transition-all cursor-pointer ${
                 ownership === 'dealership'
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500'
-                  : 'bg-slate-900 border-slate-800 text-slate-400'
+                  ? 'bg-[#D7141A]/15 border-[#D7141A] text-[#D7141A]'
+                  : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
               }`}
             >
               🚗 Propio de la Automotora
@@ -238,11 +238,11 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
 
           {ownership === 'client' && (
             <div>
-              <label className="block text-slate-400 font-bold mb-1">Seleccionar Cliente Dueño</label>
+              <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Seleccionar Cliente Dueño</label>
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+                className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
               >
                 <option value="">Particular sin registrar</option>
                 {clients.map((c) => (
@@ -255,18 +255,18 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
           )}
         </div>
 
-        {/*  */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        {/* Botones de acción */}
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A2A]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
+            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold border border-white transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/20"
+            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm transition-colors cursor-pointer"
           >
             {vehicleToEdit ? 'Guardar Cambios' : 'Registrar Vehículo'}
           </button>

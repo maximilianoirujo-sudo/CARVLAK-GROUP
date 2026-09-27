@@ -2,23 +2,13 @@ import React, { useState, useMemo } from 'react';
 import {
   Car,
   Search,
-  Filter,
   Plus,
   Eye,
   Edit,
   DollarSign,
   Clock,
   AlertTriangle,
-  Sparkles,
-  ClipboardCheck,
-  CheckCircle2,
   ExternalLink,
-  ChevronRight,
-  TrendingUp,
-  Tag,
-  Share2,
-  Grid,
-  List as ListIcon,
   Download,
   Zap,
   Copy,
@@ -26,17 +16,19 @@ import {
   Check,
   X,
   CheckSquare,
-  Square
+  Square,
+  Grid,
+  List as ListIcon
 } from 'lucide-react';
 import {
   DealershipVehicle,
   DealershipVehicleStatus,
-  DealershipVehicleType,
   PurchaseOrigin
 } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { Button } from '../../../components/ui/Button';
 import { DealershipBulkActionModal } from './DealershipBulkActionModal';
 import { DealershipConfirmStatusDialog } from './DealershipConfirmStatusDialog';
 
@@ -176,7 +168,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
     alertDaysThreshold
   ]);
 
-  // Lista de marcas y tipos disponibles en stock para filtros
+  // Lista de marcas disponibles
   const availableBrands = useMemo(() => {
     const set = new Set<string>();
     dealershipVehicles.forEach((v) => {
@@ -207,7 +199,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
     };
   }, [dealershipVehicles, alertDaysThreshold]);
 
-  // Manejo de Selección Masiva
+  // Multi-selección
   const toggleSelectOne = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedIds((prev) => {
@@ -304,44 +296,44 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
     switch (status) {
       case 'evaluacion':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] dark:text-gray-300 border border-[#D9D9D9] dark:border-[#333333]">
-            🔍 En Evaluación
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-negro text-gris-texto border border-borde">
+            En Evaluación
           </span>
         );
       case 'comprado':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-[#F2F2F2] dark:bg-[#222222] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333]">
-            📥 Comprado
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-negro text-white border border-borde">
+            Comprado
           </span>
         );
       case 'preparacion':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-[#F2F2F2] dark:bg-[#222222] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333]">
-            ⚙️ Preparación
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-negro text-white border border-borde">
+            Preparación
           </span>
         );
       case 'publicado':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-black dark:bg-white text-white dark:text-black border border-black dark:border-white">
-            🌐 Publicado
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-black border border-white">
+            Publicado
           </span>
         );
       case 'reservado':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-[#F2F2F2] dark:bg-[#222222] text-black dark:text-white border border-dashed border-[#6B6B6B]">
-            🔒 Reservado
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-negro text-white border border-dashed border-gris-texto">
+            Reservado
           </span>
         );
       case 'vendido':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-[#E5E5E5] dark:bg-[#1A1A1A] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333]">
-            🤝 Vendido
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-panel text-gris-texto border border-borde">
+            Vendido
           </span>
         );
       case 'descartado':
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-white dark:bg-black text-[#D7141A] border border-[#D7141A]/50">
-            ❌ Descartado
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rojo/10 text-rojo border border-rojo/40">
+            Descartado
           </span>
         );
     }
@@ -366,134 +358,141 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
       {counts.overdue > 0 && (
         <div
           onClick={() => setOnlyOverdueStock(!onlyOverdueStock)}
-          className={`p-4 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-3 shadow-sm ${
+          className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
             onlyOverdueStock
-              ? 'bg-[#D7141A]/10 border-[#D7141A] text-[#D7141A]'
-              : 'bg-[#F2F2F2] dark:bg-[#1A1A1A] border-[#D9D9D9] dark:border-[#2A2A2A] text-black dark:text-white hover:border-[#D7141A]'
+              ? 'bg-rojo/10 border-rojo text-rojo'
+              : 'bg-panel border-borde text-white hover:border-rojo'
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-[#D7141A]/10 text-[#D7141A] flex items-center justify-center text-xl shrink-0 font-bold">
-              <AlertTriangle className="w-5 h-5 text-[#D7141A]" />
+            <div className="w-10 h-10 rounded-lg bg-rojo/15 text-rojo flex items-center justify-center text-xl shrink-0 font-bold border border-rojo/30">
+              <AlertTriangle className="w-5 h-5 text-rojo" />
             </div>
             <div>
-              <div className="text-xs font-title font-bold uppercase tracking-wider text-[#D7141A]">
+              <div className="text-xs font-title font-bold uppercase tracking-wider text-rojo">
                 Alerta de Inventario Inmovilizado
               </div>
-              <div className="text-sm font-title font-bold text-black dark:text-white mt-0.5">
+              <div className="text-sm font-bold text-white mt-0.5">
                 Hay {counts.overdue} auto{counts.overdue > 1 ? 's' : ''} con más de {alertDaysThreshold} días en stock
               </div>
             </div>
           </div>
-          <span className="text-xs font-title font-bold px-3 py-1 rounded-md bg-white dark:bg-black text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333]">
+          <Button
+            variant="secondary"
+            className="text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOnlyOverdueStock(!onlyOverdueStock);
+            }}
+          >
             {onlyOverdueStock ? 'Mostrar Todos' : 'Filtrar Estancados'}
-          </span>
+          </Button>
         </div>
       )}
 
       {/* Barra de Acciones Superiores */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-title font-bold text-black dark:text-white flex items-center gap-2">
+          <h2 className="text-base font-title font-bold text-white flex items-center gap-2">
             Inventario de Vehículos
-            <span className="text-xs font-title font-bold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] dark:text-gray-300 border border-[#D9D9D9] dark:border-[#333333]">
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
               {filteredVehicles.length} de {dealershipVehicles.length}
             </span>
           </h2>
-          <p className="text-xs text-[#6B6B6B]">
+          <p className="text-xs text-gris-texto">
             Administración completa de stock, fichas, fotos y sincronización web.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Botón Catálogo Web */}
-          <button
+          <Button
+            variant="secondary"
             onClick={onOpenPublicCatalog}
-            className="px-3 py-2 rounded-md bg-black dark:bg-[#222222] hover:bg-neutral-800 text-white font-medium text-xs border border-black dark:border-[#333333] flex items-center gap-1.5 transition-all shadow-sm"
             title="Abrir catálogo público para clientes"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-[#D9D9D9]" />
+            <ExternalLink className="w-3.5 h-3.5 text-gris-texto" />
             <span className="hidden sm:inline">Catálogo Web</span>
-          </button>
+          </Button>
 
           {/* Botón Importar AppAuto */}
-          <button
+          <Button
+            variant="secondary"
             onClick={onOpenMigrationModal}
-            className="px-3 py-2 rounded-md bg-black dark:bg-[#222222] hover:bg-neutral-800 text-white font-medium text-xs border border-black dark:border-[#333333] flex items-center gap-1.5 transition-all shadow-sm"
             title="Importar los 44 autos cargados en appauto oficial con fotos HD"
           >
-            <Download className="w-3.5 h-3.5 text-[#D9D9D9]" />
+            <Download className="w-3.5 h-3.5 text-gris-texto" />
             <span>Importar AppAuto</span>
-          </button>
+          </Button>
 
           {/* Botón Nuevo Auto - ACCIÓN PRINCIPAL EN ROJO */}
           {canEdit && (
-            <button
+            <Button
+              variant="primary"
               onClick={onNewVehicle}
-              className="px-4 py-2 rounded-md bg-[#D7141A] hover:bg-[#b50f14] text-white font-title font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-95"
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo Auto</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
       {/* Selector de Segmento / Condición: Usados vs 0km vs Incompletos */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-lg bg-[#F2F2F2] dark:bg-[#1A1A1A] border border-[#D9D9D9] dark:border-[#2A2A2A]">
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-xl bg-panel border border-borde">
         <button
           onClick={() => setConditionFilter('todos')}
-          className={`px-3 py-1.5 rounded-md text-xs font-title font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
             conditionFilter === 'todos'
-              ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white'
+              ? 'bg-white text-black'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <span>Todos</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10">{counts.todos}</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/20">{counts.todos}</span>
         </button>
 
         <button
           onClick={() => setConditionFilter('usado')}
-          className={`px-3 py-1.5 rounded-md text-xs font-title font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
             conditionFilter === 'usado'
-              ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white'
+              ? 'bg-white text-black'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <Car className="w-3.5 h-3.5" />
           <span>Usados</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10">{counts.usados}</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/20">{counts.usados}</span>
         </button>
 
         <button
           onClick={() => setConditionFilter('0km')}
-          className={`px-3 py-1.5 rounded-md text-xs font-title font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
             conditionFilter === '0km'
-              ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white'
+              ? 'bg-white text-black'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <Zap className="w-3.5 h-3.5" />
           <span>0km</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10">{counts.ceroKm}</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/20">{counts.ceroKm}</span>
         </button>
 
         <button
           onClick={() => setConditionFilter('incompletos')}
-          className={`px-3 py-1.5 rounded-md text-xs font-title font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
             conditionFilter === 'incompletos'
-              ? 'bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]'
-              : 'text-[#D7141A] hover:bg-[#D7141A]/5'
+              ? 'bg-rojo text-white'
+              : 'text-rojo hover:bg-rojo/10'
           }`}
         >
           <span>⚠️ Incompletos</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#D7141A]/20 text-[#D7141A]">{counts.incompletos}</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/20 text-white">{counts.incompletos}</span>
         </button>
       </div>
 
       {/* Tabs de Estado de Vehículos */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-[#D9D9D9] dark:border-[#2A2A2A]">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-borde">
         {[
           { id: 'todos', label: 'Todos', count: counts.todos },
           { id: 'en_stock', label: 'En Stock Activo', count: counts.en_stock },
@@ -509,16 +508,16 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             onClick={() => setStatusFilter(tab.id)}
             className={`px-3 py-2 text-xs font-title font-bold transition-all flex items-center gap-2 whitespace-nowrap border-b-2 ${
               statusFilter === tab.id
-                ? 'border-[#D7141A] text-black dark:text-white'
-                : 'border-transparent text-[#6B6B6B] hover:text-black dark:hover:text-white'
+                ? 'border-rojo text-white'
+                : 'border-transparent text-gris-texto hover:text-white'
             }`}
           >
             <span>{tab.label}</span>
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded ${
                 statusFilter === tab.id
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                  : 'bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B]'
+                  ? 'bg-white text-black'
+                  : 'bg-negro text-gris-texto border border-borde'
               }`}
             >
               {tab.count}
@@ -528,15 +527,15 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
       </div>
 
       {/* Barra de Filtros Adicionales y Búsqueda */}
-      <div className="p-4 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-sm">
+      <div className="p-4 rounded-xl bg-panel border border-borde flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-[#6B6B6B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-gris-texto absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Buscar por matrícula, marca, modelo, versión o año..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md text-xs text-black dark:text-white placeholder-[#6B6B6B] focus:outline-none focus:border-black dark:focus:border-white"
+            className="w-full pl-10 pr-4 py-2 bg-negro border border-borde rounded-lg text-xs text-white placeholder-gris-texto focus:outline-none focus:border-rojo"
           />
         </div>
 
@@ -545,7 +544,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           <select
             value={brandFilter}
             onChange={(e) => setBrandFilter(e.target.value)}
-            className="bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] text-xs text-black dark:text-white rounded-md px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white"
+            className="bg-negro border border-borde text-xs text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-rojo"
           >
             <option value="todos">Todas las marcas</option>
             {availableBrands.map((b) => (
@@ -557,10 +556,10 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] text-xs text-black dark:text-white rounded-md px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white"
+            className="bg-negro border border-borde text-xs text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-rojo"
           >
             <option value="todos">Todos los tipos</option>
-            {(dealershipConfig.vehicle_types || ['Auto', 'Moto', 'Todoterreno']).map((vt) => (
+            {(dealershipConfig?.vehicle_types || ['Auto', 'Moto', 'Todoterreno']).map((vt) => (
               <option key={vt} value={vt.toLowerCase().replace(/[^a-z]/g, '')}>{vt}</option>
             ))}
           </select>
@@ -569,7 +568,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           <select
             value={originFilter}
             onChange={(e) => setOriginFilter(e.target.value)}
-            className="bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] text-xs text-black dark:text-white rounded-md px-2.5 py-1.5 focus:outline-none focus:border-black dark:focus:border-white"
+            className="bg-negro border border-borde text-xs text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-rojo"
           >
             <option value="todos">Todos los orígenes</option>
             <option value="particular">Particular</option>
@@ -582,15 +581,15 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           {canEdit && filteredVehicles.length > 0 && (
             <button
               onClick={toggleSelectAllVisible}
-              className={`p-1.5 rounded-md border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`p-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                 selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
+                  ? 'bg-white text-black border-white'
+                  : 'bg-negro border-borde text-gris-texto hover:text-white'
               }`}
               title="Seleccionar todos los visibles"
             >
               {selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0 ? (
-                <CheckSquare className="w-4 h-4 text-white dark:text-black" />
+                <CheckSquare className="w-4 h-4 text-black" />
               ) : (
                 <Square className="w-4 h-4" />
               )}
@@ -599,11 +598,11 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           )}
 
           {/* Toggle Grid / Tabla */}
-          <div className="flex items-center bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-0.5">
+          <div className="flex items-center bg-negro border border-borde rounded-lg p-0.5">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === 'grid' ? 'bg-black dark:bg-white text-white dark:text-black font-bold' : 'text-[#6B6B6B] hover:text-black dark:hover:text-white'
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'grid' ? 'bg-white text-black font-bold' : 'text-gris-texto hover:text-white'
               }`}
               title="Vista Cuadrícula"
             >
@@ -611,8 +610,8 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === 'table' ? 'bg-black dark:bg-white text-white dark:text-black font-bold' : 'text-[#6B6B6B] hover:text-black dark:hover:text-white'
+              className={`p-1.5 rounded-md transition-colors ${
+                viewMode === 'table' ? 'bg-white text-black font-bold' : 'text-gris-texto hover:text-white'
               }`}
               title="Vista Tabla"
             >
@@ -635,18 +634,18 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             return (
               <div
                 key={car.id}
-                className={`group rounded-lg bg-white dark:bg-[#161616] border transition-all flex flex-col overflow-hidden hover:border-black dark:hover:border-white shadow-sm relative ${
+                className={`group rounded-xl bg-panel border transition-all flex flex-col overflow-hidden relative ${
                   isSelected
-                    ? 'border-black dark:border-white ring-2 ring-black/20 dark:ring-white/20'
+                    ? 'border-white ring-2 ring-white/20'
                     : isOverdue
-                    ? 'border-[#D7141A]/50 ring-1 ring-[#D7141A]/30'
-                    : 'border-[#D9D9D9] dark:border-[#2A2A2A]'
+                    ? 'border-rojo ring-1 ring-rojo/30'
+                    : 'border-borde hover:border-white/50'
                 }`}
               >
                 {/* Portada con Imagen y Badges */}
                 <div
                   onClick={() => onSelectVehicle(car)}
-                  className="relative h-48 bg-[#F2F2F2] dark:bg-[#222222] overflow-hidden cursor-pointer"
+                  className="relative h-48 bg-negro overflow-hidden cursor-pointer"
                 >
                   {cover ? (
                     <img
@@ -655,7 +654,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[#6B6B6B] gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gris-texto gap-2">
                       <Car className="w-12 h-12" />
                       <span className="text-[11px] font-bold">Sin foto cargada</span>
                     </div>
@@ -671,8 +670,8 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         type="button"
                         className={`w-7 h-7 rounded-md flex items-center justify-center backdrop-blur-md transition-all ${
                           isSelected
-                            ? 'bg-black text-white dark:bg-white dark:text-black shadow-md'
-                            : 'bg-black/60 text-white/80 hover:text-white border border-white/30'
+                            ? 'bg-white text-black shadow-md'
+                            : 'bg-black/70 text-white/80 hover:text-white border border-white/30'
                         }`}
                       >
                         {isSelected ? <Check className="w-4 h-4 stroke-[3]" /> : <Square className="w-4 h-4" />}
@@ -684,18 +683,18 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                   <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 max-w-[70%]">
                     {getStatusBadge(car.status)}
                     {car.condition === '0km' && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white shadow-sm flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-black border border-white shadow-sm flex items-center gap-1">
                         <Zap className="w-2.5 h-2.5" />
                         0KM
                       </span>
                     )}
                     {car.fuel === 'Eléctrico' && car.autonomy_km && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F2F2F2] dark:bg-[#222222] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333] shadow-sm">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-negro text-white border border-borde">
                         🔋 {car.autonomy_km} km
                       </span>
                     )}
                     {car.incomplete_data && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold bg-[#D7141A] text-white shadow-sm">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rojo text-white shadow-sm">
                         ⚠️ Incompleto
                       </span>
                     )}
@@ -706,8 +705,8 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1 ${
                         isOverdue
-                          ? 'bg-[#D7141A] text-white border-[#D7141A] font-title font-bold'
-                          : 'bg-black/75 backdrop-blur-sm text-white border-black/40'
+                          ? 'bg-rojo text-white border-rojo'
+                          : 'bg-black/80 backdrop-blur-sm text-white border-borde'
                       }`}
                     >
                       <Clock className="w-3 h-3" />
@@ -718,11 +717,11 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                   {/* Matrícula o Chasis Flotante */}
                   <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
                     {car.plate ? (
-                      <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-black/85 backdrop-blur-sm text-white border border-white/20 shadow-md">
+                      <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-black/90 backdrop-blur-sm text-white border border-borde shadow-md">
                         {car.plate}
                       </span>
                     ) : (
-                      <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-black/85 backdrop-blur-sm text-white border border-white/20 shadow-md flex items-center gap-1">
+                      <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-black/90 backdrop-blur-sm text-white border border-borde shadow-md flex items-center gap-1">
                         <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-white text-black font-bold">0km</span>
                         <span>{car.chassis_vin || 'Sin chasis'}</span>
                       </span>
@@ -736,12 +735,12 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     {/* Título y Año */}
                     <div
                       onClick={() => onSelectVehicle(car)}
-                      className="cursor-pointer group-hover:text-[#D7141A] transition-colors"
+                      className="cursor-pointer group-hover:text-rojo transition-colors"
                     >
-                      <h3 className="text-sm font-title font-bold text-black dark:text-white leading-tight">
+                      <h3 className="text-sm font-title font-bold text-white leading-tight">
                         {car.brand} {car.model} {car.version || ''}
                       </h3>
-                      <div className="text-[11px] text-[#6B6B6B] mt-0.5 flex items-center gap-2 flex-wrap">
+                      <div className="text-[11px] text-gris-texto mt-0.5 flex items-center gap-2 flex-wrap">
                         <span>Año {car.year}</span>
                         <span>•</span>
                         <span>{car.mileage.toLocaleString()} km</span>
@@ -753,14 +752,14 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     </div>
 
                     {/* Precios y Margen con Edición Rápida Inline */}
-                    <div className="mt-3 pt-3 border-t border-[#D9D9D9] dark:border-[#2A2A2A] flex items-end justify-between">
+                    <div className="mt-3 pt-3 border-t border-borde flex items-end justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider flex items-center gap-1">
+                        <div className="text-[10px] font-bold text-gris-texto uppercase tracking-wider flex items-center gap-1">
                           Precio de Venta
                           {canEdit && !isEditingThisPrice && (
                             <button
                               onClick={(e) => startEditingPrice(car, e)}
-                              className="text-[#6B6B6B] hover:text-black dark:hover:text-white transition-colors p-0.5"
+                              className="text-gris-texto hover:text-white transition-colors p-0.5"
                               title="Editar precio rápido"
                             >
                               <Edit className="w-3 h-3" />
@@ -771,7 +770,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         {isEditingThisPrice ? (
                           <div className="flex items-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
                             <div className="relative">
-                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[#6B6B6B]">USD</span>
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-gris-texto">USD</span>
                               <input
                                 type="number"
                                 autoFocus
@@ -781,19 +780,19 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                                   if (e.key === 'Enter') saveEditingPrice(car.id, e);
                                   if (e.key === 'Escape') cancelEditingPrice(e as any);
                                 }}
-                                className="w-28 pl-9 pr-2 py-1 bg-white dark:bg-black border border-black dark:border-white rounded-md text-xs font-mono font-bold text-black dark:text-white focus:outline-none"
+                                className="w-28 pl-9 pr-2 py-1 bg-negro border border-rojo rounded-md text-xs font-mono font-bold text-white focus:outline-none"
                               />
                             </div>
                             <button
                               onClick={(e) => saveEditingPrice(car.id, e)}
-                              className="p-1 rounded-md bg-black text-white hover:bg-neutral-800"
+                              className="p-1 rounded-md bg-rojo text-white"
                               title="Guardar precio"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={cancelEditingPrice}
-                              className="p-1 rounded-md bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] hover:text-black dark:hover:text-white"
+                              className="p-1 rounded-md bg-negro border border-borde text-gris-texto hover:text-white"
                               title="Cancelar"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -802,7 +801,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         ) : (
                           <div
                             onClick={(e) => canEdit && startEditingPrice(car, e)}
-                            className={`text-base font-title font-bold text-black dark:text-white ${canEdit ? 'cursor-pointer hover:underline' : ''}`}
+                            className={`text-base font-title font-bold text-white ${canEdit ? 'cursor-pointer hover:underline' : ''}`}
                             title={canEdit ? 'Click para editar precio rápidamente' : undefined}
                           >
                             USD {car.sale_price.toLocaleString('es-UY')}
@@ -812,18 +811,18 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
                       {isAdmin && (
                         <div className="text-right">
-                          <div className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                          <div className="text-[10px] font-bold text-gris-texto uppercase tracking-wider">
                             Costo / Margen
                           </div>
                           <div className="flex items-center gap-1.5 justify-end">
-                            <span className="text-[11px] text-[#6B6B6B] font-medium">
+                            <span className="text-[11px] text-gris-texto font-medium">
                               ${Math.round(car.total_real_cost_usd || 0).toLocaleString()}
                             </span>
                             <span
-                              className={`text-[10px] font-title font-bold px-1.5 py-0.2 rounded ${
+                              className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
                                 (car.estimated_margin_usd || 0) >= 0
-                                  ? 'bg-[#F2F2F2] dark:bg-[#222222] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333]'
-                                  : 'bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/30'
+                                  ? 'bg-negro text-white border border-borde'
+                                  : 'bg-rojo/10 text-rojo border border-rojo/30'
                               }`}
                             >
                               +${Math.round(car.estimated_margin_usd || 0).toLocaleString()}
@@ -835,45 +834,49 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                   </div>
 
                   {/* Acciones de la Ficha */}
-                  <div className="pt-2 border-t border-[#D9D9D9] dark:border-[#2A2A2A] flex items-center justify-between gap-1">
-                    <button
+                  <div className="pt-2 border-t border-borde flex items-center justify-between gap-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => onSelectVehicle(car)}
-                      className="px-2.5 py-1.5 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#D9D9D9] dark:hover:bg-[#2A2A2A] text-black dark:text-white text-xs font-medium flex items-center gap-1 transition-colors"
                       title="Ver Ficha y Alistamiento"
                     >
-                      <Eye className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                      <Eye className="w-3.5 h-3.5 text-gris-texto" />
                       <span>Ficha</span>
-                    </button>
+                    </Button>
 
-                    {canEdit && (
-                      <button
-                        onClick={() => onEditVehicle(car)}
-                        className="p-1.5 rounded-md text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#222222] transition-colors"
-                        title="Editar Ficha Completa"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {canEdit && (
+                        <button
+                          onClick={() => onEditVehicle(car)}
+                          className="p-1.5 rounded-lg text-gris-texto hover:text-white hover:bg-negro transition-colors"
+                          title="Editar Ficha Completa"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
-                    {canEdit && (
-                      <button
-                        onClick={(e) => handleDuplicate(car.id, e)}
-                        className="p-1.5 rounded-md text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#222222] transition-colors"
-                        title="Duplicar unidad"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                      {canEdit && (
+                        <button
+                          onClick={(e) => handleDuplicate(car.id, e)}
+                          className="p-1.5 rounded-lg text-gris-texto hover:text-white hover:bg-negro transition-colors"
+                          title="Duplicar unidad"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
-                    {car.status !== 'vendido' && (
-                      <button
-                        onClick={() => onOpenSaleModal(car)}
-                        className="px-2.5 py-1.5 rounded-md bg-black dark:bg-[#222222] hover:bg-neutral-800 text-white text-xs font-title font-bold flex items-center gap-1 transition-all"
-                      >
-                        <DollarSign className="w-3.5 h-3.5" />
-                        <span>{car.status === 'reservado' ? 'Liquidar Venta' : 'Vender'}</span>
-                      </button>
-                    )}
+                      {car.status !== 'vendido' && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onOpenSaleModal(car)}
+                        >
+                          <DollarSign className="w-3.5 h-3.5" />
+                          <span>{car.status === 'reservado' ? 'Liquidar' : 'Vender'}</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -884,19 +887,19 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
       {/* Lista de Vehículos: Modo Tabla */}
       {viewMode === 'table' && (
-        <div className="rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] overflow-x-auto shadow-sm">
+        <div className="rounded-xl bg-panel border border-borde overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-[#D9D9D9] dark:border-[#2A2A2A] text-[#6B6B6B] text-[10px] font-title font-bold uppercase tracking-wider bg-[#F2F2F2] dark:bg-[#202020]">
+              <tr className="border-b border-borde text-gris-texto text-[10px] font-title font-bold uppercase tracking-wider bg-negro">
                 {canEdit && (
                   <th className="p-3 w-8">
                     <button
                       onClick={toggleSelectAllVisible}
-                      className="text-[#6B6B6B] hover:text-black dark:hover:text-white transition-colors"
+                      className="text-gris-texto hover:text-white transition-colors"
                       title="Seleccionar todos"
                     >
                       {selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0 ? (
-                        <CheckSquare className="w-4 h-4 text-black dark:text-white" />
+                        <CheckSquare className="w-4 h-4 text-white" />
                       ) : (
                         <Square className="w-4 h-4" />
                       )}
@@ -914,7 +917,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                 <th className="p-3 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D9D9D9] dark:divide-[#2A2A2A]">
+            <tbody className="divide-y divide-borde">
               {filteredVehicles.map((car) => {
                 const days = calculateDaysInStock(car);
                 const isOverdue = car.status !== 'vendido' && days >= alertDaysThreshold;
@@ -924,17 +927,17 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                 return (
                   <tr
                     key={car.id}
-                    className={`transition-colors ${isSelected ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-[#F2F2F2]/60 dark:hover:bg-[#202020]/60'}`}
+                    className={`transition-colors ${isSelected ? 'bg-white/5' : 'hover:bg-negro/50'}`}
                   >
                     {canEdit && (
                       <td className="p-3 w-8">
                         <button
                           type="button"
                           onClick={(e) => toggleSelectOne(car.id, e)}
-                          className="text-[#6B6B6B] hover:text-black dark:hover:text-white transition-colors"
+                          className="text-gris-texto hover:text-white transition-colors"
                         >
                           {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-black dark:text-white" />
+                            <CheckSquare className="w-4 h-4 text-white" />
                           ) : (
                             <Square className="w-4 h-4" />
                           )}
@@ -944,7 +947,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
                     <td className="p-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-md bg-[#F2F2F2] dark:bg-[#222222] overflow-hidden shrink-0 border border-[#D9D9D9] dark:border-[#333333]">
+                        <div className="w-9 h-9 rounded-lg bg-negro overflow-hidden shrink-0 border border-borde">
                           {car.cover_image || (car.images && car.images[0]) ? (
                             <img
                               src={car.cover_image || car.images[0]}
@@ -952,7 +955,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[#6B6B6B]">
+                            <div className="w-full h-full flex items-center justify-center text-gris-texto">
                               <Car className="w-4 h-4" />
                             </div>
                           )}
@@ -960,21 +963,21 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         <div>
                           <div
                             onClick={() => onSelectVehicle(car)}
-                            className="font-title font-bold text-black dark:text-white cursor-pointer hover:text-[#D7141A]"
+                            className="font-title font-bold text-white cursor-pointer hover:text-rojo"
                           >
                             {car.brand} {car.model} {car.version || ''}
                           </div>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-[10px] text-[#6B6B6B]">
+                            <span className="font-mono text-[10px] text-gris-texto">
                               {car.plate || car.chassis_vin || 'Sin matrícula'}
                             </span>
                             {car.condition === '0km' && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-title font-bold bg-black text-white dark:bg-white dark:text-black">
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-title font-bold bg-white text-black">
                                 0KM
                               </span>
                             )}
                             {car.fuel === 'Eléctrico' && car.autonomy_km && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-[#F2F2F2] dark:bg-[#222222] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333]">
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-negro text-white border border-borde">
                                 🔋 {car.autonomy_km}km
                               </span>
                             )}
@@ -983,9 +986,9 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       </div>
                     </td>
 
-                    <td className="p-3 text-black dark:text-white">
+                    <td className="p-3 text-white">
                       <div>Año {car.year}</div>
-                      <div className="text-[10px] text-[#6B6B6B]">{car.mileage.toLocaleString()} km</div>
+                      <div className="text-[10px] text-gris-texto">{car.mileage.toLocaleString()} km</div>
                     </td>
 
                     <td className="p-3">
@@ -993,7 +996,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         <select
                           value={car.status}
                           onChange={(e) => handleQuickStatusChange(car, e.target.value as DealershipVehicleStatus, e)}
-                          className="bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] text-xs rounded-md px-2 py-1 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+                          className="bg-negro border border-borde text-xs rounded-lg px-2 py-1 text-white focus:outline-none focus:border-rojo"
                         >
                           <option value="evaluacion">En evaluación</option>
                           <option value="comprado">Comprado</option>
@@ -1011,14 +1014,14 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     <td className="p-3">
                       <span
                         className={`font-bold ${
-                          isOverdue ? 'text-[#D7141A] font-title font-bold' : 'text-[#6B6B6B]'
+                          isOverdue ? 'text-rojo' : 'text-gris-texto'
                         }`}
                       >
                         {days} días
                       </span>
                     </td>
 
-                    <td className="p-3 text-[#6B6B6B] text-[11px]">
+                    <td className="p-3 text-gris-texto text-[11px]">
                       {getOriginLabel(car.purchase_origin)}
                     </td>
 
@@ -1034,17 +1037,17 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                               if (e.key === 'Enter') saveEditingPrice(car.id, e);
                               if (e.key === 'Escape') cancelEditingPrice(e as any);
                             }}
-                            className="w-24 px-2 py-0.5 bg-white dark:bg-black border border-black dark:border-white rounded text-xs font-mono font-bold text-black dark:text-white focus:outline-none"
+                            className="w-24 px-2 py-0.5 bg-negro border border-rojo rounded text-xs font-mono font-bold text-white focus:outline-none"
                           />
                           <button
                             onClick={(e) => saveEditingPrice(car.id, e)}
-                            className="p-1 rounded bg-black text-white hover:bg-neutral-800"
+                            className="p-1 rounded bg-rojo text-white"
                           >
                             <Check className="w-3 h-3" />
                           </button>
                           <button
                             onClick={cancelEditingPrice}
-                            className="p-1 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B]"
+                            className="p-1 rounded bg-negro border border-borde text-gris-texto hover:text-white"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -1052,19 +1055,19 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       ) : (
                         <div
                           onClick={(e) => canEdit && startEditingPrice(car, e)}
-                          className={`font-title font-bold text-black dark:text-white flex items-center justify-end gap-1 ${
+                          className={`font-title font-bold text-white flex items-center justify-end gap-1 ${
                             canEdit ? 'cursor-pointer hover:underline' : ''
                           }`}
                           title={canEdit ? 'Click para editar precio' : undefined}
                         >
                           <span>USD {car.sale_price.toLocaleString('es-UY')}</span>
-                          {canEdit && <Edit className="w-3 h-3 text-[#6B6B6B] opacity-60 hover:opacity-100" />}
+                          {canEdit && <Edit className="w-3 h-3 text-gris-texto opacity-60 hover:opacity-100" />}
                         </div>
                       )}
                     </td>
 
                     {isAdmin && (
-                      <td className="p-3 text-right text-black dark:text-white font-medium">
+                      <td className="p-3 text-right text-white font-medium">
                         USD {Math.round(car.total_real_cost_usd || 0).toLocaleString()}
                       </td>
                     )}
@@ -1073,7 +1076,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       <td className="p-3 text-right">
                         <span
                           className={`font-title font-bold ${
-                            (car.estimated_margin_usd || 0) >= 0 ? 'text-black dark:text-white' : 'text-[#D7141A]'
+                            (car.estimated_margin_usd || 0) >= 0 ? 'text-white' : 'text-rojo'
                           }`}
                         >
                           +${Math.round(car.estimated_margin_usd || 0).toLocaleString()} (
@@ -1086,7 +1089,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => onSelectVehicle(car)}
-                          className="p-1.5 rounded-md text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#222222]"
+                          className="p-1.5 rounded-lg text-gris-texto hover:text-white hover:bg-negro"
                           title="Ver Ficha"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -1095,7 +1098,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         {canEdit && (
                           <button
                             onClick={() => onEditVehicle(car)}
-                            className="p-1.5 rounded-md text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#222222]"
+                            className="p-1.5 rounded-lg text-gris-texto hover:text-white hover:bg-negro"
                             title="Editar"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -1105,7 +1108,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         {canEdit && (
                           <button
                             onClick={(e) => handleDuplicate(car.id, e)}
-                            className="p-1.5 rounded-md text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#222222]"
+                            className="p-1.5 rounded-lg text-gris-texto hover:text-white hover:bg-negro"
                             title="Duplicar"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -1115,7 +1118,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                         {car.status !== 'vendido' && (
                           <button
                             onClick={() => onOpenSaleModal(car)}
-                            className="p-1.5 rounded-md bg-black dark:bg-[#222222] hover:bg-neutral-800 text-white"
+                            className="p-1.5 rounded-lg bg-panel border border-white/20 text-white hover:bg-white/10"
                             title="Vender / Reservar"
                           >
                             <DollarSign className="w-3.5 h-3.5" />
@@ -1133,12 +1136,12 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
       {/* Empty State */}
       {filteredVehicles.length === 0 && (
-        <div className="p-12 text-center rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] space-y-3">
-          <div className="w-12 h-12 rounded-md bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] mx-auto flex items-center justify-center text-xl">
+        <div className="p-12 text-center rounded-xl bg-panel border border-borde space-y-3">
+          <div className="w-12 h-12 rounded-lg bg-negro text-gris-texto mx-auto flex items-center justify-center text-xl border border-borde">
             🔍
           </div>
-          <h3 className="text-sm font-title font-bold text-black dark:text-white">No se encontraron vehículos</h3>
-          <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
+          <h3 className="text-sm font-title font-bold text-white">No se encontraron vehículos</h3>
+          <p className="text-xs text-gris-texto max-w-sm mx-auto">
             Probá ajustando los filtros de búsqueda o cargá un nuevo auto en el inventario.
           </p>
         </div>
@@ -1146,9 +1149,9 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
       {/* BARRA FLOTANTE DE ACCIONES MASIVAS */}
       {canEdit && selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black text-white border border-[#2A2A2A] px-5 py-3 rounded-lg shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-panel text-white border border-borde px-5 py-3 rounded-xl shadow-2xl flex items-center gap-4 animate-in slide-in-from-bottom duration-200">
           <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-[#222222] text-white font-bold text-xs flex items-center justify-center">
+            <span className="w-6 h-6 rounded bg-negro text-white font-bold text-xs flex items-center justify-center border border-borde">
               {selectedIds.size}
             </span>
             <span className="text-xs font-semibold text-white">
@@ -1156,23 +1159,25 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             </span>
           </div>
 
-          <div className="h-4 w-px bg-neutral-800" />
+          <div className="h-4 w-px bg-borde" />
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => setIsBulkModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-md bg-[#D7141A] hover:bg-[#b50f14] text-white font-title font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Acciones Masivas</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={clearSelection}
-              className="px-2.5 py-1.5 rounded-md text-gray-400 hover:text-white hover:bg-neutral-800 text-xs transition-colors"
             >
               Cancelar
-            </button>
+            </Button>
           </div>
         </div>
       )}

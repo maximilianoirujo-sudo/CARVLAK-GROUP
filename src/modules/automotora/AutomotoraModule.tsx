@@ -7,15 +7,12 @@ import {
   TrendingUp,
   Download,
   ExternalLink,
-  ShieldCheck,
-  Building2,
-  Sparkles,
-  BadgePercent,
   Settings
 } from 'lucide-react';
 import { DealershipVehicle } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { Button } from '../../components/ui/Button';
 
 // Componentes del Módulo Automotora
 import { DealershipVehicleList } from './components/DealershipVehicleList';
@@ -82,55 +79,55 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* Banner Principal de la Automotora */}
-      <div className="p-5 sm:p-6 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] shadow-sm">
+      <div className="p-5 sm:p-6 rounded-xl bg-panel border border-borde">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-gris-texto">
                 CARVLAK Automotores
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333]">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
                 {dealershipVehicles.length} vehículos en stock
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-title font-bold text-black dark:text-white mt-1">
+            <h1 className="text-xl sm:text-2xl font-title font-bold text-white mt-1">
               Gestión integral de stock y ventas
             </h1>
 
-            <p className="text-xs text-[#6B6B6B] mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs text-gris-texto mt-1 max-w-2xl leading-relaxed">
               Inventario de usados seleccionados y eléctricos 0km, señas bancarias, permutas, cuentas por pagar y comisiones de venta.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <Button
+              variant="secondary"
               onClick={handleOpenCatalog}
-              className="px-3.5 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#E5E5E5] text-black dark:text-white font-semibold text-xs border border-[#D9D9D9] dark:border-[#333333] flex items-center gap-1.5 transition-colors min-h-[40px]"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <ExternalLink className="w-3.5 h-3.5 text-gris-texto" />
               <span>Ver catálogo web</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setIsMigrationModalOpen(true)}
-              className="px-3.5 py-2 rounded-md bg-[#111111] dark:bg-white text-white dark:text-black font-semibold text-xs border border-[#222222] flex items-center gap-1.5 transition-colors min-h-[40px]"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Importar AppAuto</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Navegación Modular (Tabs con Rojo #D7141A para la pestaña activa) */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none border-b border-[#D9D9D9] dark:border-[#2A2A2A]">
+      {/* Navegación Modular (Tabs con Línea Roja #D7141A para la pestaña activa) */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none border-b border-borde">
         <button
           onClick={() => setActiveTab('stock')}
-          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
+          className={`px-4 py-3 text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'stock'
-              ? 'bg-[#D7141A] text-white shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
+              ? 'text-white border-b-2 border-rojo'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <Car className="w-4 h-4" />
@@ -139,10 +136,10 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
 
         <button
           onClick={() => setActiveTab('crm')}
-          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
+          className={`px-4 py-3 text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'crm'
-              ? 'bg-[#D7141A] text-white shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
+              ? 'text-white border-b-2 border-rojo'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -151,10 +148,10 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
 
         <button
           onClick={() => setActiveTab('gastos')}
-          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
+          className={`px-4 py-3 text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'gastos'
-              ? 'bg-[#D7141A] text-white shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
+              ? 'text-white border-b-2 border-rojo'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <DollarSign className="w-4 h-4" />
@@ -163,10 +160,10 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
 
         <button
           onClick={() => setActiveTab('comisiones')}
-          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
+          className={`px-4 py-3 text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'comisiones'
-              ? 'bg-[#D7141A] text-white shadow-sm'
-              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
+              ? 'text-white border-b-2 border-rojo'
+              : 'text-gris-texto hover:text-white'
           }`}
         >
           <Award className="w-4 h-4" />
@@ -176,10 +173,10 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
         {isAdmin && (
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
+            className={`px-4 py-3 text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
               activeTab === 'dashboard'
-                ? 'bg-[#D7141A] text-white shadow-sm'
-                : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
+                ? 'text-white border-b-2 border-rojo'
+                : 'text-gris-texto hover:text-white'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
@@ -190,10 +187,10 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
         {isAdmin && (
           <button
             onClick={() => setActiveTab('config')}
-            className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
+            className={`px-4 py-3 text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
               activeTab === 'config'
-                ? 'bg-[#D7141A] text-white shadow-sm'
-                : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
+                ? 'text-white border-b-2 border-rojo'
+                : 'text-gris-texto hover:text-white'
             }`}
           >
             <Settings className="w-4 h-4" />

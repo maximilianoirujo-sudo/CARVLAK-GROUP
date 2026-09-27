@@ -37,11 +37,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-[#000000] border-r border-[#222222] p-3 space-y-4 shrink-0 h-[calc(100vh-53px)] sticky top-[53px] overflow-y-auto">
+    <aside className="hidden md:flex flex-col w-64 bg-[#000000] border-r border-[#2A2A2A] p-3 space-y-4 shrink-0 h-[calc(100vh-53px)] sticky top-[53px] overflow-y-auto">
       
       {/* Base Común */}
       <div className="space-y-1">
-        <div className="px-3 text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider mb-1.5">
+        <div className="px-3 text-[11px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-1.5">
           Operación diaria
         </div>
         {mainTabs.map((tab) => {
@@ -52,13 +52,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             <button
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors min-h-[42px] ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors min-h-[42px] cursor-pointer ${
                 isActive
-                  ? 'bg-[#1A1A1A] text-white border-l-4 border-[#D7141A]'
-                  : 'text-[#AAAAAA] hover:text-white hover:bg-[#111111]'
+                  ? 'bg-[#141414] text-white border-l-4 border-[#D7141A]'
+                  : 'text-[#8A8A8A] hover:text-white hover:bg-white/[0.04]'
               }`}
             >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#8A8A8A]'}`} />
               <span className="truncate">{tab.label}</span>
             </button>
           );
@@ -67,21 +67,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
         {canManageTeam && (
           <button
             onClick={() => onSelectTab('empleados')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors min-h-[42px] ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors min-h-[42px] cursor-pointer ${
               currentTab === 'empleados'
-                ? 'bg-[#1A1A1A] text-white border-l-4 border-[#D7141A]'
-                : 'text-[#AAAAAA] hover:text-white hover:bg-[#111111]'
+                ? 'bg-[#141414] text-white border-l-4 border-[#D7141A]'
+                : 'text-[#8A8A8A] hover:text-white hover:bg-white/[0.04]'
             }`}
           >
-            <UserCog className={`w-4 h-4 shrink-0 ${currentTab === 'empleados' ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+            <UserCog className={`w-4 h-4 shrink-0 ${currentTab === 'empleados' ? 'text-[#D7141A]' : 'text-[#8A8A8A]'}`} />
             <span className="truncate">Equipo y permisos</span>
           </button>
         )}
       </div>
 
       {/* Módulos de Negocio */}
-      <div className="pt-3 border-t border-[#222222] space-y-1">
-        <div className="px-3 text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider mb-1.5">
+      <div className="pt-3 border-t border-[#2A2A2A] space-y-1">
+        <div className="px-3 text-[11px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-1.5">
           Negocios del grupo
         </div>
 
@@ -93,17 +93,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             <button
               key={m.id}
               onClick={() => onSelectTab(m.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-semibold transition-colors min-h-[44px] ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors min-h-[44px] cursor-pointer ${
                 isActive
-                  ? 'bg-[#1A1A1A] text-white border-l-4 border-[#D7141A]'
-                  : 'text-[#AAAAAA] hover:text-white hover:bg-[#111111]'
+                  ? 'bg-[#141414] text-white border-l-4 border-[#D7141A]'
+                  : 'text-[#8A8A8A] hover:text-white hover:bg-white/[0.04]'
               }`}
             >
               <div className="flex items-center gap-3 truncate">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#8A8A8A]'}`} />
                 <div className="text-left truncate">
                   <div className="truncate font-semibold">{m.label}</div>
-                  <div className="text-[10px] text-[#6B6B6B] font-normal">{m.subtext}</div>
+                  <div className="text-[10px] text-[#8A8A8A] font-normal">{m.subtext}</div>
                 </div>
               </div>
             </button>
@@ -112,13 +112,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
       </div>
 
       {/* Estado del Hub */}
-      <div className="mt-auto pt-3 border-t border-[#222222]">
-        <div className="p-3 rounded-md bg-[#111111] border border-[#222222] text-[11px] text-[#888888] space-y-1">
+      <div className="mt-auto pt-3 border-t border-[#2A2A2A]">
+        <div className="p-3 rounded-xl bg-[#141414] border border-[#2A2A2A] text-[11px] text-[#8A8A8A] space-y-1">
           <div className="font-bold text-white flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#D7141A]"></span>
             CARVLAK Group Hub
           </div>
-          <p className="text-[10px] text-[#6B6B6B] leading-relaxed">
+          <p className="text-[10px] text-[#8A8A8A] leading-relaxed">
             Automotora • Detailing • Inspecciones
           </p>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CarPanelInspection, CarPanelId, CarPanelState } from '../../../types';
 import { Layers, CheckCircle2, AlertTriangle, AlertCircle, Wrench, Edit3, X } from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
 
 interface CarPanelsDiagramProps {
   panels: CarPanelInspection[];
@@ -128,7 +129,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                 e.stopPropagation();
                 setEditingPanel(panel);
               }}
-              className="p-1 rounded-md bg-black/40 text-slate-400 hover:text-white transition-colors"
+              className="p-1 rounded-md bg-black/40 text-gris-texto hover:text-white transition-colors"
               title="Ajustar micrones y notas"
             >
               <Edit3 className="w-3 h-3" />
@@ -141,14 +142,14 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
             {cfg.label}
           </span>
           {panel.thicknessMicrons ? (
-            <span className="font-mono text-slate-300 font-semibold">
+            <span className="font-mono text-gris-texto font-semibold">
               {panel.thicknessMicrons} µm
             </span>
           ) : null}
         </div>
 
         {panel.notes && (
-          <p className="mt-1 text-[9px] text-slate-300 italic truncate" title={panel.notes}>
+          <p className="mt-1 text-[9px] text-gris-texto italic truncate" title={panel.notes}>
             {panel.notes}
           </p>
         )}
@@ -159,39 +160,39 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
   return (
     <div className="space-y-4">
       {/* Barra de Resumen / Leyenda */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-[#0D121D] border border-slate-800 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 rounded-xl bg-panel border border-borde text-xs">
         <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-emerald-400" />
-          <span className="font-bold text-white">Mapa de Pintura y Paneles</span>
+          <Layers className="w-4 h-4 text-white" />
+          <span className="font-title font-bold text-white">Mapa de Pintura y Paneles</span>
           {!readOnly && (
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-gris-texto">
               (Toca para cambiar estado)
             </span>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-negro border border-borde text-white text-[11px] font-medium">
+            <span className="w-2 h-2 rounded-full bg-white" />
             Original: <strong>{counts.original}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-medium">
-            <span className="w-2 h-2 rounded-full bg-amber-400" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-negro border border-borde text-gris-texto text-[11px] font-medium">
+            <span className="w-2 h-2 rounded-full bg-gris-texto" />
             Repintado: <strong>{counts.repintado}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 font-medium">
-            <span className="w-2 h-2 rounded-full bg-purple-400" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-negro border border-borde text-gris-texto text-[11px] font-medium">
+            <span className="w-2 h-2 rounded-full bg-gris-texto" />
             Masillado: <strong>{counts.masillado}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 font-medium">
-            <span className="w-2 h-2 rounded-full bg-red-400" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rojo/20 border border-rojo/40 text-rojo text-[11px] font-medium">
+            <span className="w-2 h-2 rounded-full bg-rojo" />
             Dañado: <strong>{counts.danado}</strong>
           </span>
         </div>
       </div>
 
       {/* Disposición táctil del vehículo: Frontal / Lateral Izq / Centro / Lateral Der / Trasera */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-[#0B0F17] border border-slate-800 space-y-3">
+      <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-3">
         {/* PARAGOLPE DELANTERO */}
         <div className="flex justify-center">
           <div className="w-full max-w-md">
@@ -245,19 +246,19 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
       {/* MODAL DETALLES DEL PANEL (MICRONES Y NOTAS) */}
       {editingPanel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm rounded-3xl bg-[#121824] border border-slate-700 p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm rounded-xl bg-panel border border-borde p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-borde pb-3">
               <div>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                <span className="text-[10px] font-title font-bold text-gris-texto uppercase tracking-wider">
                   Panel Seleccionado
                 </span>
-                <h3 className="text-base font-bold text-white">{editingPanel.name}</h3>
+                <h3 className="text-base font-title font-bold text-white">{editingPanel.name}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingPanel(null)}
-                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-negro border border-borde text-gris-texto hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -265,7 +266,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
             {/* Selector de Estado */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Estado del Panel</label>
+              <label className="text-xs font-semibold text-gris-texto">Estado del Panel</label>
               <div className="grid grid-cols-2 gap-2">
                 {(['original', 'repintado', 'masillado', 'danado'] as CarPanelState[]).map((st) => {
                   const cfg = STATE_CONFIG[st];
@@ -275,14 +276,14 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                       key={st}
                       type="button"
                       onClick={() => setEditingPanel({ ...editingPanel, state: st })}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between ${
+                      className={`p-2.5 rounded-lg border text-xs font-bold transition-all text-left flex items-center justify-between ${
                         isSelected
-                          ? `${cfg.bg} ${cfg.border} ${cfg.text} ring-2 ring-emerald-500/40`
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                          ? 'bg-rojo text-white border-rojo'
+                          : 'bg-negro border-borde text-gris-texto hover:text-white'
                       }`}
                     >
                       <span>{cfg.label}</span>
-                      <span className={`w-2.5 h-2.5 rounded-full ${cfg.dotColor}`} />
+                      <span className={`w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-white' : 'bg-gris-texto'}`} />
                     </button>
                   );
                 })}
@@ -291,7 +292,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
             {/* Micrones (µm) con Presets */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">
+              <label className="text-xs font-semibold text-gris-texto">
                 Espesor de Pintura (Micrones µm)
               </label>
               <div className="flex items-center gap-2">
@@ -305,9 +306,9 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                     })
                   }
                   placeholder="Ej: 115"
-                  className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-mono text-sm focus:border-emerald-500 outline-none"
+                  className="flex-1 px-3 py-2 rounded-lg bg-negro border border-borde text-white font-mono text-sm focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
                 />
-                <span className="text-xs text-slate-400 font-bold">µm</span>
+                <span className="text-xs text-gris-texto font-bold">µm</span>
               </div>
 
               {/* Botones de preset rápido */}
@@ -315,21 +316,21 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingPanel({ ...editingPanel, thicknessMicrons: 115, state: 'original' })}
-                  className="flex-1 py-1 px-2 rounded-lg bg-slate-800 text-[10px] font-bold text-emerald-400 hover:bg-slate-700"
+                  className="flex-1 py-1 px-2 rounded-md bg-negro border border-borde text-[10px] font-bold text-white hover:border-gris-texto transition-colors"
                 >
                   115 µm (Orig)
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingPanel({ ...editingPanel, thicknessMicrons: 230, state: 'repintado' })}
-                  className="flex-1 py-1 px-2 rounded-lg bg-slate-800 text-[10px] font-bold text-amber-400 hover:bg-slate-700"
+                  className="flex-1 py-1 px-2 rounded-md bg-negro border border-borde text-[10px] font-bold text-gris-texto hover:text-white transition-colors"
                 >
                   230 µm (Rep)
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingPanel({ ...editingPanel, thicknessMicrons: 480, state: 'masillado' })}
-                  className="flex-1 py-1 px-2 rounded-lg bg-slate-800 text-[10px] font-bold text-purple-400 hover:bg-slate-700"
+                  className="flex-1 py-1 px-2 rounded-md bg-negro border border-borde text-[10px] font-bold text-gris-texto hover:text-white transition-colors"
                 >
                   480 µm (Mas)
                 </button>
@@ -338,32 +339,34 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
             {/* Observaciones del panel */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Notas / Hallazgo</label>
+              <label className="text-xs font-semibold text-gris-texto">Notas / Hallazgo</label>
               <input
                 type="text"
                 value={editingPanel.notes || ''}
                 onChange={(e) => setEditingPanel({ ...editingPanel, notes: e.target.value })}
                 placeholder="Ej: Raspón de estacionamiento sin masilla"
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-emerald-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg bg-negro border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
               />
             </div>
 
             {/* Botones */}
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-borde">
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setEditingPanel(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-700"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => handleSaveModal(editingPanel)}
-                className="px-4 py-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950 hover:bg-emerald-400"
               >
                 Guardar Panel
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -121,20 +121,19 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         
-        {/*  */}
         {/* Negocio Responsable */}
         <div>
-          <label className="block text-[#6B6B6B] font-title font-bold uppercase tracking-wider mb-1.5">
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1.5">
             Negocio Responsable *
           </label>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setBusiness('detailing')}
-              className={`py-2 px-2 rounded-md font-title font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
+              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                 business === 'detailing'
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-sm'
-                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
+                  ? 'bg-[#D7141A]/15 border-[#D7141A] text-white shadow-sm'
+                  : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
               }`}
             >
               <Droplets className="w-3.5 h-3.5" />
@@ -143,10 +142,10 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             <button
               type="button"
               onClick={() => setBusiness('inspeccion')}
-              className={`py-2 px-2 rounded-md font-title font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
+              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                 business === 'inspeccion'
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-sm'
-                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
+                  ? 'bg-[#D7141A]/15 border-[#D7141A] text-white shadow-sm'
+                  : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
               }`}
             >
               <ClipboardCheck className="w-3.5 h-3.5" />
@@ -155,10 +154,10 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             <button
               type="button"
               onClick={() => setBusiness('automotora')}
-              className={`py-2 px-2 rounded-md font-title font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
+              className={`py-2 px-2 rounded-xl font-bold border transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                 business === 'automotora'
-                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-sm'
-                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
+                  ? 'bg-[#D7141A]/15 border-[#D7141A] text-white shadow-sm'
+                  : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
               }`}
             >
               <Car className="w-3.5 h-3.5" />
@@ -169,26 +168,26 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
         {/* Título */}
         <div>
-          <label className="block text-[#6B6B6B] font-bold mb-1">Título o Servicio *</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Título o Servicio *</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ej: Cerámico 3 años, Peritaje en patio, Entrega de unidad..."
             required
-            className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] font-medium focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
           />
         </div>
 
         {/* Cliente y Vehículo */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Cliente *</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Cliente *</label>
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               required
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="">Seleccionar cliente...</option>
               {clients.map((c) => (
@@ -200,11 +199,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Vehículo Asociado</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Vehículo Asociado</label>
             <select
               value={vehicleId}
               onChange={(e) => setVehicleId(e.target.value)}
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="">Sin vehículo específico</option>
               {vehicles.map((v) => (
@@ -219,31 +218,31 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Fecha, Hora, Duración */}
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Fecha</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Fecha</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Hora</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Hora</label>
             <input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Duración</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Duración</label>
             <select
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value={30}>30 min</option>
               <option value={45}>45 min</option>
@@ -260,11 +259,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Asignado y Estado */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Empleado Asignado</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Empleado Asignado</label>
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="">Sin asignar</option>
               {availableProfiles.map((p) => (
@@ -276,11 +275,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Estado del Turno</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Estado del Turno</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as AppointmentStatus)}
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="Pendiente">Pendiente</option>
               <option value="Confirmado">Confirmado</option>
@@ -294,23 +293,23 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Presupuesto y Moneda */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Monto Presupuesto</label>
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Monto Presupuesto</label>
             <input
               type="number"
               value={priceAmount}
               onChange={(e) => setPriceAmount(Number(e.target.value))}
               placeholder="0"
-              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white font-title font-bold text-sm focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-title font-bold text-sm focus:outline-none focus:border-[#D7141A]"
             />
           </div>
           <div>
-            <label className="block text-[#6B6B6B] font-bold mb-1">Moneda</label>
-            <div className="flex rounded-md overflow-hidden border border-[#D9D9D9] dark:border-[#333333]">
+            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Moneda</label>
+            <div className="flex rounded-xl overflow-hidden border border-[#2A2A2A]">
               <button
                 type="button"
                 onClick={() => setPriceCurrency('UYU')}
-                className={`flex-1 py-2 font-title font-bold transition-colors ${
-                  priceCurrency === 'UYU' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B]'
+                className={`flex-1 py-2 font-title font-bold transition-colors cursor-pointer ${
+                  priceCurrency === 'UYU' ? 'bg-[#D7141A] text-white' : 'bg-black text-[#8A8A8A]'
                 }`}
               >
                 $UYU
@@ -318,8 +317,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPriceCurrency('USD')}
-                className={`flex-1 py-2 font-title font-bold transition-colors ${
-                  priceCurrency === 'USD' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B]'
+                className={`flex-1 py-2 font-title font-bold transition-colors cursor-pointer ${
+                  priceCurrency === 'USD' ? 'bg-[#D7141A] text-white' : 'bg-black text-[#8A8A8A]'
                 }`}
               >
                 USD $
@@ -330,28 +329,28 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
         {/* Notas */}
         <div>
-          <label className="block text-[#6B6B6B] font-bold mb-1">Notas u Observaciones</label>
+          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Notas u Observaciones</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             placeholder="Detalles sobre el trabajo o requerimientos del cliente..."
-            className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white resize-none"
+            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A] resize-none"
           />
         </div>
 
         {/* Botones de Acción */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D9D9D9] dark:border-[#2A2A2A]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A2A]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#D9D9D9] dark:hover:bg-[#333333] text-black dark:text-white font-medium border border-[#D9D9D9] dark:border-[#333333] transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold text-xs border border-white transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-md bg-[#D7141A] hover:bg-[#b50f14] text-white font-title font-bold shadow-sm transition-all"
+            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-title font-bold text-xs shadow-sm transition-all cursor-pointer"
           >
             {appointmentToEdit ? 'Guardar Cambios' : 'Agendar Turno'}
           </button>
