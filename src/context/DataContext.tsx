@@ -30,7 +30,9 @@ import {
   DealershipVehicleHistoryEntry,
   DealershipInquiry,
   DealershipInquiryStatus,
-  DealershipConfig
+  DealershipConfig,
+  SocialMediaConfig,
+  SocialMediaPostRecord
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -53,7 +55,9 @@ import {
   INITIAL_DEALERSHIP_CONFIG,
   INITIAL_DEALERSHIP_VEHICLES,
   INITIAL_DEALERSHIP_INQUIRIES,
-  APPAUTO_OFFICIAL_CATALOG
+  APPAUTO_OFFICIAL_CATALOG,
+  INITIAL_SOCIAL_MEDIA_CONFIG,
+  INITIAL_SOCIAL_MEDIA_POSTS
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -173,6 +177,15 @@ interface DataContextType {
   importAppAutoCatalog: () => { importedCount: number; duplicatesCount: number };
   importTiendanubeCatalog: () => { importedCount: number; duplicatesCount: number };
   createPosventaDetailingQuote: (dealershipVehicleId: string, buyerName?: string, buyerPhone?: string) => string | null;
+
+  // FASE 5: REDES SOCIALES & MARKETING STUDIO
+  socialMediaPosts: SocialMediaPostRecord[];
+  socialMediaConfig: SocialMediaConfig;
+  addSocialMediaPost: (data: Omit<SocialMediaPostRecord, 'id' | 'created_at' | 'created_by'>) => SocialMediaPostRecord;
+  updateSocialMediaPost: (id: string, data: Partial<SocialMediaPostRecord>) => void;
+  deleteSocialMediaPost: (id: string) => void;
+  updateSocialMediaConfig: (config: Partial<SocialMediaConfig>) => void;
+  updateClientConsent: (clientId: string, consent: boolean) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -283,6 +296,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_DEALERSHIP_CONFIG;
   });
 
+  // FASE 5: Estados Redes Sociales & Marketing Studio
+  const [socialMediaPosts, setSocialMediaPosts] = useState<SocialMediaPostRecord[]>(() => {
+    const s = localStorage.getItem('carvlak_social_media_posts');
+    if (s) {
+      try {
+        return JSON.parse(s);
+      } catch (e) {}
+    }
+    return INITIAL_SOCIAL_MEDIA_POSTS;
+  });
+
+  const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaConfig>(() => {
+    const s = localStorage.getItem('carvlak_social_media_config');
+    if (s) {
+      try {
+        const parsed = JSON.parse(s);
+        return {
+          ...INITIAL_SOCIAL_MEDIA_CONFIG,
+          ...parsed,
+          templates: { ...INITIAL_SOCIAL_MEDIA_CONFIG.templates, ...(parsed.templates || {}) }
+        };
+      } catch (e) {}
+    }
+    return INITIAL_SOCIAL_MEDIA_CONFIG;
+  });
+
   // Guardar en localStorage
   useEffect(() => {
     localStorage.setItem('carvlak_clients', JSON.stringify(clients));
@@ -352,6 +391,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('carvlak_dealership_config', JSON.stringify(dealershipConfig));
   }, [dealershipConfig]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_social_media_posts', JSON.stringify(socialMediaPosts));
+  }, [socialMediaPosts]);
+
+  useEffect(() => {
+    localStorage.setItem('carvlak_social_media_config', JSON.stringify(socialMediaConfig));
+  }, [socialMediaConfig]);
 
   // Si Supabase está configurado, sincronizar con la nube
   useEffect(() => {
@@ -2084,6 +2131,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { importedCount, duplicatesCount };
   };
 
+  // FASE 5: Handlers Redes Sociales & Marketing Studio
+  const addSocialMediaPost = (data: Omit<SocialMediaPostRecord, 'id' | 'created_at' | 'created_by'>): SocialMediaPostRecord => {
+    const newPost: SocialMediaPostRecord = {
+      ...data,
+      id: `post-${Date.now()}`,
+      created_by: profile?.id || 'admin',
+      created_by_name: profile?.full_name || data.created_by_name || 'Admin',
+      created_at: new Date().toISOString()
+    };
+    setSocialMediaPosts((prev) => [newPost, ...prev]);
+    logActivity('marketing', newPost.id, 'create', {
+      title: newPost.item_title,
+      template_id: newPost.template_id,
+      format: newPost.format
+    });
+    return newPost;
+  };
+
+  const updateSocialMediaPost = (id: string, updates: Partial<SocialMediaPostRecord>) => {
+    setSocialMediaPosts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+  };
+
+  const deleteSocialMediaPost = (id: string) => {
+    setSocialMediaPosts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const updateSocialMediaConfig = (updates: Partial<SocialMediaConfig>) => {
+    setSocialMediaConfig((prev) => ({
+      ...prev,
+      ...updates,
+      templates: {
+        ...prev.templates,
+        ...(updates.templates || {})
+      }
+    }));
+  };
+
+  const updateClientConsent = (clientId: string, consent: boolean) => {
+    setClients((prev) =>
+      prev.map((c) => (c.id === clientId ? { ...c, social_media_consent: consent, updated_at: new Date().toISOString() } : c))
+    );
+    logActivity('cliente', clientId, 'update', { social_media_consent: consent });
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -2164,7 +2257,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateDealershipConfig,
         importAppAutoCatalog,
         importTiendanubeCatalog,
-        createPosventaDetailingQuote
+        createPosventaDetailingQuote,
+
+        // FASE 5: Redes Sociales & Marketing Studio
+        socialMediaPosts,
+        socialMediaConfig,
+        addSocialMediaPost,
+        updateSocialMediaPost,
+        deleteSocialMediaPost,
+        updateSocialMediaConfig,
+        updateClientConsent
       }}
     >
       {children}

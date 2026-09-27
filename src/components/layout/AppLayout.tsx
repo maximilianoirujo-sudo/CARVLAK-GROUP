@@ -20,13 +20,15 @@ import { InspeccionModule } from '../../modules/inspecciones/InspeccionModule';
 import { PublicQuoteRequestPage } from '../public/PublicQuoteRequestPage';
 import { InspectionPublicReportPage } from '../../modules/inspecciones/components/InspectionPublicReportPage';
 import { DealershipPublicCatalogPage } from '../../modules/automotora/components/DealershipPublicCatalogPage';
-import { Vehicle, Client, Appointment } from '../../types';
+import { RedesSocialesModule } from '../../modules/redes/RedesSocialesModule';
+import { Vehicle, Client, Appointment, SocialMediaTemplateId } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { LoginPage } from '../auth/LoginPage';
 
 export const AppLayout: React.FC = () => {
   const { profile } = useAuth();
   const [currentTab, setCurrentTab] = useState('inicio');
+  const [redesParams, setRedesParams] = useState<{ vehicleId?: string; templateId?: SocialMediaTemplateId } | null>(null);
 
   // Vista Pública de Presupuestos (sin login / accesible por URL o toggle)
   const [isPublicFormView, setIsPublicFormView] = useState(() => {
@@ -79,6 +81,12 @@ export const AppLayout: React.FC = () => {
     setIsVehicleFormOpen(true);
   };
 
+  // Manejo de apertura de Redes Sociales con plantilla y vehículo preseleccionados
+  const handleOpenRedesWithItem = (vehicleId?: string, templateId?: SocialMediaTemplateId) => {
+    setRedesParams({ vehicleId, templateId });
+    setCurrentTab('redes-sociales');
+  };
+
   // Si se accede con token de informe público (?informe=...)
   if (publicReportToken) {
     return <InspectionPublicReportPage token={publicReportToken} />;
@@ -122,6 +130,7 @@ export const AppLayout: React.FC = () => {
               onNewClient={() => setIsClientFormOpen(true)}
               onNewTask={() => setIsTaskModalOpen(true)}
               onSelectAppointment={() => setCurrentTab('agenda')}
+              onOpenRedesWithItem={handleOpenRedesWithItem}
             />
           )}
 
@@ -151,6 +160,13 @@ export const AppLayout: React.FC = () => {
           )}
           {currentTab === 'mod-inspeccion' && (
             <InspeccionModule onNavigateToDetailing={() => setCurrentTab('mod-detailing')} />
+          )}
+
+          {currentTab === 'redes-sociales' && (
+            <RedesSocialesModule
+              initialVehicleId={redesParams?.vehicleId}
+              initialTemplateId={redesParams?.templateId}
+            />
           )}
         </main>
       </div>

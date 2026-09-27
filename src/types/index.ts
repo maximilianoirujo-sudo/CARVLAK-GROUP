@@ -45,6 +45,7 @@ export interface Client {
   cedula?: string;
   origin: ClientOrigin;
   notes?: string;
+  social_media_consent?: boolean; // Consentimiento para fotos y felicitaciones en redes sociales
   is_archived: boolean;
   created_by?: string;
   created_at: string;
@@ -121,7 +122,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'marketing';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -708,5 +709,69 @@ export interface DealershipConfig {
 
   // Campos personalizados
   custom_fields: DealershipCustomFieldDef[];
+}
+
+// ==============================================================================
+// FASE 5: REDES SOCIALES & MARKETING STUDIO - TIPOS
+// ==============================================================================
+
+export type SocialMediaFormat = 'story' | 'post'; // Story: 1080x1920 (9:16), Post: 1080x1350 (4:5)
+
+export type SocialMediaCategory = 'automotora' | 'detailing' | 'inspeccion';
+
+export type SocialMediaTemplateId =
+  // Automotora
+  | 'auto-vendido'
+  | 'auto-descuento'
+  | 'auto-nuevo-ingreso'
+  | 'auto-reservado'
+  | 'auto-ficha-carrusel'
+  | 'auto-catalogo-semana'
+  | 'auto-rango-precio'
+  | 'auto-electricos-0km'
+  | 'auto-entrega'
+  // Detailing & Inspección
+  | 'detailing-antes-despues'
+  | 'detailing-promo'
+  | 'agenda-turnos-disponibles'
+  | 'inspeccion-precompra';
+
+export interface SocialMediaPostRecord {
+  id: string;
+  template_id: SocialMediaTemplateId;
+  template_title: string;
+  category: SocialMediaCategory;
+  format: SocialMediaFormat;
+  item_id?: string; // ID del auto, cotización o cliente
+  item_title: string; // ej: "Volkswagen Golf 1.4 TSI 2018"
+  thumbnail_data?: string; // Data URL miniatura para vista previa rápida
+  suggested_caption: string;
+  is_published: boolean;
+  published_at?: string;
+  created_by: string;
+  created_by_name: string;
+  created_at: string;
+}
+
+export type LogoPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
+
+export interface SocialMediaTemplateConfig {
+  id: SocialMediaTemplateId;
+  title: string;
+  category: SocialMediaCategory;
+  description: string;
+  stamp_text?: string; // ej: "VENDIDO", "RESERVADO", "RECIÉN LLEGADO"
+  headline_default?: string;
+  subtitle_default?: string;
+  logo_position: LogoPosition;
+  default_caption_template: string;
+}
+
+export interface SocialMediaConfig {
+  allow_vendedor: boolean; // ¿Los vendedores tienen permiso para crear y compartir piezas?
+  instagram_handle: string; // ej: "@car.vlak"
+  location_name: string; // ej: "Shangrilá, Canelones"
+  whatsapp_number: string; // ej: "099 123 456"
+  templates: Record<SocialMediaTemplateId, SocialMediaTemplateConfig>;
 }
 

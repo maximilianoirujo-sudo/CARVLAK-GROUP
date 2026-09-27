@@ -12,7 +12,10 @@ import {
   History,
   Trash2,
   Edit,
-  Plus
+  Plus,
+  Share2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { Client, Vehicle } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -38,7 +41,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   onScheduleAppointmentForClient,
   onSelectVehicle
 }) => {
-  const { vehicles, appointments, archiveClient } = useData();
+  const { vehicles, appointments, archiveClient, updateClientConsent } = useData();
   const { showToast } = useToast();
   const [isConfirmArchiveOpen, setIsConfirmArchiveOpen] = useState(false);
 
@@ -99,6 +102,41 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
             >
               <MessageCircle className="w-4 h-4 text-white" />
               <span>Abrir WhatsApp</span>
+            </button>
+          </div>
+
+          {/* Consentimiento Redes Sociales */}
+          <div className="p-3 rounded-xl bg-black border border-[#2A2A2A] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Share2 className="w-4 h-4 text-[#D7141A] shrink-0" />
+              <div>
+                <span className="font-semibold text-white">Fotos en Redes Sociales: </span>
+                {client.social_media_consent ? (
+                  <span className="inline-flex items-center gap-1 text-[#22c55e] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Autorizado para Instagram
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[#8A8A8A]">
+                    <AlertCircle className="w-3.5 h-3.5 text-[#eab308]" /> Sin consentimiento registrado
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const nextConsent = !client.social_media_consent;
+                updateClientConsent(client.id, nextConsent);
+                showToast(
+                  nextConsent
+                    ? 'Consentimiento otorgado para fotos en redes'
+                    : 'Consentimiento revocado',
+                  'info'
+                );
+              }}
+              className="text-[11px] font-semibold text-[#8A8A8A] hover:text-white px-2.5 py-1 rounded-lg border border-[#2A2A2A] hover:border-white transition-colors cursor-pointer shrink-0"
+            >
+              {client.social_media_consent ? 'Revocar' : 'Autorizar'}
             </button>
           </div>
 

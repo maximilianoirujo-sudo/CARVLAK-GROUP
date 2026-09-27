@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { AlertTriangle, UserCheck } from 'lucide-react';
+import { AlertTriangle, UserCheck, Share2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { Client, ClientOrigin } from '../../types';
@@ -25,6 +25,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
   const [cedula, setCedula] = useState('');
   const [origin, setOrigin] = useState<ClientOrigin>('WhatsApp');
   const [notes, setNotes] = useState('');
+  const [socialMediaConsent, setSocialMediaConsent] = useState(false);
 
   // Detección de duplicados en tiempo real
   const [duplicateClient, setDuplicateClient] = useState<Client | null>(null);
@@ -37,6 +38,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       setCedula(clientToEdit.cedula || '');
       setOrigin(clientToEdit.origin);
       setNotes(clientToEdit.notes || '');
+      setSocialMediaConsent(clientToEdit.social_media_consent ?? false);
       setDuplicateClient(null);
     } else {
       setFullName('');
@@ -45,6 +47,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       setCedula('');
       setOrigin('WhatsApp');
       setNotes('');
+      setSocialMediaConsent(false);
       setDuplicateClient(null);
     }
   }, [clientToEdit, isOpen]);
@@ -74,7 +77,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
         email: email.trim() || undefined,
         cedula: cedula.trim() || undefined,
         origin,
-        notes: notes.trim() || undefined
+        notes: notes.trim() || undefined,
+        social_media_consent: socialMediaConsent
       });
       showToast('Cliente actualizado correctamente', 'success');
     } else {
@@ -84,7 +88,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
         email: email.trim() || undefined,
         cedula: cedula.trim() || undefined,
         origin,
-        notes: notes.trim() || undefined
+        notes: notes.trim() || undefined,
+        social_media_consent: socialMediaConsent
       });
 
       if (res.duplicateWarning) {
@@ -202,6 +207,26 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
             placeholder="Preferencias del cliente, servicios de interés, etc..."
             className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
           />
+        </div>
+
+        {/* Consentimiento Redes Sociales */}
+        <div className="p-3 bg-[#141414] border border-[#2A2A2A] rounded-xl flex items-start gap-3">
+          <input
+            id="social_media_consent"
+            type="checkbox"
+            checked={socialMediaConsent}
+            onChange={(e) => setSocialMediaConsent(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-[#2A2A2A] bg-black text-[#D7141A] focus:ring-[#D7141A] focus:ring-offset-black accent-[#D7141A] cursor-pointer"
+          />
+          <label htmlFor="social_media_consent" className="cursor-pointer select-none">
+            <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+              <Share2 className="w-3.5 h-3.5 text-[#D7141A]" />
+              <span>Consentimiento para fotos en redes sociales</span>
+            </div>
+            <p className="text-[11px] text-[#8A8A8A] mt-0.5">
+              Autoriza a CARVLAK a publicar fotos de la entrega o vehículo en Instagram sin datos personales sensibles.
+            </p>
+          </label>
         </div>
 
         {/* Acciones */}

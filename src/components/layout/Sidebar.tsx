@@ -8,7 +8,8 @@ import {
   UserCog,
   Droplets,
   ClipboardCheck,
-  Building2
+  Building2,
+  Share2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { isEncargado } from '../../lib/permissions';
@@ -109,6 +110,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             </button>
           );
         })}
+      </div>
+
+      {/* Marketing & Redes Sociales */}
+      <div className="pt-3 border-t border-[#2A2A2A] space-y-1">
+        <div className="px-3 text-[11px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-1.5">
+          Marketing
+        </div>
+        <button
+          onClick={() => onSelectTab('redes-sociales')}
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors min-h-[44px] cursor-pointer ${
+            currentTab === 'redes-sociales'
+              ? 'bg-[#141414] text-white border-l-4 border-[#D7141A]'
+              : 'text-[#8A8A8A] hover:text-white hover:bg-white/[0.04]'
+          }`}
+        >
+          <div className="flex items-center gap-3 truncate">
+            <Share2 className={`w-4 h-4 shrink-0 ${currentTab === 'redes-sociales' ? 'text-[#D7141A]' : 'text-[#8A8A8A]'}`} />
+            <div className="text-left truncate">
+              <div className="truncate font-semibold">Redes sociales</div>
+              <div className="text-[10px] text-[#8A8A8A] font-normal">Historias y posts 1080px</div>
+            </div>
+          </div>
+        </button>
       </div>
 
       {/* Estado del Hub */}

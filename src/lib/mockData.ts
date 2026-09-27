@@ -22,7 +22,9 @@ import {
   InspectionTariffConfig,
   DealershipVehicle,
   DealershipInquiry,
-  DealershipConfig
+  DealershipConfig,
+  SocialMediaConfig,
+  SocialMediaPostRecord
 } from '../types';
 
 export const INITIAL_PROFILES: Profile[] = [
@@ -1282,6 +1284,194 @@ export const APPAUTO_OFFICIAL_CATALOG: Partial<DealershipVehicle>[] = [
     color_exterior: 'Gris Oscuro',
     features: ['Pantalla táctil con cámara', 'Llave inteligente', 'Control de velocidad crucero'],
     images: ['https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop']
+  }
+];
+
+// ==============================================================================
+// REDES SOCIALES & MARKETING STUDIO - CONFIG & MOCK DATA
+// ==============================================================================
+
+export const INITIAL_SOCIAL_MEDIA_CONFIG: SocialMediaConfig = {
+  allow_vendedor: true,
+  instagram_handle: '@car.vlak',
+  location_name: 'Shangrilá, Canelones',
+  whatsapp_number: '099 267 964',
+  templates: {
+    'auto-vendido': {
+      id: 'auto-vendido',
+      title: 'Auto Vendido',
+      category: 'automotora',
+      description: 'Foto del vehículo con sello VENDIDO en rojo y mención optativa al cliente',
+      stamp_text: 'VENDIDO',
+      headline_default: '¡VENDIDO!',
+      subtitle_default: 'Felicitaciones a su nuevo dueño y gracias por elegirnos',
+      logo_position: 'top-left',
+      default_caption_template: '¡OTRO QUE SE VA! 🎉\n\nEste {modelo} ({anio}) ya tiene nuevo dueño. ¡Muchísimas gracias {cliente} por la confianza en CARVLAK Group!\n\n¿Buscás una unidad similar o querés vender tu auto sin complicaciones? Escribinos por WhatsApp al 099 267 964 o dejanos un mensaje directo.\n\n#carvlak #vendido #autosuruguay #montevideo #canelones #usadosgarantizados'
+    },
+    'auto-descuento': {
+      id: 'auto-descuento',
+      title: 'Descuento de la Semana',
+      category: 'automotora',
+      description: 'Foto, precio anterior tachado, precio destacado en rojo y monto de ahorro',
+      stamp_text: 'OPORTUNIDAD',
+      headline_default: 'DESCUENTO DE LA SEMANA',
+      subtitle_default: 'Precio especial por tiempo limitado en stock propio',
+      logo_position: 'top-left',
+      default_caption_template: '🔥 OPORTUNIDAD DE LA SEMANA 🔥\n\n{modelo} {version} ({anio})\n\nAntes: USD {precio_anterior}\n👉 AHORA: USD {precio_nuevo} (¡Ahorrás USD {rebaja}!)\n\n• Kilometraje: {km} km\n• Combustible: {combustible} | Transmisión: {transmision}\n\nTomamos tu usado en permuta y financiamos hasta el 100%. Coordiná tu prueba de manejo hoy mismo escribiendo al WhatsApp 099 267 964.\n\n#carvlak #descuento #oportunidad #autosuruguay #rebaja'
+    },
+    'auto-nuevo-ingreso': {
+      id: 'auto-nuevo-ingreso',
+      title: 'Nuevo Ingreso (Recién Llegado)',
+      category: 'automotora',
+      description: 'Destaca un auto recién publicado con foto, kilometraje y precio',
+      stamp_text: 'RECIÉN LLEGADO',
+      headline_default: 'NUEVO INGRESO',
+      subtitle_default: 'Disponible para entrega inmediata en nuestro showroom',
+      logo_position: 'top-left',
+      default_caption_template: '✨ RECIÉN LLEGADO AL SHOWROOM ✨\n\n{modelo} {version} ({anio})\n\n• Kilometraje: {km} km\n• Transmisión: {transmision}\n• Precio Contado: USD {precio}\n• Opciones de financiación bancaria y propia disponibles\n\nImpecable estado general, revisado en nuestro taller. Consultanos por DM o por WhatsApp al 099 267 964.\n\n#carvlak #nuevoingreso #recienllegado #autosuruguay #automotora'
+    },
+    'auto-reservado': {
+      id: 'auto-reservado',
+      title: 'Auto Reservado',
+      category: 'automotora',
+      description: 'Foto con sello RESERVADO en rojo para generar tracción comercial',
+      stamp_text: 'RESERVADO',
+      headline_default: 'UNIDAD RESERVADA',
+      subtitle_default: '¡Gracias por la confianza en CARVLAK!',
+      logo_position: 'top-left',
+      default_caption_template: '🔒 UNIDAD RESERVADA 🔒\n\nEste {modelo} ya tiene reserva confirmada. Si buscabas uno igual o similar, dejanos tus datos y te avisamos ni bien ingrese uno al inventario.\n\nWhatsApp: 099 267 964\n\n#carvlak #reservado #autosuruguay #shangrila'
+    },
+    'auto-ficha-carrusel': {
+      id: 'auto-ficha-carrusel',
+      title: 'Ficha del Auto (Carrusel)',
+      category: 'automotora',
+      description: 'Portada + 4 diapositivas de especificaciones técnicas y fotos',
+      stamp_text: 'EN STOCK',
+      headline_default: 'FICHA TÉCNICA COMPLETA',
+      subtitle_default: 'Deslizá para conocer todos los detalles de esta unidad',
+      logo_position: 'top-left',
+      default_caption_template: '📋 FICHA COMPLETA | {modelo} {version} ({anio})\n\nDeslizá para ver las fotos en detalle y el equipamiento completo de esta unidad.\n\n• Motor: {motor}\n• Transmisión: {transmision}\n• Kilómetros: {km} km\n• Precio: USD {precio}\n\nEscribinos por WhatsApp al 099 267 964 para más información y agendar tu visita.\n\n#carvlak #fichatecnica #carrusel #autosuruguay #detallado'
+    },
+    'auto-catalogo-semana': {
+      id: 'auto-catalogo-semana',
+      title: 'Catálogo de la Semana',
+      category: 'automotora',
+      description: 'Grilla de 4 a 6 vehículos seleccionados con foto, modelo y precio',
+      stamp_text: 'STOCK DESTACADO',
+      headline_default: 'CATÁLOGO DE LA SEMANA',
+      subtitle_default: 'Selección de vehículos verificados listos para retirar',
+      logo_position: 'top-center',
+      default_caption_template: '🚗 DESTACADOS DE LA SEMANA EN CARVLAK 🚗\n\nMirá algunas de las opciones que tenemos disponibles en nuestro stock propio:\n\n{lista_autos}\n\nTodos con peritaje mecánico oficial CARVLAK y documentación al día. Escribinos al 099 267 964 para coordinar tu visita.\n\n#carvlak #catalogosemanal #stock #autosuruguay #shangrila'
+    },
+    'auto-rango-precio': {
+      id: 'auto-rango-precio',
+      title: 'Por Rango de Precio',
+      category: 'automotora',
+      description: 'Agrupa autos que se ajustan a un presupuesto determinado',
+      stamp_text: 'ACCESIBLES',
+      headline_default: 'AUTOS HASTA USD 10.000',
+      subtitle_default: 'Excelente relación precio-calidad con financiación',
+      logo_position: 'top-left',
+      default_caption_template: '🎯 ¿BUSCÁS UN AUTO POR MENOS DE USD 10.000? 🎯\n\nEn CARVLAK seleccionamos las mejores unidades en este rango de precio, revisadas mecánicamente y con documentación al día.\n\nFinanciación propia disponible. Consultá el listado completo por WhatsApp al 099 267 964.\n\n#carvlak #autoseconomicos #usadosuruguay #montevideo #canelones'
+    },
+    'auto-electricos-0km': {
+      id: 'auto-electricos-0km',
+      title: 'Eléctricos 0km',
+      category: 'automotora',
+      description: 'Plantilla tecnológica con autonomía en km, 0km e insignia eléctrica',
+      stamp_text: '100% ELÉCTRICO',
+      headline_default: 'MOVILIDAD ELÉCTRICA 0KM',
+      subtitle_default: 'Tecnología, rendimiento y el menor costo por kilómetro',
+      logo_position: 'top-left',
+      default_caption_template: '⚡ PASATE A LO ELÉCTRICO CON CARVLAK ⚡\n\n{modelo} 0km\n\n• Autonomía: {autonomia} km\n• Garantía oficial y entrega inmediata\n• Precio: USD {precio}\n\nOlvidate del gasto en combustible y service tradicional. Escribinos al 099 267 964 para conocer los planes de financiación.\n\n#carvlak #electricos #movilidadsostenible #0km #uruguayelectrico'
+    },
+    'auto-entrega': {
+      id: 'auto-entrega',
+      title: 'Entrega de Unidad',
+      category: 'automotora',
+      description: 'Foto del cliente con su auto y mensaje de felicitaciones (con consentimiento)',
+      stamp_text: 'ENTREGA',
+      headline_default: '¡FELICITACIONES!',
+      subtitle_default: 'Nuevo integrante de la familia CARVLAK Group',
+      logo_position: 'top-left',
+      default_caption_template: '🎉 ¡MOMENTO DE ENTREGA! 🎉\n\nQueremos felicitar a {cliente} por su nuevo {modelo}. ¡A disfrutar cada kilómetro en la ruta!\n\nMuchas gracias por elegir la transparencia y el respaldo de CARVLAK Group.\n\n#carvlak #entrega #clientesfelices #autosuruguay #familia'
+    },
+    'detailing-antes-despues': {
+      id: 'detailing-antes-despues',
+      title: 'Antes y Después (Detailing)',
+      category: 'detailing',
+      description: 'Pantalla dividida con fotos antes/después del trabajo y servicio realizado',
+      stamp_text: 'TRANSFORMACIÓN',
+      headline_default: 'ANTES Y DESPUÉS',
+      subtitle_default: 'DetailVlak • Corrección de barniz y estética avanzada',
+      logo_position: 'top-center',
+      default_caption_template: '✨ TRANSFORMACIÓN DETAILVLAK ✨\n\n{servicio} realizado sobre este {auto}.\n\nEliminación de microrayones, descontaminado de pintura y aplicación de sellador de alta durabilidad para lograr un acabado espejo insuperable.\n\nTurnos y presupuestos por WhatsApp al 099 267 964.\n\n#detailvlak #antesydespues #detailinguruguay #tratamientoceramico #shangrila'
+    },
+    'detailing-promo': {
+      id: 'detailing-promo',
+      title: 'Promo Detailing',
+      category: 'detailing',
+      description: 'Servicio con descuento especial y fecha límite de vigencia',
+      stamp_text: 'PROMO EXCLUSIVA',
+      headline_default: 'BENEFICIO EXCLUSIVO',
+      subtitle_default: 'Protección profesional para tu vehículo en Shangrilá',
+      logo_position: 'top-left',
+      default_caption_template: '🏷️ PROMO DEL MES EN DETAILVLAK 🏷️\n\n{servicio}\n\nPrecio promocional: $U {precio_promo} (Antes $U {precio_lista})\n¡Válido hasta el {vigencia} o agotar cupos!\n\nReservá tu lugar escribiendo al WhatsApp 099 267 964.\n\n#detailvlak #promodetailing #esteticavehicular #canelones'
+    },
+    'agenda-turnos-disponibles': {
+      id: 'agenda-turnos-disponibles',
+      title: 'Turnos Disponibles',
+      category: 'detailing',
+      description: 'Aviso con días y horarios libres de la agenda de la semana',
+      stamp_text: 'AGENDA ABIERTA',
+      headline_default: 'TURNOS DISPONIBLES',
+      subtitle_default: 'Tenemos cupos libres esta semana en DetailVlak',
+      logo_position: 'top-left',
+      default_caption_template: '📅 AGENDA DE LA SEMANA DISPONIBLE 📅\n\nTenemos algunos lugares disponibles para tratamientos cerámicos, limpieza profunda de tapizados y pulidos.\n\n{dias_disponibles}\n\nCoordiná tu ingreso por WhatsApp al 099 267 964 antes de que se completen los cupos.\n\n#detailvlak #turnosdisponibles #agenda #detailinguruguay'
+    },
+    'inspeccion-precompra': {
+      id: 'inspeccion-precompra',
+      title: 'Inspección Precompra',
+      category: 'inspeccion',
+      description: 'Flyer informativo sobre el servicio de peritaje técnico oficial sin datos privados',
+      stamp_text: 'COMPRÁ SEGURO',
+      headline_default: '¿VAS A COMPRAR UN USADO?',
+      subtitle_default: 'Inspección pericial completa en 120 puntos críticos',
+      logo_position: 'top-left',
+      default_caption_template: '🔍 NO COMPRES A CIEGAS | PERITAJE MECÁNICO CARVLAK 🔍\n\nAntes de transferir o señar un vehículo usado, revisalo con nuestros técnicos peritos oficiales:\n\n✓ Escaneo computarizado OBD-II en vivo\n✓ Espesor de pintura en micrones (detección de choques y masilla)\n✓ Tren delantero, suspensión y frenos\n✓ Historial y deuda SUCIVE\n\nInforme digital pericial en el acto. Coordiná tu peritaje en Shangrilá o a domicilio al 099 267 964.\n\n#peritaje #inspeccionprecompra #autosuruguay #carvlak #revisionmecanica'
+    }
+  }
+};
+
+export const INITIAL_SOCIAL_MEDIA_POSTS: SocialMediaPostRecord[] = [
+  {
+    id: 'smp-1',
+    template_id: 'auto-vendido',
+    template_title: 'Auto Vendido',
+    category: 'automotora',
+    format: 'story',
+    item_id: 'veh-dealership-1',
+    item_title: 'Volkswagen Golf Highline 1.4 TSI (2018)',
+    suggested_caption: '¡OTRO QUE SE VA! 🎉\n\nEste Volkswagen Golf Highline ya tiene nuevo dueño...',
+    is_published: true,
+    published_at: '2026-09-25T14:30:00Z',
+    created_by: 'user-maxi',
+    created_by_name: 'Maximiliano Irujo',
+    created_at: '2026-09-25T14:15:00Z'
+  },
+  {
+    id: 'smp-2',
+    template_id: 'detailing-antes-despues',
+    template_title: 'Antes y Después',
+    category: 'detailing',
+    format: 'post',
+    item_id: 'quote-1',
+    item_title: 'BMW 320i M-Sport (Sellado Cerámico)',
+    suggested_caption: '✨ TRANSFORMACIÓN DETAILVLAK ✨\n\nSellado Cerámico 9H realizado...',
+    is_published: false,
+    created_by: 'user-maxi',
+    created_by_name: 'Maximiliano Irujo',
+    created_at: '2026-09-26T18:00:00Z'
   }
 ];
 

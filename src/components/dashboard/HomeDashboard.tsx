@@ -11,13 +11,15 @@ import {
   ClipboardCheck,
   Building2,
   AlertTriangle,
-  AlertCircle
+  AlertCircle,
+  Share2,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { BUSINESS_CONFIG, formatCurrency, normalizePlate } from '../../lib/formatters';
 import { isEncargado } from '../../lib/permissions';
-import { Appointment, Task } from '../../types';
+import { Appointment, Task, SocialMediaTemplateId } from '../../types';
 
 interface HomeDashboardProps {
   onNavigate: (tab: string) => void;
@@ -26,6 +28,7 @@ interface HomeDashboardProps {
   onNewClient: () => void;
   onNewTask: () => void;
   onSelectAppointment: (appointment: Appointment) => void;
+  onOpenRedesWithItem?: (vehicleId?: string, templateId?: SocialMediaTemplateId) => void;
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
@@ -34,7 +37,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onNewVehicle,
   onNewClient,
   onNewTask,
-  onSelectAppointment
+  onSelectAppointment,
+  onOpenRedesWithItem
 }) => {
   const { profile } = useAuth();
   const {
@@ -95,6 +99,71 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       .filter((t) => (isBoss ? true : t.assigned_to === profile?.id))
       .slice(0, 5);
   }, [tasks, isBoss, profile]);
+
+  // Sugerencias inteligentes para redes sociales
+  const socialSuggestions = useMemo(() => {
+    const list: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      templateId: SocialMediaTemplateId;
+      vehicleId?: string;
+      badge: string;
+    }> = [];
+
+    // 1. Último auto vendido
+    const soldCar = dealershipVehicles.find((v) => v.status === 'vendido');
+    if (soldCar) {
+      list.push({
+        id: `sold-${soldCar.id}`,
+        title: `Se vendió ${soldCar.brand} ${soldCar.model}`,
+        subtitle: `Celebrá la entrega en Instagram con el sello de VENDIDO`,
+        templateId: 'auto-vendido',
+        vehicleId: soldCar.id,
+        badge: 'VENDIDO'
+      });
+    }
+
+    // 2. Auto con días en stock o descuento
+    const discountCar = overdueVehicles[0] || dealershipVehicles.find((v) => v.status === 'publicado');
+    if (discountCar) {
+      list.push({
+        id: `discount-${discountCar.id}`,
+        title: `Oportunidad: ${discountCar.brand} ${discountCar.model}`,
+        subtitle: `Publicá precio promocional para acelerar su venta`,
+        templateId: 'auto-descuento',
+        vehicleId: discountCar.id,
+        badge: 'OFERTA'
+      });
+    }
+
+    // 3. Auto recién ingresado
+    const newCar = dealershipVehicles.find((v) => v.status === 'publicado' && v.id !== discountCar?.id);
+    if (newCar) {
+      list.push({
+        id: `new-${newCar.id}`,
+        title: `Nuevo ingreso: ${newCar.brand} ${newCar.model}`,
+        subtitle: `Presentá la unidad con fotos y equipamiento destacado`,
+        templateId: 'auto-nuevo-ingreso',
+        vehicleId: newCar.id,
+        badge: 'RECIÉN LLEGADO'
+      });
+    }
+
+    // 4. Último trabajo de Detailing
+    const recentQuote = detailingQuotes[0];
+    if (recentQuote && list.length < 3) {
+      list.push({
+        id: `detail-${recentQuote.id}`,
+        title: `Detailing en ${recentQuote.vehicle_info}`,
+        subtitle: `Mostrá el acabado espejo con la plantilla de Antes y Después`,
+        templateId: 'detailing-antes-despues',
+        badge: 'DETAILING'
+      });
+    }
+
+    return list.slice(0, 3);
+  }, [dealershipVehicles, overdueVehicles, detailingQuotes]);
 
   return (
     <div className="space-y-5 animate-fade-in pb-12">
@@ -211,6 +280,72 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <div className="text-xs font-semibold text-white flex items-center gap-1 shrink-0">
             <span>Responder</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )}
+
+      {/* Sugerencias de Redes Sociales Automáticas */}
+      {socialSuggestions.length > 0 && (
+        <div className="bg-[#141414] p-4 sm:p-5 rounded-2xl border border-[#2A2A2A] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/30">
+                <Share2 className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  Sugerencias para Instagram & Redes
+                </h3>
+                <p className="text-[11px] text-[#8A8A8A]">
+                  Oportunidades de publicación detectadas a partir de tus autos y trabajos recientes.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('redes-sociales')}
+              className="text-xs font-semibold text-white hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <span>Ir a Redes</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            {socialSuggestions.map((sug) => (
+              <div
+                key={sug.id}
+                className="p-3.5 rounded-xl bg-black border border-[#2A2A2A] hover:border-[#8A8A8A]/50 transition-all flex flex-col justify-between space-y-3 group"
+              >
+                <div className="space-y-1">
+                  <span className="inline-block px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-[#D7141A]/15 text-[#D7141A] border border-[#D7141A]/30">
+                    {sug.badge}
+                  </span>
+                  <div className="font-bold text-xs text-white group-hover:text-[#D7141A] transition-colors line-clamp-1">
+                    {sug.title}
+                  </div>
+                  <p className="text-[11px] text-[#8A8A8A] line-clamp-2 leading-relaxed">
+                    {sug.subtitle}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenRedesWithItem) {
+                      onOpenRedesWithItem(sug.vehicleId, sug.templateId);
+                    } else {
+                      onNavigate('redes-sociales');
+                    }
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-[#141414] hover:bg-[#D7141A] text-white border border-[#2A2A2A] hover:border-[#D7141A] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Crear pieza</span>
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
