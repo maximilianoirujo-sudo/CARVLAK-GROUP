@@ -9,17 +9,16 @@ import {
   Clock,
   Droplets,
   ClipboardCheck,
-  Building2,
   AlertTriangle,
-  AlertCircle,
   Share2,
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { BUSINESS_CONFIG, formatCurrency, normalizePlate } from '../../lib/formatters';
+import { BUSINESS_CONFIG, formatCurrency } from '../../lib/formatters';
 import { isEncargado } from '../../lib/permissions';
-import { Appointment, Task, SocialMediaTemplateId } from '../../types';
+import { Appointment, SocialMediaTemplateId } from '../../types';
+import { UruguayanPlate } from '../ui';
 
 interface HomeDashboardProps {
   onNavigate: (tab: string) => void;
@@ -50,7 +49,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     detailingQuotes,
     inspections,
     dealershipVehicles,
-    dealershipInquiries,
     dealershipConfig
   } = useData();
 
@@ -60,11 +58,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const pendingQuotes = useMemo(() => {
     return detailingQuotes.filter((q) => q.status === 'Por Cotizar');
   }, [detailingQuotes]);
-
-  // Inspecciones pendientes o en curso
-  const pendingInspections = useMemo(() => {
-    return inspections.filter((i) => i.status === 'Solicitada' || i.status === 'En curso');
-  }, [inspections]);
 
   // Automotora: Autos inmovilizados (>60 días)
   const overdueVehicles = useMemo(() => {
@@ -76,11 +69,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       return days >= threshold;
     });
   }, [dealershipVehicles, dealershipConfig]);
-
-  // Automotora: Consultas nuevas en CRM
-  const newInquiries = useMemo(() => {
-    return dealershipInquiries.filter((inq) => inq.status === 'Nuevo');
-  }, [dealershipInquiries]);
 
   // Filtrar turnos de hoy
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -117,10 +105,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       list.push({
         id: `sold-${soldCar.id}`,
         title: `Se vendió ${soldCar.brand} ${soldCar.model}`,
-        subtitle: `Celebrá la entrega en Instagram con el sello de VENDIDO`,
+        subtitle: `Celebrá la entrega en Instagram con el sello de Vendido`,
         templateId: 'auto-vendido',
         vehicleId: soldCar.id,
-        badge: 'VENDIDO'
+        badge: 'Vendido'
       });
     }
 
@@ -133,7 +121,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         subtitle: `Publicá precio promocional para acelerar su venta`,
         templateId: 'auto-descuento',
         vehicleId: discountCar.id,
-        badge: 'OFERTA'
+        badge: 'Oferta'
       });
     }
 
@@ -146,7 +134,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         subtitle: `Presentá la unidad con fotos y equipamiento destacado`,
         templateId: 'auto-nuevo-ingreso',
         vehicleId: newCar.id,
-        badge: 'RECIÉN LLEGADO'
+        badge: 'Recién llegado'
       });
     }
 
@@ -156,9 +144,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       list.push({
         id: `detail-${recentQuote.id}`,
         title: `Detailing en ${recentQuote.vehicle_info}`,
-        subtitle: `Mostrá el acabado espejo con la plantilla de Antes y Después`,
+        subtitle: `Mostrá el acabado espejo con la plantilla de Antes y después`,
         templateId: 'detailing-antes-despues',
-        badge: 'DETAILING'
+        badge: 'Detailing'
       });
     }
 
@@ -169,48 +157,52 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     <div className="space-y-5 animate-fade-in pb-12">
       
       {/* Encabezado Principal / Saludo */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-[#141414] border border-[#2A2A2A] shadow-sm">
+      <div className="p-5 sm:p-6 rounded-xl bg-white border border-[#E5E5E3] shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#8A8A8A]">
+              <span className="text-xs font-semibold text-[#6B6B6B]">
                 Hub de operaciones
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-black text-[#8A8A8A] border border-[#2A2A2A]">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
                 {profile?.roles.join(' • ')}
               </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EEF7F2] text-[#1E6B43] border border-[#D4EBDC] text-[11px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1E6B43] animate-pulse"></span>
+                Taller activo
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-title font-bold text-white mt-1">
-              Hola, {profile?.full_name || 'Equipo'}
+            <h1 className="text-xl sm:text-2xl font-bold font-display text-[#161616] mt-1.5">
+              Buen día, {profile?.full_name?.split(' ')[0] || 'Martín'}
             </h1>
-            <p className="text-xs text-[#8A8A8A] mt-1 max-w-xl">
+            <p className="text-xs text-[#6B6B6B] mt-0.5 max-w-xl">
               {isBoss
-                ? 'Panel central de control unificado: Automotora, DetailVlak e Inspecciones.'
+                ? 'Panel central unificado: Automotora, Detailing Shangrilá e Inspecciones vehiculares.'
                 : 'Tus turnos y tareas asignadas para la jornada.'}
             </p>
           </div>
 
-          {/* Botones de acción: UN SOLO BOTÓN PRINCIPAL EN ROJO #D7141A, SECUNDARIOS CON BORDE BLANCO */}
+          {/* Botones de acción: UN SOLO BOTÓN PRINCIPAL EN ROJO #D7141A, SECUNDARIOS CON BORDE #E5E5E3 */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={onNewAppointment}
-              className="px-4 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-title font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px] flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="px-4 py-2 rounded-md bg-[#D7141A] hover:bg-[#B80E14] active:bg-[#9E0C11] text-white font-semibold text-xs transition-colors min-h-[40px] flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Nuevo turno</span>
             </button>
             <button
               onClick={onNewVehicle}
-              className="px-3.5 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold text-xs border border-white flex items-center gap-1.5 transition-colors min-h-[44px] cursor-pointer"
+              className="px-3.5 py-2 rounded-md bg-white hover:bg-[#F5F5F4] active:bg-[#EBEBEA] text-[#161616] font-semibold text-xs border border-[#E5E5E3] hover:border-[#D0D0CD] flex items-center gap-1.5 transition-colors min-h-[40px] cursor-pointer shadow-xs"
             >
-              <Car className="w-3.5 h-3.5 text-white" />
+              <Car className="w-3.5 h-3.5 text-[#161616]" />
               <span>Auto</span>
             </button>
             <button
               onClick={onNewClient}
-              className="px-3.5 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold text-xs border border-white flex items-center gap-1.5 transition-colors min-h-[44px] cursor-pointer"
+              className="px-3.5 py-2 rounded-md bg-white hover:bg-[#F5F5F4] active:bg-[#EBEBEA] text-[#161616] font-semibold text-xs border border-[#E5E5E3] hover:border-[#D0D0CD] flex items-center gap-1.5 transition-colors min-h-[40px] cursor-pointer shadow-xs"
             >
-              <Users className="w-3.5 h-3.5 text-white" />
+              <Users className="w-3.5 h-3.5 text-[#161616]" />
               <span>Cliente</span>
             </button>
           </div>
@@ -221,30 +213,30 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {overdueVehicles.length > 0 && isBoss && (
         <div
           onClick={() => onNavigate('mod-automotora')}
-          className="p-4 rounded-xl bg-[#141414] border-l-4 border-[#D7141A] border-t border-r border-b border-[#2A2A2A] cursor-pointer hover:border-white/40 transition-colors flex items-center justify-between gap-3 shadow-sm"
+          className="p-4 rounded-xl bg-white border-l-4 border-l-[#D7141A] border-t border-r border-b border-[#E5E5E3] cursor-pointer hover:border-[#D0D0CD] transition-colors flex items-center justify-between gap-3 shadow-xs"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#D7141A]/10 text-[#D7141A] flex items-center justify-center shrink-0 border border-[#D7141A]/30">
+            <div className="w-9 h-9 rounded-md bg-[#FDF2F2] text-[#B80E14] flex items-center justify-center shrink-0 border border-[#F9D2D2]">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#D7141A]">
+                <span className="text-xs font-semibold text-[#D7141A]">
                   Alerta de stock inmovilizado
                 </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-[#D7141A]/15 text-[#D7141A] border border-[#D7141A]">
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#FDF2F2] text-[#B80E14] border border-[#F9D2D2]">
                   {overdueVehicles.length} {overdueVehicles.length === 1 ? 'auto' : 'autos'} &gt; 60 días
                 </span>
               </div>
-              <div className="text-xs sm:text-sm font-semibold text-white mt-0.5">
+              <div className="text-xs sm:text-sm font-semibold text-[#161616] mt-0.5">
                 {overdueVehicles.length} vehículo{overdueVehicles.length > 1 ? 's superan' : ' supera'} los 60 días en stock sin vender
               </div>
-              <p className="text-[11px] text-[#8A8A8A] mt-0.5">
+              <p className="text-xs text-[#6B6B6B] mt-0.5">
                 Revisá precios de lista o promociones para acelerar la rotación de capital.
               </p>
             </div>
           </div>
-          <div className="text-xs font-semibold text-white flex items-center gap-1 shrink-0">
+          <div className="text-xs font-semibold text-[#161616] hover:text-[#D7141A] flex items-center gap-1 shrink-0">
             <span>Ver stock</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -254,30 +246,30 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {pendingQuotes.length > 0 && isBoss && (
         <div
           onClick={() => onNavigate('mod-detailing')}
-          className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] cursor-pointer hover:border-white/40 transition-colors flex items-center justify-between gap-3 shadow-sm"
+          className="p-4 rounded-xl bg-white border border-[#E5E5E3] cursor-pointer hover:border-[#D0D0CD] transition-colors flex items-center justify-between gap-3 shadow-xs"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-black text-white flex items-center justify-center shrink-0 border border-[#2A2A2A]">
+            <div className="w-9 h-9 rounded-md bg-[#F5F5F4] text-[#161616] flex items-center justify-center shrink-0 border border-[#E5E5E3]">
               <Droplets className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#8A8A8A]">
-                  DetailVlak Shangrilá
+                <span className="text-xs font-semibold text-[#6B6B6B]">
+                  Detailing Shangrilá
                 </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-[#D7141A] text-white">
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#FDF2F2] text-[#B80E14] border border-[#F9D2D2]">
                   {pendingQuotes.length} pendientes
                 </span>
               </div>
-              <div className="text-xs sm:text-sm font-semibold text-white mt-0.5">
+              <div className="text-xs sm:text-sm font-semibold text-[#161616] mt-0.5">
                 {pendingQuotes.length} solicitud{pendingQuotes.length > 1 ? 'es' : ''} de presupuesto web por responder
               </div>
-              <p className="text-[11px] text-[#8A8A8A] mt-0.5">
+              <p className="text-xs text-[#6B6B6B] mt-0.5">
                 Última: {pendingQuotes[0]?.client_name} • {pendingQuotes[0]?.vehicle_info}
               </p>
             </div>
           </div>
-          <div className="text-xs font-semibold text-white flex items-center gap-1 shrink-0">
+          <div className="text-xs font-semibold text-[#161616] hover:text-[#D7141A] flex items-center gap-1 shrink-0">
             <span>Responder</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -286,17 +278,17 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
       {/* Sugerencias de Redes Sociales Automáticas */}
       {socialSuggestions.length > 0 && (
-        <div className="bg-[#141414] p-4 sm:p-5 rounded-2xl border border-[#2A2A2A] space-y-3">
+        <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#E5E5E3] shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/30">
-                <Share2 className="w-4 h-4" />
+              <span className="p-1.5 rounded-md bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
+                <Share2 className="w-4 h-4 text-[#D7141A]" />
               </span>
               <div>
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Sugerencias para Instagram & Redes
+                <h3 className="text-xs font-semibold text-[#161616]">
+                  Sugerencias para Instagram y redes
                 </h3>
-                <p className="text-[11px] text-[#8A8A8A]">
+                <p className="text-xs text-[#6B6B6B]">
                   Oportunidades de publicación detectadas a partir de tus autos y trabajos recientes.
                 </p>
               </div>
@@ -305,9 +297,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('redes-sociales')}
-              className="text-xs font-semibold text-white hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
+              className="text-xs font-semibold text-[#161616] hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <span>Ir a Redes</span>
+              <span>Ir a redes</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -316,16 +308,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             {socialSuggestions.map((sug) => (
               <div
                 key={sug.id}
-                className="p-3.5 rounded-xl bg-black border border-[#2A2A2A] hover:border-[#8A8A8A]/50 transition-all flex flex-col justify-between space-y-3 group"
+                className="p-3.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] hover:border-[#D0D0CD] transition-all flex flex-col justify-between space-y-3 group"
               >
                 <div className="space-y-1">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-[#D7141A]/15 text-[#D7141A] border border-[#D7141A]/30">
+                  <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-[#D7141A] border border-[#E5E5E3]">
                     {sug.badge}
                   </span>
-                  <div className="font-bold text-xs text-white group-hover:text-[#D7141A] transition-colors line-clamp-1">
+                  <div className="font-semibold text-xs text-[#161616] group-hover:text-[#D7141A] transition-colors line-clamp-1">
                     {sug.title}
                   </div>
-                  <p className="text-[11px] text-[#8A8A8A] line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#6B6B6B] line-clamp-2 leading-relaxed">
                     {sug.subtitle}
                   </p>
                 </div>
@@ -339,10 +331,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                       onNavigate('redes-sociales');
                     }
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-[#141414] hover:bg-[#D7141A] text-white border border-[#2A2A2A] hover:border-[#D7141A] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  className="w-full py-2 px-3 rounded-md bg-white hover:bg-[#EBEBEA] text-[#161616] border border-[#E5E5E3] hover:border-[#D0D0CD] text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Crear pieza</span>
+                  <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
+                  <span>Crear imagen</span>
                 </button>
               </div>
             ))}
@@ -354,58 +346,58 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div
           onClick={() => onNavigate('agenda')}
-          className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] hover:border-white/40 cursor-pointer transition-colors"
+          className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] hover:shadow-xs cursor-pointer transition-all"
         >
-          <div className="flex items-center justify-between text-[#8A8A8A] mb-1">
+          <div className="flex items-center justify-between text-[#6B6B6B] mb-1">
             <span className="text-xs font-semibold">Turnos hoy</span>
-            <Calendar className="w-4 h-4 text-white" />
+            <Calendar className="w-4 h-4 text-[#6B6B6B]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-title font-bold text-white">
+          <div className="text-2xl sm:text-3xl font-display font-bold text-[#000000] tabular-nums">
             {todayAppointments.length}
           </div>
-          <p className="text-[10px] text-[#8A8A8A] mt-0.5">En agenda diaria</p>
+          <p className="text-[11px] text-[#9A9A9A] mt-0.5">En agenda diaria</p>
         </div>
 
         <div
           onClick={() => onNavigate('tareas')}
-          className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] hover:border-white/40 cursor-pointer transition-colors"
+          className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] hover:shadow-xs cursor-pointer transition-all"
         >
-          <div className="flex items-center justify-between text-[#8A8A8A] mb-1">
+          <div className="flex items-center justify-between text-[#6B6B6B] mb-1">
             <span className="text-xs font-semibold">Tareas pendientes</span>
-            <CheckSquare className="w-4 h-4 text-white" />
+            <CheckSquare className="w-4 h-4 text-[#6B6B6B]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-title font-bold text-white">
+          <div className="text-2xl sm:text-3xl font-display font-bold text-[#000000] tabular-nums">
             {pendingTasks.length}
           </div>
-          <p className="text-[10px] text-[#8A8A8A] mt-0.5">Por completar</p>
+          <p className="text-[11px] text-[#9A9A9A] mt-0.5">Por completar</p>
         </div>
 
         <div
           onClick={() => onNavigate('vehiculos')}
-          className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] hover:border-white/40 cursor-pointer transition-colors"
+          className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] hover:shadow-xs cursor-pointer transition-all"
         >
-          <div className="flex items-center justify-between text-[#8A8A8A] mb-1">
+          <div className="flex items-center justify-between text-[#6B6B6B] mb-1">
             <span className="text-xs font-semibold">Vehículos</span>
-            <Car className="w-4 h-4 text-white" />
+            <Car className="w-4 h-4 text-[#6B6B6B]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-title font-bold text-white">
+          <div className="text-2xl sm:text-3xl font-display font-bold text-[#000000] tabular-nums">
             {vehicles.length}
           </div>
-          <p className="text-[10px] text-[#8A8A8A] mt-0.5">Fichas registradas</p>
+          <p className="text-[11px] text-[#9A9A9A] mt-0.5">Fichas registradas</p>
         </div>
 
         <div
           onClick={() => onNavigate('clientes')}
-          className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] hover:border-white/40 cursor-pointer transition-colors"
+          className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] hover:shadow-xs cursor-pointer transition-all"
         >
-          <div className="flex items-center justify-between text-[#8A8A8A] mb-1">
+          <div className="flex items-center justify-between text-[#6B6B6B] mb-1">
             <span className="text-xs font-semibold">Clientes</span>
-            <Users className="w-4 h-4 text-white" />
+            <Users className="w-4 h-4 text-[#6B6B6B]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-title font-bold text-white">
+          <div className="text-2xl sm:text-3xl font-display font-bold text-[#000000] tabular-nums">
             {clients.length}
           </div>
-          <p className="text-[10px] text-[#8A8A8A] mt-0.5">Base compartida</p>
+          <p className="text-[11px] text-[#9A9A9A] mt-0.5">Base compartida</p>
         </div>
       </div>
 
@@ -413,14 +405,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-white" />
-            <h2 className="text-sm font-title font-bold text-white uppercase tracking-wider">
+            <Calendar className="w-4 h-4 text-[#161616]" />
+            <h2 className="text-sm font-semibold text-[#161616] font-display">
               Turnos de hoy ({todayAppointments.length})
             </h2>
           </div>
           <button
             onClick={() => onNavigate('agenda')}
-            className="text-xs font-semibold text-white hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
+            className="text-xs font-semibold text-[#161616] hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
           >
             <span>Ver agenda completa</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -428,10 +420,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
 
         {todayAppointments.length === 0 ? (
-          <div className="p-8 rounded-xl bg-[#141414] border border-[#2A2A2A] text-center text-[#8A8A8A]">
-            <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30 text-white" />
-            <p className="text-sm font-semibold text-white">No hay turnos agendados para hoy</p>
-            <p className="text-xs text-[#8A8A8A] mt-1">Podés agendar uno con el botón superior.</p>
+          <div className="p-8 rounded-xl bg-white border border-[#E5E5E3] text-center text-[#6B6B6B]">
+            <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30 text-[#6B6B6B]" />
+            <p className="text-sm font-semibold text-[#161616]">No hay turnos agendados para hoy</p>
+            <p className="text-xs text-[#6B6B6B] mt-1">Podés agendar uno con el botón superior.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -445,48 +437,48 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 <div
                   key={appt.id}
                   onClick={() => onSelectAppointment(appt)}
-                  className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] hover:border-white/40 cursor-pointer transition-colors flex flex-col justify-between space-y-3 shadow-sm group"
+                  className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] hover:shadow-xs cursor-pointer transition-all flex flex-col justify-between space-y-3 shadow-xs group"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-black text-white border border-[#2A2A2A] flex items-center gap-1">
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] flex items-center gap-1">
                         {appt.business === 'automotora' && <Car className="w-3 h-3 text-[#D7141A]" />}
-                        {appt.business === 'detailing' && <Droplets className="w-3 h-3 text-white" />}
-                        {appt.business === 'inspeccion' && <ClipboardCheck className="w-3 h-3 text-white" />}
+                        {appt.business === 'detailing' && <Droplets className="w-3 h-3 text-[#161616]" />}
+                        {appt.business === 'inspeccion' && <ClipboardCheck className="w-3 h-3 text-[#161616]" />}
                         <span>{bConfig?.shortName || appt.business}</span>
                       </span>
-                      <div className="flex items-center gap-1 text-xs font-semibold text-white bg-black px-2 py-0.5 rounded-lg border border-[#2A2A2A]">
-                        <Clock className="w-3 h-3 text-[#8A8A8A]" />
+                      <div className="flex items-center gap-1 text-xs font-semibold text-[#161616] bg-[#F5F5F4] px-2 py-0.5 rounded-md border border-[#E5E5E3]">
+                        <Clock className="w-3 h-3 text-[#6B6B6B]" />
                         <span>{timeStr} hs</span>
                       </div>
                     </div>
 
-                    <h3 className="text-sm font-semibold text-white mt-2 group-hover:text-white transition-colors">
+                    <h3 className="text-sm font-semibold text-[#161616] mt-2 group-hover:text-[#D7141A] transition-colors">
                       {appt.title || 'Atención de cliente'}
                     </h3>
 
-                    <div className="mt-2 space-y-1 text-xs text-[#8A8A8A]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{client?.full_name || 'Cliente'}</span>
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-xs text-[#161616] font-medium block truncate">
+                          {client?.full_name || 'Cliente'}
+                        </span>
                         {vehicle && (
-                          <span className="font-mono text-white bg-black px-1.5 py-0.5 rounded text-[11px] font-semibold border border-[#2A2A2A]">
-                            {normalizePlate(vehicle.plate)}
-                          </span>
+                          <p className="text-xs text-[#6B6B6B] truncate">
+                            {vehicle.brand} {vehicle.model}
+                          </p>
                         )}
                       </div>
-                      {vehicle && (
-                        <p className="text-[11px] text-[#8A8A8A]">
-                          {vehicle.brand} {vehicle.model}
-                        </p>
+                      {vehicle?.plate && (
+                        <UruguayanPlate plate={vehicle.plate} size="sm" />
                       )}
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#2A2A2A] flex items-center justify-between text-xs">
-                    <span className="font-title font-bold text-white">
+                  <div className="pt-2 border-t border-[#E5E5E3] flex items-center justify-between text-xs">
+                    <span className="font-display font-bold text-[#000000] tabular-nums text-sm">
                       {formatCurrency(appt.price_amount, appt.price_currency)}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-black text-[#8A8A8A] border border-[#2A2A2A]">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                       {appt.status}
                     </span>
                   </div>
@@ -501,14 +493,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-white" />
-            <h2 className="text-sm font-title font-bold text-white uppercase tracking-wider">
-              Tareas operativas ({pendingTasks.length})
+            <CheckSquare className="w-4 h-4 text-[#161616]" />
+            <h2 className="text-sm font-semibold text-[#161616] font-display">
+              Tareas del equipo ({pendingTasks.length})
             </h2>
           </div>
           <button
             onClick={() => onNavigate('tareas')}
-            className="text-xs font-semibold text-white hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
+            className="text-xs font-semibold text-[#161616] hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
           >
             <span>Ver todas</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -519,7 +511,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {pendingTasks.map((t) => (
             <div
               key={t.id}
-              className="p-3.5 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-between gap-3 hover:border-white/40 transition-colors"
+              className="p-3.5 rounded-xl bg-white border border-[#E5E5E3] flex items-center justify-between gap-3 hover:border-[#D0D0CD] hover:shadow-xs transition-all shadow-xs"
             >
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <button
@@ -527,28 +519,28 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   onClick={() => updateTaskStatus(t.id, t.status === 'En curso' ? 'Hecha' : 'En curso')}
                   className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                     t.status === 'En curso'
-                      ? 'bg-white text-black border-white'
-                      : 'border-[#2A2A2A] bg-black text-transparent hover:border-white'
+                      ? 'bg-[#161616] text-white border-[#161616]'
+                      : 'border-[#D0D0CD] bg-white text-transparent hover:border-[#161616]'
                   }`}
                 >
                   ✓
                 </button>
                 <div className="min-w-0">
-                  <h4 className="text-xs sm:text-sm font-semibold text-white truncate">{t.title}</h4>
+                  <h4 className="text-xs sm:text-sm font-semibold text-[#161616] truncate">{t.title}</h4>
                   {t.description && (
-                    <p className="text-[11px] text-[#8A8A8A] truncate mt-0.5">{t.description}</p>
+                    <p className="text-xs text-[#6B6B6B] truncate mt-0.5">{t.description}</p>
                   )}
                 </div>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-black text-[#8A8A8A] border border-[#2A2A2A]">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                   {t.status}
                 </span>
                 <button
                   type="button"
                   onClick={() => updateTaskStatus(t.id, 'Hecha')}
-                  className="px-2.5 py-1 rounded-lg bg-transparent hover:bg-white/10 text-white border border-white font-semibold text-[10px] transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] hover:border-[#D0D0CD] font-semibold text-xs transition-colors cursor-pointer shadow-xs"
                 >
                   Completar
                 </button>
