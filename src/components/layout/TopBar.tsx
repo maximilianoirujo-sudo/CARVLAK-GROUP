@@ -11,22 +11,22 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#000000] border-b border-[#222222] px-3 sm:px-6 py-2.5">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E5E5E3] px-3 sm:px-6 py-2.5 shadow-xs">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         
-        {/* Logo Oficial CARVLAK Group (Blanco sobre fondo negro) */}
+        {/* Logo Oficial CARVLAK Group (Negro sobre fondo claro) */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
             <img
-              src="/logo-carvlak-white.png"
+              src="/logo-carvlak-black.png"
               alt="CARVLAK Group"
               className="h-7 sm:h-8 w-auto object-contain shrink-0"
             />
-            <span className="text-[10px] font-title font-bold px-1.5 py-0.5 rounded bg-[#222222] text-[#D9D9D9] border border-[#333333] tracking-widest uppercase">
+            <span className="text-[10px] font-title font-bold px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] tracking-widest uppercase">
               Group
             </span>
           </div>
-          <span className="hidden lg:inline text-xs text-[#6B6B6B] border-l border-[#222222] pl-3 font-medium">
+          <span className="hidden lg:inline text-xs text-[#6B6B6B] border-l border-[#E5E5E3] pl-3 font-medium">
             Automotora • Detailing • Inspecciones
           </span>
         </div>
@@ -34,14 +34,14 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
         {/* Barra de Búsqueda Rápida por Matrícula */}
         <button
           onClick={onOpenQuickSearch}
-          className="flex-1 max-w-xs md:max-w-md mx-2 px-3 py-2 rounded-md bg-[#111111] hover:bg-[#1A1A1A] border border-[#2A2A2A] hover:border-[#6B6B6B] text-[#AAAAAA] text-xs flex items-center justify-between transition-colors min-h-[42px]"
+          className="flex-1 max-w-xs md:max-w-md mx-2 px-3 py-2 rounded-lg bg-[#F5F5F4] hover:bg-[#EBEBEA] border border-[#E5E5E3] hover:border-[#D0D0CD] text-[#6B6B6B] hover:text-[#161616] text-xs flex items-center justify-between transition-colors min-h-[40px]"
           title="Buscar vehículo por matrícula"
         >
           <div className="flex items-center gap-2 truncate">
-            <Search className="w-4 h-4 text-[#FFFFFF] shrink-0" />
+            <Search className="w-4 h-4 text-[#6B6B6B] shrink-0" />
             <span className="truncate">Buscar por matrícula...</span>
           </div>
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-[#222222] text-[#AAAAAA] rounded border border-[#333333]">
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white text-[#6B6B6B] rounded border border-[#E5E5E3]">
             MATRÍCULA
           </kbd>
         </button>
@@ -50,17 +50,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
         <div className="relative">
           <button
             onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#141414] hover:bg-white/5 border border-[#2A2A2A] hover:border-white/40 transition-colors text-xs font-semibold text-white min-h-[42px] cursor-pointer"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white hover:bg-[#F5F5F4] border border-[#E5E5E3] hover:border-[#D0D0CD] transition-colors text-xs font-semibold text-[#161616] min-h-[40px] cursor-pointer shadow-xs"
           >
-            <span className="w-2 h-2 rounded-full bg-white shrink-0"></span>
+            <span className="w-2 h-2 rounded-full bg-[#161616] shrink-0"></span>
             <span className="max-w-[100px] sm:max-w-[130px] truncate">{profile?.full_name || 'Usuario'}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#8A8A8A]" />
+            <ChevronDown className="w-3.5 h-3.5 text-[#6B6B6B]" />
           </button>
 
           {/* Menú de Roles & Cerrar Sesión */}
           {showRoleSwitcher && (
-            <div className="absolute right-0 mt-2 w-64 rounded-xl bg-[#141414] border border-[#2A2A2A] shadow-2xl p-2 z-50 animate-fade-in">
-              <div className="px-3 py-1.5 border-b border-[#2A2A2A] text-[11px] font-bold text-[#8A8A8A] uppercase tracking-wider">
+            <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-[#E5E5E3] shadow-lg p-2 z-50 animate-fade-in">
+              <div className="px-3 py-1.5 border-b border-[#E5E5E3] text-[11px] font-semibold text-[#6B6B6B] tracking-wider">
                 Simular empleado / rol
               </div>
               <div className="py-1 space-y-1">
@@ -75,18 +75,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between transition-colors ${
                         isSelected
-                          ? 'bg-[#222222] text-white font-bold border border-[#444444]'
-                          : 'text-[#D9D9D9] hover:bg-[#1A1A1A]'
+                          ? 'bg-[#F5F5F4] text-[#161616] font-bold border border-[#E5E5E3]'
+                          : 'text-[#161616] hover:bg-[#FAFAF9]'
                       }`}
                     >
                       <div>
-                        <div className="font-semibold text-white">{p.full_name}</div>
-                        <div className="text-[10px] text-[#888888]">
+                        <div className="font-semibold text-[#161616]">{p.full_name}</div>
+                        <div className="text-[10px] text-[#6B6B6B]">
                           {p.roles.join(' • ')}
                         </div>
                       </div>
                       {p.roles.includes('admin') && (
-                        <span className="text-[9px] bg-white text-black font-title font-bold px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] bg-[#161616] text-white font-title font-bold px-1.5 py-0.5 rounded">
                           ADMIN
                         </span>
                       )}
@@ -96,7 +96,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
               </div>
 
               {/* Botón Cerrar Sesión */}
-              <div className="pt-2 border-t border-[#222222] mt-1">
+              <div className="pt-2 border-t border-[#E5E5E3] mt-1">
                 <button
                   onClick={() => {
                     setShowRoleSwitcher(false);

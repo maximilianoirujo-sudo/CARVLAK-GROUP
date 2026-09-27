@@ -16,7 +16,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#000000] border-t border-[#2A2A2A] px-1 py-1 safe-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E5E3] px-1 py-1 safe-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
       <div className="flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -28,15 +28,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
               onClick={() => onSelectTab(tab.id)}
               className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-md min-h-[48px] transition-colors relative cursor-pointer ${
                 isActive
-                  ? 'text-white font-bold'
-                  : 'text-[#8A8A8A] hover:text-white'
+                  ? 'text-[#D7141A] font-semibold'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               {isActive && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#D7141A] rounded-full"></span>
               )}
-              <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-[#D7141A]' : 'text-[#8A8A8A]'}`} />
-              <span className={`text-[10px] tracking-tight ${isActive ? 'text-white font-bold' : 'text-[#8A8A8A]'}`}>
+              <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-[#D7141A]' : 'text-[#6B6B6B]'}`} />
+              <span className={`text-[10px] tracking-tight ${isActive ? 'text-[#D7141A] font-semibold' : 'text-[#6B6B6B]'}`}>
                 {tab.label}
               </span>
             </button>

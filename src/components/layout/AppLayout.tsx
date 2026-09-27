@@ -108,16 +108,15 @@ export const AppLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
-      
-      {/*  */}
+    <div className="min-h-screen flex flex-col bg-[#F5F5F4] text-[#161616]">
+      {/* TopBar */}
       <TopBar onOpenQuickSearch={() => setIsQuickSearchOpen(true)} />
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
-        {/*  */}
+        {/* Sidebar */}
         <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} />
 
-        {/*  */}
+        {/* Main Content Area */}
         <main className="flex-1 p-3 sm:p-6 overflow-x-hidden">
           {currentTab === 'inicio' && (
             <HomeDashboard
@@ -171,10 +170,10 @@ export const AppLayout: React.FC = () => {
         </main>
       </div>
 
-      {/*  */}
+      {/* BottomNav */}
       <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} />
 
-      {/*  */}
+      {/* Quick Search Modal */}
       {isQuickSearchOpen && (
         <QuickPlateSearchModal
           isOpen={isQuickSearchOpen}
@@ -183,7 +182,7 @@ export const AppLayout: React.FC = () => {
         />
       )}
 
-      {/*  */}
+      {/* Vehicle Detail Modal */}
       {inspectVehicle && (
         <VehicleDetailModal
           isOpen={Boolean(inspectVehicle)}
@@ -194,7 +193,7 @@ export const AppLayout: React.FC = () => {
         />
       )}
 
-      {/*  */}
+      {/* Vehicle Form Modal */}
       {isVehicleFormOpen && (
         <VehicleFormModal
           isOpen={isVehicleFormOpen}
@@ -206,7 +205,7 @@ export const AppLayout: React.FC = () => {
         />
       )}
 
-      {/*  */}
+      {/* Client Form Modal */}
       {isClientFormOpen && (
         <ClientFormModal
           isOpen={isClientFormOpen}
@@ -214,7 +213,7 @@ export const AppLayout: React.FC = () => {
         />
       )}
 
-      {/*  */}
+      {/* Appointment Modal */}
       {isAppointmentModalOpen && (
         <AppointmentModal
           isOpen={isAppointmentModalOpen}
@@ -226,14 +225,13 @@ export const AppLayout: React.FC = () => {
         />
       )}
 
-      {/*  */}
+      {/* Task Modal */}
       {isTaskModalOpen && (
         <TaskFormModal
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
         />
       )}
-
     </div>
   );
 };
