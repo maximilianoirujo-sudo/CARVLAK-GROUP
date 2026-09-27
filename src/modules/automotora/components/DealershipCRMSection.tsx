@@ -169,46 +169,46 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
     switch (status) {
       case 'Nuevo':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-black border border-white">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#EEF7F2] text-[#1E6B43] border border-[#C6E7D4]">
             Nuevo
           </span>
         );
       case 'Contactado':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-negro text-white border border-borde">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
             Contactado
           </span>
         );
       case 'Visita agendada':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-panel text-white border border-borde">
-            Visita Agendada
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
+            Visita agendada
           </span>
         );
       case 'Prueba de manejo':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-panel text-white border border-borde">
-            Test Drive
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
+            Test drive
           </span>
         );
       case 'Negociando':
       case 'En negociacion':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-panel text-white border border-white/30">
-            En Negociación
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#FEF7EC] text-[#945B0E] border border-[#FADBA8]">
+            En negociación
           </span>
         );
       case 'Vendido':
       case 'Ganada':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-black">
-            Venta Cerrada
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#161616] text-white">
+            Venta cerrada
           </span>
         );
       case 'Perdido':
       case 'Perdida':
         return (
-          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rojo/10 text-rojo border border-rojo/30">
+          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#FDF2F2] text-[#B80E14] border border-[#FADBA8]">
             Descartado
           </span>
         );
@@ -220,13 +220,13 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
       {/* Cabecera CRM */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>CRM &amp; Clientes Interesados</span>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-negro text-gris-texto border border-borde">
+          <h2 className="text-lg font-bold text-[#161616] flex items-center gap-2">
+            <span>CRM y clientes interesados</span>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
               {filteredInquiries.length} leads
             </span>
           </h2>
-          <p className="text-xs text-gris-texto mt-0.5">
+          <p className="text-xs text-[#6B6B6B] mt-0.5">
             Canal de captación desde catálogo web, WhatsApp, Instagram y presencial con agendado de visitas.
           </p>
         </div>
@@ -236,34 +236,34 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
           onClick={() => setIsNewLeadModalOpen(true)}
         >
           <Plus className="w-4 h-4" />
-          <span>Registrar Interesado</span>
+          <span>Registrar interesado</span>
         </Button>
       </div>
 
       {/* Tabs de Filtro de Estados con Línea Roja */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-borde">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-[#E5E5E3]">
         {[
           { id: 'todos', label: 'Todos', count: counts.todos },
           { id: 'Nuevo', label: 'Nuevos', count: counts.nuevo },
           { id: 'Contactado', label: 'Contactados', count: counts.contactado },
-          { id: 'Visita agendada', label: 'Visitas / Test Drive', count: counts.visita },
-          { id: 'En negociacion', label: 'En Negociación', count: counts.negociacion },
+          { id: 'Visita agendada', label: 'Visitas / Test drive', count: counts.visita },
+          { id: 'En negociacion', label: 'En negociación', count: counts.negociacion },
           { id: 'Ganada', label: 'Ganadas', count: counts.ganada },
           { id: 'Perdida', label: 'Perdidas', count: counts.perdida }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setStatusFilter(tab.id)}
-            className={`px-3 py-2 text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap border-b-2 ${
+            className={`px-3 py-2 text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap border-b-2 ${
               statusFilter === tab.id
-                ? 'border-rojo text-white'
-                : 'border-transparent text-gris-texto hover:text-white'
+                ? 'border-[#D7141A] text-[#161616] font-bold'
+                : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
             <span>{tab.label}</span>
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded ${
-                statusFilter === tab.id ? 'bg-white text-black' : 'bg-negro text-gris-texto border border-borde'
+                statusFilter === tab.id ? 'bg-[#161616] text-white' : 'bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]'
               }`}
             >
               {tab.count}
@@ -273,24 +273,24 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
       </div>
 
       {/* Buscador & Filtro Origen */}
-      <div className="p-4 rounded-xl bg-panel border border-borde flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-gris-texto absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#9A9A9A] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Buscar por nombre, teléfono, auto o vehículo en permuta..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-negro border border-borde rounded-lg text-xs text-white placeholder-gris-texto focus:outline-none focus:border-rojo"
+            className="w-full pl-10 pr-4 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-bold text-gris-texto">Origen:</span>
+          <span className="text-[11px] font-semibold text-[#6B6B6B]">Origen:</span>
           <select
             value={originFilter}
             onChange={(e) => setOriginFilter(e.target.value)}
-            className="bg-negro border border-borde text-xs text-white rounded-lg px-2.5 py-2 focus:outline-none focus:border-rojo"
+            className="bg-[#F5F5F4] border border-[#E5E5E3] text-xs font-medium text-[#161616] rounded-xl px-2.5 py-2 focus:outline-none focus:border-[#D7141A]"
           >
             <option value="todos">Todos los canales</option>
             <option value="Catalogo web">Catálogo Web</option>
@@ -310,20 +310,20 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
           return (
             <div
               key={inq.id}
-              className="p-5 rounded-xl bg-panel border border-borde hover:border-white/40 transition-all space-y-4 shadow-xl flex flex-col justify-between"
+              className="p-5 rounded-2xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] transition-all space-y-4 shadow-sm flex flex-col justify-between"
             >
               <div className="space-y-3">
                 {/* Cabecera del Lead */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">{inq.client_name}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
+                      <span className="text-sm font-bold text-[#161616]">{inq.client_name}</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                         {inq.origin}
                       </span>
                     </div>
-                    <div className="text-xs text-white font-mono mt-0.5 flex items-center gap-1.5">
-                      <Phone className="w-3 h-3 text-gris-texto" />
+                    <div className="text-xs text-[#161616] font-mono mt-0.5 flex items-center gap-1.5">
+                      <Phone className="w-3 h-3 text-[#6B6B6B]" />
                       <span>{inq.client_phone}</span>
                     </div>
                   </div>
@@ -332,9 +332,9 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                 </div>
 
                 {/* Auto de Interés */}
-                <div className="p-3 rounded-lg bg-negro border border-borde flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-panel border border-borde overflow-hidden shrink-0 flex items-center justify-center text-gris-texto">
+                    <div className="w-9 h-9 rounded-lg bg-white border border-[#E5E5E3] overflow-hidden shrink-0 flex items-center justify-center text-[#6B6B6B]">
                       {linkedCar?.cover_image ? (
                         <img
                           src={linkedCar.cover_image}
@@ -346,9 +346,9 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                       )}
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">{inq.vehicle_info}</div>
+                      <div className="text-xs font-bold text-[#161616]">{inq.vehicle_info}</div>
                       {inq.vehicle_plate && (
-                        <span className="font-mono text-[10px] text-gris-texto">
+                        <span className="font-mono text-[10px] text-[#6B6B6B]">
                           Matrícula: {inq.vehicle_plate}
                         </span>
                       )}
@@ -361,23 +361,23 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                       size="sm"
                       onClick={() => onSelectVehicle(linkedCar)}
                     >
-                      Ver Stock
+                      Ver stock
                     </Button>
                   )}
                 </div>
 
                 {/* Datos de Permuta o Presupuesto */}
                 {(inq.trade_in_vehicle_info || inq.budget_usd) && (
-                  <div className="p-2.5 rounded-lg bg-negro border border-borde text-xs space-y-1">
+                  <div className="p-2.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-xs space-y-1">
                     {inq.trade_in_vehicle_info && (
-                      <div className="text-white flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-gris-texto uppercase">Entrega Permuta:</span>
+                      <div className="text-[#161616] flex items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Entrega permuta:</span>
                         <span>{inq.trade_in_vehicle_info}</span>
                       </div>
                     )}
                     {inq.budget_usd && (
-                      <div className="text-white flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-gris-texto uppercase">Presupuesto:</span>
+                      <div className="text-[#161616] flex items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Presupuesto:</span>
                         <span className="font-mono font-bold">USD {inq.budget_usd.toLocaleString()}</span>
                       </div>
                     )}
@@ -386,16 +386,15 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
 
                 {/* Notas */}
                 {inq.notes && (
-                  <p className="text-xs text-gris-texto italic bg-negro p-2 rounded-lg border border-borde">
+                  <p className="text-xs text-[#6B6B6B] italic bg-[#F5F5F4] p-2 rounded-xl border border-[#E5E5E3]">
                     "{inq.notes}"
                   </p>
                 )}
               </div>
 
               {/* Acciones Rápidas */}
-              <div className="pt-3 border-t border-borde space-y-2">
+              <div className="pt-3 border-t border-[#E5E5E3] space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* WhatsApp Bienvenida - BOTÓN DE WHATSAPP CON BORDE BLANCO E ÍCONO BLANCO */}
                   <Button
                     variant="whatsapp"
                     size="sm"
@@ -406,7 +405,6 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                     <span>WhatsApp</span>
                   </Button>
 
-                  {/* Agendar Visita / Test Drive */}
                   <Button
                     variant="secondary"
                     size="sm"
@@ -417,22 +415,21 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                     title="Agendar turno en Agenda Unificada"
                   >
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>Agendar Visita</span>
+                    <span>Agendar visita</span>
                   </Button>
 
-                  {/* Selector de Estado */}
                   <select
                     value={inq.status}
                     onChange={(e) =>
                       updateDealershipInquiryStatus(inq.id, e.target.value as DealershipInquiryStatus)
                     }
-                    className="ml-auto bg-negro border border-borde text-[11px] font-bold text-white rounded-lg px-2 py-1.5 focus:outline-none focus:border-rojo"
+                    className="ml-auto bg-white border border-[#E5E5E3] text-[11px] font-semibold text-[#161616] rounded-xl px-2 py-1.5 focus:outline-none focus:border-[#D7141A]"
                   >
                     <option value="Nuevo">Nuevo</option>
                     <option value="Contactado">Contactado</option>
-                    <option value="Visita agendada">Visita Agendada</option>
-                    <option value="Prueba de manejo">Test Drive</option>
-                    <option value="En negociacion">En Negociación</option>
+                    <option value="Visita agendada">Visita agendada</option>
+                    <option value="Prueba de manejo">Test drive</option>
+                    <option value="En negociacion">En negociación</option>
                     <option value="Ganada">Ganada (Venta)</option>
                     <option value="Perdida">Perdida</option>
                   </select>
@@ -443,12 +440,12 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
         })}
 
         {filteredInquiries.length === 0 && (
-          <div className="col-span-full p-12 text-center rounded-xl bg-panel border border-borde space-y-3">
-            <div className="w-12 h-12 rounded-lg bg-negro text-gris-texto mx-auto flex items-center justify-center text-xl border border-borde">
+          <div className="col-span-full p-12 text-center rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-[#F5F5F4] text-[#6B6B6B] mx-auto flex items-center justify-center text-xl border border-[#E5E5E3]">
               👥
             </div>
-            <h3 className="text-sm font-bold text-white">No hay consultas en este filtro</h3>
-            <p className="text-xs text-gris-texto max-w-sm mx-auto">
+            <h3 className="text-sm font-bold text-[#161616]">No hay consultas en este filtro</h3>
+            <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
               Las consultas desde el catálogo público o WhatsApp aparecerán listadas aquí para su seguimiento.
             </p>
           </div>
@@ -457,63 +454,63 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
 
       {/* Modal: Agendar Visita en Agenda Unificada */}
       {isScheduleModalOpen && selectedInquiryForSchedule && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-panel border border-borde rounded-xl w-full max-w-md p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-borde pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
               <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-rojo" />
-                <h3 className="text-sm font-bold text-white">Agendar en Agenda Unificada</h3>
+                <Calendar className="w-5 h-5 text-[#D7141A]" />
+                <h3 className="text-sm font-bold text-[#161616]">Agendar en agenda unificada</h3>
               </div>
               <button
                 onClick={() => setIsScheduleModalOpen(false)}
-                className="p-1 rounded-lg text-gris-texto hover:text-white"
+                className="p-1 rounded-lg text-[#6B6B6B] hover:text-[#161616]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-gris-texto">
+            <p className="text-xs text-[#6B6B6B]">
               Se creará un turno en la Agenda Unificada asignado a tu usuario para recibir al cliente.
             </p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                  Cliente &amp; Vehículo
+                <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                  Cliente y vehículo
                 </label>
-                <div className="p-2.5 rounded-lg bg-negro border border-borde font-bold text-white">
+                <div className="p-2.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] font-semibold text-[#161616]">
                   {selectedInquiryForSchedule.client_name} • {selectedInquiryForSchedule.vehicle_info}
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                  Tipo de Actividad
+                <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                  Tipo de actividad
                 </label>
                 <select
                   value={scheduleType}
                   onChange={(e) => setScheduleType(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white font-bold focus:border-rojo outline-none"
+                  className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] font-semibold focus:border-[#D7141A] outline-none"
                 >
-                  <option value="Visita agendada">Visita al Showroom (Conocer el auto)</option>
-                  <option value="Prueba de manejo">Prueba de Manejo (Test Drive)</option>
+                  <option value="Visita agendada">Visita al showroom (Conocer el auto)</option>
+                  <option value="Prueba de manejo">Prueba de manejo (Test drive)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                  Fecha y Hora de la Cita
+                <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                  Fecha y hora de la cita
                 </label>
                 <input
                   type="datetime-local"
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white font-bold focus:border-rojo outline-none"
+                  className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] font-semibold focus:border-[#D7141A] outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-borde flex justify-end gap-2">
+            <div className="pt-3 border-t border-[#E5E5E3] flex justify-end gap-2">
               <Button
                 variant="secondary"
                 onClick={() => setIsScheduleModalOpen(false)}
@@ -524,7 +521,7 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                 variant="primary"
                 onClick={handleConfirmSchedule}
               >
-                Confirmar y Agendar
+                Confirmar y agendar
               </Button>
             </div>
           </div>
@@ -533,16 +530,16 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
 
       {/* Modal: Registrar Nuevo Interesado / Lead */}
       {isNewLeadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-panel border border-borde rounded-xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-borde pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-rojo" />
-                <h3 className="text-base font-bold text-white">Registrar Consulta de Cliente</h3>
+                <Users className="w-5 h-5 text-[#D7141A]" />
+                <h3 className="text-base font-bold text-[#161616]">Registrar consulta de cliente</h3>
               </div>
               <button
                 onClick={() => setIsNewLeadModalOpen(false)}
-                className="p-1 rounded-lg text-gris-texto hover:text-white"
+                className="p-1 rounded-lg text-[#6B6B6B] hover:text-[#161616]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -551,8 +548,8 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
             <form onSubmit={handleCreateLead} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                    Nombre del Cliente *
+                  <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                    Nombre del cliente *
                   </label>
                   <input
                     type="text"
@@ -560,12 +557,12 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                     placeholder="Ej: Marcelo Gómez"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
+                  <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
                     Teléfono / WhatsApp *
                   </label>
                   <input
@@ -574,20 +571,20 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                     placeholder="099 123 456"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white font-mono placeholder-gris-texto focus:border-rojo outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] font-mono placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                    Auto de Interés
+                  <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                    Auto de interés
                   </label>
                   <select
                     value={vehicleId}
                     onChange={(e) => setVehicleId(e.target.value)}
-                    className="w-full px-2.5 py-2 bg-negro border border-borde rounded-lg text-white focus:border-rojo outline-none"
+                    className="w-full px-2.5 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] focus:border-[#D7141A] outline-none"
                   >
                     <option value="">-- Consulta general --</option>
                     {dealershipVehicles
@@ -601,13 +598,13 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                    Canal de Origen
+                  <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                    Canal de origen
                   </label>
                   <select
                     value={origin}
                     onChange={(e) => setOrigin(e.target.value as DealershipInquiryOrigin)}
-                    className="w-full px-2.5 py-2 bg-negro border border-borde rounded-lg text-white focus:border-rojo outline-none"
+                    className="w-full px-2.5 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] focus:border-[#D7141A] outline-none"
                   >
                     <option value="WhatsApp">WhatsApp</option>
                     <option value="Catalogo web">Catálogo Web</option>
@@ -620,46 +617,46 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                    Presupuesto Disponible (USD)
+                  <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                    Presupuesto disponible (USD)
                   </label>
                   <input
                     type="number"
                     placeholder="Ej: 12000"
                     value={budgetUsd || ''}
                     onChange={(e) => setBudgetUsd(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                    Auto para Permuta (Opcional)
+                  <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                    Auto para permuta (opcional)
                   </label>
                   <input
                     type="text"
                     placeholder="Ej: Chevrolet Onix 2018 Joy"
                     value={tradeInInfo}
                     onChange={(e) => setTradeInInfo(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
                   />
                 </div>
               </div>
 
               <div className="text-xs">
-                <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                  Notas de la Consulta
+                <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase mb-1">
+                  Notas de la consulta
                 </label>
                 <textarea
                   rows={2}
                   placeholder="Le interesa financiar el 50%, busca con aire y pocos kilómetros..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none resize-none"
+                  className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none resize-none"
                 />
               </div>
 
-              <div className="pt-3 border-t border-borde flex justify-end gap-2">
+              <div className="pt-3 border-t border-[#E5E5E3] flex justify-end gap-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -671,7 +668,7 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                   type="submit"
                   variant="primary"
                 >
-                  Guardar Interesado
+                  Guardar interesado
                 </Button>
               </div>
             </form>

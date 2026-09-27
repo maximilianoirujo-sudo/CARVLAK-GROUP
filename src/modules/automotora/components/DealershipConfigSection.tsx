@@ -182,19 +182,19 @@ export const DealershipConfigSection: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-panel border border-borde">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#E5E5E3] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-negro border border-borde text-white">
-            <Settings className="w-6 h-6 text-rojo" />
+          <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
+            <Settings className="w-6 h-6 text-[#D7141A]" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              Configuración de Automotora
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
-                Solo Administrador
+            <h2 className="text-lg font-bold text-[#161616] flex items-center gap-2">
+              Configuración de automotora
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FEF7EC] text-[#945B0E] border border-[#FADBA8]">
+                Solo administrador
               </span>
             </h2>
-            <p className="text-xs text-gris-texto">
+            <p className="text-xs text-[#6B6B6B]">
               Personalizá marcas, modelos, equipamiento, campos adicionales y permisos de vendedores.
             </p>
           </div>
@@ -202,53 +202,53 @@ export const DealershipConfigSection: React.FC = () => {
       </div>
 
       {/* Subtabs con Línea Roja */}
-      <div className="flex items-center gap-2 border-b border-borde pb-1 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-[#E5E5E3] pb-1 overflow-x-auto">
         <button
           onClick={() => setActiveSubTab('lists')}
-          className={`px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
+          className={`px-4 py-3 text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
             activeSubTab === 'lists'
-              ? 'border-rojo text-white'
-              : 'border-transparent text-gris-texto hover:text-white'
+              ? 'border-[#D7141A] text-[#161616] font-bold'
+              : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
           }`}
         >
           <Sliders className="w-4 h-4" />
-          Listas Desplegables
+          Listas desplegables
         </button>
 
         <button
           onClick={() => setActiveSubTab('models')}
-          className={`px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
+          className={`px-4 py-3 text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
             activeSubTab === 'models'
-              ? 'border-rojo text-white'
-              : 'border-transparent text-gris-texto hover:text-white'
+              ? 'border-[#D7141A] text-[#161616] font-bold'
+              : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
           }`}
         >
           <Car className="w-4 h-4" />
-          Modelos por Marca
+          Modelos por marca
         </button>
 
         <button
           onClick={() => setActiveSubTab('custom_fields')}
-          className={`px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
+          className={`px-4 py-3 text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
             activeSubTab === 'custom_fields'
-              ? 'border-rojo text-white'
-              : 'border-transparent text-gris-texto hover:text-white'
+              ? 'border-[#D7141A] text-[#161616] font-bold'
+              : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
           }`}
         >
           <Layers className="w-4 h-4" />
-          Campos Personalizados ({dealershipConfig.custom_fields?.length || 0})
+          Campos personalizados ({dealershipConfig.custom_fields?.length || 0})
         </button>
 
         <button
           onClick={() => setActiveSubTab('general')}
-          className={`px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
+          className={`px-4 py-3 text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap border-b-2 ${
             activeSubTab === 'general'
-              ? 'border-rojo text-white'
-              : 'border-transparent text-gris-texto hover:text-white'
+              ? 'border-[#D7141A] text-[#161616] font-bold'
+              : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
           }`}
         >
           <Users className="w-4 h-4" />
-          Permisos &amp; Reglas
+          Permisos y reglas
         </button>
       </div>
 
@@ -256,10 +256,10 @@ export const DealershipConfigSection: React.FC = () => {
       {activeSubTab === 'lists' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Marcas */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Car className="w-4 h-4 text-rojo" />
+              <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+                <Car className="w-4 h-4 text-[#D7141A]" />
                 Marcas ({dealershipConfig.brands?.length || 0})
               </h3>
             </div>
@@ -272,7 +272,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddItem('brands', newBrandInput, () => setNewBrandInput(''));
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -286,12 +286,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.brands || []).map((brand) => (
                 <span
                   key={brand}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-negro text-xs text-white border border-borde"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3]"
                 >
                   {brand}
                   <button
                     onClick={() => handleRemoveItem('brands', brand)}
-                    className="text-gris-texto hover:text-rojo transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors"
                   >
                     ×
                   </button>
@@ -301,10 +301,10 @@ export const DealershipConfigSection: React.FC = () => {
           </div>
 
           {/* Tipos de Vehículo */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-rojo" />
-              Tipos de Vehículo ({dealershipConfig.vehicle_types?.length || 0})
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[#D7141A]" />
+              Tipos de vehículo ({dealershipConfig.vehicle_types?.length || 0})
             </h3>
             <div className="flex gap-2">
               <input
@@ -315,7 +315,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddItem('vehicle_types', newVehicleTypeInput, () => setNewVehicleTypeInput(''));
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -329,12 +329,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.vehicle_types || []).map((vt) => (
                 <span
                   key={vt}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-negro text-xs text-white border border-borde"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3]"
                 >
                   {vt}
                   <button
                     onClick={() => handleRemoveItem('vehicle_types', vt)}
-                    className="text-gris-texto hover:text-rojo transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors"
                   >
                     ×
                   </button>
@@ -344,10 +344,10 @@ export const DealershipConfigSection: React.FC = () => {
           </div>
 
           {/* Combustibles */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Fuel className="w-4 h-4 text-rojo" />
-              Tipos de Combustible
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Fuel className="w-4 h-4 text-[#D7141A]" />
+              Tipos de combustible
             </h3>
             <div className="flex gap-2">
               <input
@@ -358,7 +358,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddItem('fuel_types', newFuelInput, () => setNewFuelInput(''));
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -372,12 +372,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.fuel_types || []).map((ft) => (
                 <span
                   key={ft}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-negro text-xs text-white border border-borde"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3]"
                 >
                   {ft}
                   <button
                     onClick={() => handleRemoveItem('fuel_types', ft)}
-                    className="text-gris-texto hover:text-rojo transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors"
                   >
                     ×
                   </button>
@@ -387,9 +387,9 @@ export const DealershipConfigSection: React.FC = () => {
           </div>
 
           {/* Transmisiones */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-rojo" />
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[#D7141A]" />
               Transmisiones
             </h3>
             <div className="flex gap-2">
@@ -401,7 +401,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddItem('transmission_types', newTransmissionInput, () => setNewTransmissionInput(''));
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -415,12 +415,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.transmission_types || []).map((tt) => (
                 <span
                   key={tt}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-negro text-xs text-white border border-borde"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3]"
                 >
                   {tt}
                   <button
                     onClick={() => handleRemoveItem('transmission_types', tt)}
-                    className="text-gris-texto hover:text-rojo transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors"
                   >
                     ×
                   </button>
@@ -430,10 +430,10 @@ export const DealershipConfigSection: React.FC = () => {
           </div>
 
           {/* Colores */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Palette className="w-4 h-4 text-rojo" />
-              Colores Disponibles ({dealershipConfig.colors?.length || 0})
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Palette className="w-4 h-4 text-[#D7141A]" />
+              Colores disponibles ({dealershipConfig.colors?.length || 0})
             </h3>
             <div className="flex gap-2">
               <input
@@ -444,7 +444,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddItem('colors', newColorInput, () => setNewColorInput(''));
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -458,12 +458,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.colors || []).map((c) => (
                 <span
                   key={c}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-negro text-xs text-white border border-borde"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3]"
                 >
                   {c}
                   <button
                     onClick={() => handleRemoveItem('colors', c)}
-                    className="text-gris-texto hover:text-rojo transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors"
                   >
                     ×
                   </button>
@@ -473,10 +473,10 @@ export const DealershipConfigSection: React.FC = () => {
           </div>
 
           {/* Equipamiento sugerido */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-rojo" />
-              Equipamiento y Accesorios ({dealershipConfig.equipment_items?.length || 0})
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#D7141A]" />
+              Equipamiento y accesorios ({dealershipConfig.equipment_items?.length || 0})
             </h3>
             <div className="flex gap-2">
               <input
@@ -487,7 +487,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddItem('equipment_items', newEquipmentInput, () => setNewEquipmentInput(''));
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -501,12 +501,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.equipment_items || []).map((eq) => (
                 <span
                   key={eq}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-negro text-xs text-white border border-borde"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3]"
                 >
                   {eq}
                   <button
                     onClick={() => handleRemoveItem('equipment_items', eq)}
-                    className="text-gris-texto hover:text-rojo transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors"
                   >
                     ×
                   </button>
@@ -516,10 +516,10 @@ export const DealershipConfigSection: React.FC = () => {
           </div>
 
           {/* Documentación requerida */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4 md:col-span-2">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <FileText className="w-4 h-4 text-rojo" />
-              Documentación Requerida para Stock ({dealershipConfig.required_documents?.length || 0})
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm md:col-span-2">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#D7141A]" />
+              Documentación requerida para stock ({dealershipConfig.required_documents?.length || 0})
             </h3>
             <div className="flex gap-2 max-w-md">
               <input
@@ -530,7 +530,7 @@ export const DealershipConfigSection: React.FC = () => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleAddDocument();
                 }}
-                className="flex-1 px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none"
+                className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
                 variant="primary"
@@ -544,12 +544,12 @@ export const DealershipConfigSection: React.FC = () => {
               {(dealershipConfig.required_documents || []).map((doc) => (
                 <div
                   key={doc.key}
-                  className="flex items-center justify-between p-2.5 rounded-lg bg-negro border border-borde text-xs text-white"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-xs text-[#161616]"
                 >
-                  <span className="font-bold">{doc.label}</span>
+                  <span className="font-semibold">{doc.label}</span>
                   <button
                     onClick={() => handleRemoveDocument(doc.key)}
-                    className="text-gris-texto hover:text-rojo p-1 transition-colors"
+                    className="text-[#9A9A9A] hover:text-[#D7141A] p-1 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -564,8 +564,8 @@ export const DealershipConfigSection: React.FC = () => {
       {activeSubTab === 'models' && (
         <div className="space-y-6">
           {/* Brand picker selector */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <label className="block text-xs font-bold text-gris-texto uppercase tracking-wider">
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <label className="block text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider">
               1. Seleccioná una marca para gestionar sus modelos:
             </label>
             <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
@@ -573,10 +573,10 @@ export const DealershipConfigSection: React.FC = () => {
                 <button
                   key={brand}
                   onClick={() => setSelectedBrandForModels(brand)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     selectedBrandForModels === brand
-                      ? 'bg-white text-black'
-                      : 'bg-negro text-gris-texto hover:text-white border border-borde'
+                      ? 'bg-[#161616] text-white shadow-sm'
+                      : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3]'
                   }`}
                 >
                   {brand} ({dealershipConfig.models_by_brand?.[brand]?.length || 0})
@@ -587,11 +587,11 @@ export const DealershipConfigSection: React.FC = () => {
 
           {/* Models list for chosen brand */}
           {selectedBrandForModels && (
-            <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
+            <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Car className="w-4 h-4 text-rojo" />
-                  Modelos de <span className="text-white underline">{selectedBrandForModels}</span> ({dealershipConfig.models_by_brand?.[selectedBrandForModels]?.length || 0})
+                <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+                  <Car className="w-4 h-4 text-[#D7141A]" />
+                  Modelos de <span className="text-[#161616] underline">{selectedBrandForModels}</span> ({dealershipConfig.models_by_brand?.[selectedBrandForModels]?.length || 0})
                 </h3>
                 <div className="flex gap-2">
                   <input
@@ -602,7 +602,7 @@ export const DealershipConfigSection: React.FC = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAddModel();
                     }}
-                    className="px-3 py-2 text-xs bg-negro border border-borde rounded-lg text-white placeholder-gris-texto focus:border-rojo outline-none w-64"
+                    className="px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none w-64"
                   />
                   <Button
                     variant="primary"
@@ -618,12 +618,12 @@ export const DealershipConfigSection: React.FC = () => {
                 {(dealershipConfig.models_by_brand?.[selectedBrandForModels] || []).map((model) => (
                   <div
                     key={model}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-negro text-xs text-white border border-borde group"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F5F4] text-xs text-[#161616] border border-[#E5E5E3] group"
                   >
-                    <span className="font-bold truncate">{model}</span>
+                    <span className="font-semibold truncate">{model}</span>
                     <button
                       onClick={() => handleRemoveModel(selectedBrandForModels, model)}
-                      className="text-gris-texto hover:text-rojo p-1 opacity-60 group-hover:opacity-100 transition-opacity"
+                      className="text-[#9A9A9A] hover:text-[#D7141A] p-1 opacity-60 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -638,14 +638,14 @@ export const DealershipConfigSection: React.FC = () => {
       {/* SUBTAB 3: Campos Personalizados */}
       {activeSubTab === 'custom_fields' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-panel border border-borde">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#E5E5E3] shadow-sm">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-rojo" />
-                Definición de Campos Personalizados por Vehículo
+              <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#D7141A]" />
+                Definición de campos personalizados por vehículo
               </h3>
-              <p className="text-xs text-gris-texto mt-1 max-w-xl">
-                Permite registrar datos adicionales específicos (ej: Consignación, Garantía, Ubicación física). Podés definir si se muestran públicamente en el catálogo web / Tiendanube o si son solo internos.
+              <p className="text-xs text-[#6B6B6B] mt-1 max-w-xl">
+                Permite registrar datos adicionales específicos (ej: Consignación, Garantía, Ubicación física). Podés definir si se muestran públicamente en el catálogo web o si son solo internos.
               </p>
             </div>
             <Button
@@ -653,7 +653,7 @@ export const DealershipConfigSection: React.FC = () => {
               onClick={() => setNewFieldModalOpen(true)}
             >
               <Plus className="w-4 h-4" />
-              Nuevo Campo
+              <span>Nuevo campo</span>
             </Button>
           </div>
 
@@ -662,32 +662,32 @@ export const DealershipConfigSection: React.FC = () => {
             {(dealershipConfig.custom_fields || []).map((field) => (
               <div
                 key={field.id}
-                className="p-4 rounded-xl bg-panel border border-borde flex items-start justify-between gap-3 hover:border-white/40 transition-all"
+                className="p-4 rounded-2xl bg-white border border-[#E5E5E3] flex items-start justify-between gap-3 hover:border-[#D0D0CD] transition-all shadow-sm"
               >
                 <div className="space-y-1.5 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white">{field.name}</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
+                    <span className="text-sm font-bold text-[#161616]">{field.name}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                       {field.type}
                     </span>
                     {field.required && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rojo/10 text-rojo border border-rojo/20">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#FDF2F2] text-[#B80E14] border border-[#FADBA8]">
                         Obligatorio
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-gris-texto">
+                  <div className="flex items-center gap-3 text-xs text-[#6B6B6B]">
                     <span className="flex items-center gap-1">
                       {field.show_in_catalog ? (
                         <>
-                          <Eye className="w-3.5 h-3.5 text-white" />
-                          <span className="text-white font-medium">Visible en Catálogo</span>
+                          <Eye className="w-3.5 h-3.5 text-[#161616]" />
+                          <span className="text-[#161616] font-medium">Visible en catálogo</span>
                         </>
                       ) : (
                         <>
-                          <EyeOff className="w-3.5 h-3.5 text-gris-texto" />
-                          <span>Solo Interno</span>
+                          <EyeOff className="w-3.5 h-3.5 text-[#9A9A9A]" />
+                          <span>Solo interno</span>
                         </>
                       )}
                     </span>
@@ -696,7 +696,7 @@ export const DealershipConfigSection: React.FC = () => {
                   {field.options && field.options.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">
                       {field.options.map((opt) => (
-                        <span key={opt} className="text-[10px] px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
+                        <span key={opt} className="text-[10px] px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                           {opt}
                         </span>
                       ))}
@@ -706,7 +706,7 @@ export const DealershipConfigSection: React.FC = () => {
 
                 <button
                   onClick={() => handleRemoveCustomField(field.id)}
-                  className="p-1.5 text-gris-texto hover:text-rojo rounded-lg hover:bg-negro transition-colors"
+                  className="p-1.5 text-[#9A9A9A] hover:text-[#D7141A] rounded-lg hover:bg-[#F5F5F4] transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -720,14 +720,14 @@ export const DealershipConfigSection: React.FC = () => {
       {activeSubTab === 'general' && (
         <div className="space-y-6">
           {/* Permiso de edición a Vendedores */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-rojo" />
-                  Permiso de Edición de Stock para Vendedores
+                <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#D7141A]" />
+                  Permiso de edición de stock para vendedores
                 </h3>
-                <p className="text-xs text-gris-texto max-w-xl leading-relaxed">
+                <p className="text-xs text-[#6B6B6B] max-w-xl leading-relaxed">
                   Por defecto, los vendedores tienen acceso de <strong>solo lectura</strong> al catálogo para atender clientes. Si activás este permiso, los vendedores podrán editar datos comerciales y fotos, pero los <strong>costos de compra, márgenes, precio mínimo aceptable y notas internas seguirán siendo 100% invisibles y protegidos</strong>.
                 </p>
               </div>
@@ -746,18 +746,18 @@ export const DealershipConfigSection: React.FC = () => {
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-12 h-6 bg-negro border border-borde peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rojo"></div>
+                <div className="w-12 h-6 bg-[#E5E5E3] border border-[#D0D0CD] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#D7141A]"></div>
               </label>
             </div>
           </div>
 
           {/* Días en Stock y Alertas */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-rojo" />
-              Alerta de Antigüedad en Stock (Auto Estancado)
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#D7141A]" />
+              Alerta de antigüedad en stock (Auto estancado)
             </h3>
-            <p className="text-xs text-gris-texto leading-relaxed max-w-xl">
+            <p className="text-xs text-[#6B6B6B] leading-relaxed max-w-xl">
               Define cuántos días puede permanecer un vehículo publicado antes de que el sistema active la alerta visual de estancamiento para impulsar ofertas o ajustes de precio.
             </p>
             <div className="flex items-center gap-3 max-w-xs">
@@ -770,21 +770,21 @@ export const DealershipConfigSection: React.FC = () => {
                   const val = parseInt(e.target.value) || 60;
                   updateDealershipConfig({ days_alert_threshold: val });
                 }}
-                className="w-28 px-3 py-2 bg-negro border border-borde rounded-lg text-white font-mono text-sm focus:outline-none focus:border-rojo"
+                className="w-28 px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] font-mono text-sm focus:outline-none focus:border-[#D7141A]"
               />
-              <span className="text-xs text-gris-texto font-semibold">días en stock</span>
+              <span className="text-xs text-[#6B6B6B] font-semibold">días en stock</span>
             </div>
           </div>
 
           {/* Costos y Valores por Defecto */}
-          <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Settings className="w-4 h-4 text-rojo" />
-              Parámetros Financieros por Defecto
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Settings className="w-4 h-4 text-[#D7141A]" />
+              Parámetros financieros por defecto
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-1">
               <div>
-                <label className="block text-xs text-gris-texto mb-1">Tipo de cambio (UYU / USD):</label>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Tipo de cambio (UYU / USD):</label>
                 <input
                   type="number"
                   step="0.1"
@@ -792,12 +792,12 @@ export const DealershipConfigSection: React.FC = () => {
                   onChange={(e) => {
                     updateDealershipConfig({ default_exchange_rate: parseFloat(e.target.value) || 43.50 });
                   }}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white font-mono text-xs focus:outline-none focus:border-rojo"
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] font-mono text-xs focus:outline-none focus:border-[#D7141A]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-gris-texto mb-1">Costo alistamiento detailing ($ UYU):</label>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Costo alistamiento detailing ($ UYU):</label>
                 <input
                   type="number"
                   step="100"
@@ -805,12 +805,12 @@ export const DealershipConfigSection: React.FC = () => {
                   onChange={(e) => {
                     updateDealershipConfig({ default_internal_detailing_cost: parseInt(e.target.value) || 2500 });
                   }}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white font-mono text-xs focus:outline-none focus:border-rojo"
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] font-mono text-xs focus:outline-none focus:border-[#D7141A]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-gris-texto mb-1">Costo peritaje técnico ($ UYU):</label>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Costo peritaje técnico ($ UYU):</label>
                 <input
                   type="number"
                   step="100"
@@ -818,7 +818,7 @@ export const DealershipConfigSection: React.FC = () => {
                   onChange={(e) => {
                     updateDealershipConfig({ default_internal_inspection_cost: parseInt(e.target.value) || 1500 });
                   }}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white font-mono text-xs focus:outline-none focus:border-rojo"
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] font-mono text-xs focus:outline-none focus:border-[#D7141A]"
                 />
               </div>
             </div>
@@ -828,29 +828,29 @@ export const DealershipConfigSection: React.FC = () => {
 
       {/* MODAL NUEVO CAMPO PERSONALIZADO */}
       {newFieldModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-panel border border-borde rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">Nuevo Campo Personalizado</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-[#E5E5E3] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#161616]">Nuevo campo personalizado</h3>
 
             <form onSubmit={handleCreateCustomField} className="space-y-4">
               <div>
-                <label className="block text-xs text-gris-texto mb-1 font-medium">Nombre del Campo:</label>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Nombre del campo:</label>
                 <input
                   type="text"
                   required
                   placeholder="Ej: Ubicación física, Garantía meses, Consignación..."
                   value={newFieldName}
                   onChange={(e) => setNewFieldName(e.target.value)}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white text-xs focus:outline-none focus:border-rojo"
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-gris-texto mb-1 font-medium">Tipo de Dato:</label>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Tipo de dato:</label>
                 <select
                   value={newFieldType}
                   onChange={(e) => setNewFieldType(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white text-xs focus:outline-none focus:border-rojo"
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
                 >
                   <option value="text">Texto simple</option>
                   <option value="number">Número</option>
@@ -861,7 +861,7 @@ export const DealershipConfigSection: React.FC = () => {
 
               {newFieldType === 'select' && (
                 <div>
-                  <label className="block text-xs text-gris-texto mb-1 font-medium">
+                  <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">
                     Opciones (separadas por comas):
                   </label>
                   <input
@@ -870,34 +870,34 @@ export const DealershipConfigSection: React.FC = () => {
                     placeholder="Salón principal, Depósito, Taller..."
                     value={newFieldOptionsStr}
                     onChange={(e) => setNewFieldOptionsStr(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-lg text-white text-xs focus:outline-none focus:border-rojo"
+                    className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
                   />
                 </div>
               )}
 
               <div className="space-y-2 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-gris-texto">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B6B]">
                   <input
                     type="checkbox"
                     checked={newFieldShowInCatalog}
                     onChange={(e) => setNewFieldShowInCatalog(e.target.checked)}
-                    className="rounded bg-negro border-borde text-rojo focus:ring-0"
+                    className="rounded bg-[#F5F5F4] border-[#E5E5E3] text-[#D7141A] focus:ring-0"
                   />
                   <span>Mostrar en catálogo web / Tiendanube (público)</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-gris-texto">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B6B]">
                   <input
                     type="checkbox"
                     checked={newFieldRequired}
                     onChange={(e) => setNewFieldRequired(e.target.checked)}
-                    className="rounded bg-negro border-borde text-rojo focus:ring-0"
+                    className="rounded bg-[#F5F5F4] border-[#E5E5E3] text-[#D7141A] focus:ring-0"
                   />
                   <span>Campo obligatorio al crear vehículo</span>
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-borde">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#E5E5E3]">
                 <Button
                   type="button"
                   variant="secondary"
@@ -909,7 +909,7 @@ export const DealershipConfigSection: React.FC = () => {
                   type="submit"
                   variant="primary"
                 >
-                  Guardar Campo
+                  Guardar campo
                 </Button>
               </div>
             </form>

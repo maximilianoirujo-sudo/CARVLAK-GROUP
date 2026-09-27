@@ -528,19 +528,19 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="bg-panel border border-borde rounded-xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-panel border border-borde text-rojo flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A] flex items-center justify-center font-bold">
               <Car className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white">
-                {vehicleToEdit ? `Editar ${vehicleToEdit.brand} ${vehicleToEdit.model}` : 'Nuevo Vehículo de Stock'}
+              <h2 className="text-base sm:text-lg font-black text-[#161616]">
+                {vehicleToEdit ? `Editar ${vehicleToEdit.brand} ${vehicleToEdit.model}` : 'Nuevo vehículo de stock'}
               </h2>
-              <p className="text-[11px] text-gris-texto">
+              <p className="text-[11px] text-[#6B6B6B]">
                 Formulario adaptado para celular organizado en secciones plegables
               </p>
             </div>
@@ -550,20 +550,20 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
             <button
               type="button"
               onClick={expandAll}
-              className="hidden sm:inline-flex text-[11px] px-2.5 py-1 rounded-lg bg-panel text-gris-texto hover:text-white border border-borde"
+              className="hidden sm:inline-flex text-[11px] px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3]"
             >
               Expandir todo
             </button>
             <button
               type="button"
               onClick={collapseAll}
-              className="hidden sm:inline-flex text-[11px] px-2.5 py-1 rounded-lg bg-panel text-gris-texto hover:text-white border border-borde"
+              className="hidden sm:inline-flex text-[11px] px-2.5 py-1 rounded-lg bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3]"
             >
               Colapsar todo
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-gris-texto hover:text-white hover:bg-panel transition-colors ml-1"
+              className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors ml-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -572,10 +572,10 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
         {/* Banner de permisos si es Vendedor */}
         {!canEdit && (
-          <div className="p-3 bg-negro border border-borde border-b border-borde text-xs text-white flex items-center gap-2 px-5">
-            <Lock className="w-4 h-4 text-rojo shrink-0" />
+          <div className="p-3 bg-[#FEF7EC] border-b border-[#E5E5E3] text-xs text-[#161616] flex items-center gap-2 px-5">
+            <Lock className="w-4 h-4 text-[#945B0E] shrink-0" />
             <span>
-              <strong>Modo Solo Lectura:</strong> Tu rol actual no tiene habilitada la edición de stock. Podés ver los datos comerciales para asesorar clientes.
+              <strong>Modo solo lectura:</strong> Tu rol actual no tiene habilitada la edición de stock. Podés ver los datos comerciales para asesorar clientes.
             </span>
           </div>
         )}
@@ -583,41 +583,41 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
         {/* Formulario con Accordions */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4">
           {/* ACCORDION 1: DATOS GENERALES */}
-          <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('general')}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <Car className="w-4 h-4 text-rojo" />
-                <span className="text-sm font-bold text-white">1. Datos Generales &amp; Identificación</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-negro border border-borde text-rojo border border-borde">
+                <Car className="w-4 h-4 text-[#D7141A]" />
+                <span className="text-sm font-bold text-[#161616]">1. Datos generales e identificación</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
                   {condition === '0km' ? '0km' : 'Usado'} • {brand || 'Sin marca'} {model}
                 </span>
               </div>
-              {openSections.general ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+              {openSections.general ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
             </button>
 
             {openSections.general && (
-              <div className="p-4 pt-0 border-t border-borde space-y-4">
+              <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4">
                 {/* Condición Usado vs 0km */}
-                <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-negro border border-borde">
+                <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
                   <div>
-                    <span className="text-xs font-bold text-white">Condición del Vehículo:</span>
-                    <p className="text-[11px] text-gris-texto">
+                    <span className="text-xs font-bold text-[#161616]">Condición del vehículo:</span>
+                    <p className="text-[11px] text-[#6B6B6B]">
                       {condition === '0km'
                         ? '⚡ Stock propio 0km: Matrícula opcional hasta empadronar.'
                         : '🚗 Usado: Requiere matrícula para chequeo de documentación.'}
                     </p>
                   </div>
-                  <div className="flex items-center bg-negro p-1 rounded-xl border border-borde shrink-0">
+                  <div className="flex items-center bg-white p-1 rounded-xl border border-[#E5E5E3] shrink-0">
                     <button
                       type="button"
                       disabled={!canEdit}
                       onClick={() => setCondition('usado')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        condition === 'usado' ? 'bg-rojo text-white shadow-md' : 'text-gris-texto hover:text-white'
+                        condition === 'usado' ? 'bg-[#D7141A] text-white shadow-sm' : 'text-[#6B6B6B] hover:text-[#161616]'
                       }`}
                     >
                       Usado
@@ -630,7 +630,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                         if (mileage > 500) setMileage(0);
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        condition === '0km' ? 'bg-rojo text-white shadow-md' : 'text-gris-texto hover:text-white'
+                        condition === '0km' ? 'bg-[#D7141A] text-white shadow-sm' : 'text-[#6B6B6B] hover:text-[#161616]'
                       }`}
                     >
                       0km
@@ -640,7 +640,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
                       Matrícula {condition === '0km' ? '(Opcional)' : '*'}
                     </label>
                     <input
@@ -650,12 +650,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder={condition === '0km' ? 'Pendiente' : 'SBA 1234'}
                       value={plate}
                       onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono font-bold text-rojo focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono font-bold text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
                       Chasis / VIN {condition === '0km' && !plate ? '*' : ''}
                     </label>
                     <input
@@ -664,19 +664,19 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder="9BWZZZ..."
                       value={chassisVin}
                       onChange={(e) => setChassisVin(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                      Tipo de Vehículo
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                      Tipo de vehículo
                     </label>
                     <select
                       disabled={!canEdit}
                       value={vehicleType}
                       onChange={(e) => setVehicleType(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     >
                       {(dealershipConfig.vehicle_types || ['Auto', 'Moto', 'Todoterreno']).map((vt) => (
                         <option key={vt} value={vt.toLowerCase().replace(/[^a-z]/g, '')}>
@@ -687,7 +687,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Marca *</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Marca *</label>
                     <input
                       type="text"
                       list="brands-datalist"
@@ -696,7 +696,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder="Ej: Volkswagen, BYD..."
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                     <datalist id="brands-datalist">
                       {(dealershipConfig.brands || []).map((b) => (
@@ -706,7 +706,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Modelo *</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Modelo *</label>
                     <input
                       type="text"
                       list="models-datalist"
@@ -715,7 +715,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder="Ej: Golf, Dolphin..."
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                     <datalist id="models-datalist">
                       {(dealershipConfig.models_by_brand?.[brand] || []).map((m) => (
@@ -725,35 +725,35 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Versión</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Versión</label>
                     <input
                       type="text"
                       disabled={!canEdit}
                       placeholder="Ej: Highline 1.4 TSI"
                       value={version}
                       onChange={(e) => setVersion(e.target.value)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Año</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Año</label>
                     <input
                       type="number"
                       disabled={!canEdit}
                       value={year}
                       onChange={(e) => setYear(parseInt(e.target.value) || 2020)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Estado</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Estado</label>
                     <select
                       disabled={!canEdit}
                       value={status}
                       onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     >
                       <option value="evaluacion">En evaluación</option>
                       <option value="comprado">Comprado</option>
@@ -766,16 +766,16 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div className="flex items-center pt-5">
-                    <label className="flex items-center gap-2 text-xs text-gris-texto cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs text-[#6B6B6B] cursor-pointer">
                       <input
                         type="checkbox"
                         disabled={!canEdit}
                         checked={isFeatured}
                         onChange={(e) => setIsFeatured(e.target.checked)}
-                        className="rounded bg-panel border-borde text-rojo focus:ring-0"
+                        className="rounded border-[#E5E5E3] text-[#D7141A] focus:ring-0 accent-[#D7141A]"
                       />
-                      <Star className="w-4 h-4 text-rojo" />
-                      <span className="font-semibold">Destacar en Catálogo</span>
+                      <Star className="w-4 h-4 text-[#D7141A]" />
+                      <span className="font-semibold text-[#161616]">Destacar en catálogo</span>
                     </label>
                   </div>
                 </div>
@@ -784,42 +784,42 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           </div>
 
           {/* ACCORDION 2: DATOS TÉCNICOS */}
-          <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('tecnicos')}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <Zap className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">2. Datos Técnicos &amp; Mecánica</span>
-                <span className="text-[10px] text-gris-texto">
+                <Zap className="w-4 h-4 text-[#D7141A]" />
+                <span className="text-sm font-bold text-[#161616]">2. Datos técnicos y mecánica</span>
+                <span className="text-[10px] text-[#6B6B6B]">
                   {fuel} • {transmission} • {mileage.toLocaleString('es-UY')} km
                 </span>
               </div>
-              {openSections.tecnicos ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+              {openSections.tecnicos ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
             </button>
 
             {openSections.tecnicos && (
-              <div className="p-4 pt-0 border-t border-borde grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+              <div className="p-4 pt-0 border-t border-[#E5E5E3] grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Kilometraje</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Kilometraje</label>
                   <input
                     type="number"
                     disabled={!canEdit}
                     value={mileage}
                     onChange={(e) => setMileage(parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Combustible</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Combustible</label>
                   <select
                     disabled={!canEdit}
                     value={fuel}
                     onChange={(e) => setFuel(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   >
                     {(dealershipConfig.fuel_types || ['Nafta', 'Diesel', 'Híbrido', 'Eléctrico']).map((f) => (
                       <option key={f} value={f}>
@@ -830,12 +830,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Transmisión</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Transmisión</label>
                   <select
                     disabled={!canEdit}
                     value={transmission}
                     onChange={(e) => setTransmission(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   >
                     {(dealershipConfig.transmission_types || ['Manual', 'Automática', 'Secuencial']).map((t) => (
                       <option key={t} value={t}>
@@ -846,7 +846,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
                     Motorización (Cilindrada / Potencia)
                   </label>
                   <input
@@ -855,12 +855,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     placeholder="Ej: 1.4 TSI 150cv / 160kW"
                     value={engine}
                     onChange={(e) => setEngine(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Puertas</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Puertas</label>
                   <input
                     type="number"
                     disabled={!canEdit}
@@ -868,12 +868,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     max="6"
                     value={doors}
                     onChange={(e) => setDoors(parseInt(e.target.value) || 4)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Color Exterior</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Color exterior</label>
                   <input
                     type="text"
                     list="colors-datalist"
@@ -881,7 +881,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     placeholder="Ej: Blanco, Gris Plata..."
                     value={colorExterior}
                     onChange={(e) => setColorExterior(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   />
                   <datalist id="colors-datalist">
                     {(dealershipConfig.colors || []).map((c) => (
@@ -892,8 +892,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 {fuel === 'Eléctrico' && (
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                      Autonomía Eléctrica (km)
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                      Autonomía eléctrica (km)
                     </label>
                     <input
                       type="number"
@@ -901,20 +901,20 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder="405"
                       value={autonomyKm || ''}
                       onChange={(e) => setAutonomyKm(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Padrón</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Padrón</label>
                   <input
                     type="text"
                     disabled={!canEdit}
                     placeholder="Ej: 901234"
                     value={padron}
                     onChange={(e) => setPadron(e.target.value)}
-                    className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -922,70 +922,70 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           </div>
 
           {/* ACCORDION 3: PRECIO & FINANCIACIÓN */}
-          <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('precio')}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <DollarSign className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">3. Precios de Venta &amp; Financiación</span>
-                <span className="text-[10px] font-bold text-white">
+                <DollarSign className="w-4 h-4 text-[#D7141A]" />
+                <span className="text-sm font-bold text-[#161616]">3. Precios de venta y financiación</span>
+                <span className="text-[10px] font-bold text-[#161616]">
                   USD {salePrice.toLocaleString('es-UY')}
                 </span>
               </div>
-              {openSections.precio ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+              {openSections.precio ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
             </button>
 
             {openSections.precio && (
-              <div className="p-4 pt-0 border-t border-borde space-y-4 pt-3">
+              <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                      Precio de Lista (Público) *
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                      Precio de lista (Público) *
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gris-texto">USD</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#6B6B6B]">USD</span>
                       <input
                         type="number"
                         disabled={!canEdit}
                         required
                         value={salePrice || ''}
                         onChange={(e) => setSalePrice(parseInt(e.target.value) || 0)}
-                        className="w-full pl-12 pr-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono font-bold text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                        className="w-full pl-12 pr-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono font-bold text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                       />
                     </div>
                   </div>
 
                   {isAdmin && (
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1 flex items-center gap-1">
-                        <span>Precio Mínimo Aceptable</span>
-                        <Lock className="w-3 h-3 text-rojo" />
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1 flex items-center gap-1">
+                        <span>Precio mínimo aceptable</span>
+                        <Lock className="w-3 h-3 text-[#D7141A]" />
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gris-texto">USD</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#6B6B6B]">USD</span>
                         <input
                           type="number"
                           value={minAcceptablePrice || ''}
                           onChange={(e) => setMinAcceptablePrice(parseInt(e.target.value) || 0)}
-                          className="w-full pl-12 pr-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono font-bold text-rojo focus:outline-none focus:border-rojo"
+                          className="w-full pl-12 pr-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono font-bold text-[#B80E14] focus:outline-none focus:border-[#D7141A]"
                         />
                       </div>
-                      <span className="text-[10px] text-gray-500">Límite confidencial de negociación para directiva.</span>
+                      <span className="text-[10px] text-[#6B6B6B]">Límite confidencial de negociación para directiva.</span>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                      Financiación Disponible
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                      Financiación disponible
                     </label>
                     <select
                       disabled={!canEdit}
                       value={financingAvailable ? 'si' : 'no'}
                       onChange={(e) => setFinancingAvailable(e.target.value === 'si')}
-                      className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                     >
                       <option value="si">Disponible (Bancaria / Propia)</option>
                       <option value="no">Solo Contado</option>
@@ -994,29 +994,29 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 {financingAvailable && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-negro rounded-xl border border-borde">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3]">
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                        Entrega Inicial Mínima (USD)
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                        Entrega inicial mínima (USD)
                       </label>
                       <input
                         type="number"
                         disabled={!canEdit}
                         value={minDownPayment || ''}
                         onChange={(e) => setMinDownPayment(parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                        Cuota Estimada Mensual (USD)
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                        Cuota estimada mensual (USD)
                       </label>
                       <input
                         type="number"
                         disabled={!canEdit}
                         value={monthlyInstallment || ''}
                         onChange={(e) => setMonthlyInstallment(parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                       />
                     </div>
                   </div>
@@ -1027,31 +1027,31 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
           {/* ACCORDION 4: COMPRA Y COSTOS (SOLO ADMIN) */}
           {isAdmin && (
-            <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+            <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection('compra')}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
-                  <Lock className="w-4 h-4 text-rojo" />
-                  <span className="text-sm font-bold text-white">4. Compra &amp; Costos Reales</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-negro border border-borde text-white font-mono">
-                    Solo Admin
+                  <Lock className="w-4 h-4 text-[#D7141A]" />
+                  <span className="text-sm font-bold text-[#161616]">4. Compra y costos reales</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] font-mono">
+                    Solo admin
                   </span>
                 </div>
-                {openSections.compra ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+                {openSections.compra ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
               </button>
 
               {openSections.compra && (
-                <div className="p-4 pt-0 border-t border-borde space-y-4 pt-3">
+                <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Origen de Compra</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Origen de compra</label>
                       <select
                         value={purchaseOrigin}
                         onChange={(e) => setPurchaseOrigin(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                       >
                         <option value="particular">Particular directo</option>
                         <option value="parte_de_pago">Tomado en permuta (Parte de pago)</option>
@@ -1062,12 +1062,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Precio de Compra</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Precio de compra</label>
                       <div className="flex gap-2">
                         <select
                           value={purchaseCurrency}
                           onChange={(e) => setPurchaseCurrency(e.target.value as any)}
-                          className="w-20 px-2 py-2 bg-negro border border-borde rounded-xl text-xs text-white"
+                          className="w-20 px-2 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616]"
                         >
                           <option value="USD">USD</option>
                           <option value="UYU">UYU</option>
@@ -1076,51 +1076,51 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                           type="number"
                           value={purchasePrice || ''}
                           onChange={(e) => setPurchasePrice(parseInt(e.target.value) || 0)}
-                          className="flex-1 px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono font-bold text-white focus:outline-none focus:border-rojo"
+                          className="flex-1 px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono font-bold text-[#161616] focus:outline-none focus:border-[#D7141A]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Tipo de Cambio</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Tipo de cambio</label>
                       <input
                         type="number"
                         step="0.1"
                         value={exchangeRate || 43.50}
                         onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 43.50)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs font-mono text-white focus:outline-none focus:border-rojo"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono text-[#161616] focus:outline-none focus:border-[#D7141A]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Nombre Proveedor / Dueño</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Nombre proveedor / dueño</label>
                       <input
                         type="text"
                         placeholder="Juan Pérez"
                         value={supplierName}
                         onChange={(e) => setSupplierName(e.target.value)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Teléfono Proveedor</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Teléfono proveedor</label>
                       <input
                         type="text"
                         placeholder="099 123 456"
                         value={supplierPhone}
                         onChange={(e) => setSupplierPhone(e.target.value)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">Fecha de Compra</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Fecha de compra</label>
                       <input
                         type="date"
                         value={purchaseDate}
                         onChange={(e) => setPurchaseDate(e.target.value)}
-                        className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                        className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                       />
                     </div>
                   </div>
@@ -1130,21 +1130,21 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           )}
 
           {/* ACCORDION 5: DOCUMENTACIÓN RECIBIDA */}
-          <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('docs')}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <FileText className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">5. Documentación Recibida</span>
+                <FileText className="w-4 h-4 text-[#D7141A]" />
+                <span className="text-sm font-bold text-[#161616]">5. Documentación recibida</span>
               </div>
-              {openSections.docs ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+              {openSections.docs ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
             </button>
 
             {openSections.docs && (
-              <div className="p-4 pt-0 border-t border-borde pt-3">
+              <div className="p-4 pt-0 border-t border-[#E5E5E3] pt-3">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {(dealershipConfig.required_documents || [
                     { key: 'titulo', label: 'Título de Propiedad' },
@@ -1160,8 +1160,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                         key={doc.key}
                         className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
                           isChecked
-                            ? 'bg-panel border-rojo text-white'
-                            : 'bg-negro border-borde text-gris-texto hover:text-white'
+                            ? 'bg-[#EEF7F2] border-[#22C55E]/40 text-[#161616]'
+                            : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
                         }`}
                       >
                         <input
@@ -1171,7 +1171,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                           onChange={(e) => {
                             setDocsReceived({ ...docsReceived, [doc.key]: e.target.checked });
                           }}
-                          className="rounded bg-panel border-borde text-rojo focus:ring-0"
+                          className="rounded border-[#E5E5E3] text-[#D7141A] focus:ring-0 accent-[#D7141A]"
                         />
                         <span className="font-medium truncate">{doc.label}</span>
                       </label>
@@ -1183,26 +1183,26 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           </div>
 
           {/* ACCORDION 6: FOTOS DEL VEHÍCULO */}
-          <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('fotos')}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <ImageIcon className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">6. Fotos HD &amp; Galería ({images.length})</span>
+                <ImageIcon className="w-4 h-4 text-[#D7141A]" />
+                <span className="text-sm font-bold text-[#161616]">6. Fotos y galería ({images.length})</span>
                 {coverImage && (
-                  <span className="text-[10px] text-rojo flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-rojo text-rojo" /> Portada asignada
+                  <span className="text-[10px] text-[#D7141A] flex items-center gap-1 font-medium">
+                    <Star className="w-3 h-3 fill-[#D7141A] text-[#D7141A]" /> Portada asignada
                   </span>
                 )}
               </div>
-              {openSections.fotos ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+              {openSections.fotos ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
             </button>
 
             {openSections.fotos && (
-              <div className="p-4 pt-0 border-t border-borde space-y-4 pt-3">
+              <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                 {/* File input con compresión en navegador */}
                 <input
                   type="file"
@@ -1218,10 +1218,10 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     type="button"
                     disabled={!canEdit || isCompressing}
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2.5 rounded-xl bg-rojo hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50"
+                    className="px-4 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B80E14] text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>{isCompressing ? 'Comprimiendo fotos...' : 'Cámara o Galería'}</span>
+                    <span>{isCompressing ? 'Comprimiendo fotos...' : 'Cámara o galería'}</span>
                   </button>
 
                   <div className="flex-1 flex gap-2 min-w-[240px]">
@@ -1231,13 +1231,13 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder="O pegar URL de imagen..."
                       value={newImageUrl}
                       onChange={(e) => setNewImageUrl(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                      className="flex-1 px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                     />
                     <button
                       type="button"
                       disabled={!canEdit || !newImageUrl.trim()}
                       onClick={handleAddImageUrl}
-                      className="px-3 py-2 rounded-xl bg-panel hover:bg-zinc-700 text-white text-xs font-semibold disabled:opacity-40"
+                      className="px-3 py-2 rounded-xl bg-white hover:bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-semibold disabled:opacity-40"
                     >
                       Agregar URL
                     </button>
@@ -1246,7 +1246,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 {/* Grid de Fotos con controles */}
                 {images.length === 0 ? (
-                  <div className="p-6 text-center border-2 border-dashed border-borde rounded-xl text-gray-500 text-xs">
+                  <div className="p-6 text-center border-2 border-dashed border-[#E5E5E3] rounded-xl text-[#6B6B6B] text-xs">
                     No hay fotos cargadas. Usá la cámara de tu celular o seleccioná fotos de tu galería para subirlas comprimidas automáticamente.
                   </div>
                 ) : (
@@ -1256,8 +1256,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       return (
                         <div
                           key={idx}
-                          className={`relative rounded-xl overflow-hidden border group bg-negro aspect-video flex flex-col justify-between ${
-                            isCover ? 'border-rojo ring-2 ring-rojo/30' : 'border-borde'
+                          className={`relative rounded-xl overflow-hidden border group bg-[#F5F5F4] aspect-video flex flex-col justify-between ${
+                            isCover ? 'border-[#D7141A] ring-2 ring-[#D7141A]/30' : 'border-[#E5E5E3]'
                           }`}
                         >
                           <img
@@ -1268,7 +1268,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                           {/* Badge de Portada */}
                           {isCover && (
-                            <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-rojo text-white font-black text-[10px] flex items-center gap-1 shadow-md">
+                            <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-[#D7141A] text-white font-bold text-[10px] flex items-center gap-1 shadow-md">
                               <Star className="w-3 h-3 fill-white" />
                               Portada
                             </div>
@@ -1283,7 +1283,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(idx)}
-                                className="p-1 rounded-md bg-rojo text-white hover:bg-red-700 transition-colors"
+                                className="p-1 rounded-md bg-[#D7141A] text-white hover:bg-[#B80E14] transition-colors"
                                 title="Eliminar foto"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1295,7 +1295,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleSetCover(img)}
-                                  className="px-2 py-1 rounded bg-rojo text-white font-bold text-[10px] hover:bg-red-700 transition-colors"
+                                  className="px-2 py-1 rounded bg-[#D7141A] text-white font-bold text-[10px] hover:bg-[#B80E14] transition-colors"
                                 >
                                   Hacer portada
                                 </button>
@@ -1305,7 +1305,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                   type="button"
                                   disabled={idx === 0}
                                   onClick={() => handleMoveImage(idx, 'up')}
-                                  className="p-1 rounded bg-panel text-white hover:bg-zinc-700 disabled:opacity-30"
+                                  className="p-1 rounded bg-white text-[#161616] hover:bg-[#F5F5F4] border border-[#E5E5E3] disabled:opacity-30"
                                   title="Mover antes"
                                 >
                                   <ArrowUp className="w-3.5 h-3.5" />
@@ -1314,7 +1314,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                   type="button"
                                   disabled={idx === images.length - 1}
                                   onClick={() => handleMoveImage(idx, 'down')}
-                                  className="p-1 rounded bg-panel text-white hover:bg-zinc-700 disabled:opacity-30"
+                                  className="p-1 rounded bg-white text-[#161616] hover:bg-[#F5F5F4] border border-[#E5E5E3] disabled:opacity-30"
                                   title="Mover después"
                                 >
                                   <ArrowDown className="w-3.5 h-3.5" />
@@ -1332,26 +1332,26 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           </div>
 
           {/* ACCORDION 7: EQUIPAMIENTO, PUBLICACIÓN & NOTAS INTERNAS */}
-          <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('publicacion')}
-              className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+              className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <Tag className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">7. Equipamiento, Catálogo &amp; Notas</span>
-                <span className="text-[10px] text-gris-texto">{features.length} ítems de equipamiento</span>
+                <Tag className="w-4 h-4 text-[#D7141A]" />
+                <span className="text-sm font-bold text-[#161616]">7. Equipamiento, catálogo y notas</span>
+                <span className="text-[10px] text-[#6B6B6B]">{features.length} ítems de equipamiento</span>
               </div>
-              {openSections.publicacion ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+              {openSections.publicacion ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
             </button>
 
             {openSections.publicacion && (
-              <div className="p-4 pt-0 border-t border-borde space-y-4 pt-3">
+              <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                 {/* Equipamiento sugerido */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1.5">
-                    Equipamiento y Accesorios:
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1.5">
+                    Equipamiento y accesorios:
                   </label>
                   <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
                     {(dealershipConfig.equipment_items || []).map((eq) => {
@@ -1364,8 +1364,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                           onClick={() => handleToggleFeature(eq)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                             isSelected
-                              ? 'bg-rojo text-white font-bold'
-                              : 'bg-panel text-gris-texto hover:bg-zinc-700'
+                              ? 'bg-[#161616] text-white font-bold'
+                              : 'bg-[#F5F5F4] text-[#6B6B6B] hover:bg-[#E5E5E3] border border-[#E5E5E3]'
                           }`}
                         >
                           {isSelected ? '✓ ' : '+ '} {eq}
@@ -1388,13 +1388,13 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                           handleAddFeature();
                         }
                       }}
-                      className="px-3 py-1.5 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                      className="px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                     />
                     <button
                       type="button"
                       disabled={!canEdit}
                       onClick={handleAddFeature}
-                      className="px-3 py-1.5 bg-panel hover:bg-zinc-700 text-white rounded-xl text-xs font-semibold"
+                      className="px-3 py-1.5 bg-white border border-[#E5E5E3] hover:bg-[#F5F5F4] text-[#161616] rounded-xl text-xs font-semibold"
                     >
                       Agregar
                     </button>
@@ -1403,8 +1403,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 {/* Descripción Pública */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
-                    Descripción Pública para Catálogo Web / Tiendanube
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    Descripción pública para catálogo web / Tiendanube
                   </label>
                   <textarea
                     rows={3}
@@ -1412,25 +1412,25 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     placeholder="Detalles destacados del vehículo, estado general, garantía, etc..."
                     value={catalogDescription}
                     onChange={(e) => setCatalogDescription(e.target.value)}
-                    className="w-full p-3 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo disabled:opacity-50"
+                    className="w-full p-3 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
                   />
                 </div>
 
                 {/* Notas Internas (Solo Admin) */}
                 {isAdmin && (
                   <div>
-                    <label className="block text-[11px] font-bold text-rojo uppercase mb-1 flex items-center gap-1.5">
+                    <label className="block text-[11px] font-bold text-[#D7141A] uppercase mb-1 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5" />
-                      Notas Internas Confidenciales (Taller / Negociación)
+                      Notas internas confidenciales (Taller / Negociación)
                     </label>
                     <textarea
                       rows={2}
                       placeholder="Detalles mecánicos pendientes, acuerdos con el vendedor original, observaciones de margen..."
                       value={internalNotes}
                       onChange={(e) => setInternalNotes(e.target.value)}
-                      className="w-full p-3 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                      className="w-full p-3 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                     />
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[10px] text-[#6B6B6B]">
                       Nunca se muestra al cliente ni se sincroniza con Tiendanube o el catálogo público.
                     </span>
                   </div>
@@ -1441,43 +1441,43 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
           {/* ACCORDION 8: CAMPOS PERSONALIZADOS DINÁMICOS */}
           {(dealershipConfig.custom_fields || []).length > 0 && (
-            <div className="rounded-xl border border-borde bg-negro/50 overflow-hidden">
+            <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection('custom')}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-panel/40 transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 text-white" />
-                  <span className="text-sm font-bold text-white">8. Campos Personalizados</span>
-                  <span className="text-[10px] text-gris-texto">
+                  <Layers className="w-4 h-4 text-[#D7141A]" />
+                  <span className="text-sm font-bold text-[#161616]">8. Campos personalizados</span>
+                  <span className="text-[10px] text-[#6B6B6B]">
                     {dealershipConfig.custom_fields.length} definidos
                   </span>
                 </div>
-                {openSections.custom ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+                {openSections.custom ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
               </button>
 
               {openSections.custom && (
-                <div className="p-4 pt-0 border-t border-borde grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                <div className="p-4 pt-0 border-t border-[#E5E5E3] grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
                   {dealershipConfig.custom_fields.map((cf) => {
                     const val = customFields[cf.id];
                     return (
                       <div key={cf.id}>
-                        <label className="block text-[11px] font-bold text-gris-texto uppercase mb-1">
+                        <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
                           {cf.name} {cf.required ? '*' : ''}
-                          <span className="text-[9px] lowercase text-gray-500 ml-1">
+                          <span className="text-[9px] lowercase text-[#6B6B6B] ml-1">
                             ({cf.show_in_catalog ? 'Público' : 'Interno'})
                           </span>
                         </label>
 
                         {cf.type === 'boolean' ? (
-                          <label className="flex items-center gap-2 p-2 bg-negro border border-borde rounded-xl text-xs text-white cursor-pointer">
+                          <label className="flex items-center gap-2 p-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-xs text-[#161616] cursor-pointer">
                             <input
                               type="checkbox"
                               disabled={!canEdit}
                               checked={Boolean(val)}
                               onChange={(e) => setCustomFields({ ...customFields, [cf.id]: e.target.checked })}
-                              className="rounded bg-panel border-borde text-rojo focus:ring-0"
+                              className="rounded border-[#E5E5E3] text-[#D7141A] focus:ring-0 accent-[#D7141A]"
                             />
                             <span>{val ? 'Sí' : 'No'}</span>
                           </label>
@@ -1486,7 +1486,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                             disabled={!canEdit}
                             value={val || ''}
                             onChange={(e) => setCustomFields({ ...customFields, [cf.id]: e.target.value })}
-                            className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                            className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                           >
                             <option value="">Seleccionar...</option>
                             {(cf.options || []).map((opt) => (
@@ -1507,7 +1507,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                 [cf.id]: cf.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
                               })
                             }
-                            className="w-full px-3 py-2 bg-negro border border-borde rounded-xl text-xs text-white focus:outline-none focus:border-rojo"
+                            className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                           />
                         )}
                       </div>
@@ -1520,28 +1520,28 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
           {/* ACCORDION 9: CHECKLIST ENTREGA 0KM */}
           {condition === '0km' && (
-            <div className="rounded-xl border border-borde bg-negro border border-borde overflow-hidden">
+            <div className="rounded-xl border border-[#E5E5E3] bg-white overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection('entrega')}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-negro border border-borde transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-[#F5F5F4] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
-                  <CheckSquare className="w-4 h-4 text-white" />
-                  <span className="text-sm font-bold text-white">9. Checklist de Entrega 0km</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-panel border border-borde text-white font-bold">
+                  <CheckSquare className="w-4 h-4 text-[#D7141A]" />
+                  <span className="text-sm font-bold text-[#161616]">9. Checklist de entrega 0km</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] font-bold">
                     0km Exclusivo
                   </span>
                 </div>
-                {openSections.entrega ? <ChevronUp className="w-4 h-4 text-gris-texto" /> : <ChevronDown className="w-4 h-4 text-gris-texto" />}
+                {openSections.entrega ? <ChevronUp className="w-4 h-4 text-[#6B6B6B]" /> : <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />}
               </button>
 
               {openSections.entrega && (
-                <div className="p-4 pt-0 border-t border-borde space-y-2 pt-3">
+                <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-2 pt-3">
                   {deliveryChecklist.items.map((item) => (
                     <label
                       key={item.id}
-                      className="flex items-center gap-2.5 p-2 bg-negro rounded-xl border border-borde text-xs text-white cursor-pointer"
+                      className="flex items-center gap-2.5 p-2 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] text-xs text-[#161616] cursor-pointer"
                     >
                       <input
                         type="checkbox"
@@ -1553,7 +1553,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                           );
                           setDeliveryChecklist({ ...deliveryChecklist, items: updated });
                         }}
-                        className="rounded bg-panel border-borde text-rojo focus:ring-0"
+                        className="rounded border-[#E5E5E3] text-[#D7141A] focus:ring-0 accent-[#D7141A]"
                       />
                       <span>{item.label}</span>
                     </label>
@@ -1565,7 +1565,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
         </form>
 
         {/* Footer con Guardar / Cancelar sin guardar */}
-        <div className="p-4 bg-negro border-t border-borde flex items-center justify-between gap-3">
+        <div className="p-4 bg-white border-t border-[#E5E5E3] flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="secondary"
@@ -1581,7 +1581,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
             onClick={handleSubmit}
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{vehicleToEdit ? 'Guardar Cambios' : 'Crear Vehículo'}</span>
+            <span>{vehicleToEdit ? 'Guardar cambios' : 'Crear vehículo'}</span>
           </Button>
         </div>
       </div>

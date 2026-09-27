@@ -17,13 +17,13 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
 
   if (!inspection) {
     return (
-      <div className="min-h-screen bg-negro text-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-6 rounded-xl bg-panel border border-borde text-center space-y-4 shadow-2xl">
-          <div className="w-14 h-14 rounded-xl bg-rojo/10 text-rojo flex items-center justify-center mx-auto text-2xl border border-rojo/30">
+      <div className="min-h-screen bg-[#F5F5F4] text-[#161616] flex items-center justify-center p-4">
+        <div className="w-full max-w-md p-6 rounded-2xl bg-white border border-[#E5E5E3] text-center space-y-4 shadow-sm">
+          <div className="w-14 h-14 rounded-xl bg-[#FDF2F2] text-[#B80E14] flex items-center justify-center mx-auto text-2xl border border-[#D7141A]/30">
             <AlertCircle className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-title font-bold text-white">Informe no encontrado</h2>
-          <p className="text-xs text-gris-texto leading-relaxed">
+          <h2 className="text-xl font-title font-bold text-[#161616]">Informe no encontrado</h2>
+          <p className="text-xs text-[#6B6B6B] leading-relaxed">
             El enlace solicitado no corresponde a un informe técnico activo o el token ingresado es inválido. Verifique el enlace recibido por WhatsApp o contacte a CARVLAK.
           </p>
           <Button
@@ -32,7 +32,7 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
             className="inline-flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Volver al Inicio</span>
+            <span>Volver al inicio</span>
           </Button>
         </div>
       </div>
@@ -40,21 +40,24 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
   }
 
   return (
-    <div className="min-h-screen bg-negro text-white pb-16">
+    <div className="min-h-screen bg-[#F5F5F4] text-[#161616] pb-16">
       {/* HEADER PÚBLICO CON LOGO OFICIAL */}
-      <header className="sticky top-0 z-40 bg-negro border-b border-borde px-4 py-3">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-[#E5E5E3] px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="/logo-carvlak-white.png"
+              src="/logo-carvlak-black.svg"
               alt="CARVLAK Group"
               className="h-7 w-auto object-contain"
+              onError={(e) => {
+                (e.target as HTMLElement).setAttribute('src', '/logo-carvlak-black.png');
+              }}
             />
-            <div className="hidden sm:block border-l border-borde pl-3">
-              <span className="text-[10px] font-title font-bold uppercase tracking-wider text-gris-texto block">
-                Departamento Pericial
+            <div className="hidden sm:block border-l border-[#E5E5E3] pl-3">
+              <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B] block">
+                Departamento pericial
               </span>
-              <h1 className="text-xs font-semibold text-white leading-tight">
+              <h1 className="text-xs font-semibold text-[#161616] leading-tight">
                 Informe técnico pericial
               </h1>
             </div>
@@ -77,7 +80,7 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
       </main>
 
       {/* PIE DE PÁGINA */}
-      <footer className="max-w-5xl mx-auto px-4 mt-8 pt-6 border-t border-borde text-center text-xs text-gris-texto space-y-1">
+      <footer className="max-w-5xl mx-auto px-4 mt-8 pt-6 border-t border-[#E5E5E3] text-center text-xs text-[#6B6B6B] space-y-1">
         <p>CARVLAK Group • Shangrilá, Ciudad de la Costa, Canelones, Uruguay.</p>
         <p className="text-[11px]">Automotora CARVLAK • DetailVlak Taller • Inspección Vehicular</p>
       </footer>

@@ -376,27 +376,27 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-panel border border-borde rounded-xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-panel border border-borde text-white flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-rojo" />
+            <div className="w-10 h-10 rounded-xl bg-white border border-[#E5E5E3] text-[#161616] flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-[#D7141A]" />
             </div>
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                {quoteToEdit ? 'Editar Cotización / Trabajo' : 'Nueva Cotización DetailVlak'}
+              <h3 className="text-base font-bold text-[#161616] flex items-center gap-2">
+                {quoteToEdit ? 'Editar cotización o trabajo' : 'Nueva cotización DetailVlak'}
               </h3>
-              <p className="text-xs text-gris-texto">
+              <p className="text-xs text-[#6B6B6B]">
                 Calculadora inteligente según categoría y tarifario oficial en $UYU.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-panel hover:bg-negro text-gris-texto hover:text-white flex items-center justify-center transition-colors border border-borde"
+            className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3] cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -406,18 +406,18 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
           
           {/* SECCIÓN 1: CLIENTE Y VEHÍCULO */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-panel border border-borde">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
             {/* Cliente */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="font-bold text-gris-texto flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-white" />
+                <label className="font-semibold text-[#161616] flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#6B6B6B]" />
                   <span>Cliente</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsNewClientMode(!isNewClientMode)}
-                  className="text-[10px] font-bold text-rojo hover:underline"
+                  className="text-xs font-medium text-[#D7141A] hover:text-[#B80E14] cursor-pointer"
                 >
                   {isNewClientMode ? 'Elegir existente' : '+ Crear nuevo'}
                 </button>
@@ -429,15 +429,15 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                     type="text"
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
-                    placeholder="Nombre y Apellido"
-                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                    placeholder="Nombre y apellido"
+                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                   />
                   <input
                     type="text"
                     value={newClientPhone}
                     onChange={(e) => setNewClientPhone(e.target.value)}
                     placeholder="Celular / WhatsApp (09X...)"
-                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                   />
                 </div>
               ) : (
@@ -445,15 +445,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                   value={selectedClientId}
                   onChange={(e) => {
                     setSelectedClientId(e.target.value);
-                    // Si el cliente tiene vehículos, seleccionar el primero
                     const clientVehs = vehicles.filter((v) => v.client_id === e.target.value);
                     if (clientVehs.length > 0) {
                       setSelectedVehicleId(clientVehs[0].id);
                     }
                   }}
-                  className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
+                  className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
                 >
-                  <option value="">-- Seleccionar Cliente --</option>
+                  <option value="">-- Seleccionar cliente --</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.full_name} ({c.phone})
@@ -466,14 +465,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
             {/* Vehículo */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="font-bold text-gris-texto flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5 text-white" />
+                <label className="font-semibold text-[#161616] flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-[#6B6B6B]" />
                   <span>Vehículo</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsNewVehicleMode(!isNewVehicleMode)}
-                  className="text-[10px] font-bold text-rojo hover:underline"
+                  className="text-xs font-medium text-[#D7141A] hover:text-[#B80E14] cursor-pointer"
                 >
                   {isNewVehicleMode ? 'Elegir existente' : '+ Crear nuevo'}
                 </button>
@@ -487,14 +486,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                       value={newVehicleBrand}
                       onChange={(e) => setNewVehicleBrand(e.target.value)}
                       placeholder="Marca (ej. Toyota)"
-                      className="bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                     />
                     <input
                       type="text"
                       value={newVehicleModel}
                       onChange={(e) => setNewVehicleModel(e.target.value)}
                       placeholder="Modelo (ej. Corolla)"
-                      className="bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -503,12 +502,12 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                       value={newVehiclePlate}
                       onChange={(e) => setNewVehiclePlate(e.target.value)}
                       placeholder="Matrícula (opcional)"
-                      className="bg-negro border border-borde rounded-xl px-3 py-2 text-white font-mono uppercase placeholder-gris-texto focus:border-rojo focus:outline-none"
+                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-mono uppercase placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                     />
                     <select
                       value={newVehicleCategory}
                       onChange={(e) => setNewVehicleCategory(e.target.value as VehicleCategory)}
-                      className="bg-negro border border-borde rounded-xl px-3 py-2 text-white font-bold focus:border-rojo focus:outline-none"
+                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-semibold focus:border-[#D7141A] focus:outline-none cursor-pointer"
                     >
                       <option value="Chico">Chico / Hatchback</option>
                       <option value="Mediano">Mediano / Sedán</option>
@@ -523,9 +522,9 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                   <select
                     value={selectedVehicleId}
                     onChange={(e) => setSelectedVehicleId(e.target.value)}
-                    className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
+                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
                   >
-                    <option value="">-- Seleccionar Vehículo --</option>
+                    <option value="">-- Seleccionar vehículo --</option>
                     {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>
                         {v.brand} {v.model} [{normalizePlate(v.plate)}] ({v.category})
@@ -533,9 +532,9 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                     ))}
                   </select>
                   {currentVehicle && (
-                    <div className="flex items-center gap-2 text-[10px] text-gris-texto">
+                    <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B]">
                       <span>Categoría detectada:</span>
-                      <span className="font-bold text-white px-1.5 py-0.5 rounded bg-negro border border-borde">
+                      <span className="font-semibold text-[#161616] px-1.5 py-0.5 rounded bg-white border border-[#E5E5E3]">
                         {currentVehicle.category}
                       </span>
                     </div>
@@ -548,13 +547,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
           {/* SECCIÓN 2: SELECCIÓN DE SERVICIOS DEL TARIFARIO */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
-                <span>Servicios de Detailing</span>
-                <span className="text-[10px] font-normal text-gris-texto">
-                  (Precios calculados para categoría: <strong className="text-white">{activeCategory}</strong>)
+              <h4 className="text-xs font-bold text-[#161616] flex items-center gap-2">
+                <span>Servicios de detailing</span>
+                <span className="text-[11px] font-normal text-[#6B6B6B]">
+                  (Precios calculados para categoría: <strong className="text-[#161616]">{activeCategory}</strong>)
                 </span>
               </h4>
-              <span className="text-xs font-mono font-bold text-white">
+              <span className="text-xs font-mono font-semibold text-[#161616]">
                 Subtotal: {formatCurrency(subtotal, 'UYU')}
               </span>
             </div>
@@ -570,23 +569,23 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                     onClick={() => toggleService(t.id)}
                     className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-3 ${
                       isSelected
-                        ? 'bg-panel border-rojo'
-                        : 'bg-panel border-borde hover:border-gris-texto/50'
+                        ? 'bg-white border-[#D7141A] shadow-xs'
+                        : 'bg-white border-[#E5E5E3] hover:border-[#D0D0CD]'
                     }`}
                   >
                     <div className="flex items-start gap-2.5">
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => {}} // handled by div
-                        className="mt-0.5 w-4 h-4 rounded text-rojo bg-negro border-borde pointer-events-none"
+                        onChange={() => {}}
+                        className="mt-0.5 w-4 h-4 rounded text-[#D7141A] accent-[#D7141A] pointer-events-none"
                       />
                       <div>
-                        <div className="font-bold text-white leading-tight">{t.shortName || t.name}</div>
-                        <p className="text-[10px] text-gris-texto line-clamp-1 mt-0.5">{t.description}</p>
+                        <div className="font-semibold text-[#161616] leading-tight">{t.shortName || t.name}</div>
+                        <p className="text-[11px] text-[#6B6B6B] line-clamp-1 mt-0.5">{t.description}</p>
                       </div>
                     </div>
-                    <div className="font-mono font-bold text-white shrink-0 text-right">
+                    <div className="font-mono font-bold text-[#161616] shrink-0 text-right">
                       {formatCurrency(price, 'UYU')}
                     </div>
                   </div>
@@ -596,37 +595,37 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
           </div>
 
           {/* SECCIÓN 3: AJUSTES (DESCUENTO, RECARGO POR SUCIEDAD, TIEMPO) */}
-          <div className="p-4 rounded-xl bg-panel border border-borde space-y-4">
-            <h4 className="text-xs font-black uppercase tracking-wider text-white">
-              Descuentos &amp; Recargos Especiales
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-4">
+            <h4 className="text-xs font-bold text-[#161616]">
+              Descuentos y recargos especiales
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Descuento */}
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto block mb-1">
-                  Descuento Aplicado
+                <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                  Descuento aplicado
                 </label>
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value as DetailingDiscountType)}
-                  className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
+                  className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
                 >
-                  <option value="none">Sin Descuento</option>
-                  <option value="combo_10">10% Combo Promocional</option>
-                  <option value="special_15">15% Cliente Especial / Automotora</option>
-                  <option value="fixed">Monto Fijo Personalizado</option>
+                  <option value="none">Sin descuento</option>
+                  <option value="combo_10">10% Combo promocional</option>
+                  <option value="special_15">15% Cliente especial / Automotora</option>
+                  <option value="fixed">Monto fijo personalizado</option>
                 </select>
 
                 {discountType === 'fixed' && (
                   <div className="mt-2 relative">
-                    <span className="absolute left-2.5 top-2 text-[10px] text-gris-texto font-bold">$U</span>
+                    <span className="absolute left-2.5 top-2 text-[10px] text-[#9A9A9A] font-bold">$U</span>
                     <input
                       type="number"
                       value={fixedDiscountAmount}
                       onChange={(e) => setFixedDiscountAmount(Number(e.target.value))}
                       placeholder="Monto descuento"
-                      className="w-full bg-negro border border-borde rounded-xl pl-8 pr-3 py-1.5 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-xl pl-8 pr-3 py-1.5 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                     />
                   </div>
                 )}
@@ -634,26 +633,26 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
               {/* Suciedad Extrema */}
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto block mb-1">
-                  Suciedad Extrema / Campo
+                <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                  Suciedad extrema o campo
                 </label>
                 <label className="flex items-center gap-2 mt-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={hasExtremeDirt}
                     onChange={(e) => setHasExtremeDirt(e.target.checked)}
-                    className="w-4 h-4 rounded text-rojo bg-negro border-borde"
+                    className="w-4 h-4 rounded text-[#D7141A] accent-[#D7141A]"
                   />
-                  <span className="text-white">Aplicar recargo</span>
+                  <span className="text-[#161616]">Aplicar recargo</span>
                 </label>
                 {hasExtremeDirt && (
                   <div className="mt-1.5 relative">
-                    <span className="absolute left-2.5 top-2 text-[10px] text-gris-texto font-bold">$U</span>
+                    <span className="absolute left-2.5 top-2 text-[10px] text-[#9A9A9A] font-bold">$U</span>
                     <input
                       type="number"
                       value={extremeDirtSurcharge}
                       onChange={(e) => setExtremeDirtSurcharge(Number(e.target.value))}
-                      className="w-full bg-negro border border-borde rounded-xl pl-8 pr-3 py-1.5 text-white focus:border-rojo focus:outline-none"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-xl pl-8 pr-3 py-1.5 text-[#161616] focus:border-[#D7141A] focus:outline-none"
                     />
                   </div>
                 )}
@@ -661,30 +660,30 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
               {/* Tiempo Estimado */}
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto block mb-1">
-                  Tiempo Estimado de Trabajo
+                <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                  Tiempo estimado de trabajo
                 </label>
                 <input
                   type="text"
                   value={estimatedTime}
                   onChange={(e) => setEstimatedTime(e.target.value)}
-                  placeholder="ej: 1 día, 8 horas"
-                  className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                  placeholder="Ej: 1 día, 8 horas"
+                  className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                 />
               </div>
             </div>
           </div>
 
           {/* SECCIÓN 4: ESTADO, ATENDIDO POR, Y AGENDA */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-panel border border-borde">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
             <div>
-              <label className="text-[11px] font-semibold text-gris-texto block mb-1">
-                Estado del Trabajo
+              <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                Estado del trabajo
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as DetailingQuoteStatus)}
-                className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white font-bold focus:border-rojo focus:outline-none"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-semibold focus:border-[#D7141A] focus:outline-none cursor-pointer"
               >
                 <option value="Por Cotizar">Por Cotizar</option>
                 <option value="Presupuesto Enviado">Presupuesto Enviado</option>
@@ -695,13 +694,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-gris-texto block mb-1">
+              <label className="text-[11px] font-medium text-[#161616] block mb-1">
                 Atendido por (Detailer)
               </label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
               >
                 <option value="user-maxi">Maximiliano Irujo (Comisión 30%)</option>
                 <option value="user-matias">Matías Pereyra</option>
@@ -710,13 +709,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-gris-texto block mb-1">
-                Origen de la Consulta
+              <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                Origen de la consulta
               </label>
               <select
                 value={origin}
                 onChange={(e) => setOrigin(e.target.value as any)}
-                className="w-full bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
               >
                 <option value="Presencial">Presencial en taller</option>
                 <option value="WhatsApp">WhatsApp</option>
@@ -727,16 +726,16 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
             </div>
 
             {status === 'Turno Confirmado' && (
-              <div className="sm:col-span-3 pt-2 border-t border-borde animate-fade-in">
-                <label className="text-[11px] font-semibold text-white block mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-rojo" />
-                  <span>Fecha y Hora del Turno (Se reflejará en la Agenda Unificada)</span>
+              <div className="sm:col-span-3 pt-2 border-t border-[#E5E5E3] animate-fade-in">
+                <label className="text-[11px] font-semibold text-[#161616] block mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
+                  <span>Fecha y hora del turno (Se reflejará en la agenda unificada)</span>
                 </label>
                 <input
                   type="datetime-local"
                   value={appointmentDate}
                   onChange={(e) => setAppointmentDate(e.target.value)}
-                  className="w-full sm:w-80 bg-negro border border-borde rounded-xl px-3 py-2 text-white focus:border-rojo focus:outline-none"
+                  className="w-full sm:w-80 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none"
                   required
                 />
               </div>
@@ -746,19 +745,19 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
           {/* SECCIÓN 5: NOTAS Y FOTOS ANTES/DESPUÉS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-gris-texto block mb-1">
-                Zonas a priorizar / Observaciones
+              <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                Zonas a priorizar u observaciones
               </label>
               <textarea
                 value={priorityZones}
                 onChange={(e) => setPriorityZones(e.target.value)}
                 placeholder="Ej: Techo con marcas de pájaros, capot con microrayones..."
                 rows={2}
-                className="w-full bg-negro border border-borde rounded-xl p-2.5 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-gris-texto block mb-1">
+              <label className="text-[11px] font-medium text-[#161616] block mb-1">
                 Notas internas
               </label>
               <textarea
@@ -766,37 +765,37 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Comentarios adicionales para el equipo..."
                 rows={2}
-                className="w-full bg-negro border border-borde rounded-xl p-2.5 text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
               />
             </div>
           </div>
 
           {/* Resumen Final */}
-          <div className="p-4 rounded-xl bg-panel border border-borde flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
             <div>
-              <div className="text-[10px] text-gris-texto font-bold uppercase tracking-wider">
-                Total Presupuestado
+              <div className="text-[10px] text-[#6B6B6B] font-medium uppercase tracking-wider">
+                Total presupuestado
               </div>
-              <div className="text-xl sm:text-2xl font-black text-white font-mono mt-0.5">
+              <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono mt-0.5">
                 {formatCurrency(calculatedTotal, 'UYU')}
               </div>
               {discountAmount > 0 && (
-                <div className="text-[10px] text-rojo">
+                <div className="text-[11px] text-[#D7141A]">
                   Descuento: -{formatCurrency(discountAmount, 'UYU')}
                 </div>
               )}
             </div>
 
-            <div className="text-right text-[11px] text-gris-texto">
-              <div>Servicios: <strong className="text-white">{selectedServiceObjects.length}</strong></div>
-              <div>Estimado: <strong className="text-white">{estimatedTime}</strong></div>
+            <div className="text-right text-[11px] text-[#6B6B6B]">
+              <div>Servicios: <strong className="text-[#161616]">{selectedServiceObjects.length}</strong></div>
+              <div>Estimado: <strong className="text-[#161616]">{estimatedTime}</strong></div>
             </div>
           </div>
 
         </div>
 
         {/* Barra de Acciones */}
-        <div className="p-4 sm:p-5 border-t border-borde bg-negro flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-[#E5E5E3] bg-[#F5F5F4] flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="secondary"
@@ -809,12 +808,12 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
           <div className="flex items-center gap-2">
             <Button
               type="button"
-              variant="whatsapp"
+              variant="secondary"
               size="sm"
               onClick={() => handleSave(true)}
             >
-              <MessageCircle className="w-4 h-4" />
-              <span>Guardar y Enviar WhatsApp</span>
+              <MessageCircle className="w-4 h-4 text-[#1E6B43]" />
+              <span>Guardar y enviar WhatsApp</span>
             </Button>
 
             <Button
@@ -824,7 +823,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
               onClick={() => handleSave(false)}
             >
               <Save className="w-4 h-4" />
-              <span>Guardar Cotización</span>
+              <span>Guardar cotización</span>
             </Button>
           </div>
         </div>

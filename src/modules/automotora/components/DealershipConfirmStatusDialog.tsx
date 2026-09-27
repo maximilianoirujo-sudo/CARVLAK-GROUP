@@ -67,17 +67,17 @@ export const DealershipConfirmStatusDialog: React.FC<DealershipConfirmStatusDial
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-panel border border-borde rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-borde flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-negro border border-borde text-rojo">
+            <div className="p-2 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Confirmar cambio de estado</h3>
-              <p className="text-xs text-gris-texto">
+              <h3 className="text-base font-bold text-[#161616]">Confirmar cambio de estado</h3>
+              <p className="text-xs text-[#6B6B6B]">
                 {vehicle.brand} {vehicle.model} {vehicle.plate ? `• ${vehicle.plate}` : ''}
               </p>
             </div>
@@ -85,48 +85,48 @@ export const DealershipConfirmStatusDialog: React.FC<DealershipConfirmStatusDial
           <button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="p-1 text-gris-texto hover:text-white rounded-lg transition-colors"
+            className="p-1 text-[#6B6B6B] hover:text-[#161616] rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 bg-[#F5F5F4]">
           {/* Transition badge */}
-          <div className="flex items-center justify-center gap-3 p-3 bg-negro rounded-xl border border-borde">
+          <div className="flex items-center justify-center gap-3 p-3 bg-white rounded-xl border border-[#E5E5E3] shadow-sm">
             <div className="text-center">
-              <span className="text-[11px] text-gris-texto uppercase block font-medium">Actual</span>
-              <span className="inline-block px-2.5 py-1 mt-1 rounded text-xs font-bold bg-panel text-white border border-borde">
+              <span className="text-[11px] text-[#6B6B6B] uppercase block font-semibold">Actual</span>
+              <span className="inline-block px-2.5 py-1 mt-1 rounded text-xs font-semibold bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
                 {currentInfo.label}
               </span>
             </div>
-            <ArrowRight className="w-4 h-4 text-gris-texto mt-4" />
+            <ArrowRight className="w-4 h-4 text-[#6B6B6B] mt-4" />
             <div className="text-center">
-              <span className="text-[11px] text-gris-texto uppercase block font-medium">Nuevo estado</span>
-              <span className="inline-block px-2.5 py-1 mt-1 rounded text-xs font-bold bg-white text-black border border-white">
+              <span className="text-[11px] text-[#6B6B6B] uppercase block font-semibold">Nuevo estado</span>
+              <span className="inline-block px-2.5 py-1 mt-1 rounded text-xs font-bold bg-[#161616] text-white">
                 {targetInfo.label}
               </span>
             </div>
           </div>
 
           {/* Description of impact */}
-          <div className="p-3.5 bg-negro border border-borde rounded-xl text-xs text-gris-texto leading-relaxed">
-            <div className="font-bold text-white mb-1 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-rojo" /> ¿Qué implica este cambio?
+          <div className="p-3.5 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#6B6B6B] leading-relaxed shadow-sm">
+            <div className="font-bold text-[#161616] mb-1 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#D7141A]" /> ¿Qué implica este cambio?
             </div>
             {targetInfo.impact}
           </div>
 
           {targetStatus === 'vendido' && (
-            <div className="p-3 bg-negro border border-borde rounded-xl text-xs text-gris-texto">
-              Para registrar los datos del comprador, precio final y liquidación de comisión, recordá usar el botón <strong className="text-white">"Registrar Venta"</strong> en la ficha.
+            <div className="p-3 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#6B6B6B] shadow-sm">
+              Para registrar los datos del comprador, precio final y liquidación de comisión, recordá usar el botón <strong className="text-[#161616]">"Registrar venta"</strong> en la ficha.
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-negro border-t border-borde flex items-center justify-end gap-3">
+        <div className="px-6 py-4 bg-white border-t border-[#E5E5E3] flex items-center justify-end gap-3">
           <Button
             type="button"
             variant="secondary"

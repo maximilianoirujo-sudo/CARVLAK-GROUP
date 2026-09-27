@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { ConfirmModal } from '../common/ConfirmModal';
 import {
-  User,
   Phone,
   Mail,
   CreditCard,
@@ -20,7 +19,8 @@ import {
 import { Client, Vehicle } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
-import { sanitizePhoneForWhatsApp, normalizePlate, BUSINESS_CONFIG, formatCurrency } from '../../lib/formatters';
+import { sanitizePhoneForWhatsApp, BUSINESS_CONFIG, formatCurrency } from '../../lib/formatters';
+import { UruguayanPlate } from '../ui/UruguayanPlate';
 
 interface ClientDetailModalProps {
   isOpen: boolean;
@@ -74,21 +74,21 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
         <div className="space-y-5 text-xs">
           
           {/* Encabezado Cliente */}
-          <div className="p-4 rounded-xl bg-black border border-[#2A2A2A] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="text-base font-bold text-white">{client.full_name}</div>
-              <div className="flex flex-wrap items-center gap-3 text-[#8A8A8A]">
-                <span className="flex items-center gap-1 font-mono font-bold text-white">
-                  <Phone className="w-3.5 h-3.5 text-[#8A8A8A]" /> {client.phone}
+              <div className="text-base font-bold text-[#161616]">{client.full_name}</div>
+              <div className="flex flex-wrap items-center gap-3 text-[#6B6B6B]">
+                <span className="flex items-center gap-1 font-mono font-medium text-[#161616]">
+                  <Phone className="w-3.5 h-3.5 text-[#9A9A9A]" /> {client.phone}
                 </span>
                 {client.email && (
                   <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-[#8A8A8A]" /> {client.email}
+                    <Mail className="w-3.5 h-3.5 text-[#9A9A9A]" /> {client.email}
                   </span>
                 )}
                 {client.cedula && (
                   <span className="flex items-center gap-1">
-                    <CreditCard className="w-3.5 h-3.5 text-[#8A8A8A]" /> CI: {client.cedula}
+                    <CreditCard className="w-3.5 h-3.5 text-[#9A9A9A]" /> CI: {client.cedula}
                   </span>
                 )}
               </div>
@@ -98,26 +98,26 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
             <button
               type="button"
               onClick={handleWhatsApp}
-              className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white font-medium text-xs flex items-center justify-center gap-2 transition-all self-start sm:self-auto cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-medium text-xs flex items-center justify-center gap-2 transition-all self-start sm:self-auto cursor-pointer shadow-xs"
             >
-              <MessageCircle className="w-4 h-4 text-white" />
+              <MessageCircle className="w-4 h-4 text-[#161616]" />
               <span>Abrir WhatsApp</span>
             </button>
           </div>
 
           {/* Consentimiento Redes Sociales */}
-          <div className="p-3 rounded-xl bg-black border border-[#2A2A2A] flex items-center justify-between gap-3">
+          <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <Share2 className="w-4 h-4 text-[#D7141A] shrink-0" />
               <div>
-                <span className="font-semibold text-white">Fotos en Redes Sociales: </span>
+                <span className="font-semibold text-[#161616]">Fotos en redes sociales: </span>
                 {client.social_media_consent ? (
-                  <span className="inline-flex items-center gap-1 text-[#22c55e] font-bold">
+                  <span className="inline-flex items-center gap-1 text-[#1E6B43] font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Autorizado para Instagram
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[#8A8A8A]">
-                    <AlertCircle className="w-3.5 h-3.5 text-[#eab308]" /> Sin consentimiento registrado
+                  <span className="inline-flex items-center gap-1 text-[#945B0E]">
+                    <AlertCircle className="w-3.5 h-3.5 text-[#945B0E]" /> Sin consentimiento registrado
                   </span>
                 )}
               </div>
@@ -134,14 +134,14 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   'info'
                 );
               }}
-              className="text-[11px] font-semibold text-[#8A8A8A] hover:text-white px-2.5 py-1 rounded-lg border border-[#2A2A2A] hover:border-white transition-colors cursor-pointer shrink-0"
+              className="text-[11px] font-medium text-[#6B6B6B] hover:text-[#161616] px-2.5 py-1 rounded-lg border border-[#E5E5E3] bg-white hover:bg-[#F5F5F4] transition-colors cursor-pointer shrink-0"
             >
               {client.social_media_consent ? 'Revocar' : 'Autorizar'}
             </button>
           </div>
 
           {client.notes && (
-            <div className="p-3 rounded-xl bg-black border border-[#2A2A2A] text-[#8A8A8A] italic">
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] italic">
               "{client.notes}"
             </div>
           )}
@@ -149,9 +149,9 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           {/* Vehículos Asociados */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Car className="w-3.5 h-3.5 text-white" />
-                <span>Vehículos Asociados ({clientVehicles.length})</span>
+              <h4 className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                <span>Vehículos asociados ({clientVehicles.length})</span>
               </h4>
               <button
                 type="button"
@@ -159,15 +159,15 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   onAddVehicleForClient(client);
                   onClose();
                 }}
-                className="text-[11px] font-bold text-white hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-xs font-medium text-[#D7141A] hover:text-[#B80E14] flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Asociar Auto</span>
+                <span>Asociar auto</span>
               </button>
             </div>
 
             {clientVehicles.length === 0 ? (
-              <p className="p-3 rounded-xl bg-black border border-[#2A2A2A] text-[#8A8A8A] text-center">
+              <p className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] text-center">
                 Este cliente no tiene vehículos registrados aún.
               </p>
             ) : (
@@ -179,15 +179,13 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       onSelectVehicle(v);
                       onClose();
                     }}
-                    className="p-3 rounded-xl bg-black border border-[#2A2A2A] hover:border-white/40 cursor-pointer transition-all flex items-center justify-between"
+                    className="p-3 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] cursor-pointer transition-all flex items-center justify-between shadow-xs"
                   >
                     <div>
-                      <div className="font-bold text-white">{v.brand} {v.model}</div>
-                      <div className="text-[10px] text-[#8A8A8A]">{v.category} • Año {v.year || 'S/D'}</div>
+                      <div className="font-semibold text-[#161616]">{v.brand} {v.model}</div>
+                      <div className="text-[11px] text-[#6B6B6B]">{v.category} • Año {v.year || 'S/D'}</div>
                     </div>
-                    <span className="font-mono text-white font-bold bg-[#141414] px-2 py-0.5 rounded text-[11px] border border-[#2A2A2A]">
-                      {normalizePlate(v.plate)}
-                    </span>
+                    {v.plate && <UruguayanPlate plate={v.plate} size="sm" />}
                   </div>
                 ))}
               </div>
@@ -195,14 +193,14 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           </div>
 
           {/* Historial de Turnos */}
-          <div className="space-y-2 pt-2 border-t border-[#2A2A2A]">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <History className="w-3.5 h-3.5 text-white" />
-              <span>Historial de Visitas &amp; Turnos ({clientAppointments.length})</span>
+          <div className="space-y-2 pt-2 border-t border-[#E5E5E3]">
+            <h4 className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
+              <History className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <span>Historial de visitas y turnos ({clientAppointments.length})</span>
             </h4>
 
             {clientAppointments.length === 0 ? (
-              <p className="p-3 rounded-xl bg-black border border-[#2A2A2A] text-[#8A8A8A] text-center">
+              <p className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] text-center">
                 Sin turnos previos en el sistema.
               </p>
             ) : (
@@ -212,24 +210,24 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   return (
                     <div
                       key={a.id}
-                      className="p-3 rounded-xl bg-black border border-[#2A2A2A] flex items-center justify-between gap-3"
+                      className="p-3 rounded-xl bg-white border border-[#E5E5E3] flex items-center justify-between gap-3 shadow-xs"
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-[#141414] text-white border border-[#2A2A2A]">
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
                             {bConfig?.name || a.business}
                           </span>
-                          <span className="font-bold text-white">{a.title || 'Servicio'}</span>
+                          <span className="font-semibold text-[#161616]">{a.title || 'Servicio'}</span>
                         </div>
-                        <div className="text-[10px] text-[#8A8A8A] mt-1">
-                          📅 {a.start_time.slice(0, 10)} ({a.start_time.slice(11, 16)} hs)
+                        <div className="text-[11px] text-[#6B6B6B] mt-1">
+                          {a.start_time.slice(0, 10)} ({a.start_time.slice(11, 16)} hs)
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-white">
+                        <div className="font-semibold text-[#161616]">
                           {formatCurrency(a.price_amount, a.price_currency)}
                         </div>
-                        <div className="text-[10px] text-[#8A8A8A]">{a.status}</div>
+                        <div className="text-[11px] text-[#6B6B6B]">{a.status}</div>
                       </div>
                     </div>
                   );
@@ -239,14 +237,14 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           </div>
 
           {/* Acciones inferiores */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-[#2A2A2A]">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-[#E5E5E3]">
             <button
               type="button"
               onClick={() => setIsConfirmArchiveOpen(true)}
-              className="px-3 py-2 rounded-xl text-[#D7141A] hover:bg-[#D7141A]/10 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 rounded-xl text-[#B80E14] hover:bg-[#FDF2F2] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Archivar Cliente</span>
+              <span>Archivar cliente</span>
             </button>
 
             <div className="flex items-center gap-2">
@@ -256,7 +254,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   onEdit(client);
                   onClose();
                 }}
-                className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Edit className="w-3.5 h-3.5" />
                 <span>Editar</span>
@@ -268,10 +266,10 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   onScheduleAppointmentForClient(client);
                   onClose();
                 }}
-                className="px-4 py-2 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Calendar className="w-4 h-4" />
-                <span>Agendar Turno</span>
+                <span>Agendar turno</span>
               </button>
             </div>
           </div>
@@ -283,9 +281,9 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
         isOpen={isConfirmArchiveOpen}
         onClose={() => setIsConfirmArchiveOpen(false)}
         onConfirm={handleArchive}
-        title="¿Archivar Cliente?"
+        title="¿Archivar cliente?"
         message={`El cliente ${client.full_name} (${client.phone}) será archivado del directorio activo. Sus datos y vehículos asociados no se perderán.`}
-        confirmText="Archivar Cliente"
+        confirmText="Archivar cliente"
       />
     </>
   );

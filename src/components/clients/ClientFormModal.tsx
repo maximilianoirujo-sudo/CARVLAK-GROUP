@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { AlertTriangle, UserCheck, Share2 } from 'lucide-react';
+import { AlertTriangle, Share2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { Client, ClientOrigin } from '../../types';
@@ -106,7 +106,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={clientToEdit ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
+      title={clientToEdit ? 'Editar cliente' : 'Registrar nuevo cliente'}
       subtitle="Directorio compartido entre Automotora, Detailing e Inspección"
       maxWidth="max-w-lg"
     >
@@ -114,38 +114,38 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
         
         {/* Nombre */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Nombre y Apellido *</label>
+          <label className="block text-xs font-medium text-[#161616] mb-1">Nombre y apellido *</label>
           <input
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Ej: Nicolás Varela"
             required
-            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-sm text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
+            className="w-full bg-white border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] font-medium placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
           />
         </div>
 
         {/* Teléfono */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Teléfono / WhatsApp *</label>
+          <label className="block text-xs font-medium text-[#161616] mb-1">Teléfono / WhatsApp *</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder="Ej: 099 123 456"
             required
-            className={`w-full bg-black border rounded-xl p-3 text-sm text-white font-mono placeholder-[#8A8A8A] focus:outline-none ${
-              duplicateClient ? 'border-[#D7141A] ring-1 ring-[#D7141A]' : 'border-[#2A2A2A] focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]'
+            className={`w-full bg-white border rounded-xl p-3 text-xs text-[#161616] font-mono placeholder-[#9A9A9A] focus:outline-none transition-colors ${
+              duplicateClient ? 'border-[#D7141A] ring-1 ring-[#D7141A]' : 'border-[#E5E5E3] focus:border-[#D7141A]'
             }`}
           />
 
           {duplicateClient && (
-            <div className="mt-2 p-2.5 rounded-xl bg-[#D7141A]/10 border border-[#D7141A]/30 text-white flex items-start gap-2 animate-fade-in">
+            <div className="mt-2 p-2.5 rounded-xl bg-[#FDF2F2] border border-[#B80E14]/20 text-[#B80E14] flex items-start gap-2 animate-fade-in">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#D7141A]" />
               <div>
-                <p className="font-bold text-[11px] text-[#D7141A]">¡Número ya registrado!</p>
-                <p className="text-[10px] text-white/90 mt-0.5">
-                  Pertenece a <strong>{duplicateClient.full_name}</strong>. Podés editar el cliente existente para no duplicar datos.
+                <p className="font-semibold text-xs text-[#B80E14]">¡Número ya registrado!</p>
+                <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                  Pertenece a <strong className="text-[#161616]">{duplicateClient.full_name}</strong>. Podés editar el cliente existente para no duplicar datos.
                 </p>
               </div>
             </div>
@@ -155,40 +155,40 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
         {/* Email y Cédula */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Email</label>
+            <label className="block text-xs font-medium text-[#161616] mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="cliente@gmail.com"
-              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Cédula de Identidad</label>
+            <label className="block text-xs font-medium text-[#161616] mb-1">Cédula de identidad</label>
             <input
               type="text"
               value={cedula}
               onChange={(e) => setCedula(e.target.value)}
               placeholder="Ej: 4.582.119-4"
-              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
             />
           </div>
         </div>
 
         {/* Origen */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1.5">Origen / Canal de Llegada</label>
+          <label className="block text-xs font-medium text-[#161616] mb-1.5">Origen o canal de llegada</label>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 text-center">
             {(['WhatsApp', 'Instagram', 'Presencial', 'Referido', 'Google Form'] as ClientOrigin[]).map((ch) => (
               <button
                 key={ch}
                 type="button"
                 onClick={() => setOrigin(ch)}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
+                className={`py-2 px-1 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                   origin === ch
-                    ? 'bg-[#D7141A] text-white border-[#D7141A]'
-                    : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
+                    ? 'bg-[#161616] text-white border-[#161616] font-semibold shadow-xs'
+                    : 'bg-white border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]'
                 }`}
               >
                 {ch}
@@ -199,50 +199,50 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
         {/* Notas */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Notas u Observaciones</label>
+          <label className="block text-xs font-medium text-[#161616] mb-1">Notas u observaciones</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             placeholder="Preferencias del cliente, servicios de interés, etc..."
-            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
+            className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
           />
         </div>
 
         {/* Consentimiento Redes Sociales */}
-        <div className="p-3 bg-[#141414] border border-[#2A2A2A] rounded-xl flex items-start gap-3">
+        <div className="p-3 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl flex items-start gap-3">
           <input
             id="social_media_consent"
             type="checkbox"
             checked={socialMediaConsent}
             onChange={(e) => setSocialMediaConsent(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-[#2A2A2A] bg-black text-[#D7141A] focus:ring-[#D7141A] focus:ring-offset-black accent-[#D7141A] cursor-pointer"
+            className="mt-0.5 w-4 h-4 rounded border-[#D0D0CD] text-[#D7141A] focus:ring-[#D7141A] accent-[#D7141A] cursor-pointer"
           />
           <label htmlFor="social_media_consent" className="cursor-pointer select-none">
-            <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+            <div className="flex items-center gap-1.5 font-semibold text-xs text-[#161616]">
               <Share2 className="w-3.5 h-3.5 text-[#D7141A]" />
               <span>Consentimiento para fotos en redes sociales</span>
             </div>
-            <p className="text-[11px] text-[#8A8A8A] mt-0.5">
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5">
               Autoriza a CARVLAK a publicar fotos de la entrega o vehículo en Instagram sin datos personales sensibles.
             </p>
           </label>
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A2A]">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E3]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold border border-white transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] font-medium border border-[#E5E5E3] transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold shadow-sm transition-colors cursor-pointer"
           >
-            {clientToEdit ? 'Guardar Cambios' : 'Registrar Cliente'}
+            {clientToEdit ? 'Guardar cambios' : 'Registrar cliente'}
           </button>
         </div>
 

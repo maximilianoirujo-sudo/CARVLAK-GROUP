@@ -57,70 +57,70 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in">
-      <div className="bg-panel border border-borde rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-panel border border-borde text-white flex items-center justify-center font-bold">
-              <Download className="w-5 h-5 text-rojo" />
+            <div className="w-10 h-10 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] flex items-center justify-center font-bold">
+              <Download className="w-5 h-5 text-[#D7141A]" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white">
-                Sincronización de Catálogo Oficial CARVLAK
+              <h2 className="text-base sm:text-lg font-bold text-[#161616]">
+                Sincronización de catálogo oficial CARVLAK
               </h2>
-              <p className="text-[11px] text-gris-texto">
-                46 vehículos oficiales (39 Usados Seleccionados + 7 Eléctricos 0km) con fotos HD
+              <p className="text-[11px] text-[#6B6B6B]">
+                46 vehículos oficiales (39 usados seleccionados + 7 eléctricos 0km) con fotos HD
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-gris-texto hover:text-white"
+            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Contenido */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-5">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 bg-[#F5F5F4]">
           {/* Explicación */}
-          <div className="p-4 rounded-xl bg-negro border border-borde space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
-              <Database className="w-4 h-4 text-rojo" />
-              <span>CARVLAK Group como Única Fuente de Verdad</span>
+          <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#161616] uppercase tracking-wider">
+              <Database className="w-4 h-4 text-[#D7141A]" />
+              <span>CARVLAK Group como única fuente de verdad</span>
             </div>
-            <p className="text-xs text-gris-texto leading-relaxed">
+            <p className="text-xs text-[#6B6B6B] leading-relaxed">
               El inventario pasa a estar 100% centralizado en la base de datos de CARVLAK Group, habilitando control de costos, peritaje previo, alistamiento en taller, comisiones de vendedores y sincronización con el catálogo web público.
             </p>
           </div>
 
           {/* Estadísticas de Importación */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-            <div className="p-3.5 rounded-xl bg-negro border border-borde">
-              <div className="text-[10px] font-bold text-gris-texto uppercase">Total en Catálogo</div>
-              <div className="text-2xl font-bold text-white mt-1">46</div>
-              <div className="text-[10px] text-gris-texto">39 Usados + 7 Eléctricos 0km</div>
+            <div className="p-3.5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm">
+              <div className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Total en catálogo</div>
+              <div className="text-2xl font-bold text-[#161616] mt-1">46</div>
+              <div className="text-[10px] text-[#6B6B6B]">39 usados + 7 eléctricos 0km</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-negro border border-borde">
-              <div className="text-[10px] font-bold text-gris-texto uppercase">Nuevos a Importar</div>
-              <div className="text-2xl font-bold text-white mt-1">{newCount}</div>
-              <div className="text-[10px] text-gris-texto">Sin duplicar matrícula/chasis</div>
+            <div className="p-3.5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm">
+              <div className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Nuevos a importar</div>
+              <div className="text-2xl font-bold text-[#1E6B43] mt-1">{newCount}</div>
+              <div className="text-[10px] text-[#6B6B6B]">Sin duplicar matrícula/chasis</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-negro border border-borde">
-              <div className="text-[10px] font-bold text-gris-texto uppercase">Ya Existentes</div>
-              <div className="text-2xl font-bold text-gris-texto mt-1">{existingCount}</div>
-              <div className="text-[10px] text-gris-texto">Omitidos automáticamente</div>
+            <div className="p-3.5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm">
+              <div className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Ya existentes</div>
+              <div className="text-2xl font-bold text-[#6B6B6B] mt-1">{existingCount}</div>
+              <div className="text-[10px] text-[#6B6B6B]">Omitidos automáticamente</div>
             </div>
           </div>
 
           {/* Resultado si ya se importó */}
           {result && (
-            <div className="p-4 rounded-xl bg-negro border border-borde text-white text-xs flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
+            <div className="p-4 rounded-xl bg-[#EEF7F2] border border-[#C6E7D4] text-[#1E6B43] text-xs flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[#1E6B43] shrink-0" />
               <div>
                 <strong>¡Importación completada!</strong> Se añadieron {result.importedCount} vehículos al catálogo activo y se omitieron {result.duplicatesCount} vehículos existentes.
               </div>
@@ -129,39 +129,39 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
 
           {/* Vista Previa de Unidades */}
           <div className="space-y-2">
-            <div className="text-xs font-bold text-white uppercase tracking-wider">
-              Vista Previa de Unidades del Catálogo Oficial
+            <div className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+              Vista previa de unidades del catálogo oficial
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-borde rounded-xl p-2 bg-negro">
+            <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-[#E5E5E3] rounded-xl p-2 bg-white shadow-sm">
               {INITIAL_DEALERSHIP_VEHICLES.slice(0, 10).map((car, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2 rounded-lg bg-panel border border-borde text-xs"
+                  className="flex items-center justify-between p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded bg-negro border border-borde overflow-hidden shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E5E5E3] overflow-hidden shrink-0">
                       {car.images && car.images[0] ? (
                         <img src={car.images[0]} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <Car className="w-4 h-4 m-auto text-gris-texto" />
+                        <Car className="w-4 h-4 m-auto text-[#6B6B6B]" />
                       )}
                     </div>
                     <div>
-                      <span className="font-bold text-white">
+                      <span className="font-semibold text-[#161616]">
                         {car.brand} {car.model} {car.version || ''}
                       </span>
-                      <span className="text-[10px] text-gris-texto ml-2">
+                      <span className="text-[10px] text-[#6B6B6B] ml-2">
                         {car.condition === '0km' ? '0km' : `Año ${car.year}`}
                       </span>
                     </div>
                   </div>
 
-                  <div className="font-bold text-white font-mono">
+                  <div className="font-bold text-[#161616] font-mono">
                     USD {car.sale_price?.toLocaleString()}
                   </div>
                 </div>
               ))}
-              <div className="text-center text-[10px] text-gris-texto pt-1">
+              <div className="text-center text-[10px] text-[#6B6B6B] pt-1">
                 ...y 36 vehículos adicionales con fotos HD y equipamiento.
               </div>
             </div>
@@ -169,7 +169,7 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-borde bg-negro flex items-center justify-between">
+        <div className="p-4 border-t border-[#E5E5E3] bg-white flex items-center justify-between">
           <Button
             variant="secondary"
             onClick={onClose}
@@ -183,7 +183,7 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
             disabled={isImporting || newCount === 0}
           >
             <Download className="w-4 h-4" />
-            <span>{isImporting ? 'Importando...' : `Importar ${newCount} Autos a CARVLAK`}</span>
+            <span>{isImporting ? 'Importando...' : `Importar ${newCount} autos a CARVLAK`}</span>
           </Button>
         </div>
       </div>

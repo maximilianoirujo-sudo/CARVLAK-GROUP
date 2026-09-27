@@ -77,20 +77,20 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-panel border border-borde rounded-xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-panel border border-borde text-white flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-rojo" />
+            <div className="w-10 h-10 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-[#D7141A]" />
             </div>
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                Tarifario Paramétrico DetailVlak
+              <h3 className="text-base font-bold text-[#161616] flex items-center gap-2">
+                Tarifario paramétrico DetailVlak
               </h3>
-              <p className="text-xs text-gris-texto">
+              <p className="text-xs text-[#6B6B6B]">
                 Precios oficiales en $UYU adaptados automáticamente según categoría de vehículo.
               </p>
             </div>
@@ -103,11 +103,11 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
               onClick={() => setIsAddingNew(!isAddingNew)}
             >
               <Plus className="w-4 h-4" />
-              <span>{isAddingNew ? 'Cancelar' : 'Nuevo Servicio'}</span>
+              <span>{isAddingNew ? 'Cancelar' : 'Nuevo servicio'}</span>
             </Button>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-panel hover:bg-negro text-gris-texto hover:text-white flex items-center justify-center transition-colors border border-borde"
+              className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -116,55 +116,55 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
 
         {/* Formulario de Alta si se activa */}
         {isAddingNew && (
-          <form onSubmit={handleCreateNewService} className="p-4 sm:p-5 bg-panel border-b border-borde space-y-4 animate-fade-in">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+          <form onSubmit={handleCreateNewService} className="p-4 sm:p-5 bg-[#F5F5F4] border-b border-[#E5E5E3] space-y-4 animate-fade-in">
+            <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
               Agregar nuevo servicio al catálogo
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto">Nombre Completo</label>
+                <label className="text-[11px] font-semibold text-[#6B6B6B]">Nombre completo</label>
                 <input
                   type="text"
                   value={newServiceName}
                   onChange={(e) => setNewServiceName(e.target.value)}
                   placeholder="Ej: Sellado de Parabrisas Hidrofóbico"
-                  className="w-full mt-1 bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                  className="w-full mt-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                   required
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto">Nombre Corto (WhatsApp)</label>
+                <label className="text-[11px] font-semibold text-[#6B6B6B]">Nombre corto (WhatsApp)</label>
                 <input
                   type="text"
                   value={newServiceShort}
                   onChange={(e) => setNewServiceShort(e.target.value)}
                   placeholder="Ej: Sellado Vidrios"
-                  className="w-full mt-1 bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white placeholder-gris-texto focus:border-rojo focus:outline-none"
+                  className="w-full mt-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto">Tiempo Estimado (Horas)</label>
+                <label className="text-[11px] font-semibold text-[#6B6B6B]">Tiempo estimado (horas)</label>
                 <input
                   type="number"
                   step="0.5"
                   value={newServiceHours}
                   onChange={(e) => setNewServiceHours(Number(e.target.value))}
-                  className="w-full mt-1 bg-negro border border-borde rounded-xl px-3 py-2 text-xs text-white focus:border-rojo focus:outline-none"
+                  className="w-full mt-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {(['chico', 'mediano', 'suv', 'pickup', 'moto'] as const).map((cat) => (
-                <div key={cat} className="p-2.5 rounded-xl bg-negro border border-borde">
-                  <span className="text-[10px] uppercase font-bold text-gris-texto block">{cat}</span>
+                <div key={cat} className="p-2.5 rounded-xl bg-white border border-[#E5E5E3]">
+                  <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block">{cat}</span>
                   <div className="relative mt-1">
-                    <span className="absolute left-2 top-2 text-[10px] text-gris-texto font-bold">$U</span>
+                    <span className="absolute left-2 top-2 text-[10px] text-[#6B6B6B] font-bold">$U</span>
                     <input
                       type="number"
                       value={newPrices[cat]}
                       onChange={(e) => setNewPrices({ ...newPrices, [cat]: Number(e.target.value) })}
-                      className="w-full bg-panel border border-borde rounded-lg pl-7 pr-2 py-1.5 text-xs text-white font-mono focus:border-rojo focus:outline-none"
+                      className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg pl-7 pr-2 py-1.5 text-xs text-[#161616] font-mono focus:border-[#D7141A] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -176,31 +176,31 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
               size="sm"
               type="submit"
             >
-              Guardar Servicio
+              Guardar servicio
             </Button>
           </form>
         )}
 
         {/* Lista de servicios */}
-        <div className="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3">
+        <div className="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3 bg-[#F5F5F4]">
           {detailingTariffs.map((t) => {
             const isEditing = editingId === t.id;
 
             return (
               <div
                 key={t.id}
-                className="p-4 rounded-xl bg-panel border border-borde hover:border-rojo/40 transition-all space-y-3"
+                className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] transition-all space-y-3 shadow-sm"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-[#161616] flex items-center gap-2">
                       <span>{t.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-negro text-gris-texto border border-borde flex items-center gap-1 font-bold">
-                        <Clock className="w-3 h-3 text-white" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3] flex items-center gap-1 font-medium">
+                        <Clock className="w-3 h-3 text-[#161616]" />
                         {t.durationHours} hs
                       </span>
                     </h4>
-                    <p className="text-[11px] text-gris-texto mt-0.5">{t.description}</p>
+                    <p className="text-[11px] text-[#6B6B6B] mt-0.5">{t.description}</p>
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
@@ -219,34 +219,34 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
                         size="sm"
                         onClick={() => startEditing(t)}
                       >
-                        Editar Precios
+                        Editar precios
                       </Button>
                     )}
                   </div>
                 </div>
 
                 {/* Precios por tamaño */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t border-borde">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-[#E5E5E3]">
                   {(['chico', 'mediano', 'suv', 'pickup', 'moto'] as const).map((cat) => {
                     const price = isEditing ? editedPrices[cat] : t.prices[cat];
 
                     return (
-                      <div key={cat} className="p-2 rounded-lg bg-negro border border-borde flex flex-col justify-between">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-gris-texto">
+                      <div key={cat} className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col justify-between">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#6B6B6B]">
                           {cat === 'suv' ? 'SUV/Rural' : cat}
                         </span>
                         {isEditing ? (
                           <div className="relative mt-1">
-                            <span className="absolute left-1.5 top-1 text-[10px] text-gris-texto font-bold">$U</span>
+                            <span className="absolute left-1.5 top-1 text-[10px] text-[#6B6B6B] font-bold">$U</span>
                             <input
                               type="number"
                               value={price}
                               onChange={(e) => setEditedPrices({ ...editedPrices, [cat]: Number(e.target.value) })}
-                              className="w-full bg-panel border border-rojo rounded pl-6 pr-1 py-0.5 text-xs text-white font-mono focus:outline-none"
+                              className="w-full bg-white border border-[#D7141A] rounded pl-6 pr-1 py-0.5 text-xs text-[#161616] font-mono focus:outline-none"
                             />
                           </div>
                         ) : (
-                          <span className="text-xs font-mono font-bold text-white mt-1">
+                          <span className="text-xs font-mono font-bold text-[#161616] mt-1">
                             {formatCurrency(price, 'UYU')}
                           </span>
                         )}

@@ -224,31 +224,31 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-2xl h-full bg-panel border-l border-borde flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-2xl h-full bg-white border-l border-[#E5E5E3] flex flex-col shadow-2xl overflow-hidden">
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
             <div className="flex flex-col gap-1">
-              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white text-black border border-white text-center">
+              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] text-center">
                 {vehicle.plate || (vehicle.chassis_vin ? `VIN: ${vehicle.chassis_vin.slice(-8)}` : '0KM')}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase text-center bg-panel text-white border border-borde">
+              <span className="px-2 py-0.5 rounded text-[10px] font-title font-bold uppercase text-center bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                 {vehicle.condition === '0km' ? '0km' : 'Usado'}
               </span>
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-title font-bold text-white leading-tight">
+              <h2 className="text-base sm:text-lg font-title font-bold text-[#161616] leading-tight">
                 {vehicle.brand} {vehicle.model} {vehicle.version || ''}
               </h2>
-              <div className="text-[11px] text-gris-texto flex items-center gap-2 flex-wrap">
+              <div className="text-[11px] text-[#6B6B6B] flex items-center gap-2 flex-wrap">
                 <span>Año {vehicle.year}</span>
                 <span>•</span>
                 <span>{vehicle.mileage.toLocaleString()} km</span>
                 {vehicle.autonomy_km ? (
                   <>
                     <span>•</span>
-                    <span className="text-white font-bold">🔋 {vehicle.autonomy_km} km</span>
+                    <span className="text-[#161616] font-bold">🔋 {vehicle.autonomy_km} km</span>
                   </>
                 ) : null}
                 <span>•</span>
@@ -261,7 +261,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             {canEdit && (
               <button
                 onClick={() => onEdit(vehicle)}
-                className="p-2 rounded-lg text-gris-texto hover:text-white hover:bg-negro transition-colors"
+                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
                 title="Editar Ficha"
               >
                 <Edit className="w-4 h-4" />
@@ -270,7 +270,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             {canEdit && (
               <button
                 onClick={handleDuplicate}
-                className="p-2 rounded-lg text-gris-texto hover:text-white hover:bg-negro transition-colors"
+                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
                 title="Duplicar Vehículo"
               >
                 <Copy className="w-4 h-4" />
@@ -287,7 +287,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             </Button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-gris-texto hover:text-white transition-colors"
+              className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -295,27 +295,27 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
         </div>
 
         {/* Subtabs del Drawer con Línea Roja */}
-        <div className="flex items-center gap-4 px-6 border-b border-borde bg-negro pt-2 text-xs shrink-0">
+        <div className="flex items-center gap-6 px-6 border-b border-[#E5E5E3] bg-white pt-2 text-xs shrink-0">
           <button
             onClick={() => setActiveTab('detalle')}
-            className={`pb-2.5 font-bold uppercase tracking-wider transition-all border-b-2 ${
+            className={`pb-2.5 font-bold transition-all border-b-2 ${
               activeTab === 'detalle'
-                ? 'border-rojo text-white'
-                : 'border-transparent text-gris-texto hover:text-white'
+                ? 'border-[#D7141A] text-[#161616]'
+                : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
-            Ficha &amp; Alistamiento
+            Ficha y alistamiento
           </button>
           <button
             onClick={() => setActiveTab('historial')}
-            className={`pb-2.5 font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 ${
+            className={`pb-2.5 font-bold transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'historial'
-                ? 'border-rojo text-white'
-                : 'border-transparent text-gris-texto hover:text-white'
+                ? 'border-[#D7141A] text-[#161616]'
+                : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
             <History className="w-3.5 h-3.5" />
-            <span>Historial de Cambios ({vehicle.history?.length || 0})</span>
+            <span>Historial de cambios ({vehicle.history?.length || 0})</span>
           </button>
         </div>
 
@@ -325,12 +325,12 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             <>
               {/* Banner de Datos Incompletos */}
               {vehicle.incomplete_data && (
-                <div className="p-4 rounded-xl bg-rojo/10 border border-rojo flex items-center justify-between gap-3 text-white">
+                <div className="p-4 rounded-xl bg-[#FEF7EC] border border-[#F59E0B] flex items-center justify-between gap-3 text-[#161616]">
                   <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-rojo shrink-0" />
+                    <AlertTriangle className="w-5 h-5 text-[#945B0E] shrink-0" />
                     <div>
-                      <div className="text-xs font-bold text-rojo">Ficha con datos internos pendientes</div>
-                      <div className="text-[11px] text-gris-texto">
+                      <div className="text-xs font-bold text-[#945B0E]">Ficha con datos internos pendientes</div>
+                      <div className="text-[11px] text-[#6B6B6B]">
                         Completá precio de compra, proveedor y documentación para cerrar la rentabilidad de esta unidad.
                       </div>
                     </div>
@@ -340,14 +340,14 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     size="sm"
                     onClick={() => onEdit(vehicle)}
                   >
-                    Completar Ficha
+                    Completar ficha
                   </Button>
                 </div>
               )}
 
               {/* Portada & Galería */}
               <div className="space-y-3">
-                <div className="relative rounded-xl overflow-hidden bg-negro border border-borde aspect-video shadow-sm">
+                <div className="relative rounded-xl overflow-hidden bg-[#F5F5F4] border border-[#E5E5E3] aspect-video shadow-sm">
                   {currentImage ? (
                     <img
                       src={currentImage}
@@ -355,7 +355,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gris-texto gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#9A9A9A] gap-2">
                       <Car className="w-16 h-16" />
                       <span className="text-xs font-bold">Sin fotos cargadas</span>
                     </div>
@@ -363,20 +363,20 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
                   {/* Badges Flotantes */}
                   <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-black/85 backdrop-blur-sm text-white border border-borde">
-                      {vehicle.status.toUpperCase()}
+                    <span className="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3]">
+                      {vehicle.status}
                     </span>
                   </div>
 
                   <div className="absolute top-3 right-3">
-                    <span className="px-2.5 py-1 rounded text-xs font-medium bg-black/85 backdrop-blur-sm text-white border border-borde flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-white" />
+                    <span className="px-2.5 py-1 rounded text-xs font-medium bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3] flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-[#161616]" />
                       <span>{daysInStock} días en stock</span>
                     </span>
                   </div>
 
                   <div className="absolute bottom-3 right-3">
-                    <span className="text-lg font-title font-bold px-3.5 py-1.5 rounded-lg bg-black/90 backdrop-blur-sm text-white border border-borde shadow-lg font-mono">
+                    <span className="text-lg font-title font-bold px-3.5 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3] shadow-md font-mono">
                       USD {vehicle.sale_price.toLocaleString()}
                     </span>
                   </div>
@@ -391,8 +391,8 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         onClick={() => setSelectedImageIndex(idx)}
                         className={`relative w-16 h-12 rounded-lg overflow-hidden shrink-0 border transition-all ${
                           selectedImageIndex === idx
-                            ? 'border-white ring-2 ring-white/30'
-                            : 'border-borde opacity-60 hover:opacity-100'
+                            ? 'border-[#D7141A] ring-2 ring-[#D7141A]/30'
+                            : 'border-[#E5E5E3] opacity-60 hover:opacity-100'
                         }`}
                       >
                         <img src={img} alt="" className="w-full h-full object-cover" />
@@ -403,9 +403,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               </div>
 
               {/* Stepper de Estados */}
-              <div className="p-4 rounded-xl bg-negro border border-borde space-y-3">
-                <div className="text-[11px] font-bold text-gris-texto uppercase tracking-wider">
-                  Flujo de Vida del Vehículo
+              <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3">
+                <div className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                  Flujo de vida del vehículo
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center">
@@ -424,8 +424,8 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         onClick={() => handleRequestStatusChange(st.id as DealershipVehicleStatus)}
                         className={`p-2 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1 transition-all ${
                           isCurrent
-                            ? 'bg-white text-black shadow-sm ring-1 ring-white'
-                            : 'bg-panel text-gris-texto hover:text-white border border-borde'
+                            ? 'bg-[#161616] text-white shadow-sm ring-1 ring-[#161616]'
+                            : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3]'
                         }`}
                       >
                         <span>{st.icon}</span>
@@ -438,14 +438,14 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
               {/* Checklist de Preparación (Usados) o Entrega (0km) */}
               {vehicle.condition === '0km' ? (
-                <div className="p-4 rounded-xl bg-negro border border-borde space-y-4">
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-rojo" />
+                      <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-[#D7141A]" />
                         <span>Checklist de Entrega 0km ({deliveryScore}/{deliveryChecklist.items.length})</span>
                       </h3>
-                      <p className="text-[11px] text-gris-texto">
+                      <p className="text-[11px] text-[#6B6B6B]">
                         Alistamiento y verificación de unidad 0km previa a la entrega al cliente final
                       </p>
                     </div>
@@ -456,15 +456,15 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         size="sm"
                         onClick={handlePublishVehicle}
                       >
-                        ¡Publicar Ahora!
+                        Publicar ahora
                       </Button>
                     )}
                   </div>
 
                   {/* Barra de Progreso */}
-                  <div className="w-full h-1.5 bg-panel rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-[#E5E5E3] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-rojo transition-all duration-500"
+                      className="h-full bg-[#D7141A] transition-all duration-500"
                       style={{ width: `${(deliveryScore / deliveryChecklist.items.length) * 100}%` }}
                     />
                   </div>
@@ -475,33 +475,33 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         key={item.id}
                         className={`flex items-start gap-3 p-2.5 rounded-lg border transition-colors cursor-pointer ${
                           item.done
-                            ? 'bg-panel border-white text-white'
-                            : 'bg-panel/40 border-borde text-gris-texto hover:border-white/50'
+                            ? 'bg-[#EEF7F2] border-[#22C55E]/30 text-[#161616]'
+                            : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:border-[#D0D0CD]'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={item.done}
                           onChange={() => handleToggleDeliveryItem(item.id)}
-                          className="mt-0.5 rounded border-borde text-rojo focus:ring-0"
+                          className="mt-0.5 rounded border-[#E5E5E3] text-[#D7141A] focus:ring-0 accent-[#D7141A]"
                         />
                         <div className="flex-1">
                           <div className="font-bold text-xs">{item.label}</div>
                         </div>
-                        {item.done && <CheckCircle2 className="w-4 h-4 text-white shrink-0" />}
+                        {item.done && <CheckCircle2 className="w-4 h-4 text-[#1E6B43] shrink-0" />}
                       </label>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-negro border border-borde space-y-4">
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-rojo" />
-                        <span>Checklist de Alistamiento ({prepScore}/5)</span>
+                      <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-[#D7141A]" />
+                        <span>Checklist de alistamiento ({prepScore}/5)</span>
                       </h3>
-                      <p className="text-[11px] text-gris-texto">
+                      <p className="text-[11px] text-[#6B6B6B]">
                         Completá los 5 pasos para habilitar la publicación automática en el catálogo
                       </p>
                     </div>
@@ -512,15 +512,15 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         size="sm"
                         onClick={handlePublishVehicle}
                       >
-                        ¡Publicar Ahora!
+                        Publicar ahora
                       </Button>
                     )}
                   </div>
 
                   {/* Barra de Progreso */}
-                  <div className="w-full h-1.5 bg-panel rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-[#E5E5E3] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-rojo transition-all duration-500"
+                      className="h-full bg-[#D7141A] transition-all duration-500"
                       style={{ width: `${(prepScore / 5) * 100}%` }}
                     />
                   </div>
@@ -559,17 +559,17 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     ].map((item) => (
                       <label
                         key={item.key}
-                        className="flex items-start gap-3 p-2.5 rounded-lg bg-panel border border-borde cursor-pointer hover:border-white transition-colors"
+                        className="flex items-start gap-3 p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] cursor-pointer hover:border-[#D0D0CD] transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={Boolean(prep[item.key as keyof DealershipPrepChecklist])}
                           onChange={() => handleToggleChecklist(item.key as keyof DealershipPrepChecklist)}
-                          className="mt-0.5 rounded border-borde text-rojo focus:ring-0"
+                          className="mt-0.5 rounded border-[#E5E5E3] text-[#D7141A] focus:ring-0 accent-[#D7141A]"
                         />
                         <div className="flex-1">
-                          <div className="font-bold text-white text-xs">{item.label}</div>
-                          <div className="text-[11px] text-gris-texto">{item.desc}</div>
+                          <div className="font-bold text-[#161616] text-xs">{item.label}</div>
+                          <div className="text-[11px] text-[#6B6B6B]">{item.desc}</div>
                         </div>
                       </label>
                     ))}
@@ -580,14 +580,14 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               {/* Conexión con Módulos: Peritaje & Detailing */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Tarjeta Peritaje */}
-                <div className="p-4 rounded-xl bg-negro border border-borde space-y-2">
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1">
-                      <ClipboardCheck className="w-3.5 h-3.5 text-rojo" />
-                      <span>Peritaje Técnico</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#161616] flex items-center gap-1">
+                      <ClipboardCheck className="w-3.5 h-3.5 text-[#D7141A]" />
+                      <span>Peritaje técnico</span>
                     </span>
                     {linkedInspection && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-panel border border-borde text-white">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
                         {linkedInspection.traffic_light}
                       </span>
                     )}
@@ -595,19 +595,19 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
                   {linkedInspection ? (
                     <div>
-                      <div className="text-xs font-bold text-white">
+                      <div className="text-xs font-bold text-[#161616]">
                         Puntaje: {linkedInspection.score}/100
                       </div>
-                      <p className="text-[11px] text-gris-texto mt-1 line-clamp-2">
+                      <p className="text-[11px] text-[#6B6B6B] mt-1 line-clamp-2">
                         {linkedInspection.inspector_conclusion}
                       </p>
-                      <div className="mt-2 text-[10px] text-gris-texto">
+                      <div className="mt-2 text-[10px] text-[#6B6B6B]">
                         Inspector: {linkedInspection.assignee?.full_name || 'Diego Benítez'}
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-xs text-gris-texto">
+                      <p className="text-xs text-[#6B6B6B]">
                         No tiene peritaje registrado. Podés solicitar la revisión interna con costo cargado al vehículo.
                       </p>
                       <Button
@@ -619,21 +619,21 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                           showToast('Peritaje técnico interno solicitado en Fase 3', 'success');
                         }}
                       >
-                        + Solicitar Peritaje Interno ($U 1.500)
+                        + Solicitar peritaje interno ($U 1.500)
                       </Button>
                     </div>
                   )}
                 </div>
 
                 {/* Tarjeta Detailing */}
-                <div className="p-4 rounded-xl bg-negro border border-borde space-y-2">
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-rojo" />
-                      <span>Detailing Alistamiento</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#161616] flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
+                      <span>Detailing alistamiento</span>
                     </span>
                     {linkedDetailing && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-panel border border-borde text-white">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
                         {linkedDetailing.status}
                       </span>
                     )}
@@ -641,16 +641,16 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
                   {linkedDetailing ? (
                     <div>
-                      <div className="text-xs font-bold text-white">
+                      <div className="text-xs font-bold text-[#161616]">
                         {linkedDetailing.selected_services.map((s) => s.serviceName).join(', ')}
                       </div>
-                      <div className="text-[11px] text-gris-texto mt-1">
+                      <div className="text-[11px] text-[#6B6B6B] mt-1">
                         Costo interno taller: $U {linkedDetailing.total_amount.toLocaleString()}
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-xs text-gris-texto">
+                      <p className="text-xs text-[#6B6B6B]">
                         Alistamiento estético en taller Shangrilá para dejar el auto impecable para la venta.
                       </p>
                       <Button
@@ -662,7 +662,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                           showToast('Orden interna de detailing enviada a DetailVlak', 'success');
                         }}
                       >
-                        + Crear Detailing Interno ($U 2.500)
+                        + Crear detailing interno ($U 2.500)
                       </Button>
                     </div>
                   )}
@@ -671,92 +671,92 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
               {/* DESGLOSE FINANCIERO Y CONTROL DE MARGEN (SOLO ADMIN) */}
               {isAdmin ? (
-                <div className="p-4 sm:p-5 rounded-xl bg-negro border border-borde space-y-4">
-                  <div className="flex items-center justify-between border-b border-borde pb-3">
+                <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#E5E5E3] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-rojo" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        Desglose Financiero &amp; Margen Real
+                      <DollarSign className="w-4 h-4 text-[#D7141A]" />
+                      <span className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                        Desglose financiero y margen real
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-panel text-gris-texto border border-borde">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                       ADMIN ONLY
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div className="p-2.5 rounded-lg bg-panel border border-borde">
-                      <div className="text-[10px] text-gris-texto uppercase font-bold">Precio Compra</div>
-                      <div className="text-sm font-bold text-white mt-0.5 font-mono">
+                    <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Precio compra</div>
+                      <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
                         USD {vehicle.purchase_price.toLocaleString()}
                       </div>
-                      <div className="text-[9px] text-gris-texto">T/C: {vehicle.exchange_rate || 43.5}</div>
+                      <div className="text-[9px] text-[#6B6B6B]">T/C: {vehicle.exchange_rate || 43.5}</div>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-panel border border-borde">
-                      <div className="text-[10px] text-gris-texto uppercase font-bold">Peritaje Interno</div>
-                      <div className="text-sm font-bold text-white mt-0.5 font-mono">
+                    <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Peritaje interno</div>
+                      <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
                         $U {(vehicle.inspection_cost || 1500).toLocaleString()}
                       </div>
-                      <div className="text-[9px] text-gris-texto">
+                      <div className="text-[9px] text-[#6B6B6B]">
                         ~USD {Math.round((vehicle.inspection_cost || 1500) / (vehicle.exchange_rate || 43.5))}
                       </div>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-panel border border-borde">
-                      <div className="text-[10px] text-gris-texto uppercase font-bold">Detailing Interno</div>
-                      <div className="text-sm font-bold text-white mt-0.5 font-mono">
+                    <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Detailing interno</div>
+                      <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
                         $U {(vehicle.detailing_cost || 2500).toLocaleString()}
                       </div>
-                      <div className="text-[9px] text-gris-texto">
+                      <div className="text-[9px] text-[#6B6B6B]">
                         ~USD {Math.round((vehicle.detailing_cost || 2500) / (vehicle.exchange_rate || 43.5))}
                       </div>
                     </div>
 
-                    <div className="p-2.5 rounded-lg bg-panel border border-borde">
-                      <div className="text-[10px] text-gris-texto uppercase font-bold">Piso Negociación</div>
-                      <div className="text-sm font-bold text-white mt-0.5 font-mono">
+                    <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Piso negociación</div>
+                      <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
                         USD {(vehicle.min_acceptable_price || Math.round(vehicle.sale_price * 0.95)).toLocaleString()}
                       </div>
-                      <div className="text-[9px] text-gris-texto">Mínimo aceptable</div>
+                      <div className="text-[9px] text-[#6B6B6B]">Mínimo aceptable</div>
                     </div>
                   </div>
 
                   {/* Modificación de Gastos de Taller y Trámites */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-gris-texto mb-1">
-                        Reparaciones Taller (USD)
+                      <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
+                        Reparaciones taller (USD)
                       </label>
                       <input
                         type="number"
                         value={repairsCost}
                         onChange={(e) => setRepairsCost(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 bg-panel border border-borde rounded-lg text-xs text-white focus:border-rojo outline-none font-mono"
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616] focus:border-[#D7141A] outline-none font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gris-texto mb-1">
+                      <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
                         Trámites / Notaría (USD)
                       </label>
                       <input
                         type="number"
                         value={paperworkCost}
                         onChange={(e) => setPaperworkCost(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 bg-panel border border-borde rounded-lg text-xs text-white focus:border-rojo outline-none font-mono"
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616] focus:border-[#D7141A] outline-none font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gris-texto mb-1">
-                        Otros Gastos (USD)
+                      <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
+                        Otros gastos (USD)
                       </label>
                       <input
                         type="number"
                         value={otherExpensesCost}
                         onChange={(e) => setOtherExpensesCost(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 bg-panel border border-borde rounded-lg text-xs text-white focus:border-rojo outline-none font-mono"
+                        className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616] focus:border-[#D7141A] outline-none font-mono"
                       />
                     </div>
                   </div>
@@ -767,32 +767,32 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                       size="sm"
                       onClick={handleSaveCosts}
                     >
-                      Recalcular Costo Total
+                      Recalcular costo total
                     </Button>
                   </div>
 
                   {/* Cuenta por Pagar al Proveedor / Importador */}
                   {vehicle.supplier_payable && (
-                    <div className="p-3.5 rounded-lg bg-panel border border-borde flex items-center justify-between text-xs">
+                    <div className="p-3.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between text-xs">
                       <div>
-                        <div className="text-[10px] text-gris-texto font-bold uppercase tracking-wider">
-                          Cuenta por Pagar al Proveedor
+                        <div className="text-[10px] text-[#6B6B6B] font-bold uppercase tracking-wider">
+                          Cuenta por pagar al proveedor
                         </div>
-                        <div className="font-bold text-white text-sm mt-0.5">
+                        <div className="font-bold text-[#161616] text-sm mt-0.5">
                           {vehicle.supplier_payable.supplier_name}
                         </div>
-                        <div className="text-[11px] text-gris-texto">
+                        <div className="text-[11px] text-[#6B6B6B]">
                           Vence: {vehicle.supplier_payable.due_date}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-white font-mono">
+                        <div className="text-sm font-bold text-[#161616] font-mono">
                           USD {vehicle.supplier_payable.amount.toLocaleString()}
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                           vehicle.supplier_payable.is_paid
-                            ? 'bg-negro text-white border border-borde'
-                            : 'bg-rojo/10 text-rojo border border-rojo/30'
+                            ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#22C55E]/30'
+                            : 'bg-[#FDF2F2] text-[#B80E14] border border-[#D7141A]/30'
                         }`}>
                           {vehicle.supplier_payable.is_paid ? 'PAGADO' : 'PENDIENTE'}
                         </span>
@@ -801,19 +801,19 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   )}
 
                   {/* Totales y Margen Final */}
-                  <div className="p-3.5 rounded-lg bg-panel border border-borde flex items-center justify-between">
+                  <div className="p-3.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
                     <div>
-                      <div className="text-[10px] font-bold text-gris-texto uppercase">Costo Real Invertido</div>
-                      <div className="text-base font-bold text-white font-mono">
+                      <div className="text-[10px] font-bold text-[#6B6B6B] uppercase">Costo real invertido</div>
+                      <div className="text-base font-bold text-[#161616] font-mono">
                         USD {Math.round(vehicle.total_real_cost_usd || 0).toLocaleString()}
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-[10px] font-bold text-gris-texto uppercase">Margen Bruto Estimado</div>
+                      <div className="text-[10px] font-bold text-[#6B6B6B] uppercase">Margen bruto estimado</div>
                       <div
                         className={`text-base font-bold font-mono ${
-                          (vehicle.estimated_margin_usd || 0) >= 0 ? 'text-white' : 'text-rojo'
+                          (vehicle.estimated_margin_usd || 0) >= 0 ? 'text-[#1E6B43]' : 'text-[#B80E14]'
                         }`}
                       >
                         +USD {Math.round(vehicle.estimated_margin_usd || 0).toLocaleString()} (
@@ -823,24 +823,24 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 rounded-xl bg-negro border border-borde text-center text-xs text-gris-texto">
+                <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-center text-xs text-[#6B6B6B]">
                   🔒 Los costos internos y márgenes están restringidos al rol Administrador.
                 </div>
               )}
 
               {/* Posventa: Si el auto está vendido o reservado */}
               {vehicle.status === 'vendido' && (
-                <div className="p-4 rounded-xl bg-negro border border-borde space-y-3">
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-rojo" />
-                      <span>Beneficio Posventa CARVLAK</span>
+                    <span className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-[#D7141A]" />
+                      <span>Beneficio posventa CARVLAK</span>
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-panel border border-borde text-white">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FDF2F2] border border-[#D7141A]/30 text-[#B80E14]">
                       20% OFF
                     </span>
                   </div>
-                  <p className="text-xs text-gris-texto">
+                  <p className="text-xs text-[#6B6B6B]">
                     Fidelizá al cliente generando una cotización de sellado cerámico o tratamiento de interior con 20% OFF en DetailVlak Shangrilá.
                   </p>
                   <Button
@@ -848,7 +848,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     className="w-full flex items-center justify-center gap-2"
                     onClick={handleCreatePosventaCoupon}
                   >
-                    <span>Generar Cotización Posventa (20% OFF)</span>
+                    <span>Generar cotización posventa (20% OFF)</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -857,14 +857,14 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               {/* Equipamiento Detallado */}
               {vehicle.features && vehicle.features.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider">
-                    Equipamiento &amp; Accesorios
+                  <div className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                    Equipamiento y accesorios
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {vehicle.features.map((feat, idx) => (
                       <span
                         key={idx}
-                        className="px-2.5 py-1 rounded-lg bg-negro border border-borde text-white text-xs font-medium"
+                        className="px-2.5 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-medium"
                       >
                         ✓ {feat}
                       </span>
@@ -874,18 +874,18 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               )}
 
               {/* Sincronización Tiendanube */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-negro border border-borde text-xs">
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-white border border-[#E5E5E3] text-xs">
                 <div className="flex items-center gap-2.5">
-                  <Globe className="w-4 h-4 text-gris-texto" />
+                  <Globe className="w-4 h-4 text-[#6B6B6B]" />
                   <div>
-                    <span className="font-bold text-white block">Catálogo Web &amp; Tiendanube</span>
-                    <span className="text-[11px] text-gris-texto">
+                    <span className="font-bold text-[#161616] block">Catálogo web y Tiendanube</span>
+                    <span className="text-[11px] text-[#6B6B6B]">
                       {vehicle.status === 'publicado' ? 'Visible en catálogo público' : 'No publicado (oculto)'}
                     </span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="inline-block px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-panel text-white border border-borde">
+                  <span className="inline-block px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
                     {vehicle.tiendanube_synced_at
                       ? `Sincronizado ${new Date(vehicle.tiendanube_synced_at).toLocaleDateString('es-UY')}`
                       : 'Listo para sincronizar'}
@@ -895,9 +895,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
               {/* Campos Personalizados */}
               {vehicle.custom_fields && Object.keys(vehicle.custom_fields).length > 0 && (
-                <div className="p-4 rounded-xl bg-negro border border-borde space-y-2">
-                  <div className="text-xs font-bold text-white uppercase tracking-wider">
-                    Campos Personalizados
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2">
+                  <div className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                    Campos personalizados
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     {Object.entries(vehicle.custom_fields).map(([key, val]) => {
@@ -905,9 +905,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                       const label = def?.name || key;
                       const displayVal = typeof val === 'boolean' ? (val ? 'Sí' : 'No') : String(val);
                       return (
-                        <div key={key} className="p-2.5 rounded-lg bg-panel border border-borde">
-                          <span className="text-[10px] text-gris-texto block font-medium">{label}</span>
-                          <span className="font-bold text-white text-xs mt-0.5 block">{displayVal}</span>
+                        <div key={key} className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                          <span className="text-[10px] text-[#6B6B6B] block font-medium">{label}</span>
+                          <span className="font-bold text-[#161616] text-xs mt-0.5 block">{displayVal}</span>
                         </div>
                       );
                     })}
@@ -918,18 +918,18 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
           ) : (
             /* Historial de Cambios */
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-negro border border-borde">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <History className="w-4 h-4 text-rojo" />
-                  <span>Auditoría de Modificaciones ({vehicle.history?.length || 0})</span>
+              <div className="p-4 rounded-xl bg-white border border-[#E5E5E3]">
+                <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-2">
+                  <History className="w-4 h-4 text-[#D7141A]" />
+                  <span>Auditoría de modificaciones ({vehicle.history?.length || 0})</span>
                 </h3>
-                <p className="text-[11px] text-gris-texto mt-1">
+                <p className="text-[11px] text-[#6B6B6B] mt-1">
                   Registro detallado de cambios realizados sobre esta unidad: campo modificado, valor previo, nuevo valor, usuario y hora.
                 </p>
               </div>
 
               {(!vehicle.history || vehicle.history.length === 0) ? (
-                <div className="p-8 text-center border-2 border-dashed border-borde rounded-xl text-gris-texto text-xs">
+                <div className="p-8 text-center border-2 border-dashed border-[#E5E5E3] rounded-xl text-[#6B6B6B] text-xs">
                   Aún no hay cambios registrados en el historial de este vehículo. Cada edición de precio, estado o ficha técnica quedará registrada aquí automáticamente.
                 </div>
               ) : (
@@ -937,14 +937,14 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   {vehicle.history.map((entry) => (
                     <div
                       key={entry.id}
-                      className="p-3.5 rounded-xl bg-negro border border-borde space-y-2 text-xs"
+                      className="p-3.5 rounded-xl bg-white border border-[#E5E5E3] space-y-2 text-xs"
                     >
-                      <div className="flex items-center justify-between text-gris-texto">
-                        <span className="font-bold text-white flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-rojo" />
+                      <div className="flex items-center justify-between text-[#6B6B6B]">
+                        <span className="font-bold text-[#161616] flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#D7141A]" />
                           {entry.field_label || entry.field}
                         </span>
-                        <span className="text-[10px] font-mono text-gris-texto">
+                        <span className="text-[10px] font-mono text-[#6B6B6B]">
                           {new Date(entry.timestamp).toLocaleString('es-UY', {
                             dateStyle: 'short',
                             timeStyle: 'short'
@@ -952,23 +952,23 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 p-2 bg-panel rounded-lg border border-borde text-[11px]">
+                      <div className="grid grid-cols-2 gap-2 p-2 bg-[#F5F5F4] rounded-lg border border-[#E5E5E3] text-[11px]">
                         <div>
-                          <span className="text-[9px] text-gris-texto block uppercase font-bold">Valor anterior</span>
-                          <span className="text-rojo font-mono line-through truncate block">
+                          <span className="text-[9px] text-[#6B6B6B] block uppercase font-bold">Valor anterior</span>
+                          <span className="text-[#B80E14] font-mono line-through truncate block">
                             {typeof entry.old_value === 'object' ? JSON.stringify(entry.old_value) : String(entry.old_value)}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[9px] text-gris-texto block uppercase font-bold">Nuevo valor</span>
-                          <span className="text-white font-mono font-bold truncate block">
+                          <span className="text-[9px] text-[#6B6B6B] block uppercase font-bold">Nuevo valor</span>
+                          <span className="text-[#161616] font-mono font-bold truncate block">
                             {typeof entry.new_value === 'object' ? JSON.stringify(entry.new_value) : String(entry.new_value)}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-[10px] text-gris-texto flex items-center justify-between">
-                        <span>Modificado por: <strong className="text-white">{entry.user_name}</strong></span>
+                      <div className="text-[10px] text-[#6B6B6B] flex items-center justify-between">
+                        <span>Modificado por: <strong className="text-[#161616]">{entry.user_name}</strong></span>
                       </div>
                     </div>
                   ))}
@@ -979,7 +979,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
         </div>
 
         {/* Footer con Acciones */}
-        <div className="p-4 border-t border-borde bg-negro flex items-center justify-between gap-3">
+        <div className="p-4 border-t border-[#E5E5E3] bg-white flex items-center justify-between gap-3">
           <Button
             variant="secondary"
             onClick={onClose}
@@ -993,7 +993,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               onClick={() => onOpenSaleModal(vehicle)}
             >
               <DollarSign className="w-4 h-4" />
-              <span>{vehicle.status === 'reservado' ? 'Liquidar Venta' : 'Vender / Seña'}</span>
+              <span>{vehicle.status === 'reservado' ? 'Liquidar venta' : 'Vender / seña'}</span>
             </Button>
           )}
         </div>

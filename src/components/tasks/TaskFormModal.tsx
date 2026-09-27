@@ -81,56 +81,56 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={taskToEdit ? 'Editar Tarea' : 'Nueva Tarea Operativa'}
+      title={taskToEdit ? 'Editar tarea' : 'Nueva tarea operativa'}
       subtitle="Asignación y seguimiento interno del equipo"
       maxWidth="max-w-md"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         
         <div>
-          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Título de la Tarea *</label>
+          <label className="block text-xs font-medium text-[#161616] mb-1">Título de la tarea *</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ej: Calibrar sensor, Comprar sellador cerámico..."
+            placeholder="Ej: Calibrar sensor, comprar sellador cerámico..."
             required
-            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-sm text-white font-semibold placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
+            className="w-full bg-white border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] font-medium placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
           />
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Descripción / Detalles</label>
+          <label className="block text-xs font-medium text-[#161616] mb-1">Descripción o detalles</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Indicaciones específicas para quien realice la tarea..."
-            className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white placeholder-[#8A8A8A] focus:outline-none focus:border-[#D7141A]"
+            className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Negocio</label>
+            <label className="block text-xs font-medium text-[#161616] mb-1">Negocio</label>
             <select
               value={business}
               onChange={(e) => setBusiness(e.target.value as any)}
-              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
-              <option value="general">🏢 General / Todo el grupo</option>
-              <option value="detailing">✨ DetailVlak</option>
-              <option value="inspeccion">🔍 Inspección</option>
-              <option value="automotora">🚗 Automotora</option>
+              <option value="general">General / Todo el grupo</option>
+              <option value="detailing">DetailVlak</option>
+              <option value="inspeccion">Inspección</option>
+              <option value="automotora">Automotora</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Asignar a Empleado</label>
+            <label className="block text-xs font-medium text-[#161616] mb-1">Asignar a empleado</label>
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="">Sin asignar</option>
               {availableProfiles.map((p) => (
@@ -144,21 +144,21 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Fecha Límite</label>
+            <label className="block text-xs font-medium text-[#161616] mb-1">Fecha límite</label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A]"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider mb-1">Estado</label>
+            <label className="block text-xs font-medium text-[#161616] mb-1">Estado</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D7141A] cursor-pointer"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] cursor-pointer"
             >
               <option value="Pendiente">Pendiente</option>
               <option value="En curso">En curso</option>
@@ -167,19 +167,19 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A2A]">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E3]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white font-semibold border border-white transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] font-medium border border-[#E5E5E3] transition-colors cursor-pointer"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold shadow-sm transition-colors cursor-pointer"
           >
-            {taskToEdit ? 'Guardar Cambios' : 'Crear Tarea'}
+            {taskToEdit ? 'Guardar cambios' : 'Crear tarea'}
           </button>
         </div>
 

@@ -135,45 +135,45 @@ export const DetailingMigrationModal: React.FC<DetailingMigrationModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-panel border border-borde rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-panel border border-borde text-white flex items-center justify-center">
-              <UploadCloud className="w-5 h-5 text-rojo" />
+            <div className="w-10 h-10 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] flex items-center justify-center">
+              <UploadCloud className="w-5 h-5 text-[#D7141A]" />
             </div>
             <div>
-              <h3 className="text-base font-black text-white flex items-center gap-2">
+              <h3 className="text-base font-bold text-[#161616] flex items-center gap-2">
                 Migración desde DetailVlak
               </h3>
-              <p className="text-xs text-gris-texto">
+              <p className="text-xs text-[#6B6B6B]">
                 Importá clientes, cotizaciones, stock y gastos sin duplicar datos existentes.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-panel hover:bg-negro text-gris-texto hover:text-white flex items-center justify-center transition-colors border border-borde"
+            className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Contenido */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs bg-[#F5F5F4]">
           
           {/* Guía Paso a Paso */}
-          <div className="p-4 rounded-xl bg-negro border border-borde space-y-2">
-            <h4 className="font-bold text-white flex items-center gap-1.5 text-xs">
-              <HelpCircle className="w-4 h-4 text-white" />
+          <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2">
+            <h4 className="font-bold text-[#161616] flex items-center gap-1.5 text-xs">
+              <HelpCircle className="w-4 h-4 text-[#161616]" />
               <span>Cómo exportar tus datos desde DetailVlak (https://detailvlak.vercel.app):</span>
             </h4>
-            <ol className="list-decimal list-inside space-y-1 text-gris-texto text-[11px] leading-relaxed">
-              <li>Tu app actual **DetailVlak sigue 100% operativa** y no sufrirá ningún cambio.</li>
+            <ol className="list-decimal list-inside space-y-1 text-[#6B6B6B] text-[11px] leading-relaxed">
+              <li>Tu app actual <strong>DetailVlak sigue 100% operativa</strong> y no sufrirá ningún cambio.</li>
               <li>Entrá a tu planilla de Google Sheets vinculada a DetailVlak (pestañas `Tasaciones`, `Stock`, `Gastos`).</li>
-              <li>Podés copiar los datos en formato JSON o hacer clic en **"Cargar Respaldo Preconfigurado"** para realizar una prueba inmediata.</li>
+              <li>Podés copiar los datos en formato JSON o hacer clic en <strong>"Cargar respaldo preconfigurado"</strong> para realizar una prueba inmediata.</li>
               <li>El importador detectará automáticamente si un cliente o vehículo ya existe por su teléfono o matrícula para evitar duplicados.</li>
             </ol>
           </div>
@@ -181,16 +181,16 @@ export const DetailingMigrationModal: React.FC<DetailingMigrationModalProps> = (
           {/* Área de texto JSON */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-gris-texto">
-                Datos de Importación (JSON)
+              <label className="font-bold text-[#6B6B6B]">
+                Datos de importación (JSON)
               </label>
               <button
                 type="button"
                 onClick={handleLoadSampleBackup}
-                className="text-[11px] font-bold text-rojo hover:underline flex items-center gap-1"
+                className="text-[11px] font-bold text-[#D7141A] hover:underline flex items-center gap-1"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Cargar Respaldo Preconfigurado</span>
+                <span>Cargar respaldo preconfigurado</span>
               </button>
             </div>
 
@@ -199,24 +199,24 @@ export const DetailingMigrationModal: React.FC<DetailingMigrationModalProps> = (
               onChange={(e) => setRawJson(e.target.value)}
               placeholder='{"leads": [...], "stock": [...], "expenses": [...]}'
               rows={8}
-              className="w-full bg-negro border border-borde rounded-xl p-3 text-xs text-white font-mono focus:border-rojo focus:outline-none"
+              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] font-mono focus:border-[#D7141A] focus:outline-none"
             />
           </div>
 
           {/* Resultado de la migración */}
           {migrationResult && (
-            <div className="p-4 rounded-xl bg-panel border border-borde space-y-2 animate-fade-in">
-              <div className="flex items-center gap-2 text-white font-bold text-xs">
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                <span>Resultados de la Importación:</span>
+            <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2 animate-fade-in shadow-sm">
+              <div className="flex items-center gap-2 text-[#161616] font-bold text-xs">
+                <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" />
+                <span>Resultados de la importación:</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-gris-texto">
-                <div>Clientes nuevos: <strong className="text-white">{migrationResult.importedClientsCount}</strong></div>
-                <div>Vehículos vinculados: <strong className="text-white">{migrationResult.importedVehiclesCount}</strong></div>
-                <div>Cotizaciones cargadas: <strong className="text-white">{migrationResult.importedQuotesCount}</strong></div>
-                <div>Insumos de stock: <strong className="text-white">{migrationResult.importedStockCount}</strong></div>
-                <div>Gastos registrados: <strong className="text-white">{migrationResult.importedExpensesCount}</strong></div>
-                <div>Duplicados detectados: <strong className="text-white">{migrationResult.duplicatesDetected}</strong></div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-[#6B6B6B]">
+                <div>Clientes nuevos: <strong className="text-[#161616]">{migrationResult.importedClientsCount}</strong></div>
+                <div>Vehículos vinculados: <strong className="text-[#161616]">{migrationResult.importedVehiclesCount}</strong></div>
+                <div>Cotizaciones cargadas: <strong className="text-[#161616]">{migrationResult.importedQuotesCount}</strong></div>
+                <div>Insumos de stock: <strong className="text-[#161616]">{migrationResult.importedStockCount}</strong></div>
+                <div>Gastos registrados: <strong className="text-[#161616]">{migrationResult.importedExpensesCount}</strong></div>
+                <div>Duplicados detectados: <strong className="text-[#161616]">{migrationResult.duplicatesDetected}</strong></div>
               </div>
             </div>
           )}
@@ -224,7 +224,7 @@ export const DetailingMigrationModal: React.FC<DetailingMigrationModalProps> = (
         </div>
 
         {/* Barra de Acciones */}
-        <div className="p-4 sm:p-5 border-t border-borde bg-negro flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-[#E5E5E3] bg-white flex items-center justify-between gap-3">
           <Button
             variant="secondary"
             size="sm"
@@ -239,7 +239,7 @@ export const DetailingMigrationModal: React.FC<DetailingMigrationModalProps> = (
             onClick={handleRunMigration}
           >
             <Database className="w-4 h-4" />
-            <span>Ejecutar Importación</span>
+            <span>Ejecutar importación</span>
           </Button>
         </div>
 

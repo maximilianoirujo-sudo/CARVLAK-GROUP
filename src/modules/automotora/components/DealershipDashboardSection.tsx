@@ -128,13 +128,13 @@ export const DealershipDashboardSection: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <div className="p-8 text-center rounded-xl bg-panel border border-borde space-y-3">
-        <div className="w-12 h-12 rounded-xl bg-negro border border-borde text-rojo mx-auto flex items-center justify-center">
+      <div className="p-8 text-center rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
+        <div className="w-12 h-12 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A] mx-auto flex items-center justify-center">
           <Lock className="w-6 h-6" />
         </div>
-        <h3 className="text-base font-black text-white">Métricas y Rentabilidad Restringidas</h3>
-        <p className="text-xs text-gris-texto max-w-sm mx-auto">
-          El análisis financiero, capital inmovilizado y comisiones liquidadas solo están disponibles para Administradores.
+        <h3 className="text-base font-bold text-[#161616]">Métricas y rentabilidad restringidas</h3>
+        <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
+          El análisis financiero, capital inmovilizado y comisiones liquidadas solo están disponibles para administradores.
         </p>
       </div>
     );
@@ -146,61 +146,61 @@ export const DealershipDashboardSection: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-black text-white">Métricas Financieras &amp; Rentabilidad</h2>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-negro border border-borde text-rojo">
-              ADMINISTRACIÓN
+            <h2 className="text-lg font-bold text-[#161616]">Métricas financieras y rentabilidad</h2>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FEF7EC] border border-[#FADBA8] text-[#945B0E]">
+              Administración
             </span>
           </div>
-          <p className="text-xs text-gris-texto mt-0.5">
-            Capital propio inmovilizado, rotación de stock, comisiones y rentabilidad de Usados vs 0km.
+          <p className="text-xs text-[#6B6B6B] mt-0.5">
+            Capital propio inmovilizado, rotación de stock, comisiones y rentabilidad de usados vs 0km.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Toggle Usados / 0km / Todos */}
-          <div className="flex p-1 rounded-xl bg-negro border border-borde text-xs font-black">
+          <div className="flex p-1 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-xs font-medium">
             <button
               onClick={() => setConditionFilter('todos')}
-              className={`px-3 py-1.5 rounded-xl transition-all ${
+              className={`px-3 py-1.5 rounded-lg transition-all ${
                 conditionFilter === 'todos'
-                  ? 'bg-rojo text-white shadow-sm'
-                  : 'text-gris-texto hover:text-white'
+                  ? 'bg-white text-[#161616] font-bold shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               Todos ({allActiveStock.length})
             </button>
             <button
               onClick={() => setConditionFilter('usado')}
-              className={`px-3 py-1.5 rounded-xl transition-all ${
+              className={`px-3 py-1.5 rounded-lg transition-all ${
                 conditionFilter === 'usado'
-                  ? 'bg-rojo text-white shadow-sm'
-                  : 'text-gris-texto hover:text-white'
+                  ? 'bg-white text-[#161616] font-bold shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               Usados ({usedActiveStock.length})
             </button>
             <button
               onClick={() => setConditionFilter('0km')}
-              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
                 conditionFilter === '0km'
-                  ? 'bg-rojo text-white shadow-sm'
-                  : 'text-gris-texto hover:text-white'
+                  ? 'bg-white text-[#161616] font-bold shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
-              <Zap className="w-3 h-3" />
+              <Zap className="w-3 h-3 text-[#D7141A]" />
               <span>0km ({zeroKmActiveStock.length})</span>
             </button>
           </div>
 
           <button
             onClick={() => setUseAllTime(!useAllTime)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
               useAllTime
-                ? 'bg-panel border border-borde text-white font-black'
-                : 'bg-negro border border-borde text-gris-texto hover:text-white'
+                ? 'bg-white border border-[#161616] text-[#161616] font-bold shadow-sm'
+                : 'bg-white border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
-            Histórico Completo
+            Histórico completo
           </button>
 
           {!useAllTime && (
@@ -208,22 +208,22 @@ export const DealershipDashboardSection: React.FC = () => {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-negro border border-borde text-xs font-bold text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-rojo"
+              className="bg-white border border-[#E5E5E3] text-xs font-semibold text-[#161616] rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#D7141A]"
             />
           )}
         </div>
       </div>
 
       {/* Tabla Comparativa: Usados vs 0km (Stock Propio) */}
-      <div className="p-5 rounded-xl bg-panel border border-borde space-y-3 shadow-lg">
-        <div className="flex items-center justify-between border-b border-borde pb-2.5">
+      <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-2.5">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-rojo" />
-            <h3 className="text-xs font-black text-white uppercase tracking-wider">
-              Comparativa de Inventario: Usados vs Eléctricos 0km
+            <Layers className="w-4 h-4 text-[#D7141A]" />
+            <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+              Comparativa de inventario: Usados vs Eléctricos 0km
             </h3>
           </div>
-          <span className="text-[10px] text-gris-texto font-bold">Stock Propio CARVLAK</span>
+          <span className="text-[10px] text-[#6B6B6B] font-semibold">Stock propio CARVLAK</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
@@ -232,31 +232,31 @@ export const DealershipDashboardSection: React.FC = () => {
             onClick={() => setConditionFilter('usado')}
             className={`p-4 rounded-xl border transition-all cursor-pointer ${
               conditionFilter === 'usado'
-                ? 'bg-negro border-rojo shadow-md'
-                : 'bg-negro border-borde hover:border-gris-texto'
+                ? 'bg-[#FDF2F2]/30 border-[#D7141A] shadow-sm'
+                : 'bg-[#F5F5F4] border-[#E5E5E3] hover:border-[#D0D0CD]'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="font-black text-white uppercase text-[11px] flex items-center gap-1.5">
-                <Car className="w-3.5 h-3.5 text-rojo" />
-                Usados Seleccionados
+              <span className="font-bold text-[#161616] text-[11px] flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-[#D7141A]" />
+                Usados seleccionados
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-panel border border-borde text-white font-bold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-white border border-[#E5E5E3] text-[#161616] font-semibold text-[10px]">
                 {metricsUsed.count} unidades
               </span>
             </div>
             <div className="mt-3 space-y-1.5">
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Capital Invertido:</span>
-                <strong className="text-white font-mono">USD {Math.round(metricsUsed.totalCapital).toLocaleString()}</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Capital invertido:</span>
+                <strong className="text-[#161616] font-mono">USD {Math.round(metricsUsed.totalCapital).toLocaleString()}</strong>
               </div>
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Margen Proyectado:</span>
-                <strong className="text-white font-mono">+USD {Math.round(metricsUsed.totalMargin).toLocaleString()}</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Margen proyectado:</span>
+                <strong className="text-[#1E6B43] font-mono">+USD {Math.round(metricsUsed.totalMargin).toLocaleString()}</strong>
               </div>
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Días Promedio Stock:</span>
-                <strong className="text-white font-mono">{metricsUsed.avgDays} días</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Días promedio stock:</span>
+                <strong className="text-[#161616] font-mono">{metricsUsed.avgDays} días</strong>
               </div>
             </div>
           </div>
@@ -266,31 +266,31 @@ export const DealershipDashboardSection: React.FC = () => {
             onClick={() => setConditionFilter('0km')}
             className={`p-4 rounded-xl border transition-all cursor-pointer ${
               conditionFilter === '0km'
-                ? 'bg-negro border-rojo shadow-md'
-                : 'bg-negro border-borde hover:border-gris-texto'
+                ? 'bg-[#FDF2F2]/30 border-[#D7141A] shadow-sm'
+                : 'bg-[#F5F5F4] border-[#E5E5E3] hover:border-[#D0D0CD]'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="font-black text-white uppercase text-[11px] flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-rojo" />
+              <span className="font-bold text-[#161616] text-[11px] flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-[#D7141A]" />
                 Eléctricos 0km
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-panel border border-borde text-white font-bold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-white border border-[#E5E5E3] text-[#161616] font-semibold text-[10px]">
                 {metricsZeroKm.count} unidades
               </span>
             </div>
             <div className="mt-3 space-y-1.5">
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Capital Invertido:</span>
-                <strong className="text-white font-mono">USD {Math.round(metricsZeroKm.totalCapital).toLocaleString()}</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Capital invertido:</span>
+                <strong className="text-[#161616] font-mono">USD {Math.round(metricsZeroKm.totalCapital).toLocaleString()}</strong>
               </div>
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Margen Proyectado:</span>
-                <strong className="text-white font-mono">+USD {Math.round(metricsZeroKm.totalMargin).toLocaleString()}</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Margen proyectado:</span>
+                <strong className="text-[#1E6B43] font-mono">+USD {Math.round(metricsZeroKm.totalMargin).toLocaleString()}</strong>
               </div>
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Días Promedio Stock:</span>
-                <strong className="text-white font-mono">{metricsZeroKm.avgDays} días</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Días promedio stock:</span>
+                <strong className="text-[#161616] font-mono">{metricsZeroKm.avgDays} días</strong>
               </div>
             </div>
           </div>
@@ -300,31 +300,31 @@ export const DealershipDashboardSection: React.FC = () => {
             onClick={() => setConditionFilter('todos')}
             className={`p-4 rounded-xl border transition-all cursor-pointer ${
               conditionFilter === 'todos'
-                ? 'bg-negro border-rojo shadow-md'
-                : 'bg-negro border-borde hover:border-gris-texto'
+                ? 'bg-[#FDF2F2]/30 border-[#D7141A] shadow-sm'
+                : 'bg-[#F5F5F4] border-[#E5E5E3] hover:border-[#D0D0CD]'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="font-black text-white uppercase text-[11px] flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-rojo" />
-                Total Flota Global
+              <span className="font-bold text-[#161616] text-[11px] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
+                Total flota global
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-panel border border-borde text-white font-bold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-white border border-[#E5E5E3] text-[#161616] font-semibold text-[10px]">
                 {metricsAll.count} unidades
               </span>
             </div>
             <div className="mt-3 space-y-1.5">
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Capital Invertido:</span>
-                <strong className="text-white font-mono">USD {Math.round(metricsAll.totalCapital).toLocaleString()}</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Capital invertido:</span>
+                <strong className="text-[#161616] font-mono">USD {Math.round(metricsAll.totalCapital).toLocaleString()}</strong>
               </div>
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Margen Proyectado:</span>
-                <strong className="text-white font-mono">+USD {Math.round(metricsAll.totalMargin).toLocaleString()}</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Margen proyectado:</span>
+                <strong className="text-[#1E6B43] font-mono">+USD {Math.round(metricsAll.totalMargin).toLocaleString()}</strong>
               </div>
-              <div className="flex justify-between text-gris-texto text-[11px]">
-                <span>Días Promedio Stock:</span>
-                <strong className="text-white font-mono">{metricsAll.avgDays} días</strong>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px]">
+                <span>Días promedio stock:</span>
+                <strong className="text-[#161616] font-mono">{metricsAll.avgDays} días</strong>
               </div>
             </div>
           </div>
@@ -334,200 +334,200 @@ export const DealershipDashboardSection: React.FC = () => {
       {/* Tarjetas Principales de KPI filtradas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Capital Inmovilizado */}
-        <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-2">
-          <div className="flex items-center justify-between text-gris-texto">
-            <span className="text-xs font-bold">Capital en Stock ({conditionFilter})</span>
-            <DollarSign className="w-4 h-4 text-rojo" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-[#6B6B6B]">
+            <span className="text-xs font-semibold">Capital en stock ({conditionFilter})</span>
+            <DollarSign className="w-4 h-4 text-[#D7141A]" />
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white font-mono">
+          <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono">
             USD {Math.round(metricsCurrent.totalCapital).toLocaleString()}
           </div>
-          <div className="text-[11px] text-gris-texto">
+          <div className="text-[11px] text-[#6B6B6B]">
             En {metricsCurrent.count} unidades disponibles
           </div>
         </div>
 
         {/* Margen Proyectado en Stock */}
-        <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-2">
-          <div className="flex items-center justify-between text-gris-texto">
-            <span className="text-xs font-bold">Margen Proyectado</span>
-            <TrendingUp className="w-4 h-4 text-rojo" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-[#6B6B6B]">
+            <span className="text-xs font-semibold">Margen proyectado</span>
+            <TrendingUp className="w-4 h-4 text-[#1E6B43]" />
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white font-mono">
+          <div className="text-xl sm:text-2xl font-bold text-[#1E6B43] font-mono">
             +USD {Math.round(metricsCurrent.totalMargin).toLocaleString()}
           </div>
-          <div className="text-[11px] text-gris-texto">
+          <div className="text-[11px] text-[#6B6B6B]">
             Ganancia bruta esperada del inventario
           </div>
         </div>
 
         {/* Días Promedio en Stock */}
-        <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-2">
-          <div className="flex items-center justify-between text-gris-texto">
-            <span className="text-xs font-bold">Días Promedio Stock</span>
-            <Clock className={`w-4 h-4 ${metricsCurrent.avgDays > 60 ? 'text-rojo' : 'text-gris-texto'}`} />
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-[#6B6B6B]">
+            <span className="text-xs font-semibold">Días promedio stock</span>
+            <Clock className={`w-4 h-4 ${metricsCurrent.avgDays > 60 ? 'text-[#D7141A]' : 'text-[#6B6B6B]'}`} />
           </div>
           <div
-            className={`text-xl sm:text-2xl font-black font-mono ${
-              metricsCurrent.avgDays > 60 ? 'text-rojo' : 'text-white'
+            className={`text-xl sm:text-2xl font-bold font-mono ${
+              metricsCurrent.avgDays > 60 ? 'text-[#D7141A]' : 'text-[#161616]'
             }`}
           >
             {metricsCurrent.avgDays} días
           </div>
-          <div className="text-[11px] text-gris-texto">
+          <div className="text-[11px] text-[#6B6B6B]">
             {metricsCurrent.avgDays > 60 ? '⚠️ Rotación lenta (>60 días)' : '✓ Rotación saludable'}
           </div>
         </div>
 
         {/* Conversión CRM */}
-        <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-2">
-          <div className="flex items-center justify-between text-gris-texto">
-            <span className="text-xs font-bold">Conversión CRM</span>
-            <Users className="w-4 h-4 text-rojo" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-[#6B6B6B]">
+            <span className="text-xs font-semibold">Conversión CRM</span>
+            <Users className="w-4 h-4 text-[#D7141A]" />
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white font-mono">
+          <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono">
             {crmConversionRate}%
           </div>
-          <div className="text-[11px] text-gris-texto">
+          <div className="text-[11px] text-[#6B6B6B]">
             Consultas convertidas a ventas
           </div>
         </div>
       </div>
 
       {/* Resultados de Ventas del Período */}
-      <div className="p-5 rounded-xl bg-panel border border-borde space-y-4 shadow-xl">
-        <div className="flex items-center justify-between border-b border-borde pb-3">
+      <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
           <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-rojo" />
-            <span className="text-sm font-black text-white uppercase tracking-wider">
-              Rendimiento Comercial • {useAllTime ? 'Histórico Acumulado' : selectedMonth}
+            <Award className="w-5 h-5 text-[#D7141A]" />
+            <span className="text-sm font-bold text-[#161616]">
+              Rendimiento comercial • {useAllTime ? 'Histórico acumulado' : selectedMonth}
             </span>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-negro border border-borde text-white">
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
             {soldVehicles.length} unidades vendidas
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl bg-negro border border-borde">
-            <div className="text-[11px] font-bold text-gris-texto uppercase">Facturación Total</div>
-            <div className="text-xl font-black text-white mt-1 font-mono">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <div className="text-[11px] font-semibold text-[#6B6B6B] uppercase">Facturación total</div>
+            <div className="text-xl font-bold text-[#161616] mt-1 font-mono">
               USD {salesVolumeUsd.toLocaleString()}
             </div>
-            <p className="text-[10px] text-gris-texto mt-0.5">Volumen vendido de inventario</p>
+            <p className="text-[10px] text-[#6B6B6B] mt-0.5">Volumen vendido de inventario</p>
           </div>
 
-          <div className="p-4 rounded-xl bg-negro border border-borde">
-            <div className="text-[11px] font-bold text-gris-texto uppercase">Margen Bruto Realizado</div>
-            <div className="text-xl font-black text-white mt-1 font-mono">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <div className="text-[11px] font-semibold text-[#6B6B6B] uppercase">Margen bruto realizado</div>
+            <div className="text-xl font-bold text-[#1E6B43] mt-1 font-mono">
               +USD {Math.round(realizedGrossProfitUsd).toLocaleString()}
             </div>
-            <p className="text-[10px] text-gris-texto mt-0.5">Margen neto post costos internos</p>
+            <p className="text-[10px] text-[#6B6B6B] mt-0.5">Margen neto post costos internos</p>
           </div>
 
-          <div className="p-4 rounded-xl bg-negro border border-borde">
-            <div className="text-[11px] font-bold text-gris-texto uppercase">Comisiones Vendedores</div>
-            <div className="text-xl font-black text-rojo mt-1 font-mono">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <div className="text-[11px] font-semibold text-[#6B6B6B] uppercase">Comisiones vendedores</div>
+            <div className="text-xl font-bold text-[#D7141A] mt-1 font-mono">
               USD {Math.round(totalCommissionsUsd).toLocaleString()}
             </div>
-            <p className="text-[10px] text-gris-texto mt-0.5">Comisiones liquidadas por ventas</p>
+            <p className="text-[10px] text-[#6B6B6B] mt-0.5">Comisiones liquidadas por ventas</p>
           </div>
         </div>
       </div>
 
       {/* Widget: Distribución por Antigüedad del Stock */}
-      <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
+      <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-rojo" />
-            <span>Antigüedad del Stock ({activeStock.length} unidades {conditionFilter !== 'todos' ? `• ${conditionFilter}` : ''})</span>
+          <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-[#D7141A]" />
+            <span>Antigüedad del stock ({activeStock.length} unidades {conditionFilter !== 'todos' ? `• ${conditionFilter}` : ''})</span>
           </h3>
-          <span className="text-[11px] text-gris-texto">Control de rotación e inmovilización</span>
+          <span className="text-[11px] text-[#6B6B6B]">Control de rotación e inmovilización</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div className="p-3.5 rounded-xl bg-negro border border-borde">
-            <div className="text-[10px] font-bold uppercase text-gris-texto">0 a 30 días</div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">{stockAgeBuckets.under30}</div>
-            <div className="text-[10px] text-gris-texto mt-0.5 font-bold">Ingreso reciente</div>
+          <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <div className="text-[10px] font-semibold uppercase text-[#6B6B6B]">0 a 30 días</div>
+            <div className="text-2xl font-bold text-[#161616] mt-1 font-mono">{stockAgeBuckets.under30}</div>
+            <div className="text-[10px] text-[#1E6B43] mt-0.5 font-medium">Ingreso reciente</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-negro border border-borde">
-            <div className="text-[10px] font-bold uppercase text-gris-texto">31 a 60 días</div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">{stockAgeBuckets.days30to60}</div>
-            <div className="text-[10px] text-gris-texto mt-0.5 font-bold">Rotación normal</div>
+          <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <div className="text-[10px] font-semibold uppercase text-[#6B6B6B]">31 a 60 días</div>
+            <div className="text-2xl font-bold text-[#161616] mt-1 font-mono">{stockAgeBuckets.days30to60}</div>
+            <div className="text-[10px] text-[#6B6B6B] mt-0.5 font-medium">Rotación normal</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-negro border border-borde">
-            <div className="text-[10px] font-bold uppercase text-gris-texto">61 a 90 días</div>
-            <div className="text-2xl font-black text-white mt-1 font-mono">{stockAgeBuckets.days60to90}</div>
-            <div className="text-[10px] text-gris-texto mt-0.5 font-bold">Atención comercial</div>
+          <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <div className="text-[10px] font-semibold uppercase text-[#6B6B6B]">61 a 90 días</div>
+            <div className="text-2xl font-bold text-[#161616] mt-1 font-mono">{stockAgeBuckets.days60to90}</div>
+            <div className="text-[10px] text-[#945B0E] mt-0.5 font-medium">Atención comercial</div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-negro border border-borde">
-            <div className="text-[10px] font-bold uppercase text-gris-texto">&gt; 90 días</div>
-            <div className="text-2xl font-black text-rojo mt-1 font-mono">{stockAgeBuckets.over90}</div>
-            <div className="text-[10px] text-rojo mt-0.5 font-bold">Rebaja sugerida</div>
+          <div className="p-3.5 rounded-xl bg-[#FDF2F2] border border-[#FADBA8]">
+            <div className="text-[10px] font-semibold uppercase text-[#B80E14]">&gt; 90 días</div>
+            <div className="text-2xl font-bold text-[#B80E14] mt-1 font-mono">{stockAgeBuckets.over90}</div>
+            <div className="text-[10px] text-[#B80E14] mt-0.5 font-medium">Rebaja sugerida</div>
           </div>
         </div>
       </div>
 
       {/* Tabla de Últimas Ventas */}
       {soldVehicles.length > 0 && (
-        <div className="p-5 rounded-xl bg-panel border border-borde space-y-3">
-          <h3 className="text-xs font-black text-white uppercase tracking-wider">
-            Detalle de Ventas Registradas
+        <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
+          <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+            Detalle de ventas registradas
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-borde text-gris-texto text-[10px] font-black uppercase tracking-wider">
+                <tr className="border-b border-[#E5E5E3] text-[#6B6B6B] text-[10px] font-bold uppercase tracking-wider bg-[#F5F5F4]">
                   <th className="p-2.5">Fecha</th>
-                  <th className="p-2.5">Auto / Matrícula o Chasis</th>
+                  <th className="p-2.5">Auto / matrícula o chasis</th>
                   <th className="p-2.5">Condición</th>
                   <th className="p-2.5">Comprador</th>
-                  <th className="p-2.5">Medio de Pago</th>
-                  <th className="p-2.5 text-right">Precio Venta</th>
-                  <th className="p-2.5 text-right">Ganancia Bruta</th>
+                  <th className="p-2.5">Medio de pago</th>
+                  <th className="p-2.5 text-right">Precio venta</th>
+                  <th className="p-2.5 text-right">Ganancia bruta</th>
                   <th className="p-2.5 text-right">Comisión</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-borde">
+              <tbody className="divide-y divide-[#E5E5E3]">
                 {soldVehicles.map((car) => {
                   const sale = car.sale_record;
                   return (
-                    <tr key={car.id} className="hover:bg-negro transition-colors">
-                      <td className="p-2.5 text-gris-texto font-mono text-[11px]">
+                    <tr key={car.id} className="hover:bg-[#F5F5F4]/60 transition-colors">
+                      <td className="p-2.5 text-[#6B6B6B] font-mono text-[11px]">
                         {sale?.sale_date || car.updated_at.slice(0, 10)}
                       </td>
                       <td className="p-2.5">
-                        <div className="font-bold text-white">
+                        <div className="font-semibold text-[#161616]">
                           {car.brand} {car.model}
                         </div>
-                        <div className="font-mono text-[10px] text-gris-texto">
+                        <div className="font-mono text-[10px] text-[#6B6B6B]">
                           {car.plate || car.chassis_vin || 'Sin matrícula'}
                         </div>
                       </td>
                       <td className="p-2.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-negro border border-borde text-white">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
                           {car.condition === '0km' ? '0km' : 'Usado'}
                         </span>
                       </td>
                       <td className="p-2.5">
-                        <div className="text-white font-medium">{sale?.buyer_name || 'Comprador'}</div>
-                        <div className="text-[10px] text-gris-texto">{sale?.buyer_phone}</div>
+                        <div className="text-[#161616] font-medium">{sale?.buyer_name || 'Comprador'}</div>
+                        <div className="text-[10px] text-[#6B6B6B]">{sale?.buyer_phone}</div>
                       </td>
-                      <td className="p-2.5 text-gris-texto capitalize">
+                      <td className="p-2.5 text-[#6B6B6B] capitalize">
                         {sale?.payment_method || 'Contado'}
                       </td>
-                      <td className="p-2.5 text-right font-black text-white font-mono">
+                      <td className="p-2.5 text-right font-bold text-[#161616] font-mono">
                         USD {(sale?.sale_price || car.sale_price).toLocaleString()}
                       </td>
-                      <td className="p-2.5 text-right font-black text-white font-mono">
+                      <td className="p-2.5 text-right font-bold text-[#1E6B43] font-mono">
                         +USD {Math.round(sale?.gross_profit_usd || car.estimated_margin_usd || 0).toLocaleString()}
                       </td>
-                      <td className="p-2.5 text-right font-mono text-rojo font-bold">
+                      <td className="p-2.5 text-right font-mono text-[#D7141A] font-bold">
                         USD {sale?.commission_amount || 0}
                       </td>
                     </tr>

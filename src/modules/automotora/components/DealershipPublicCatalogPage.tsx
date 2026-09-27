@@ -75,15 +75,15 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F5F5F4] text-[#161616] flex flex-col font-sans">
       {/* Barra Superior / Header del Catálogo */}
-      <header className="sticky top-0 z-40 bg-panel/95 backdrop-blur-xl border-b border-borde px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-[#E5E5E3] px-4 py-3 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             {onBackToApp && (
               <button
                 onClick={onBackToApp}
-                className="p-2 rounded-lg bg-negro border border-borde text-gris-texto hover:text-white transition-colors"
+                className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors"
                 title="Volver al Hub de Gestión"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -92,19 +92,22 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
             <div className="flex items-center gap-3">
               <img
-                src="/logo-carvlak-white.png"
+                src="/logo-carvlak-black.svg"
                 alt="CARVLAK Automotores"
                 className="h-7 sm:h-8 w-auto object-contain"
+                onError={(e) => {
+                  (e.target as HTMLElement).setAttribute('src', '/logo-carvlak-black.png');
+                }}
               />
-              <div className="hidden sm:block border-l border-borde pl-3">
-                <span className="text-xs font-bold text-white flex items-center gap-2">
+              <div className="hidden sm:block border-l border-[#E5E5E3] pl-3">
+                <span className="text-xs font-bold text-[#161616] flex items-center gap-2">
                   <span>Automotores</span>
-                  <span className="text-[10px] font-title font-bold px-1.5 py-0.2 rounded bg-negro text-gris-texto border border-borde">
+                  <span className="text-[10px] font-title font-bold px-1.5 py-0.2 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                     Catálogo
                   </span>
                 </span>
-                <p className="text-[10px] text-gris-texto flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-rojo" />
+                <p className="text-[10px] text-[#6B6B6B] flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[#D7141A]" />
                   <span>Shangrilá, Canelones • Uruguay</span>
                 </p>
               </div>
@@ -125,31 +128,31 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
       </header>
 
       {/* Hero Banner */}
-      <section className="relative px-4 py-8 sm:py-10 bg-black border-b border-borde">
+      <section className="relative px-4 py-8 sm:py-10 bg-white border-b border-[#E5E5E3]">
         <div className="max-w-4xl mx-auto text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-panel border border-borde text-gris-texto text-xs font-bold uppercase tracking-wider">
-            <ShieldCheck className="w-4 h-4 text-rojo" />
-            <span>Vehículos seleccionados &amp; garantizados</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-bold uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-[#D7141A]" />
+            <span>Vehículos seleccionados y garantizados</span>
           </div>
 
-          <h2 className="text-2xl sm:text-4xl font-title font-bold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-title font-bold text-[#161616] tracking-tight">
             Encontrá tu próximo auto en CARVLAK
           </h2>
 
-          <p className="text-xs sm:text-sm text-gris-texto max-w-xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#6B6B6B] max-w-xl mx-auto leading-relaxed">
             Unidades inspeccionadas técnicamente, alistamiento profesional en DetailVlak, títulos garantizados y financiación bancaria en hasta 60 cuotas.
           </p>
 
           {/* Buscador Rápido */}
           <div className="pt-4 max-w-xl mx-auto">
             <div className="relative">
-              <Search className="w-4 h-4 text-gris-texto absolute left-4 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#9A9A9A] absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscá por marca o modelo (ej: Golf, Onix, Hilux, Tracker)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-panel border border-borde rounded-xl text-xs sm:text-sm text-white placeholder-gris-texto focus:outline-none focus:border-rojo shadow-xl"
+                className="w-full pl-11 pr-4 py-3 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-xs sm:text-sm text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] shadow-sm"
               />
             </div>
           </div>
@@ -173,8 +176,8 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               onClick={() => setSelectedBodyType(type.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
                 selectedBodyType === type.id
-                  ? 'bg-white text-black'
-                  : 'bg-panel border border-borde text-gris-texto hover:text-white'
+                  ? 'bg-[#161616] text-white shadow-sm'
+                  : 'bg-white border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               {type.label}
@@ -184,17 +187,17 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
         {/* Barra Secundaria de Filtros */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
-          <div className="text-gris-texto">
-            Mostrando <strong className="text-white">{filteredVehicles.length}</strong> autos disponibles
+          <div className="text-[#6B6B6B]">
+            Mostrando <strong className="text-[#161616]">{filteredVehicles.length}</strong> autos disponibles
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-gris-texto text-[11px]">Transmisión:</span>
+              <span className="text-[#6B6B6B] text-[11px]">Transmisión:</span>
               <select
                 value={selectedTransmission}
                 onChange={(e) => setSelectedTransmission(e.target.value)}
-                className="bg-panel border border-borde rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-rojo"
+                className="bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
               >
                 <option value="todos">Todas</option>
                 <option value="Manual">Manual</option>
@@ -203,11 +206,11 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-gris-texto text-[11px]">Hasta USD:</span>
+              <span className="text-[#6B6B6B] text-[11px]">Hasta USD:</span>
               <select
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="bg-panel border border-borde rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-rojo"
+                className="bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
               >
                 <option value={50000}>Cualquier precio</option>
                 <option value={10000}>Hasta USD 10.000</option>
@@ -229,7 +232,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
             return (
               <div
                 key={car.id}
-                className="group rounded-xl bg-panel border border-borde hover:border-white/40 transition-all flex flex-col overflow-hidden shadow-xl"
+                className="group rounded-2xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] transition-all flex flex-col overflow-hidden shadow-sm"
               >
                 {/* Imagen Principal */}
                 <div
@@ -237,7 +240,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                     setSelectedCar(car);
                     setActivePhotoIdx(0);
                   }}
-                  className="relative h-48 bg-negro overflow-hidden cursor-pointer"
+                  className="relative h-48 bg-[#F5F5F4] overflow-hidden cursor-pointer"
                 >
                   {cover ? (
                     <img
@@ -246,25 +249,25 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gris-texto gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#9A9A9A] gap-2">
                       <Car className="w-12 h-12" />
                     </div>
                   )}
 
                   {/* Badge Destacado */}
                   {car.is_featured && (
-                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded bg-white text-black font-bold text-[10px] uppercase flex items-center gap-1 shadow-md">
-                      <Star className="w-3 h-3 fill-black" />
+                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded bg-[#161616] text-white font-bold text-[10px] uppercase flex items-center gap-1 shadow-md">
+                      <Star className="w-3 h-3 fill-white" />
                       <span>Destacado</span>
                     </div>
                   )}
 
                   {/* Año y Km */}
                   <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded bg-negro/90 backdrop-blur-md text-white text-xs font-bold border border-borde">
+                    <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-md text-white text-xs font-bold">
                       {car.year}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-negro/90 backdrop-blur-md text-gris-texto text-xs font-medium border border-borde">
+                    <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-md text-white/80 text-xs font-medium">
                       {car.mileage.toLocaleString()} km
                     </span>
                   </div>
@@ -280,10 +283,10 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                       }}
                       className="cursor-pointer"
                     >
-                      <h3 className="text-base font-bold text-white group-hover:text-rojo transition-colors">
+                      <h3 className="text-base font-bold text-[#161616] group-hover:text-[#D7141A] transition-colors">
                         {car.brand} {car.model} {car.version || ''}
                       </h3>
-                      <div className="text-xs text-gris-texto mt-1 flex items-center gap-2">
+                      <div className="text-xs text-[#6B6B6B] mt-1 flex items-center gap-2">
                         <span>{car.transmission}</span>
                         <span>•</span>
                         <span>{car.fuel}</span>
@@ -293,22 +296,22 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                     </div>
 
                     {/* Precio y Financiación */}
-                    <div className="mt-4 pt-3 border-t border-borde flex items-baseline justify-between">
+                    <div className="mt-4 pt-3 border-t border-[#E5E5E3] flex items-baseline justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-gris-texto uppercase tracking-wider">
-                          Precio Contado
+                        <div className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                          Precio contado
                         </div>
-                        <div className="text-xl font-bold font-mono text-white">
+                        <div className="text-xl font-bold font-mono text-[#161616]">
                           USD {car.sale_price.toLocaleString()}
                         </div>
                       </div>
 
                       {car.financing_available && car.monthly_installment_estimate_usd ? (
                         <div className="text-right">
-                          <div className="text-[10px] font-bold text-gris-texto uppercase">
+                          <div className="text-[10px] font-bold text-[#6B6B6B] uppercase">
                             Financiación
                           </div>
-                          <div className="text-xs font-bold text-white">
+                          <div className="text-xs font-bold text-[#161616]">
                             Desde USD {car.monthly_installment_estimate_usd}/mes
                           </div>
                         </div>
@@ -326,7 +329,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                         setActivePhotoIdx(0);
                       }}
                     >
-                      Ver Ficha
+                      Ver ficha
                     </Button>
 
                     <Button
@@ -345,10 +348,10 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
         </div>
 
         {filteredVehicles.length === 0 && (
-          <div className="p-16 text-center rounded-xl bg-panel border border-borde space-y-3">
-            <Car className="w-12 h-12 text-gris-texto mx-auto" />
-            <h3 className="text-base font-bold text-white">No encontramos vehículos con esos filtros</h3>
-            <p className="text-xs text-gris-texto max-w-sm mx-auto">
+          <div className="p-16 text-center rounded-2xl bg-white border border-[#E5E5E3] space-y-3">
+            <Car className="w-12 h-12 text-[#9A9A9A] mx-auto" />
+            <h3 className="text-base font-bold text-[#161616]">No encontramos vehículos con esos filtros</h3>
+            <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
               Probá restableciendo los filtros o escribinos por WhatsApp para solicitar que busquemos la unidad que necesitás.
             </p>
           </div>
@@ -357,15 +360,15 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
       {/* Modal Detalle Público del Auto */}
       {selectedCar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in">
-          <div className="bg-panel border border-borde rounded-xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in">
+          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
             {/* Header Modal */}
-            <div className="p-4 sm:p-5 border-b border-borde flex items-center justify-between bg-negro">
+            <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
               <div>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-lg font-bold text-[#161616]">
                   {selectedCar.brand} {selectedCar.model} {selectedCar.version || ''} ({selectedCar.year})
                 </h2>
-                <div className="text-xs text-gris-texto flex items-center gap-2 mt-0.5">
+                <div className="text-xs text-[#6B6B6B] flex items-center gap-2 mt-0.5">
                   <span>{selectedCar.mileage.toLocaleString()} km</span>
                   <span>•</span>
                   <span>{selectedCar.transmission}</span>
@@ -376,7 +379,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
               <button
                 onClick={() => setSelectedCar(null)}
-                className="p-2 rounded-lg text-gris-texto hover:text-white"
+                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -387,7 +390,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               {/* Galería de Fotos */}
               {selectedCar.images && selectedCar.images.length > 0 && (
                 <div className="space-y-2">
-                  <div className="relative rounded-xl overflow-hidden bg-negro aspect-video border border-borde">
+                  <div className="relative rounded-xl overflow-hidden bg-[#F5F5F4] aspect-video border border-[#E5E5E3]">
                     <img
                       src={selectedCar.images[activePhotoIdx] || selectedCar.cover_image}
                       alt=""
@@ -403,8 +406,8 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                           onClick={() => setActivePhotoIdx(idx)}
                           className={`w-16 h-12 rounded-lg overflow-hidden shrink-0 border transition-all ${
                             activePhotoIdx === idx
-                              ? 'border-white ring-2 ring-white/40'
-                              : 'border-borde opacity-60 hover:opacity-100'
+                              ? 'border-[#D7141A] ring-2 ring-[#D7141A]/30'
+                              : 'border-[#E5E5E3] opacity-60 hover:opacity-100'
                           }`}
                         >
                           <img src={img} alt="" className="w-full h-full object-cover" />
@@ -416,23 +419,23 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               )}
 
               {/* Precio & Garantías */}
-              <div className="p-4 rounded-xl bg-negro border border-borde flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="text-[10px] font-bold text-gris-texto uppercase tracking-wider">
-                    Precio Contado Efectivo
+                  <div className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                    Precio contado efectivo
                   </div>
-                  <div className="text-2xl font-bold font-mono text-white">
+                  <div className="text-2xl font-bold font-mono text-[#161616]">
                     USD {selectedCar.sale_price.toLocaleString()}
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="px-3 py-1.5 rounded-lg bg-panel border border-borde text-white text-xs font-bold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-rojo" />
-                    <span>Títulos en Regla</span>
+                  <div className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#D7141A]" />
+                    <span>Títulos en regla</span>
                   </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-panel border border-borde text-white text-xs font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-rojo" />
+                  <div className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#D7141A]" />
                     <span>Alistado DetailVlak</span>
                   </div>
                 </div>
@@ -441,10 +444,10 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               {/* Descripción */}
               {selectedCar.catalog_description && (
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Descripción del Vehículo
+                  <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                    Descripción del vehículo
                   </h4>
-                  <p className="text-xs text-gris-texto leading-relaxed bg-negro p-3 rounded-xl border border-borde">
+                  <p className="text-xs text-[#6B6B6B] leading-relaxed bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
                     {selectedCar.catalog_description}
                   </p>
                 </div>
@@ -452,27 +455,27 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
               {/* Ficha Técnica Rápida */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Especificaciones Técnicas
+                <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                  Especificaciones técnicas
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  <div className="p-2.5 rounded-lg bg-negro border border-borde">
-                    <div className="text-[10px] text-gris-texto uppercase">Año</div>
-                    <div className="font-bold text-white mt-0.5">{selectedCar.year}</div>
+                  <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                    <div className="text-[10px] text-[#6B6B6B] uppercase">Año</div>
+                    <div className="font-bold text-[#161616] mt-0.5">{selectedCar.year}</div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-negro border border-borde">
-                    <div className="text-[10px] text-gris-texto uppercase">Kilómetros</div>
-                    <div className="font-bold text-white mt-0.5">
+                  <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                    <div className="text-[10px] text-[#6B6B6B] uppercase">Kilómetros</div>
+                    <div className="font-bold text-[#161616] mt-0.5">
                       {selectedCar.mileage.toLocaleString()} km
                     </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-negro border border-borde">
-                    <div className="text-[10px] text-gris-texto uppercase">Transmisión</div>
-                    <div className="font-bold text-white mt-0.5">{selectedCar.transmission}</div>
+                  <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                    <div className="text-[10px] text-[#6B6B6B] uppercase">Transmisión</div>
+                    <div className="font-bold text-[#161616] mt-0.5">{selectedCar.transmission}</div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-negro border border-borde">
-                    <div className="text-[10px] text-gris-texto uppercase">Combustible</div>
-                    <div className="font-bold text-white mt-0.5">{selectedCar.fuel}</div>
+                  <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                    <div className="text-[10px] text-[#6B6B6B] uppercase">Combustible</div>
+                    <div className="font-bold text-[#161616] mt-0.5">{selectedCar.fuel}</div>
                   </div>
                 </div>
               </div>
@@ -480,14 +483,14 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               {/* Equipamiento */}
               {selectedCar.features && selectedCar.features.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Equipamiento Incluido
+                  <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                    Equipamiento incluido
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCar.features.map((feat, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 rounded-lg bg-negro border border-borde text-xs text-gris-texto"
+                        className="px-2.5 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-xs text-[#161616]"
                       >
                         ✓ {feat}
                       </span>
@@ -498,7 +501,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
             </div>
 
             {/* Footer Modal */}
-            <div className="p-4 border-t border-borde bg-negro flex items-center justify-between gap-3">
+            <div className="p-4 border-t border-[#E5E5E3] bg-white flex items-center justify-between gap-3">
               <Button
                 variant="secondary"
                 onClick={() => setSelectedCar(null)}
@@ -519,8 +522,8 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
       )}
 
       {/* Footer Público */}
-      <footer className="mt-auto border-t border-borde bg-panel px-4 py-6 text-center text-xs text-gris-texto space-y-1">
-        <p className="font-bold text-white">CARVLAK Group • Automotora &amp; Centro Automotriz</p>
+      <footer className="mt-auto border-t border-[#E5E5E3] bg-white px-4 py-6 text-center text-xs text-[#6B6B6B] space-y-1">
+        <p className="font-bold text-[#161616]">CARVLAK Group • Automotora & Centro Automotriz</p>
         <p>Shangrilá, Canelones • WhatsApp: 099 267 964 • Abierto de Lunes a Sábados</p>
       </footer>
     </div>

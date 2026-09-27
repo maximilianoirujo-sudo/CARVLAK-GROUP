@@ -2,21 +2,20 @@ import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { ConfirmModal } from '../common/ConfirmModal';
 import {
-  Car,
   User,
   ShieldCheck,
   Calendar,
-  Clock,
-  Plus,
   Trash2,
   Edit,
+  Plus,
   History,
   Image as ImageIcon
 } from 'lucide-react';
-import { Vehicle, Client } from '../../types';
+import { Vehicle } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { normalizePlate, BUSINESS_CONFIG } from '../../lib/formatters';
+import { UruguayanPlate } from '../ui/UruguayanPlate';
 
 interface VehicleDetailModalProps {
   isOpen: boolean;
@@ -77,16 +76,14 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
         <div className="space-y-5 text-xs">
           
           {/* Encabezado Vehículo */}
-          <div className="p-4 rounded-xl bg-black border border-[#2A2A2A] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-12 rounded-lg bg-[#141414] border border-[#2A2A2A] flex items-center justify-center font-black text-white text-base tracking-widest font-mono">
-                {normalizePlate(vehicle.plate)}
-              </div>
+              <UruguayanPlate plate={vehicle.plate} size="md" />
               <div>
-                <div className="text-sm font-bold text-white">
+                <div className="text-sm font-bold text-[#161616]">
                   {vehicle.brand} {vehicle.model}
                 </div>
-                <div className="text-[11px] text-[#8A8A8A] mt-0.5">
+                <div className="text-[11px] text-[#6B6B6B] mt-0.5">
                   {vehicle.category} • {vehicle.color || 'Color sin especificar'}
                 </div>
               </div>
@@ -94,18 +91,18 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
 
             <div>
               {isDealership ? (
-                <span className="px-3 py-1 rounded-lg bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/30 font-bold flex items-center gap-1.5 text-xs">
-                  <ShieldCheck className="w-4 h-4" /> Propio de la Automotora
+                <span className="px-3 py-1 rounded-lg bg-[#FDF2F2] text-[#B80E14] border border-[#B80E14]/20 font-semibold flex items-center gap-1.5 text-xs">
+                  <ShieldCheck className="w-4 h-4" /> Propio de automotora
                 </span>
               ) : (
                 <div className="text-left sm:text-right">
-                  <span className="text-[10px] text-[#8A8A8A] uppercase">Titular / Cliente</span>
-                  <div className="font-bold text-white flex items-center sm:justify-end gap-1 text-xs">
-                    <User className="w-3.5 h-3.5 text-white" />
+                  <span className="text-[10px] text-[#6B6B6B] font-medium">Titular / cliente</span>
+                  <div className="font-semibold text-[#161616] flex items-center sm:justify-end gap-1 text-xs">
+                    <User className="w-3.5 h-3.5 text-[#6B6B6B]" />
                     <span>{client?.full_name || 'Particular'}</span>
                   </div>
                   {client?.phone && (
-                    <div className="text-[11px] text-[#8A8A8A]">{client.phone}</div>
+                    <div className="text-[11px] text-[#6B6B6B] font-mono">{client.phone}</div>
                   )}
                 </div>
               )}
@@ -114,54 +111,54 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
 
           {/* Estadísticas Técnicas */}
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="p-3 rounded-xl bg-black border border-[#2A2A2A]">
-              <div className="text-[10px] text-[#8A8A8A] uppercase">Kilometraje</div>
-              <div className="text-sm font-bold text-white mt-0.5">
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+              <div className="text-[10px] text-[#6B6B6B] font-medium">Kilometraje</div>
+              <div className="text-sm font-bold text-[#161616] mt-0.5">
                 {vehicle.mileage ? vehicle.mileage.toLocaleString('es-UY') + ' km' : '0 km'}
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-black border border-[#2A2A2A]">
-              <div className="text-[10px] text-[#8A8A8A] uppercase">Año</div>
-              <div className="text-sm font-bold text-white mt-0.5">{vehicle.year || 'S/D'}</div>
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+              <div className="text-[10px] text-[#6B6B6B] font-medium">Año</div>
+              <div className="text-sm font-bold text-[#161616] mt-0.5">{vehicle.year || 'S/D'}</div>
             </div>
-            <div className="p-3 rounded-xl bg-black border border-[#2A2A2A]">
-              <div className="text-[10px] text-[#8A8A8A] uppercase">Categoría</div>
-              <div className="text-sm font-bold text-white mt-0.5">{vehicle.category}</div>
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+              <div className="text-[10px] text-[#6B6B6B] font-medium">Categoría</div>
+              <div className="text-sm font-bold text-[#161616] mt-0.5">{vehicle.category}</div>
             </div>
           </div>
 
           {/* Galería de Fotos */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-white" />
-                <span>Galería de Fotos ({vehicle.photos?.length || 0})</span>
+              <h4 className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                <span>Galería de fotos ({vehicle.photos?.length || 0})</span>
               </h4>
               <button
                 type="button"
                 onClick={() => setShowAddPhoto(!showAddPhoto)}
-                className="text-[11px] font-bold text-white hover:text-[#D7141A] flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-xs font-medium text-[#D7141A] hover:text-[#B80E14] flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>{showAddPhoto ? 'Cerrar' : 'Agregar Foto'}</span>
+                <span>{showAddPhoto ? 'Cerrar' : 'Agregar foto'}</span>
               </button>
             </div>
 
             {showAddPhoto && (
-              <div className="p-3 rounded-xl bg-black border border-[#2A2A2A] space-y-2 animate-fade-in">
-                <label className="block text-[11px] text-[#8A8A8A]">URL de la imagen o Storage</label>
+              <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-2 animate-fade-in">
+                <label className="block text-[11px] text-[#6B6B6B] font-medium">URL de la imagen o storage</label>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     value={newPhotoUrl}
                     onChange={(e) => setNewPhotoUrl(e.target.value)}
                     placeholder="https://images.unsplash.com/..."
-                    className="flex-1 bg-[#141414] border border-[#2A2A2A] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#D7141A]"
+                    className="flex-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A]"
                   />
                   <button
                     type="button"
                     onClick={handleAddPhoto}
-                    className="px-4 py-2 bg-[#D7141A] hover:bg-[#B51015] text-white font-bold text-xs rounded-xl cursor-pointer"
+                    className="px-4 py-2 bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold text-xs rounded-xl cursor-pointer"
                   >
                     Guardar
                   </button>
@@ -172,7 +169,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             {vehicle.photos && vehicle.photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {vehicle.photos.map((url, i) => (
-                  <div key={i} className="aspect-video rounded-xl overflow-hidden bg-black border border-[#2A2A2A] relative group">
+                  <div key={i} className="aspect-video rounded-xl overflow-hidden bg-[#F5F5F4] border border-[#E5E5E3] relative group">
                     <img
                       src={url}
                       alt={`${vehicle.plate} - ${i}`}
@@ -182,42 +179,42 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-black border border-[#2A2A2A] text-center text-[#8A8A8A]">
+              <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-center text-[#6B6B6B]">
                 Sin fotos cargadas aún. Podés cargar fotos de inspección o detailing.
               </div>
             )}
           </div>
 
           {/* Historial */}
-          <div className="space-y-3 pt-2 border-t border-[#2A2A2A]">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <History className="w-3.5 h-3.5 text-white" />
-              <span>Historial del Vehículo en CARVLAK Group</span>
+          <div className="space-y-3 pt-2 border-t border-[#E5E5E3]">
+            <h4 className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
+              <History className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <span>Historial del vehículo en CARVLAK Group</span>
             </h4>
 
             {historyEvents.length === 0 ? (
-              <p className="text-[#8A8A8A] italic p-3 rounded-xl bg-black border border-[#2A2A2A] text-center">
+              <p className="text-[#6B6B6B] italic p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-center">
                 Sin eventos registrados aún. Se registrarán automáticamente con cada turno de detailing, peritaje o venta.
               </p>
             ) : (
-              <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#2A2A2A]">
+              <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E5E5E3]">
                 {historyEvents.map((ev) => {
                   const bConfig = BUSINESS_CONFIG[ev.business];
                   return (
                     <div key={ev.id} className="relative">
                       <div
-                        className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-black bg-[#D7141A]"
+                        className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2 border-white bg-[#D7141A]"
                       ></div>
-                      <div className="p-3 rounded-xl bg-black border border-[#2A2A2A] space-y-1">
+                      <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase text-white">
+                          <span className="text-[11px] font-semibold text-[#161616]">
                             {bConfig?.name || ev.business} • {ev.event_type}
                           </span>
-                          <span className="text-[10px] text-[#8A8A8A]">
+                          <span className="text-[11px] text-[#6B6B6B] font-mono">
                             {ev.created_at.slice(0, 10)}
                           </span>
                         </div>
-                        <p className="text-xs text-white/90">{ev.description}</p>
+                        <p className="text-xs text-[#6B6B6B]">{ev.description}</p>
                       </div>
                     </div>
                   );
@@ -227,14 +224,14 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           </div>
 
           {/* Botones de acción inferiores */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-[#2A2A2A]">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-[#E5E5E3]">
             <button
               type="button"
               onClick={() => setIsConfirmArchiveOpen(true)}
-              className="px-3 py-2 rounded-xl text-[#D7141A] hover:bg-[#D7141A]/10 font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 rounded-xl text-[#B80E14] hover:bg-[#FDF2F2] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Archivar Ficha</span>
+              <span>Archivar ficha</span>
             </button>
 
             <div className="flex items-center gap-2">
@@ -244,7 +241,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   onEdit(vehicle);
                   onClose();
                 }}
-                className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Edit className="w-3.5 h-3.5" />
                 <span>Editar</span>
@@ -256,10 +253,10 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   onScheduleAppointment(vehicle);
                   onClose();
                 }}
-                className="px-4 py-2 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Calendar className="w-4 h-4" />
-                <span>Agendar Turno</span>
+                <span>Agendar turno</span>
               </button>
             </div>
           </div>
@@ -271,9 +268,9 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
         isOpen={isConfirmArchiveOpen}
         onClose={() => setIsConfirmArchiveOpen(false)}
         onConfirm={handleArchive}
-        title="¿Archivar Vehículo?"
+        title="¿Archivar vehículo?"
         message={`El vehículo ${normalizePlate(vehicle.plate)} (${vehicle.brand} ${vehicle.model}) será archivado y no aparecerá en las búsquedas activas. Se puede restaurar luego si es necesario.`}
-        confirmText="Archivar Vehículo"
+        confirmText="Archivar vehículo"
       />
     </>
   );
