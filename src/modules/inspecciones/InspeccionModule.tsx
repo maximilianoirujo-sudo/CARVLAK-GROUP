@@ -3,13 +3,6 @@ import {
   ClipboardCheck,
   Plus,
   Search,
-  Filter,
-  DollarSign,
-  Calendar,
-  Layers,
-  Sparkles,
-  Car,
-  User,
   Settings,
   ShieldCheck,
   CheckCircle2,
@@ -40,6 +33,7 @@ import { InspectionDashboardSection } from './components/InspectionDashboardSect
 import { DetailingExpensesSection } from '../detailing/components/DetailingExpensesSection';
 import { DetailingCommissionsSection } from '../detailing/components/DetailingCommissionsSection';
 import { Button } from '../../components/ui/Button';
+import { UruguayanPlate } from '../../components/ui/UruguayanPlate';
 
 interface InspeccionModuleProps {
   onNavigateToDetailing?: (quoteId?: string) => void;
@@ -139,21 +133,21 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
   return (
     <div className="space-y-5 animate-fade-in pb-16">
       {/* CABECERA PRINCIPAL CON IDENTIDAD CARVLAK */}
-      <div className="p-5 sm:p-6 rounded-xl bg-panel border border-borde shadow-sm">
+      <div className="p-5 sm:p-6 rounded-xl bg-white border border-[#E5E5E3] shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-gris-texto">
-                Departamento Pericial
+              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+                Módulo peritajes • Taller central
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-negro text-gris-texto border border-borde">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                 15 Paneles • OBD-II • SUCIVE
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-title font-bold text-white mt-1">
-              Inspección y peritaje vehicular
+            <h1 className="text-xl sm:text-2xl font-title font-bold text-[#161616]">
+              Inspección técnica
             </h1>
-            <p className="text-xs text-gris-texto max-w-2xl leading-relaxed">
+            <p className="text-xs text-[#6B6B6B] max-w-2xl leading-relaxed">
               Peritaje técnico precompra para clientes e inspección interna para adquisición de stock automotora. Checklist táctil mobile-first y reporte con semáforo pericial.
             </p>
           </div>
@@ -166,7 +160,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                 size="sm"
                 onClick={() => setIsTariffModalOpen(true)}
               >
-                <Settings className="w-3.5 h-3.5 text-white" />
+                <Settings className="w-3.5 h-3.5 text-[#6B6B6B]" />
                 <span>Tarifario</span>
               </Button>
             )}
@@ -181,26 +175,26 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
               }}
             >
               <Plus className="w-4 h-4" />
-              <span>+ Nueva inspección</span>
+              <span>Nueva inspección</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* PESTAÑAS DEL MÓDULO CON LÍNEA ROJA INFERIOR PARA LA PESTAÑA ACTIVA */}
-      <div className="border-b border-borde flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="border-b border-[#E5E5E3] flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setActiveTab('list')}
-          className={`pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
+          className={`pb-3 pt-2 px-3 text-xs font-bold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
             activeTab === 'list'
-              ? 'text-white border-rojo'
-              : 'text-gris-texto hover:text-white border-transparent'
+              ? 'text-[#161616] border-[#D7141A]'
+              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
           }`}
         >
           <ClipboardCheck className="w-4 h-4" />
           <span>Inspecciones</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-negro text-gris-texto font-bold border border-borde">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] font-bold border border-[#E5E5E3]">
             {inspections.length}
           </span>
         </button>
@@ -208,9 +202,9 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         {activeInspection && activeTab === 'peritaje_live' && (
           <button
             type="button"
-            className="pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 text-white border-rojo"
+            className="pb-3 pt-2 px-3 text-xs font-bold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 text-[#161616] border-[#D7141A]"
           >
-            <Clock className="w-4 h-4 text-rojo" />
+            <Clock className="w-4 h-4 text-[#D7141A]" />
             <span>Peritaje en curso: {activeInspection.vehicle_plate}</span>
           </button>
         )}
@@ -218,9 +212,9 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         {activeInspection && activeTab === 'report_view' && (
           <button
             type="button"
-            className="pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 text-white border-rojo"
+            className="pb-3 pt-2 px-3 text-xs font-bold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 text-[#161616] border-[#D7141A]"
           >
-            <ShieldCheck className="w-4 h-4 text-rojo" />
+            <ShieldCheck className="w-4 h-4 text-[#D7141A]" />
             <span>Informe: {activeInspection.vehicle_plate}</span>
           </button>
         )}
@@ -228,10 +222,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('expenses')}
-          className={`pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
+          className={`pb-3 pt-2 px-3 text-xs font-bold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
             activeTab === 'expenses'
-              ? 'text-white border-rojo'
-              : 'text-gris-texto hover:text-white border-transparent'
+              ? 'text-[#161616] border-[#D7141A]'
+              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
           }`}
         >
           <Receipt className="w-4 h-4" />
@@ -241,10 +235,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('commissions')}
-          className={`pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
+          className={`pb-3 pt-2 px-3 text-xs font-bold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
             activeTab === 'commissions'
-              ? 'text-white border-rojo'
-              : 'text-gris-texto hover:text-white border-transparent'
+              ? 'text-[#161616] border-[#D7141A]'
+              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
           }`}
         >
           <Award className="w-4 h-4" />
@@ -255,10 +249,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('dashboard')}
-            className={`pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
-              activeTab === 'dashboard'
-                ? 'text-white border-rojo'
-                : 'text-gris-texto hover:text-white border-transparent'
+            className={`pb-3 pt-2 px-3 text-xs font-bold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 ${
+            activeTab === 'dashboard'
+              ? 'text-[#161616] border-[#D7141A]'
+              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -311,29 +305,29 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
       {activeTab === 'list' && (
         <div className="space-y-4">
           {/* BARRA DE FILTROS & BÚSQUEDA */}
-          <div className="p-4 rounded-xl bg-panel border border-borde space-y-3">
+          <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               {/* Buscador */}
               <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 text-gris-texto absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Buscar matrícula, cliente o modelo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-negro border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:bg-white focus:border-[#161616] outline-none transition-colors"
                 />
               </div>
 
               {/* Selector Tipo */}
-              <div className="flex items-center gap-1 bg-negro p-1 rounded-xl border border-borde w-full sm:w-auto">
+              <div className="flex items-center gap-1 bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3] w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setTypeFilter('all')}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     typeFilter === 'all'
-                      ? 'bg-rojo text-white'
-                      : 'text-gris-texto hover:text-white'
+                      ? 'bg-white text-[#161616] shadow-sm'
+                      : 'text-[#6B6B6B] hover:text-[#161616]'
                   }`}
                 >
                   Todos
@@ -343,8 +337,8 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                   onClick={() => setTypeFilter('precompra')}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     typeFilter === 'precompra'
-                      ? 'bg-rojo text-white'
-                      : 'text-gris-texto hover:text-white'
+                      ? 'bg-white text-[#161616] shadow-sm'
+                      : 'text-[#6B6B6B] hover:text-[#161616]'
                   }`}
                 >
                   Precompra
@@ -354,18 +348,18 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                   onClick={() => setTypeFilter('interna')}
                   className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     typeFilter === 'interna'
-                      ? 'bg-rojo text-white'
-                      : 'text-gris-texto hover:text-white'
+                      ? 'bg-white text-[#161616] shadow-sm'
+                      : 'text-[#6B6B6B] hover:text-[#161616]'
                   }`}
                 >
-                  Interna Automotora
+                  Interna automotora
                 </button>
               </div>
             </div>
 
             {/* Filtro de Estados */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-1 border-t border-borde">
-              <span className="text-[10px] font-bold text-gris-texto uppercase tracking-wider shrink-0 mr-1">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-2 border-t border-[#E5E5E3]">
+              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider shrink-0 mr-1">
                 Estado:
               </span>
               {[
@@ -381,12 +375,12 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                   onClick={() => setStatusFilter(st.key)}
                   className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 ${
                     statusFilter === st.key
-                      ? 'bg-rojo text-white'
-                      : 'bg-negro text-gris-texto hover:text-white border border-borde'
+                      ? 'bg-[#161616] text-white shadow-sm'
+                      : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3]'
                   }`}
                 >
                   <span>{st.label}</span>
-                  <span className="text-[9px] px-1 rounded bg-black/40 font-mono">
+                  <span className={`text-[9px] px-1 rounded font-mono ${statusFilter === st.key ? 'bg-white/20 text-white' : 'bg-white text-[#6B6B6B]'}`}>
                     {st.count}
                   </span>
                 </button>
@@ -396,10 +390,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
 
           {/* LISTADO DE TARJETAS DE INSPECCIÓN */}
           {filteredInspections.length === 0 ? (
-            <div className="p-12 text-center rounded-xl bg-panel border border-borde space-y-3">
-              <ClipboardCheck className="w-12 h-12 text-gris-texto mx-auto" />
-              <h3 className="text-base font-bold text-white">No hay inspecciones que coincidan</h3>
-              <p className="text-xs text-gris-texto max-w-sm mx-auto">
+            <div className="p-12 text-center rounded-xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
+              <ClipboardCheck className="w-12 h-12 text-[#9A9A9A] mx-auto" />
+              <h3 className="text-base font-bold text-[#161616]">No hay inspecciones que coincidan</h3>
+              <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
                 No encontramos peritajes con los filtros seleccionados. Crea una nueva inspección para iniciar un peritaje.
               </p>
               <Button
@@ -411,7 +405,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                 }}
               >
                 <Plus className="w-4 h-4" />
-                <span>Crear Inspección</span>
+                <span>Crear inspección</span>
               </Button>
             </div>
           ) : (
@@ -423,28 +417,28 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                 return (
                   <div
                     key={insp.id}
-                    className="p-5 rounded-xl bg-panel border border-borde hover:border-gris-texto/40 transition-all flex flex-col justify-between space-y-4 shadow-sm group"
+                    className="p-5 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] transition-all flex flex-col justify-between space-y-4 shadow-sm group"
                   >
                     {/* ENCABEZADO DE TARJETA */}
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md inline-block mb-1 bg-negro text-gris-texto border border-borde">
-                            {insp.type === 'precompra' ? 'Precompra' : 'Interna Automotora'}
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mb-1.5 bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
+                            {insp.type === 'precompra' ? 'Precompra' : 'Interna automotora'}
                           </span>
-                          <h3 className="text-base font-title font-bold text-white group-hover:text-white transition-colors">
+                          <h3 className="text-base font-title font-bold text-[#161616] group-hover:text-[#000000] transition-colors">
                             {insp.vehicle_info}
                           </h3>
                         </div>
 
                         {/* Estado */}
                         <span
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg shrink-0 ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                             isCompleted
-                              ? 'bg-negro text-white border border-borde'
+                              ? 'bg-[#EEF7F2] text-[#1E6B43]'
                               : isInProgress
-                              ? 'bg-rojo/20 text-rojo border border-rojo/40 animate-pulse'
-                              : 'bg-negro text-gris-texto border border-borde'
+                              ? 'bg-[#FEF7EC] text-[#945B0E]'
+                              : 'bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]'
                           }`}
                         >
                           {insp.status}
@@ -452,27 +446,25 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                       </div>
 
                       {/* Matrícula y Categoría */}
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-negro border border-borde text-white">
-                          {insp.vehicle_plate}
-                        </span>
-                        <span className="text-[11px] text-gris-texto">
-                          • {insp.vehicle_category}
+                      <div className="flex items-center gap-2.5">
+                        <UruguayanPlate plate={insp.vehicle_plate} size="sm" />
+                        <span className="text-[11px] text-[#6B6B6B]">
+                          {insp.vehicle_category}
                         </span>
                         {insp.is_home_visit && (
-                          <span className="text-[10px] text-gris-texto font-bold bg-negro border border-borde px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-[#6B6B6B] font-medium bg-[#F5F5F4] border border-[#E5E5E3] px-1.5 py-0.5 rounded">
                             A domicilio
                           </span>
                         )}
                       </div>
 
                       {/* Solicitante y Vendedor */}
-                      <div className="text-xs text-gris-texto space-y-0.5 pt-1">
+                      <div className="text-xs text-[#6B6B6B] space-y-0.5 pt-1">
                         <div>
-                          Solicitante: <strong className="text-white">{insp.buyer_name || 'Automotora'}</strong>
+                          Solicitante: <strong className="text-[#161616]">{insp.buyer_name || 'Automotora'}</strong>
                         </div>
                         {insp.seller_name && (
-                          <div className="text-[11px] text-gris-texto">
+                          <div className="text-[11px] text-[#6B6B6B]">
                             Vendedor: {insp.seller_name}
                           </div>
                         )}
@@ -480,22 +472,22 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
 
                       {/* Puntaje y Semáforo (Si está completada o evaluada) */}
                       {isCompleted && (
-                        <div className="p-2.5 rounded-xl bg-negro border border-borde flex items-center justify-between">
+                        <div className="p-2.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg font-title font-bold text-sm flex items-center justify-center bg-panel border border-borde text-white">
+                            <div className="w-8 h-8 rounded-lg font-title font-bold text-sm flex items-center justify-center bg-white border border-[#E5E5E3] text-[#161616] shadow-sm">
                               {insp.score}
                             </div>
                             <div>
-                              <span className="text-[9px] uppercase font-bold text-gris-texto block leading-tight">
+                              <span className="text-[9px] font-bold text-[#6B6B6B] block leading-tight">
                                 Semáforo
                               </span>
                               <span
-                                className={`text-[11px] font-title font-bold uppercase ${
+                                className={`text-[11px] font-title font-bold ${
                                   insp.traffic_light === 'Recomendable'
-                                    ? 'text-white'
+                                    ? 'text-[#1E6B43]'
                                     : insp.traffic_light === 'Con reparos'
-                                    ? 'text-gris-texto'
-                                    : 'text-rojo'
+                                    ? 'text-[#945B0E]'
+                                    : 'text-[#B80E14]'
                                 }`}
                               >
                                 {insp.traffic_light}
@@ -504,10 +496,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                           </div>
 
                           <div className="text-right">
-                            <span className="text-[9px] uppercase font-bold text-gris-texto block leading-tight">
+                            <span className="text-[9px] font-bold text-[#6B6B6B] block leading-tight">
                               Reparaciones
                             </span>
-                            <span className="font-mono text-xs font-bold text-white">
+                            <span className="font-mono text-xs font-bold text-[#161616]">
                               $U {insp.estimated_repair_cost.toLocaleString('es-UY')}
                             </span>
                           </div>
@@ -516,10 +508,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                     </div>
 
                     {/* PIE DE TARJETA & ACCIONES */}
-                    <div className="pt-3 border-t border-borde space-y-3">
+                    <div className="pt-3 border-t border-[#E5E5E3] space-y-3">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-gris-texto">Monto:</span>
-                        <span className="font-mono font-bold text-white text-sm">
+                        <span className="text-[#6B6B6B]">Monto:</span>
+                        <span className="font-title font-bold text-[#161616] text-sm">
                           $U {insp.total_price.toLocaleString('es-UY')}
                         </span>
                       </div>
@@ -533,8 +525,8 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                             onClick={() => handleViewReport(insp)}
                             className="w-full"
                           >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>Ver Informe</span>
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                            <span>Ver informe</span>
                           </Button>
                         ) : (
                           <Button
@@ -552,7 +544,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                           <button
                             type="button"
                             onClick={() => handleEdit(insp)}
-                            className="p-2 rounded-lg bg-negro border border-borde text-gris-texto hover:text-white transition-colors"
+                            className="p-2 rounded-lg bg-white border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] hover:border-[#D0D0CD] transition-colors"
                             title="Editar datos"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -561,7 +553,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                           <button
                             type="button"
                             onClick={() => archiveInspection(insp.id)}
-                            className="p-2 rounded-lg bg-negro border border-borde text-gris-texto hover:text-rojo transition-colors"
+                            className="p-2 rounded-lg bg-white border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#D7141A] hover:border-[#D7141A]/30 transition-colors"
                             title="Archivar"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

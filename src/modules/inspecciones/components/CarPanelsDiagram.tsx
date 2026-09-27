@@ -15,35 +15,35 @@ const STATE_CONFIG: Record<
 > = {
   original: {
     label: 'Original',
-    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20',
-    border: 'border-emerald-500/30',
-    text: 'text-emerald-400',
-    badgeBg: 'bg-emerald-500/20 text-emerald-300',
-    dotColor: 'bg-emerald-500'
+    bg: 'bg-[#EEF7F2] hover:bg-[#D9EFE3]',
+    border: 'border-[#CDE9D9]',
+    text: 'text-[#1E6B43]',
+    badgeBg: 'bg-[#CDE9D9] text-[#1E6B43]',
+    dotColor: 'bg-[#1E6B43]'
   },
   repintado: {
     label: 'Repintado',
-    bg: 'bg-amber-500/15 hover:bg-amber-500/25',
-    border: 'border-amber-500/50',
-    text: 'text-amber-300',
-    badgeBg: 'bg-amber-500/25 text-amber-300',
-    dotColor: 'bg-amber-500'
+    bg: 'bg-[#FEF7EC] hover:bg-[#FDE7C9]',
+    border: 'border-[#FCE2B6]',
+    text: 'text-[#945B0E]',
+    badgeBg: 'bg-[#FCE2B6] text-[#945B0E]',
+    dotColor: 'bg-[#945B0E]'
   },
   masillado: {
     label: 'Masillado',
-    bg: 'bg-purple-600/20 hover:bg-purple-600/30',
-    border: 'border-purple-500/50',
-    text: 'text-purple-300',
-    badgeBg: 'bg-purple-600/30 text-purple-200',
-    dotColor: 'bg-purple-500'
+    bg: 'bg-purple-50 hover:bg-purple-100',
+    border: 'border-purple-200',
+    text: 'text-purple-800',
+    badgeBg: 'bg-purple-100 text-purple-800',
+    dotColor: 'bg-purple-600'
   },
   danado: {
     label: 'Dañado',
-    bg: 'bg-red-600/20 hover:bg-red-600/30',
-    border: 'border-red-500/60',
-    text: 'text-red-300',
-    badgeBg: 'bg-red-600/30 text-red-200',
-    dotColor: 'bg-red-500'
+    bg: 'bg-[#FDF2F2] hover:bg-[#FAD8D8]',
+    border: 'border-[#FACDCD]',
+    text: 'text-[#B80E14]',
+    badgeBg: 'bg-[#FACDCD] text-[#B80E14]',
+    dotColor: 'bg-[#B80E14]'
   }
 };
 
@@ -119,7 +119,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
         onClick={() => handleCycleState(id)}
       >
         <div className="flex items-start justify-between gap-1">
-          <span className="text-[11px] font-bold text-white line-clamp-1 leading-tight">
+          <span className="text-[11px] font-bold text-[#161616] line-clamp-1 leading-tight">
             {displayName}
           </span>
           {!readOnly && (
@@ -129,7 +129,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                 e.stopPropagation();
                 setEditingPanel(panel);
               }}
-              className="p-1 rounded-md bg-black/40 text-gris-texto hover:text-white transition-colors"
+              className="p-1 rounded-md bg-white/80 hover:bg-white text-[#6B6B6B] hover:text-[#161616] transition-colors border border-[#E5E5E3]"
               title="Ajustar micrones y notas"
             >
               <Edit3 className="w-3 h-3" />
@@ -142,14 +142,14 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
             {cfg.label}
           </span>
           {panel.thicknessMicrons ? (
-            <span className="font-mono text-gris-texto font-semibold">
+            <span className="font-mono text-[#6B6B6B] font-semibold">
               {panel.thicknessMicrons} µm
             </span>
           ) : null}
         </div>
 
         {panel.notes && (
-          <p className="mt-1 text-[9px] text-gris-texto italic truncate" title={panel.notes}>
+          <p className="mt-1 text-[9px] text-[#6B6B6B] italic truncate" title={panel.notes}>
             {panel.notes}
           </p>
         )}
@@ -158,62 +158,62 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Barra de Resumen / Leyenda */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3.5 rounded-xl bg-panel border border-borde text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-white border border-[#E5E5E3] text-xs shadow-sm">
         <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-white" />
-          <span className="font-title font-bold text-white">Mapa de Pintura y Paneles</span>
+          <Layers className="w-4 h-4 text-[#D7141A]" />
+          <span className="font-title font-bold text-[#161616]">Mapa de pintura y paneles</span>
           {!readOnly && (
-            <span className="text-[10px] text-gris-texto">
+            <span className="text-[10px] text-[#6B6B6B]">
               (Toca para cambiar estado)
             </span>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-negro border border-borde text-white text-[11px] font-medium">
-            <span className="w-2 h-2 rounded-full bg-white" />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#EEF7F2] border border-[#CDE9D9] text-[#1E6B43] text-[11px] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-[#1E6B43]" />
             Original: <strong>{counts.original}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-negro border border-borde text-gris-texto text-[11px] font-medium">
-            <span className="w-2 h-2 rounded-full bg-gris-texto" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#FEF7EC] border border-[#FCE2B6] text-[#945B0E] text-[11px] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-[#945B0E]" />
             Repintado: <strong>{counts.repintado}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-negro border border-borde text-gris-texto text-[11px] font-medium">
-            <span className="w-2 h-2 rounded-full bg-gris-texto" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-purple-600" />
             Masillado: <strong>{counts.masillado}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-rojo/20 border border-rojo/40 text-rojo text-[11px] font-medium">
-            <span className="w-2 h-2 rounded-full bg-rojo" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#FDF2F2] border border-[#FACDCD] text-[#B80E14] text-[11px] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-[#B80E14]" />
             Dañado: <strong>{counts.danado}</strong>
           </span>
         </div>
       </div>
 
-      {/* Disposición táctil del vehículo: Frontal / Lateral Izq / Centro / Lateral Der / Trasera */}
-      <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde space-y-3">
+      {/* Disposición táctil del vehículo */}
+      <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2.5 shadow-sm">
         {/* PARAGOLPE DELANTERO */}
         <div className="flex justify-center">
           <div className="w-full max-w-md">
-            {renderPanelButton('paragolpe_del', 'Paragolpe Delantero', 'h-16 text-center')}
+            {renderPanelButton('paragolpe_del', 'Paragolpe delantero', 'h-16 text-center')}
           </div>
         </div>
 
         {/* FRENTE: Guardabarro Izq | Capot | Guardabarro Der */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {renderPanelButton('guardabarro_del_izq', 'G.barro Del. Izq.')}
+        <div className="grid grid-cols-3 gap-2">
+          {renderPanelButton('guardabarro_del_izq', 'G.barro del. izq.')}
           {renderPanelButton('capot', 'Capot', 'col-span-1 min-h-[72px]')}
-          {renderPanelButton('guardabarro_del_der', 'G.barro Del. Der.')}
+          {renderPanelButton('guardabarro_del_der', 'G.barro del. der.')}
         </div>
 
         {/* MEDIO / HABITÁCULO: Puertas y Techo */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-2">
           {/* LADO IZQUIERDO: Puertas Del y Tras */}
-          <div className="space-y-2.5">
-            {renderPanelButton('puerta_del_izq', 'Puerta Del. Izq.')}
-            {renderPanelButton('puerta_tras_izq', 'Puerta Tras. Izq.')}
-            {renderPanelButton('zocalo_izq', 'Zócalo Izquierdo')}
+          <div className="space-y-2">
+            {renderPanelButton('puerta_del_izq', 'Puerta del. izq.')}
+            {renderPanelButton('puerta_tras_izq', 'Puerta tras. izq.')}
+            {renderPanelButton('zocalo_izq', 'Zócalo izquierdo')}
           </div>
 
           {/* CENTRO: Techo */}
@@ -222,43 +222,43 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
           </div>
 
           {/* LADO DERECHO: Puertas Del y Tras */}
-          <div className="space-y-2.5">
-            {renderPanelButton('puerta_del_der', 'Puerta Del. Der.')}
-            {renderPanelButton('puerta_tras_der', 'Puerta Tras. Der.')}
-            {renderPanelButton('zocalo_der', 'Zócalo Derecho')}
+          <div className="space-y-2">
+            {renderPanelButton('puerta_del_der', 'Puerta del. der.')}
+            {renderPanelButton('puerta_tras_der', 'Puerta tras. der.')}
+            {renderPanelButton('zocalo_der', 'Zócalo derecho')}
           </div>
         </div>
 
         {/* TRASERA: Guardabarro Tras. Izq | Baúl / Portón | Guardabarro Tras. Der */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {renderPanelButton('guardabarro_tras_izq', 'G.barro Tras. Izq.')}
-          {renderPanelButton('baul', 'Portón / Baúl', 'col-span-1 min-h-[72px]')}
-          {renderPanelButton('guardabarro_tras_der', 'G.barro Tras. Der.')}
+        <div className="grid grid-cols-3 gap-2">
+          {renderPanelButton('guardabarro_tras_izq', 'G.barro tras. izq.')}
+          {renderPanelButton('baul', 'Portón / baúl', 'col-span-1 min-h-[72px]')}
+          {renderPanelButton('guardabarro_tras_der', 'G.barro tras. der.')}
         </div>
 
         {/* PARAGOLPE TRASERO */}
         <div className="flex justify-center">
           <div className="w-full max-w-md">
-            {renderPanelButton('paragolpe_tras', 'Paragolpe Trasero', 'h-16 text-center')}
+            {renderPanelButton('paragolpe_tras', 'Paragolpe trasero', 'h-16 text-center')}
           </div>
         </div>
       </div>
 
       {/* MODAL DETALLES DEL PANEL (MICRONES Y NOTAS) */}
       {editingPanel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm rounded-xl bg-panel border border-borde p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-borde pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm rounded-xl bg-white border border-[#E5E5E3] p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
               <div>
-                <span className="text-[10px] font-title font-bold text-gris-texto uppercase tracking-wider">
-                  Panel Seleccionado
+                <span className="text-[10px] font-title font-bold text-[#6B6B6B] uppercase tracking-wider">
+                  Panel seleccionado
                 </span>
-                <h3 className="text-base font-title font-bold text-white">{editingPanel.name}</h3>
+                <h3 className="text-base font-title font-bold text-[#161616]">{editingPanel.name}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingPanel(null)}
-                className="p-1.5 rounded-lg bg-negro border border-borde text-gris-texto hover:text-white transition-colors"
+                className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -266,7 +266,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
             {/* Selector de Estado */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gris-texto">Estado del Panel</label>
+              <label className="text-xs font-semibold text-[#6B6B6B]">Estado del panel</label>
               <div className="grid grid-cols-2 gap-2">
                 {(['original', 'repintado', 'masillado', 'danado'] as CarPanelState[]).map((st) => {
                   const cfg = STATE_CONFIG[st];
@@ -278,12 +278,12 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                       onClick={() => setEditingPanel({ ...editingPanel, state: st })}
                       className={`p-2.5 rounded-lg border text-xs font-bold transition-all text-left flex items-center justify-between ${
                         isSelected
-                          ? 'bg-rojo text-white border-rojo'
-                          : 'bg-negro border-borde text-gris-texto hover:text-white'
+                          ? `${cfg.bg} ${cfg.text} ${cfg.border} ring-1 ring-[#161616]`
+                          : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
                       }`}
                     >
                       <span>{cfg.label}</span>
-                      <span className={`w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-white' : 'bg-gris-texto'}`} />
+                      <span className={`w-2.5 h-2.5 rounded-full ${isSelected ? cfg.dotColor : 'bg-[#9A9A9A]'}`} />
                     </button>
                   );
                 })}
@@ -292,8 +292,8 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
             {/* Micrones (µm) con Presets */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gris-texto">
-                Espesor de Pintura (Micrones µm)
+              <label className="text-xs font-semibold text-[#6B6B6B]">
+                Espesor de pintura (Micrones µm)
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -306,9 +306,9 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                     })
                   }
                   placeholder="Ej: 115"
-                  className="flex-1 px-3 py-2 rounded-lg bg-negro border border-borde text-white font-mono text-sm focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                  className="flex-1 px-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] font-mono text-sm focus:bg-white focus:border-[#161616] outline-none"
                 />
-                <span className="text-xs text-gris-texto font-bold">µm</span>
+                <span className="text-xs text-[#6B6B6B] font-bold">µm</span>
               </div>
 
               {/* Botones de preset rápido */}
@@ -316,21 +316,21 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingPanel({ ...editingPanel, thicknessMicrons: 115, state: 'original' })}
-                  className="flex-1 py-1 px-2 rounded-md bg-negro border border-borde text-[10px] font-bold text-white hover:border-gris-texto transition-colors"
+                  className="flex-1 py-1 px-2 rounded-md bg-[#F5F5F4] border border-[#E5E5E3] text-[10px] font-bold text-[#161616] hover:bg-white transition-colors"
                 >
                   115 µm (Orig)
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingPanel({ ...editingPanel, thicknessMicrons: 230, state: 'repintado' })}
-                  className="flex-1 py-1 px-2 rounded-md bg-negro border border-borde text-[10px] font-bold text-gris-texto hover:text-white transition-colors"
+                  className="flex-1 py-1 px-2 rounded-md bg-[#F5F5F4] border border-[#E5E5E3] text-[10px] font-bold text-[#6B6B6B] hover:text-[#161616] transition-colors"
                 >
                   230 µm (Rep)
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingPanel({ ...editingPanel, thicknessMicrons: 480, state: 'masillado' })}
-                  className="flex-1 py-1 px-2 rounded-md bg-negro border border-borde text-[10px] font-bold text-gris-texto hover:text-white transition-colors"
+                  className="flex-1 py-1 px-2 rounded-md bg-[#F5F5F4] border border-[#E5E5E3] text-[10px] font-bold text-[#6B6B6B] hover:text-[#161616] transition-colors"
                 >
                   480 µm (Mas)
                 </button>
@@ -339,18 +339,18 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
             {/* Observaciones del panel */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gris-texto">Notas / Hallazgo</label>
+              <label className="text-xs font-semibold text-[#6B6B6B]">Notas / Hallazgo</label>
               <input
                 type="text"
                 value={editingPanel.notes || ''}
                 onChange={(e) => setEditingPanel({ ...editingPanel, notes: e.target.value })}
                 placeholder="Ej: Raspón de estacionamiento sin masilla"
-                className="w-full px-3 py-2 rounded-lg bg-negro border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                className="w-full px-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:bg-white focus:border-[#161616] outline-none"
               />
             </div>
 
             {/* Botones */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-borde">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E5E5E3]">
               <Button
                 type="button"
                 variant="secondary"
@@ -365,7 +365,7 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                 size="sm"
                 onClick={() => handleSaveModal(editingPanel)}
               >
-                Guardar Panel
+                Guardar panel
               </Button>
             </div>
           </div>

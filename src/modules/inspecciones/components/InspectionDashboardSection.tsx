@@ -65,65 +65,65 @@ export const InspectionDashboardSection: React.FC = () => {
       {/* TARJETAS KPI FINANCIERAS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Facturación Precompra */}
-        <div className="p-4 rounded-xl bg-panel border border-borde space-y-1">
-          <div className="flex items-center justify-between text-xs text-gris-texto">
-            <span>Facturación Precompra</span>
-            <span className="p-1.5 rounded-xl bg-negro border border-borde text-rojo">
+        <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
+            <span>Facturación precompra</span>
+            <span className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
               <DollarSign className="w-4 h-4" />
             </span>
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-title font-bold text-[#161616]">
             $U {totalRevenuePrecompra.toLocaleString('es-UY')}
           </div>
-          <p className="text-[11px] text-gris-texto">
+          <p className="text-[11px] text-[#6B6B6B]">
             {precompraInspections.length} peritajes cobrados a clientes
           </p>
         </div>
 
         {/* Costos Internos Automotora */}
-        <div className="p-4 rounded-xl bg-panel border border-borde space-y-1">
-          <div className="flex items-center justify-between text-xs text-gris-texto">
-            <span>Costos Internos Patio</span>
-            <span className="p-1.5 rounded-xl bg-negro border border-borde text-rojo">
+        <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
+            <span>Costos internos patio</span>
+            <span className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
               <Car className="w-4 h-4" />
             </span>
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-title font-bold text-[#161616]">
             $U {totalInternalCost.toLocaleString('es-UY')}
           </div>
-          <p className="text-[11px] text-gris-texto">
+          <p className="text-[11px] text-[#6B6B6B]">
             {internaInspections.length} autos evaluados para compra
           </p>
         </div>
 
         {/* Comisiones Peritos */}
-        <div className="p-4 rounded-xl bg-panel border border-borde space-y-1">
-          <div className="flex items-center justify-between text-xs text-gris-texto">
-            <span>Comisiones Inspector</span>
-            <span className="p-1.5 rounded-xl bg-negro border border-borde text-rojo">
+        <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
+            <span>Comisiones inspector</span>
+            <span className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
               <Users className="w-4 h-4" />
             </span>
           </div>
-          <div className="text-2xl font-black text-rojo font-mono">
+          <div className="text-2xl font-title font-bold text-[#D7141A]">
             $U {totalCommissionsAmount.toLocaleString('es-UY')}
           </div>
-          <p className="text-[11px] text-gris-texto">
+          <p className="text-[11px] text-[#6B6B6B]">
             {inspectionCommissions.length} comisiones liquidadas/pendientes
           </p>
         </div>
 
         {/* Puntaje Promedio */}
-        <div className="p-4 rounded-xl bg-panel border border-borde space-y-1">
-          <div className="flex items-center justify-between text-xs text-gris-texto">
-            <span>Puntaje Promedio</span>
-            <span className="p-1.5 rounded-xl bg-negro border border-borde text-rojo">
+        <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
+            <span>Puntaje promedio</span>
+            <span className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
               <ShieldCheck className="w-4 h-4" />
             </span>
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-title font-bold text-[#161616]">
             {avgScore} / 100
           </div>
-          <p className="text-[11px] text-gris-texto">
+          <p className="text-[11px] text-[#6B6B6B]">
             Estado medio del parque evaluado
           </p>
         </div>
@@ -132,13 +132,13 @@ export const InspectionDashboardSection: React.FC = () => {
       {/* GRAFICOS / DISTRIBUCIÓN OPERATIVA */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Distribución Semáforo */}
-        <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
+        <div className="p-5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-rojo" />
-              Distribución de Semáforos
+            <h3 className="text-sm font-title font-bold text-[#161616] flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-[#D7141A]" />
+              <span>Distribución de semáforos</span>
             </h3>
-            <span className="text-xs font-mono text-gris-texto">
+            <span className="text-xs font-mono text-[#6B6B6B]">
               {completedInspections.length} evaluados
             </span>
           </div>
@@ -146,15 +146,15 @@ export const InspectionDashboardSection: React.FC = () => {
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="font-bold text-[#1E6B43] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#1E6B43]" />
                   Recomendable ({trafficCounts['Recomendable']})
                 </span>
-                <span className="font-mono text-gris-texto">{pctRecomendable}%</span>
+                <span className="font-mono text-[#6B6B6B]">{pctRecomendable}%</span>
               </div>
-              <div className="h-2 rounded-full bg-negro border border-borde overflow-hidden">
+              <div className="h-2 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full"
+                  className="h-full bg-[#1E6B43] rounded-full"
                   style={{ width: `${pctRecomendable}%` }}
                 />
               </div>
@@ -162,15 +162,15 @@ export const InspectionDashboardSection: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="font-bold text-[#945B0E] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#945B0E]" />
                   Con reparos ({trafficCounts['Con reparos']})
                 </span>
-                <span className="font-mono text-gris-texto">{pctReparos}%</span>
+                <span className="font-mono text-[#6B6B6B]">{pctReparos}%</span>
               </div>
-              <div className="h-2 rounded-full bg-negro border border-borde overflow-hidden">
+              <div className="h-2 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] overflow-hidden">
                 <div
-                  className="h-full bg-amber-500 rounded-full"
+                  className="h-full bg-[#945B0E] rounded-full"
                   style={{ width: `${pctReparos}%` }}
                 />
               </div>
@@ -178,15 +178,15 @@ export const InspectionDashboardSection: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-bold text-red-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-400" />
+                <span className="font-bold text-[#B80E14] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#B80E14]" />
                   No recomendable ({trafficCounts['No recomendable']})
                 </span>
-                <span className="font-mono text-gris-texto">{pctNoRecomendable}%</span>
+                <span className="font-mono text-[#6B6B6B]">{pctNoRecomendable}%</span>
               </div>
-              <div className="h-2 rounded-full bg-negro border border-borde overflow-hidden">
+              <div className="h-2 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] overflow-hidden">
                 <div
-                  className="h-full bg-red-500 rounded-full"
+                  className="h-full bg-[#B80E14] rounded-full"
                   style={{ width: `${pctNoRecomendable}%` }}
                 />
               </div>
@@ -195,49 +195,49 @@ export const InspectionDashboardSection: React.FC = () => {
         </div>
 
         {/* Tasa de Compra Automotora */}
-        <div className="p-5 rounded-xl bg-panel border border-borde space-y-4">
+        <div className="p-5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-rojo" />
-              Decisión de Compra (Automotora CARVLAK)
+            <h3 className="text-sm font-title font-bold text-[#161616] flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-[#D7141A]" />
+              <span>Decisión de compra (Automotora CARVLAK)</span>
             </h3>
-            <span className="text-xs font-mono text-gris-texto">
+            <span className="text-xs font-mono text-[#6B6B6B]">
               {internaInspections.length} peritajes patio
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-3 rounded-xl bg-negro border border-borde space-y-1">
-              <span className="text-[10px] font-bold text-gris-texto uppercase">Comprar</span>
-              <div className="text-xl font-black text-white font-mono">
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
+              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase">Comprar</span>
+              <div className="text-xl font-title font-bold text-[#1E6B43]">
                 {decisionCounts.comprar}
               </div>
-              <span className="text-[10px] text-gris-texto">{buyRate}%</span>
+              <span className="text-[10px] text-[#6B6B6B]">{buyRate}%</span>
             </div>
 
-            <div className="p-3 rounded-xl bg-negro border border-borde space-y-1">
-              <span className="text-[10px] font-bold text-gris-texto uppercase">Negociar</span>
-              <div className="text-xl font-black text-white font-mono">
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
+              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase">Negociar</span>
+              <div className="text-xl font-title font-bold text-[#945B0E]">
                 {decisionCounts.negociar}
               </div>
-              <span className="text-[10px] text-gris-texto">
+              <span className="text-[10px] text-[#6B6B6B]">
                 {Math.round((decisionCounts.negociar / totalDecisions) * 100)}%
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-negro border border-borde space-y-1">
-              <span className="text-[10px] font-bold text-rojo uppercase">Descartar</span>
-              <div className="text-xl font-black text-rojo font-mono">
+            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
+              <span className="text-[10px] font-bold text-[#D7141A] uppercase">Descartar</span>
+              <div className="text-xl font-title font-bold text-[#D7141A]">
                 {decisionCounts.no_comprar}
               </div>
-              <span className="text-[10px] text-gris-texto">
+              <span className="text-[10px] text-[#6B6B6B]">
                 {Math.round((decisionCounts.no_comprar / totalDecisions) * 100)}%
               </span>
             </div>
           </div>
 
-          <p className="text-xs text-gris-texto italic leading-relaxed">
-            * Los costos de las revisiones internas quedan registrados para imputarse automáticamente al costo de adquisición de la unidad en el Módulo Automotora.
+          <p className="text-xs text-[#6B6B6B] italic leading-relaxed">
+            * Los costos de las revisiones internas quedan registrados para imputarse automáticamente al costo de adquisición de la unidad en el módulo automotora.
           </p>
         </div>
       </div>

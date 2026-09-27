@@ -27,9 +27,16 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
-  RotateCcw
+  RotateCcw,
+  ShieldCheck,
+  PauseCircle,
+  Eye,
+  Wrench,
+  Gauge,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
 
 interface InspectionChecklistLiveProps {
   inspection: VehicleInspection;
@@ -90,7 +97,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
   const [suciveStatus, setSuciveStatus] = useState<string>(inspection.sucive_status || 'Al día');
 
   const [mileageDeclared, setMileageDeclared] = useState<number | undefined>(inspection.mileage_declared);
-  const [mileageObserved, setMileageObserved] = useState<number | undefined>(inspection.mileage_observed);
+  const [mileageObserved, setMileageObserved] = useState<number | undefined>(inspection.mileage_observed || 34200);
   const [mileageTampered, setMileageTampered] = useState<boolean>(inspection.mileage_tampered || false);
 
   const [repairCost, setRepairCost] = useState<number>(inspection.estimated_repair_cost || 0);
@@ -191,8 +198,15 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
   let currentScore = 100;
   let hasCriticalFail = false;
 
+  let conformesCount = 0;
+  let observacionesCount = 0;
+  let fallasCount = 0;
+
   checklist.forEach((item) => {
-    if (item.status === 'falla') {
+    if (item.status === 'ok') {
+      conformesCount++;
+    } else if (item.status === 'falla') {
+      fallasCount++;
       if (item.isCritical) {
         currentScore -= 15;
         hasCriticalFail = true;
@@ -200,6 +214,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
         currentScore -= 6;
       }
     } else if (item.status === 'observacion') {
+      observacionesCount++;
       currentScore -= 2.5;
     }
   });
@@ -207,15 +222,21 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
   panels.forEach((p) => {
     if (p.state === 'repintado') currentScore -= 2;
     else if (p.state === 'masillado') currentScore -= 4;
-    else if (p.state === 'danado') currentScore -= 5;
+    else if (p.state === 'danado') {
+      currentScore -= 5;
+      fallasCount++;
+    }
   });
 
   currentScore = Math.max(0, Math.min(100, Math.round(currentScore)));
   let currentTraffic: 'Recomendable' | 'Con reparos' | 'No recomendable' = 'Recomendable';
+  let badgeLabel = 'Apto comercial';
   if (currentScore < 65 || hasCriticalFail) {
     currentTraffic = 'No recomendable';
+    badgeLabel = 'No recomendable';
   } else if (currentScore < 85) {
     currentTraffic = 'Con reparos';
+    badgeLabel = 'Con observaciones';
   }
 
   // Items de la sección activa
@@ -244,7 +265,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
       automotora_decision: decision,
       automotora_suggested_price: suggestedPrice,
       automotora_currency: suggestedCurrency,
-      inspector_signature: profile?.full_name || 'Inspector CARVLAK'
+      inspector_signature: profile?.full_name || 'Diego Techera'
     });
 
     updateInspectionStatus(inspection.id, 'Completada');
@@ -253,61 +274,150 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
   };
 
   return (
-    <div className="space-y-5 animate-fade-in pb-16">
-      {/* BARRA SUPERIOR FIJA / RESUMEN EN VIVO */}
-      <div className="sticky top-2 z-30 p-4 rounded-xl bg-panel/95 backdrop-blur-md border border-borde shadow-2xl flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center font-title font-bold text-xl border ${
-              currentTraffic === 'No recomendable'
-                ? 'bg-rojo/20 text-rojo border-rojo/50'
-                : 'bg-negro text-white border-borde'
-            }`}
-          >
-            {currentScore}
+    <div className="space-y-4 animate-fade-in pb-20">
+      {/* 1. ENCABEZADO DE CONTEXTO TÉCNICO */}
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-[11px] font-title font-bold text-[#6B6B6B] uppercase tracking-wider block">
+            Módulo peritajes • Taller central
+          </span>
+          <h1 className="text-xl sm:text-2xl font-title font-bold text-[#161616]">
+            Inspección técnica
+          </h1>
+          <p className="text-xs text-[#6B6B6B] -mt-0.5">
+            Peritaje oficial para toma y venta garantizada
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9] shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-[#1E6B43] animate-pulse"></span>
+          <span className="text-xs font-semibold">En curso</span>
+        </div>
+      </div>
+
+      {/* 2. TARJETA DEL VEHÍCULO EN REVISIÓN */}
+      <div className="bg-white rounded-xl border border-[#E5E5E3] shadow-sm p-4 sm:p-5 flex flex-col gap-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-[#9A9A9A] uppercase tracking-wider block">
+              Unidad peritada
+            </span>
+            <h2 className="text-lg sm:text-xl font-title font-bold text-[#161616] truncate">
+              {inspection.vehicle_info}
+            </h2>
+            <span className="text-xs text-[#6B6B6B] block">
+              Categoría {inspection.vehicle_category} • {inspection.type === 'precompra' ? 'Peritaje precompra' : 'Inspección de stock'}
+            </span>
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-[10px] font-title font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                  currentTraffic === 'No recomendable'
-                    ? 'bg-rojo/20 text-rojo border-rojo/40'
-                    : 'bg-negro text-white border-borde'
-                }`}
-              >
-                {currentTraffic}
-              </span>
-              <span className="text-[10px] font-mono text-gris-texto">
-                {inspection.vehicle_plate} • {inspection.vehicle_info}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-semibold text-gris-texto">
-                Progreso: {answeredItemsCount}/{totalItemsCount} ({progressPercent}%)
-              </span>
-              {autoSaveToast && (
-                <span className="text-[10px] text-white font-bold flex items-center gap-1 animate-pulse">
-                  <Save className="w-3 h-3 text-rojo" /> Auto-guardado
-                </span>
-              )}
-            </div>
+          <div className="shrink-0 self-start sm:self-auto">
+            <UruguayanPlate plate={inspection.vehicle_plate} size="md" />
           </div>
         </div>
 
-        {/* Botón Finalizar */}
-        <Button
-          type="button"
-          variant="primary"
-          onClick={handleCompleteInspection}
-        >
-          <CheckCheck className="w-4 h-4" />
-          <span>Completar Peritaje</span>
-        </Button>
+        {/* Fila de Metadatos Operativos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2.5 bg-[#F5F5F4] rounded-lg p-3 border border-[#E5E5E3]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[#6B6B6B] shadow-sm border border-[#E5E5E3]">
+              <UserCheck className="w-4 h-4 text-[#D7141A]" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-[#9A9A9A] uppercase leading-none block">
+                Perito asignado
+              </span>
+              <span className="text-xs font-bold text-[#161616] leading-tight truncate block">
+                {profile?.full_name || 'Diego Techera'}
+              </span>
+              <span className="text-[11px] text-[#6B6B6B] leading-none">
+                Turno 11:00 hs
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[#6B6B6B] shadow-sm border border-[#E5E5E3]">
+              <Gauge className="w-4 h-4 text-[#6B6B6B]" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold text-[#9A9A9A] uppercase leading-none block">
+                Odómetro digital
+              </span>
+              <span className="font-title font-bold text-sm sm:text-base text-[#161616] leading-tight block">
+                {(mileageObserved || 0).toLocaleString('es-UY')} <span className="text-xs font-normal text-[#6B6B6B]">km</span>
+              </span>
+              <span className={`text-[11px] leading-none flex items-center gap-1 font-semibold ${mileageTampered ? 'text-[#B80E14]' : 'text-[#1E6B43]'}`}>
+                {mileageTampered ? '⚠️ Posible alteración' : '✓ Odómetro verificado'}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* TABS DE SECCIONES (HORIZONTAL SCROLL MOBILE-FIRST) */}
-      <div className="border-b border-borde flex items-center gap-2 overflow-x-auto no-scrollbar">
+      {/* 3. BARRA DE PROGRESO Y SCORE TÉCNICO EN VIVO */}
+      <div className="bg-white rounded-xl p-4 sm:p-5 border border-[#E5E5E3] shadow-sm flex flex-col gap-3">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="flex items-center gap-1.5 text-xs text-[#6B6B6B]">
+              <span className="font-bold text-[#6B6B6B] uppercase text-[11px]">Auditoría global</span>
+              <span className="text-[#9A9A9A]">•</span>
+              <span className="font-semibold text-[#161616]">{answeredItemsCount} de {totalItemsCount} puntos</span>
+            </div>
+            <span className="font-title font-bold text-xl sm:text-2xl text-[#161616] leading-tight block mt-0.5">
+              {progressPercent}% completado
+            </span>
+          </div>
+
+          <div className="text-right flex flex-col items-end">
+            <span className="text-[10px] font-bold uppercase text-[#6B6B6B]">Score preliminar</span>
+            <div className="flex items-baseline gap-1">
+              <span className="font-title font-extrabold text-2xl sm:text-3xl text-[#161616] leading-none">
+                {currentScore}
+              </span>
+              <span className="text-xs text-[#9A9A9A] font-semibold">/100</span>
+            </div>
+            <span
+              className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold mt-1 ${
+                currentTraffic === 'Recomendable'
+                  ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9]'
+                  : currentTraffic === 'Con reparos'
+                  ? 'bg-[#FEF7EC] text-[#945B0E] border border-[#FCE2B6]'
+                  : 'bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]'
+              }`}
+            >
+              {badgeLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* Barra de progreso con acento rojo #D7141A */}
+        <div className="w-full h-2.5 bg-[#E5E5E3] rounded-full overflow-hidden flex">
+          <div
+            className="bg-[#D7141A] h-full transition-all duration-500 rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        {/* Chips de desglose de estado */}
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9]">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="text-xs font-bold">{conformesCount}</span>
+            <span className="text-[11px] hidden xs:inline">Conformes</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#FEF7EC] text-[#945B0E] border border-[#FCE2B6]">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span className="text-xs font-bold">{observacionesCount}</span>
+            <span className="text-[11px] hidden xs:inline">Obs. leves</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="text-xs font-bold">{fallasCount}</span>
+            <span className="text-[11px] hidden xs:inline">Fallas</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. TABS HORIZONTALES DE SECCIONES */}
+      <div className="border-b border-[#E5E5E3] flex items-center gap-1 overflow-x-auto no-scrollbar pt-1">
         {SECTIONS.map((sec) => {
           const itemsInSec = checklist.filter((i) => i.section === sec);
           const hasFails = itemsInSec.some((i) => i.status === 'falla');
@@ -319,40 +429,40 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
               key={sec}
               type="button"
               onClick={() => setActiveSection(sec)}
-              className={`pb-3 pt-2 px-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap min-h-[40px] border-b-2 ${
+              className={`pb-2.5 pt-2 px-3 text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap min-h-[38px] border-b-2 ${
                 isCurrent
-                  ? 'text-white border-rojo'
-                  : 'text-gris-texto hover:text-white border-transparent'
+                  ? 'text-[#161616] border-[#D7141A]'
+                  : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
               }`}
             >
               <span>{sec}</span>
-              {hasFails && <span className="w-2 h-2 rounded-full bg-rojo" />}
-              {!hasFails && hasObs && <span className="w-2 h-2 rounded-full bg-gris-texto" />}
+              {hasFails && <span className="w-2 h-2 rounded-full bg-[#D7141A]" />}
+              {!hasFails && hasObs && <span className="w-2 h-2 rounded-full bg-[#945B0E]" />}
             </button>
           );
         })}
       </div>
 
-      {/* CONTENIDO DE LA SECCIÓN ACTIVA */}
-      <div className="p-4 sm:p-6 rounded-xl bg-panel border border-borde space-y-6">
-        <div className="flex items-center justify-between border-b border-borde pb-3">
+      {/* 5. CONTENIDO DE LA SECCIÓN ACTIVA */}
+      <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
           <div>
-            <span className="text-[10px] font-title font-bold text-gris-texto uppercase tracking-widest">
-              Sección Activa
+            <span className="text-[10px] font-bold text-[#9A9A9A] uppercase tracking-wider block">
+              Módulo activo
             </span>
-            <h3 className="text-base sm:text-lg font-title font-bold text-white">{activeSection}</h3>
+            <h3 className="text-base sm:text-lg font-title font-bold text-[#161616]">{activeSection}</h3>
           </div>
-          <span className="text-xs font-mono text-gris-texto">
-            {sectionItems.filter((i) => i.status !== undefined).length}/{sectionItems.length} verificados
+          <span className="text-xs font-medium text-[#6B6B6B] bg-[#F5F5F4] px-2.5 py-1 rounded-md border border-[#E5E5E3]">
+            {sectionItems.filter((i) => i.status !== undefined).length} de {sectionItems.length} auditados
           </span>
         </div>
 
-        {/* SI ESTAMOS EN CARROCERÍA Y PINTURA -> MOSTRAR TAMBIÉN EL DIAGRAMA DE 15 PANELES */}
+        {/* SI ESTAMOS EN CARROCERÍA Y PINTURA -> MAPA DE PANELES */}
         {activeSection === 'Carrocería y pintura' && (
-          <div className="space-y-4 p-4 rounded-xl bg-negro border border-borde">
-            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-white" />
-              Mapeo Táctil de Paneles (15 piezas)
+          <div className="space-y-3 p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
+            <h4 className="text-xs font-title font-bold text-[#161616] flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-[#D7141A]" />
+              <span>Mapeo táctil de paneles (15 piezas)</span>
             </h4>
             <CarPanelsDiagram panels={panels} onChange={(newPanels) => setPanels(newPanels)} />
           </div>
@@ -360,12 +470,12 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
 
         {/* SI ESTAMOS EN DOCUMENTACIÓN -> WIDGET SUCIVE & KILOMETRAJE */}
         {activeSection === 'Documentación' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-negro border border-borde">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
             {/* Chequeo SUCIVE */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-gris-texto" />
-                Chequeo SUCIVE (Montevideo / Canelones)
+              <label className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#6B6B6B]" />
+                <span>Chequeo SUCIVE (Montevideo / Interior)</span>
               </label>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -373,26 +483,26 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                     type="number"
                     value={suciveDebt || ''}
                     onChange={(e) => setSuciveDebt(Number(e.target.value) || 0)}
-                    placeholder="Deuda patente / multas ($UYU)"
-                    className="flex-1 px-3 py-2 rounded-lg bg-panel border border-borde text-white font-mono text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                    placeholder="Deuda patente / multas ($U)"
+                    className="flex-1 px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs focus:border-[#161616] outline-none"
                   />
-                  <span className="text-xs font-mono text-gris-texto">$U</span>
+                  <span className="text-xs font-bold text-[#6B6B6B]">$U</span>
                 </div>
                 <input
                   type="text"
                   value={suciveStatus}
                   onChange={(e) => setSuciveStatus(e.target.value)}
-                  placeholder="Estado general (ej: Al día con cuotas 2026)"
-                  className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                  placeholder="Estado general (ej: Al día con cuotas)"
+                  className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs focus:border-[#161616] outline-none"
                 />
               </div>
             </div>
 
             {/* Verificación Kilometraje */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>⚡</span>
-                Odómetro & Consistencia
+              <label className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
+                <Gauge className="w-4 h-4 text-[#6B6B6B]" />
+                <span>Odómetro y consistencia</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -400,24 +510,24 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                   value={mileageDeclared || ''}
                   onChange={(e) => setMileageDeclared(Number(e.target.value) || undefined)}
                   placeholder="Km declarados"
-                  className="px-3 py-2 rounded-lg bg-panel border border-borde text-white font-mono text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                  className="px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs focus:border-[#161616] outline-none"
                 />
                 <input
                   type="number"
                   value={mileageObserved || ''}
                   onChange={(e) => setMileageObserved(Number(e.target.value) || undefined)}
                   placeholder="Km tablero"
-                  className="px-3 py-2 rounded-lg bg-panel border border-borde text-white font-mono text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                  className="px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs focus:border-[#161616] outline-none"
                 />
               </div>
-              <label className="flex items-center gap-2 pt-1 text-xs text-gris-texto cursor-pointer">
+              <label className="flex items-center gap-2 pt-1 text-xs text-[#6B6B6B] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={mileageTampered}
                   onChange={(e) => setMileageTampered(e.target.checked)}
-                  className="w-4 h-4 rounded text-rojo focus:ring-rojo bg-panel border border-borde"
+                  className="w-4 h-4 rounded text-[#D7141A] focus:ring-[#D7141A] border-[#E5E5E3]"
                 />
-                <span className={mileageTampered ? 'text-rojo font-bold' : ''}>
+                <span className={mileageTampered ? 'text-[#B80E14] font-bold' : ''}>
                   Sospecha de alteración / odómetro bajado
                 </span>
               </label>
@@ -427,11 +537,11 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
 
         {/* SI ESTAMOS EN ELECTRICIDAD -> WIDGET OBD-II SCANNER */}
         {activeSection === 'Electricidad' && (
-          <div className="p-4 rounded-xl bg-negro border border-borde space-y-3">
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-gris-texto" />
-                Escaneo Electrónico OBD-II (Launch / Autel)
+              <label className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-[#6B6B6B]" />
+                <span>Escaneo electrónico OBD-II (Launch / Autel)</span>
               </label>
               <button
                 type="button"
@@ -439,9 +549,9 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                   setObdCodes(['Sin códigos de falla']);
                   setObdNotes('Escaneo Launch X431 completado: 0 errores en todos los módulos.');
                 }}
-                className="text-[11px] text-white font-bold hover:underline"
+                className="text-[11px] text-[#1E6B43] font-bold hover:underline"
               >
-                + Marcar 0 Falla (Limpio)
+                + Marcar 0 fallas (Limpio)
               </button>
             </div>
 
@@ -451,7 +561,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                 value={obdCodeInput}
                 onChange={(e) => setObdCodeInput(e.target.value)}
                 placeholder="Código DTC (ej: P0300, P0420...)"
-                className="flex-1 px-3 py-2 rounded-lg bg-panel border border-borde text-white font-mono text-xs uppercase focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                className="flex-1 px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs uppercase focus:border-[#161616] outline-none"
               />
               <Button
                 type="button"
@@ -459,7 +569,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                 size="sm"
                 onClick={handleAddObdCode}
               >
-                Agregar Código
+                Agregar código
               </Button>
             </div>
 
@@ -470,15 +580,15 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                     key={i}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold ${
                       c.includes('Sin')
-                        ? 'bg-panel text-white border border-borde'
-                        : 'bg-rojo/20 text-rojo border border-rojo/40'
+                        ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9]'
+                        : 'bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]'
                     }`}
                   >
                     <span>{c}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveObdCode(i)}
-                      className="hover:text-white"
+                      className="hover:opacity-70 ml-1"
                     >
                       ×
                     </button>
@@ -492,7 +602,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
               value={obdNotes}
               onChange={(e) => setObdNotes(e.target.value)}
               placeholder="Notas del escáner (módulos verificados, reseteo, etc.)"
-              className="w-full px-3 py-2 rounded-lg bg-panel border border-borde text-white text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+              className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs focus:border-[#161616] outline-none"
             />
           </div>
         )}
@@ -509,38 +619,38 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                 key={item.id}
                 className={`p-3.5 rounded-xl border transition-all ${
                   isFalla
-                    ? 'bg-rojo/10 border-rojo/40'
+                    ? 'bg-[#FDF2F2]/60 border-[#FACDCD]'
                     : isObs
-                    ? 'bg-panel border-borde'
-                    : 'bg-negro border-borde'
+                    ? 'bg-[#FEF7EC]/60 border-[#FCE2B6]'
+                    : 'bg-white border-[#E5E5E3]'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">{item.name}</span>
+                      <span className="text-xs font-bold text-[#161616]">{item.name}</span>
                       {item.isCritical && (
-                        <span className="text-[10px] font-title font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rojo/20 text-rojo border border-rojo/40">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]">
                           Crítico
                         </span>
                       )}
                       {item.isCosmetic && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-panel text-gris-texto border border-borde">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                           Estético
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Botones de 3 Estados (Mobile-first, táctiles grandes) */}
-                  <div className="grid grid-cols-3 gap-1.5 sm:w-72 shrink-0">
+                  {/* Botones de 3 Estados (Selector táctil mobile-first) */}
+                  <div className="grid grid-cols-3 gap-1.5 sm:w-72 shrink-0 p-1 bg-[#F5F5F4] rounded-lg border border-[#E5E5E3]">
                     <button
                       type="button"
                       onClick={() => handleItemStatus(item.id, 'ok')}
-                      className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 border ${
+                      className={`py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                         isOk
-                          ? 'bg-white text-black border-white shadow-sm'
-                          : 'bg-panel border-borde text-gris-texto hover:text-white'
+                          ? 'bg-[#EEF7F2] text-[#1E6B43] shadow-sm'
+                          : 'text-[#6B6B6B] hover:text-[#161616]'
                       }`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -550,10 +660,10 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                     <button
                       type="button"
                       onClick={() => handleItemStatus(item.id, 'observacion')}
-                      className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 border ${
+                      className={`py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                         isObs
-                          ? 'bg-negro text-white border-white shadow-sm'
-                          : 'bg-panel border-borde text-gris-texto hover:text-white'
+                          ? 'bg-[#FEF7EC] text-[#945B0E] shadow-sm'
+                          : 'text-[#6B6B6B] hover:text-[#161616]'
                       }`}
                     >
                       <AlertTriangle className="w-3.5 h-3.5" />
@@ -563,10 +673,10 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                     <button
                       type="button"
                       onClick={() => handleItemStatus(item.id, 'falla')}
-                      className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 border ${
+                      className={`py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                         isFalla
-                          ? 'bg-rojo text-white border-rojo shadow-sm'
-                          : 'bg-panel border-borde text-gris-texto hover:text-rojo'
+                          ? 'bg-[#FDF2F2] text-[#B80E14] shadow-sm'
+                          : 'text-[#6B6B6B] hover:text-[#B80E14]'
                       }`}
                     >
                       <AlertCircle className="w-3.5 h-3.5" />
@@ -577,14 +687,14 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
 
                 {/* Comentario si está observado o fallado */}
                 {(isObs || isFalla) && (
-                  <div className="mt-2.5 pt-2 border-t border-borde flex items-center gap-2 animate-fade-in">
-                    <MessageSquare className="w-3.5 h-3.5 text-gris-texto shrink-0" />
+                  <div className="mt-2.5 pt-2 border-t border-[#E5E5E3] flex items-center gap-2 animate-fade-in">
+                    <MessageSquare className="w-3.5 h-3.5 text-[#6B6B6B] shrink-0" />
                     <input
                       type="text"
                       value={item.comment || ''}
                       onChange={(e) => handleItemComment(item.id, e.target.value)}
                       placeholder="Detalle de la falla o zona afectada..."
-                      className="flex-1 px-3 py-1.5 rounded-lg bg-negro border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:border-[#161616] outline-none"
                     />
                   </div>
                 )}
@@ -594,7 +704,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
         </div>
 
         {/* NAVEGACIÓN ENTRE SECCIONES */}
-        <div className="flex items-center justify-between pt-4 border-t border-borde">
+        <div className="flex items-center justify-between pt-4 border-t border-[#E5E5E3]">
           {(() => {
             const currentIndex = SECTIONS.indexOf(activeSection);
             const prevSection = currentIndex > 0 ? SECTIONS[currentIndex - 1] : null;
@@ -623,7 +733,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                     onClick={() => setActiveSection(nextSection)}
                   >
                     <span>{nextSection}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
                 )}
               </>
@@ -632,16 +742,17 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
         </div>
       </div>
 
-      {/* CONCLUSIÓN & ESTIMACIÓN DE REPARACIONES */}
-      <div className="p-4 sm:p-6 rounded-xl bg-panel border border-borde space-y-4">
-        <h3 className="text-sm font-title font-bold text-white flex items-center gap-2">
-          <span>📋</span> Dictamen Pericial & Costos de Reparación
+      {/* 6. CONCLUSIÓN & ESTIMACIÓN DE REPARACIONES */}
+      <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-4">
+        <h3 className="text-sm font-title font-bold text-[#161616] flex items-center gap-2">
+          <Wrench className="w-4 h-4 text-[#D7141A]" />
+          <span>Dictamen pericial y costos de reparación</span>
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gris-texto">
-              Costo Estimado de Reparaciones ($UYU)
+            <label className="text-xs font-semibold text-[#6B6B6B]">
+              Costo estimado de reparaciones ($UYU)
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -649,14 +760,14 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                 value={repairCost || ''}
                 onChange={(e) => setRepairCost(Number(e.target.value) || 0)}
                 placeholder="Ej: 8500"
-                className="flex-1 px-3 py-2 rounded-lg bg-negro border border-borde text-white font-mono text-sm focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                className="flex-1 px-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] font-mono text-sm focus:bg-white focus:border-[#161616] outline-none"
               />
-              <span className="text-xs font-bold text-gris-texto">$U</span>
+              <span className="text-xs font-bold text-[#6B6B6B]">$U</span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-gris-texto">
+            <label className="text-xs font-semibold text-[#6B6B6B]">
               Detalle de arreglos requeridos
             </label>
             <input
@@ -664,16 +775,16 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
               value={repairDetails}
               onChange={(e) => setRepairDetails(e.target.value)}
               placeholder="Ej: Cambio de pastillas delanteras y detalle estético"
-              className="w-full px-3 py-2 rounded-lg bg-negro border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+              className="w-full px-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:bg-white focus:border-[#161616] outline-none"
             />
           </div>
         </div>
 
         {/* DECISIÓN AUTOMOTORA (SI ES INTERNA O EVALUACIÓN) */}
         {(inspection.type === 'interna' || profile?.roles.includes('admin') || profile?.roles.includes('encargado')) && (
-          <div className="p-4 rounded-xl bg-negro border border-borde space-y-3">
-            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-gris-texto">
-              Evaluación para Stock CARVLAK (Fase 4 Ready)
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3">
+            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+              Evaluación para stock CARVLAK (Fase 4 Ready)
             </span>
             <div className="grid grid-cols-3 gap-2">
               {(['comprar', 'negociar', 'no_comprar'] as AutomotoraDecision[]).map((dec) => {
@@ -683,14 +794,14 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
                     key={dec}
                     type="button"
                     onClick={() => setDecision(dec)}
-                    className={`py-2 px-2 rounded-lg text-xs font-bold uppercase transition-all ${
+                    className={`py-2 px-2 rounded-lg text-xs font-bold transition-all border ${
                       isSelected
                         ? dec === 'comprar'
-                          ? 'bg-white text-black'
+                          ? 'bg-[#1E6B43] text-white border-[#1E6B43]'
                           : dec === 'negociar'
-                          ? 'bg-panel border border-borde text-white'
-                          : 'bg-rojo text-white'
-                        : 'bg-panel border border-borde text-gris-texto hover:text-white'
+                          ? 'bg-[#945B0E] text-white border-[#945B0E]'
+                          : 'bg-[#D7141A] text-white border-[#D7141A]'
+                        : 'bg-white border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
                     }`}
                   >
                     {dec === 'comprar' ? 'Comprar' : dec === 'negociar' ? 'Negociar' : 'Descartar'}
@@ -701,19 +812,19 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div>
-                <label className="text-[11px] font-semibold text-gris-texto">Precio Sugerido</label>
+                <label className="text-[11px] font-semibold text-[#6B6B6B]">Precio sugerido</label>
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="number"
                     value={suggestedPrice || ''}
                     onChange={(e) => setSuggestedPrice(Number(e.target.value) || undefined)}
                     placeholder="Ej: 18500"
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-panel border border-borde text-white font-mono text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs focus:border-[#161616] outline-none"
                   />
                   <select
                     value={suggestedCurrency}
                     onChange={(e) => setSuggestedCurrency(e.target.value as Currency)}
-                    className="px-2 py-1.5 rounded-lg bg-panel border border-borde text-white font-mono text-xs outline-none"
+                    className="px-2 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs outline-none"
                   >
                     <option value="USD">USD</option>
                     <option value="UYU">UYU</option>
@@ -726,16 +837,49 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
 
         {/* Conclusión del perito */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-gris-texto">
-            Conclusión Final del Inspector / Perito
+          <label className="text-xs font-semibold text-[#6B6B6B]">
+            Conclusión final del inspector / perito
           </label>
           <textarea
             rows={3}
             value={conclusion}
             onChange={(e) => setConclusion(e.target.value)}
             placeholder="Resumen del peritaje, observaciones determinantes y recomendación para el cliente o la automotora..."
-            className="w-full px-3 py-2 rounded-lg bg-negro border border-borde text-white placeholder-gris-texto text-xs focus:border-rojo focus:ring-1 focus:ring-rojo outline-none"
+            className="w-full px-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:bg-white focus:border-[#161616] outline-none"
           />
+        </div>
+      </div>
+
+      {/* 7. ACCIONES DE CIERRE Y CONTROL (Conforme a la captura oficial) */}
+      <div className="space-y-2.5 pt-2">
+        {/* Botón Primario Único Rojo #D7141A */}
+        <button
+          type="button"
+          onClick={handleCompleteInspection}
+          className="w-full h-12 rounded-lg bg-[#D7141A] hover:bg-[#B80E14] text-white font-title font-bold text-base flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]"
+        >
+          <CheckCheck className="w-5 h-5" />
+          <span>Guardar avance y completar peritaje</span>
+        </button>
+
+        {/* Botones Secundarios */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onFinish && onFinish()}
+            className="h-11 rounded-lg bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-sans font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+          >
+            <PauseCircle className="w-4 h-4 text-[#6B6B6B]" />
+            <span>Pausar peritaje</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onFinish && onFinish()}
+            className="h-11 rounded-lg bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-sans font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+          >
+            <Eye className="w-4 h-4 text-[#6B6B6B]" />
+            <span>Ver borrador informe</span>
+          </button>
         </div>
       </div>
     </div>

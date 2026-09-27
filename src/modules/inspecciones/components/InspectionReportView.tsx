@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { sanitizePhoneForWhatsApp } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
+import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
 
 interface InspectionReportViewProps {
   inspection: VehicleInspection;
@@ -119,7 +120,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-16 print:p-0 print:space-y-4">
       {/* BARRA SUPERIOR DE ACCIONES (NO IMPRIMIBLE) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-panel border border-borde print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-white border border-[#E5E5E3] shadow-sm print:hidden">
         <div className="flex items-center gap-2">
           {onBack && (
             <Button
@@ -130,7 +131,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
               ← Volver
             </Button>
           )}
-          <span className="text-xs font-bold text-gris-texto">
+          <span className="text-xs font-bold text-[#6B6B6B]">
             Peritaje #{inspection.id.slice(-6)}
           </span>
         </div>
@@ -161,7 +162,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             onClick={handleCopyLink}
           >
             <Copy className="w-3.5 h-3.5" />
-            <span>{copiedLink ? '¡Link Copiado!' : 'Copiar Link'}</span>
+            <span>{copiedLink ? '¡Link copiado!' : 'Copiar link'}</span>
           </Button>
 
           {/* Imprimir / PDF */}
@@ -177,25 +178,25 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
       </div>
 
       {/* BANNER DE CROSS-SELLING DETAILVLAK (1 TOQUE) */}
-      <div className="p-4 sm:p-5 rounded-xl bg-panel border border-borde flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
+      <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-gris-texto">
+            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
               Servicio adicional sugerido
             </span>
           </div>
-          <h4 className="text-sm font-title font-bold text-white">
+          <h4 className="text-sm font-title font-bold text-[#161616]">
             ¿Mejora estética recomendada para este vehículo?
           </h4>
-          <p className="text-xs text-gris-texto">
+          <p className="text-xs text-[#6B6B6B]">
             Crea una cotización en DetailVlak pre-cargada con el cliente, el vehículo y los servicios sugeridos (Tratamiento cerámico, Limpieza de tapizados, Ópticas).
           </p>
         </div>
 
         {createdQuoteId ? (
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold text-white bg-negro px-3 py-2 rounded-lg border border-borde flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-white" /> Cotización #{createdQuoteId.slice(-6)} Creada
+            <span className="text-xs font-semibold text-[#161616] bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3] flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" /> Cotización #{createdQuoteId.slice(-6)} creada
             </span>
             {onNavigateToDetailing && (
               <Button
@@ -221,51 +222,41 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
       </div>
 
       {/* DOCUMENTO FORMAL DE INFORME TÉCNICO (APTO PARA PRINT / PDF) */}
-      <div className="p-6 sm:p-8 rounded-xl bg-panel border border-borde space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
+      <div className="p-6 sm:p-8 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
         {/* ENCABEZADO DEL INFORME CON LOGO OFICIAL */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D9D9D9] dark:border-[#2A2A2A] print:border-[#D9D9D9] pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5E3] pb-6">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <img
                 src="/logo-carvlak-black.png"
                 alt="CARVLAK Group"
-                className="h-8 w-auto object-contain hidden print:block dark:hidden"
+                className="h-8 w-auto object-contain"
               />
-              <img
-                src="/logo-carvlak-white.png"
-                alt="CARVLAK Group"
-                className="h-8 w-auto object-contain hidden dark:block print:hidden"
-              />
-              <img
-                src="/logo-carvlak-black.png"
-                alt="CARVLAK Group"
-                className="h-8 w-auto object-contain block dark:hidden print:hidden"
-              />
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333] print:bg-[#F2F2F2] print:text-black">
-                {inspection.type === 'precompra' ? 'Peritaje Precompra' : 'Inspección Interna Automotora'}
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3] print:bg-[#F5F5F4] print:text-black">
+                {inspection.type === 'precompra' ? 'Peritaje precompra' : 'Inspección interna automotora'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-title font-bold text-black dark:text-white print:text-black">
-              Informe Técnico de Inspección
+            <h1 className="text-2xl sm:text-3xl font-title font-bold text-[#161616] print:text-black">
+              Informe técnico de inspección
             </h1>
             <p className="text-xs text-[#6B6B6B] print:text-[#444444]">
               Emitido el {new Date(inspection.completed_at || inspection.scheduled_at || inspection.created_at).toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })} • Taller Shangrilá (Av. Giannattasio)
             </p>
           </div>
 
-          {/* Puntaje y Semáforo Pericial de Seguridad (Verde / Amarillo / Rojo) */}
+          {/* Puntaje y Semáforo Pericial */}
           <div className="flex items-center gap-4">
             <div className="text-right">
               <span className="text-[11px] font-semibold uppercase text-[#6B6B6B] print:text-[#444444] block">
                 Dictamen pericial
               </span>
               <span
-                className={`text-sm sm:text-base font-title font-bold px-3 py-1 rounded-md uppercase tracking-wider inline-block ${
+                className={`text-sm sm:text-base font-title font-bold px-3 py-1 rounded-md tracking-wider inline-block ${
                   inspection.traffic_light === 'Recomendable'
-                    ? 'bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/30 print:bg-emerald-50 print:text-emerald-800'
+                    ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9]'
                     : inspection.traffic_light === 'Con reparos'
-                    ? 'bg-[#CA8A04]/10 text-[#CA8A04] border border-[#CA8A04]/30 print:bg-amber-50 print:text-amber-800'
-                    : 'bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/30 print:bg-red-50 print:text-red-800'
+                    ? 'bg-[#FEF7EC] text-[#945B0E] border border-[#FCE2B6]'
+                    : 'bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]'
                 }`}
               >
                 {inspection.traffic_light}
@@ -273,16 +264,16 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             </div>
 
             <div
-              className={`w-16 h-16 rounded-md flex flex-col items-center justify-center font-title font-bold border ${
+              className={`w-16 h-16 rounded-xl flex flex-col items-center justify-center font-title font-bold border ${
                 inspection.traffic_light === 'Recomendable'
-                  ? 'bg-[#15803D]/10 border-[#15803D]/30 text-[#15803D] print:bg-emerald-50 print:text-emerald-800'
+                  ? 'bg-[#EEF7F2] border-[#CDE9D9] text-[#1E6B43]'
                   : inspection.traffic_light === 'Con reparos'
-                  ? 'bg-[#CA8A04]/10 border-[#CA8A04]/30 text-[#CA8A04] print:bg-amber-50 print:text-amber-800'
-                  : 'bg-[#D7141A]/10 border-[#D7141A]/30 text-[#D7141A] print:bg-red-50 print:text-red-800'
+                  ? 'bg-[#FEF7EC] border-[#FCE2B6] text-[#945B0E]'
+                  : 'bg-[#FDF2F2] border-[#FACDCD] text-[#B80E14]'
               }`}
             >
               <span className="text-2xl leading-none">{inspection.score}</span>
-              <span className="text-[9px] uppercase tracking-wider text-gris-texto">/ 100</span>
+              <span className="text-[9px] uppercase tracking-wider text-[#6B6B6B]">/ 100</span>
             </div>
           </div>
         </div>
@@ -290,39 +281,39 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         {/* FICHA TÉCNICA DEL VEHÍCULO & INTERVINIENTES */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Vehículo */}
-          <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
-            <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
-              <Car className="w-3.5 h-3.5 text-gris-texto" /> Vehículo Verificado
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-2">
+            <span className="text-[10px] font-title font-bold uppercase text-[#161616] print:text-black tracking-wider flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5 text-[#6B6B6B]" /> Vehículo verificado
             </span>
             <div className="space-y-1">
-              <div className="text-base font-title font-bold text-white print:text-black">
+              <div className="text-base font-title font-bold text-[#161616] print:text-black">
                 {inspection.vehicle_info}
               </div>
-              <div className="font-mono text-sm font-bold text-white print:text-black">
-                {inspection.vehicle_plate}
+              <div className="pt-1">
+                <UruguayanPlate plate={inspection.vehicle_plate} size="sm" />
               </div>
-              <div className="text-xs text-gris-texto print:text-slate-600">
-                Categoría: <strong className="text-white print:text-black">{inspection.vehicle_category}</strong>
+              <div className="text-xs text-[#6B6B6B] print:text-slate-600 pt-1">
+                Categoría: <strong className="text-[#161616] print:text-black">{inspection.vehicle_category}</strong>
               </div>
             </div>
           </div>
 
           {/* Comprador / Solicitante */}
-          <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
-            <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-gris-texto" /> Solicitante / Cliente
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-2">
+            <span className="text-[10px] font-title font-bold uppercase text-[#161616] print:text-black tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-[#6B6B6B]" /> Solicitante / Cliente
             </span>
             <div className="space-y-1">
-              <div className="text-sm font-title font-bold text-white print:text-black">
+              <div className="text-sm font-title font-bold text-[#161616] print:text-black">
                 {inspection.buyer_name || 'Automotora CARVLAK'}
               </div>
               {inspection.buyer_phone && (
-                <div className="text-xs font-mono text-gris-texto print:text-slate-600">
+                <div className="text-xs font-mono text-[#6B6B6B] print:text-slate-600">
                   Tel: {inspection.buyer_phone}
                 </div>
               )}
               {inspection.seller_name && (
-                <div className="text-xs text-gris-texto print:text-slate-600 pt-1 border-t border-borde print:border-slate-200">
+                <div className="text-xs text-[#6B6B6B] print:text-slate-600 pt-1 border-t border-[#E5E5E3] print:border-slate-200">
                   Vendedor: {inspection.seller_name} ({inspection.seller_phone || 'S/D'})
                 </div>
               )}
@@ -330,12 +321,12 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
           </div>
 
           {/* Odómetro & Documentación */}
-          <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
-            <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-gris-texto" /> Odómetro & SUCIVE
+          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-2">
+            <span className="text-[10px] font-title font-bold uppercase text-[#161616] print:text-black tracking-wider flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-[#6B6B6B]" /> Odómetro y SUCIVE
             </span>
             <div className="space-y-1 text-xs">
-              <div className="text-white print:text-black">
+              <div className="text-[#161616] print:text-black">
                 Km Tablero:{' '}
                 <strong>
                   {inspection.mileage_observed
@@ -343,20 +334,20 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                     : 'No registrado'}
                 </strong>
                 {inspection.mileage_tampered && (
-                  <span className="ml-2 px-1.5 py-0.5 rounded bg-rojo/20 text-rojo border border-rojo/40 text-[10px] font-bold">
-                    Sospecha Adulteración
+                  <span className="ml-2 px-1.5 py-0.5 rounded bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD] text-[10px] font-bold">
+                    Sospecha adulteración
                   </span>
                 )}
               </div>
-              <div className="text-gris-texto print:text-slate-600">
+              <div className="text-[#6B6B6B] print:text-slate-600">
                 SUCIVE:{' '}
-                <strong className="text-white print:text-black">
+                <strong className="text-[#161616] print:text-black">
                   {inspection.sucive_debt === 0
                     ? 'Al día ($0 deuda)'
                     : `$U ${inspection.sucive_debt?.toLocaleString('es-UY') || 0} de deuda`}
                 </strong>
               </div>
-              <div className="text-gris-texto print:text-slate-600 truncate">
+              <div className="text-[#6B6B6B] print:text-slate-600 truncate">
                 {inspection.sucive_status || 'Sin multas detectadas'}
               </div>
             </div>
@@ -364,25 +355,25 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         </div>
 
         {/* CONCLUSIÓN PRINCIPAL & COSTO DE ARREGLOS */}
-        <div className="p-5 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-3">
-          <span className="text-[10px] font-title font-bold uppercase tracking-widest text-gris-texto print:text-slate-700">
-            Conclusión del Perito
+        <div className="p-5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-3">
+          <span className="text-[10px] font-title font-bold uppercase tracking-widest text-[#6B6B6B] print:text-slate-700">
+            Conclusión del perito
           </span>
-          <p className="text-xs sm:text-sm text-white print:text-slate-800 leading-relaxed italic">
+          <p className="text-xs sm:text-sm text-[#161616] print:text-slate-800 leading-relaxed italic">
             "{inspection.inspector_conclusion || 'Inspección completada con éxito sin observaciones críticas.'}"
           </p>
 
           {/* Arreglos requeridos */}
-          <div className="pt-3 border-t border-borde print:border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="pt-3 border-t border-[#E5E5E3] print:border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div>
-              <span className="font-bold text-gris-texto print:text-slate-600">
-                Costo Estimado de Reparaciones Inmediatas:
+              <span className="font-bold text-[#6B6B6B] print:text-slate-600">
+                Costo estimado de reparaciones inmediatas:
               </span>{' '}
-              <span className="font-mono font-bold text-white print:text-black text-sm">
+              <span className="font-mono font-bold text-[#161616] print:text-black text-sm">
                 $U {inspection.estimated_repair_cost.toLocaleString('es-UY')}
               </span>
               {inspection.repair_details && (
-                <span className="text-gris-texto print:text-slate-600 ml-2">
+                <span className="text-[#6B6B6B] print:text-slate-600 ml-2">
                   ({inspection.repair_details})
                 </span>
               )}
@@ -391,20 +382,20 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             {/* Dictamen Automotora */}
             {inspection.automotora_decision && (
               <div className="flex items-center gap-1.5 font-bold">
-                <span className="text-gris-texto print:text-slate-600">Decisión de Compra:</span>
+                <span className="text-[#6B6B6B] print:text-slate-600">Decisión de compra:</span>
                 <span
                   className={`px-2 py-0.5 rounded text-[11px] uppercase ${
                     inspection.automotora_decision === 'comprar'
-                      ? 'bg-panel border border-borde text-white'
+                      ? 'bg-[#EEF7F2] border border-[#CDE9D9] text-[#1E6B43]'
                       : inspection.automotora_decision === 'negociar'
-                      ? 'bg-panel border border-borde text-gris-texto'
-                      : 'bg-rojo/20 text-rojo border border-rojo/40'
+                      ? 'bg-[#FEF7EC] border border-[#FCE2B6] text-[#945B0E]'
+                      : 'bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]'
                   }`}
                 >
                   {inspection.automotora_decision}
                 </span>
                 {inspection.automotora_suggested_price && (
-                  <span className="font-mono text-white">
+                  <span className="font-mono text-[#161616]">
                     ({inspection.automotora_currency || 'USD'} {inspection.automotora_suggested_price.toLocaleString('es-UY')})
                   </span>
                 )}
@@ -415,17 +406,17 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
 
         {/* MAPA DE PINTURA (15 PANELES) */}
         <div className="space-y-3">
-          <h3 className="text-sm font-title font-bold text-white print:text-black flex items-center gap-2">
-            <Layers className="w-4 h-4 text-white print:text-black" />
-            Mapeo de Carrocería y Espesor de Pintura (Micrones µm)
+          <h3 className="text-sm font-title font-bold text-[#161616] print:text-black flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#D7141A]" />
+            Mapeo de carrocería y espesor de pintura (Micrones µm)
           </h3>
           <CarPanelsDiagram panels={inspection.panels} readOnly={true} />
         </div>
 
         {/* RESUMEN OBD-II */}
-        <div className="p-4 rounded-xl bg-negro border border-borde print:bg-slate-50 print:border-slate-300 space-y-2">
-          <span className="text-[10px] font-title font-bold uppercase text-white print:text-black tracking-wider flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-gris-texto" /> Diagnóstico Electrónico OBD-II
+        <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-2">
+          <span className="text-[10px] font-title font-bold uppercase text-[#161616] print:text-black tracking-wider flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-[#6B6B6B]" /> Diagnóstico electrónico OBD-II
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {inspection.obd_codes && inspection.obd_codes.length > 0 ? (
@@ -434,21 +425,21 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                   key={i}
                   className={`px-2.5 py-1 rounded-md font-mono font-bold text-xs ${
                     c.includes('Sin')
-                      ? 'bg-panel text-white border border-borde'
-                      : 'bg-rojo/20 text-rojo border border-rojo/40'
+                      ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9]'
+                      : 'bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]'
                   }`}
                 >
                   {c}
                 </span>
               ))
             ) : (
-              <span className="text-xs text-gris-texto print:text-slate-600">
+              <span className="text-xs text-[#6B6B6B] print:text-slate-600">
                 Sin códigos de falla registrados en módulos ECM/ABS/Airbag.
               </span>
             )}
           </div>
           {inspection.obd_notes && (
-            <p className="text-xs text-gris-texto print:text-slate-600 italic">
+            <p className="text-xs text-[#6B6B6B] print:text-slate-600 italic">
               {inspection.obd_notes}
             </p>
           )}
@@ -456,8 +447,8 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
 
         {/* DESGLOSE POR SECCIONES DEL CHECKLIST */}
         <div className="space-y-3">
-          <h3 className="text-sm font-title font-bold text-white print:text-black">
-            Detalle de Puntos Inspeccionados
+          <h3 className="text-sm font-title font-bold text-[#161616] print:text-black">
+            Detalle de puntos inspeccionados
           </h3>
 
           <div className="space-y-2">
@@ -470,76 +461,76 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
               return (
                 <div
                   key={sectionName}
-                  className="rounded-xl border border-borde bg-negro print:bg-slate-50 print:border-slate-300 overflow-hidden"
+                  className="rounded-xl border border-[#E5E5E3] bg-[#F5F5F4] print:bg-slate-50 print:border-slate-300 overflow-hidden"
                 >
                   <button
                     type="button"
                     onClick={() => toggleSection(sectionName)}
-                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-panel print:hover:bg-slate-100 transition-colors"
+                    className="w-full p-3.5 flex items-center justify-between text-left hover:bg-white print:hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-title font-bold text-white print:text-black">
+                      <span className="text-xs font-title font-bold text-[#161616] print:text-black">
                         {sectionName}
                       </span>
-                      <span className="text-[10px] text-gris-texto print:text-slate-600">
+                      <span className="text-[10px] text-[#6B6B6B] print:text-slate-600">
                         ({items.length} puntos)
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {fails.length > 0 && (
-                        <span className="px-2 py-0.5 rounded-md bg-rojo/20 text-rojo border border-rojo/40 text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD] text-[10px] font-bold">
                           {fails.length} falla{fails.length > 1 ? 's' : ''}
                         </span>
                       )}
                       {obs.length > 0 && (
-                        <span className="px-2 py-0.5 rounded-md bg-panel border border-borde text-gris-texto text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-[#FEF7EC] border border-[#FCE2B6] text-[#945B0E] text-[10px] font-bold">
                           {obs.length} obs.
                         </span>
                       )}
                       {fails.length === 0 && obs.length === 0 && (
-                        <span className="px-2 py-0.5 rounded-md bg-panel border border-borde text-white text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-[#EEF7F2] border border-[#CDE9D9] text-[#1E6B43] text-[10px] font-bold">
                           OK ({oks.length})
                         </span>
                       )}
                       {isOpen ? (
-                        <ChevronUp className="w-4 h-4 text-gris-texto" />
+                        <ChevronUp className="w-4 h-4 text-[#6B6B6B]" />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-gris-texto" />
+                        <ChevronDown className="w-4 h-4 text-[#6B6B6B]" />
                       )}
                     </div>
                   </button>
 
                   {isOpen && (
-                    <div className="p-3.5 pt-0 border-t border-borde print:border-slate-200 space-y-2">
+                    <div className="p-3.5 pt-0 border-t border-[#E5E5E3] print:border-slate-200 space-y-2">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                         {items.map((item) => (
                           <div
                             key={item.id}
                             className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between ${
                               item.status === 'falla'
-                                ? 'bg-rojo/10 border-rojo/40 text-rojo'
+                                ? 'bg-[#FDF2F2] border-[#FACDCD] text-[#B80E14]'
                                 : item.status === 'observacion'
-                                ? 'bg-panel border-borde text-gris-texto'
-                                : 'bg-negro border-borde text-white'
+                                ? 'bg-[#FEF7EC] border-[#FCE2B6] text-[#945B0E]'
+                                : 'bg-white border-[#E5E5E3] text-[#161616]'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-1">
-                              <span className="font-medium text-white">{item.name}</span>
+                              <span className="font-medium text-[#161616]">{item.name}</span>
                               <span
                                 className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                                   item.status === 'falla'
-                                    ? 'bg-rojo text-white'
+                                    ? 'bg-[#B80E14] text-white'
                                     : item.status === 'observacion'
-                                    ? 'bg-negro border border-borde text-gris-texto'
-                                    : 'bg-negro border border-borde text-white'
+                                    ? 'bg-[#FEF7EC] border border-[#FCE2B6] text-[#945B0E]'
+                                    : 'bg-[#EEF7F2] border border-[#CDE9D9] text-[#1E6B43]'
                                 }`}
                               >
                                 {item.status?.toUpperCase() || 'OK'}
                               </span>
                             </div>
                             {item.comment && (
-                              <p className="mt-1 text-[11px] text-gris-texto italic">
+                              <p className="mt-1 text-[11px] text-[#6B6B6B] italic">
                                 Nota: {item.comment}
                               </p>
                             )}
@@ -555,25 +546,25 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         </div>
 
         {/* FIRMA Y RESPONSABLE TÉCNICO */}
-        <div className="pt-6 border-t border-borde print:border-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+        <div className="pt-6 border-t border-[#E5E5E3] print:border-slate-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
           <div className="space-y-1">
-            <span className="font-bold text-gris-texto print:text-slate-600">
-              Inspector Responsable:
+            <span className="font-bold text-[#6B6B6B] print:text-slate-600">
+              Inspector responsable:
             </span>
-            <div className="font-title font-bold text-white print:text-black">
-              {inspection.inspector_signature || 'Diego Silva (Perito Técnico CARVLAK)'}
+            <div className="font-title font-bold text-[#161616] print:text-black">
+              {inspection.inspector_signature || 'Diego Techera (Perito Técnico CARVLAK)'}
             </div>
-            <div className="text-[11px] text-gris-texto print:text-slate-600">
+            <div className="text-[11px] text-[#6B6B6B] print:text-slate-600">
               Av. Giannattasio & Calcagno, Shangrilá, Canelones
             </div>
           </div>
 
           <div className="text-right">
-            <span className="font-mono text-[10px] text-gris-texto">
+            <span className="font-mono text-[10px] text-[#6B6B6B]">
               Token de verificación: {inspection.token}
             </span>
-            <p className="text-[10px] text-white print:text-black font-bold">
-              ✓ Documento Oficial CARVLAK Group
+            <p className="text-[10px] text-[#161616] print:text-black font-bold">
+              ✓ Documento oficial CARVLAK Group
             </p>
           </div>
         </div>
