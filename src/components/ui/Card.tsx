@@ -9,8 +9,8 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`bg-[#141414] border border-[#2A2A2A] rounded-2xl overflow-hidden transition-all duration-150 ${
-          hoverable ? 'hover:border-white/30 hover:shadow-lg' : ''
+        className={`bg-white border border-[#E5E5E3] rounded-xl overflow-hidden shadow-xs transition-all duration-150 ${
+          hoverable ? 'hover:border-[#D0D0CD] hover:shadow-[0_2px_4px_rgba(0,0,0,0.03)]' : ''
         } ${className}`}
         {...props}
       >
@@ -27,7 +27,7 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={`p-4 sm:p-5 border-b border-[#2A2A2A] flex flex-col gap-1.5 ${className}`}
+    className={`p-4 sm:p-5 border-b border-[#E5E5E3] flex flex-col gap-1.5 ${className}`}
     {...props}
   >
     {children}
@@ -40,7 +40,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   ...props
 }) => (
   <h3
-    className={`text-base sm:text-lg font-bold text-white tracking-tight ${className}`}
+    className={`text-base sm:text-lg font-bold text-[#161616] tracking-tight font-display ${className}`}
     {...props}
   >
     {children}
@@ -52,7 +52,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <p className={`text-xs sm:text-sm text-[#8A8A8A] leading-relaxed ${className}`} {...props}>
+  <p className={`text-xs sm:text-sm text-[#6B6B6B] leading-relaxed ${className}`} {...props}>
     {children}
   </p>
 );
@@ -73,7 +73,7 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => (
   <div
-    className={`p-4 sm:p-5 border-t border-[#2A2A2A] bg-black/40 flex items-center justify-between gap-3 ${className}`}
+    className={`p-4 sm:p-5 border-t border-[#E5E5E3] bg-[#FAFAF9] flex items-center justify-between gap-3 ${className}`}
     {...props}
   >
     {children}

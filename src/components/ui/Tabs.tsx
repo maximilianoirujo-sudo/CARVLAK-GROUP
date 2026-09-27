@@ -21,7 +21,7 @@ export const Tabs: React.FC<TabsProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`flex items-center gap-1 sm:gap-2 border-b border-[#2A2A2A] overflow-x-auto no-scrollbar ${className}`}>
+    <div className={`flex items-center gap-1 sm:gap-2 border-b border-[#E5E5E3] overflow-x-auto no-scrollbar ${className}`}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -29,20 +29,20 @@ export const Tabs: React.FC<TabsProps> = ({
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer -mb-[1px] ${
+            className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer -mb-[1px] ${
               isActive
-                ? 'border-[#D7141A] text-white'
-                : 'border-transparent text-[#8A8A8A] hover:text-white'
+                ? 'border-[#D7141A] text-[#161616]'
+                : 'border-transparent text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
             {tab.icon && <span className="shrink-0">{tab.icon}</span>}
             <span>{tab.label}</span>
             {tab.badge !== undefined && (
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold tabular-nums ${
                   isActive
                     ? 'bg-[#D7141A] text-white'
-                    : 'bg-[#2A2A2A] text-[#8A8A8A]'
+                    : 'bg-[#EBEBEA] text-[#6B6B6B]'
                 }`}
               >
                 {tab.badge}
