@@ -1564,11 +1564,11 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
         </form>
 
         {/* Footer con Guardar / Cancelar sin guardar */}
-        <div className="p-4 bg-zinc-900/90 border-t border-gray-800 flex items-center justify-between gap-3">
+        <div className="p-4 bg-[#F2F2F2] dark:bg-[#1A1A1A] border-t border-[#D9D9D9] dark:border-[#2A2A2A] flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-gray-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors"
+            className="px-4 py-2 text-xs font-medium text-[#6B6B6B] hover:text-black dark:hover:text-white rounded-md hover:bg-white dark:hover:bg-[#262626] border border-transparent hover:border-[#D9D9D9] dark:hover:border-[#333333] transition-colors"
           >
             Cancelar sin guardar
           </button>
@@ -1577,10 +1577,10 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
             type="button"
             disabled={!canEdit}
             onClick={handleSubmit}
-            className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg transition-all active:scale-95 ${
+            className={`px-5 py-2.5 rounded-md font-title font-bold text-xs flex items-center gap-2 shadow-sm transition-all active:scale-95 ${
               canEdit
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
-                : 'bg-zinc-800 text-gray-500 cursor-not-allowed'
+                ? 'bg-[#D7141A] hover:bg-[#b50f14] text-white'
+                : 'bg-[#D9D9D9] dark:bg-[#333333] text-[#6B6B6B] cursor-not-allowed'
             }`}
           >
             <CheckCircle2 className="w-4 h-4" />

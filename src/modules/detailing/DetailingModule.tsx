@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Clock,
   Car,
+  Droplets,
   CheckCircle2,
   DollarSign,
   Package,
@@ -106,27 +107,25 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="space-y-5 animate-fade-in pb-12">
       
       {/* Banner Principal DetailVlak */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#1C152B] via-[#120F1D] to-[#0A0D15] border border-purple-500/30 relative overflow-hidden shadow-2xl">
-        <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-5 sm:p-6 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-widest text-purple-400">
-                Fase 2 • Taller Shangrilá
+              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+                DetailVlak Shangrilá
               </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                100% Operativo
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333]">
+                Taller activo
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white mt-1">
-              DetailVlak Pro (Estética Automotriz)
+            <h1 className="text-xl sm:text-2xl font-title font-bold text-black dark:text-white mt-1">
+              Estética automotriz y presupuestos
             </h1>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              Presupuestos paramétricos por porte de auto, WhatsApp directo (+598), stock de insumos, gastos operativos y liquidación automática de comisiones.
+            <p className="text-xs text-[#6B6B6B] mt-1 max-w-2xl leading-relaxed">
+              Presupuestos paramétricos por porte de auto, WhatsApp directo (+598), stock de insumos, gastos operativos y comisiones.
             </p>
           </div>
 
@@ -135,39 +134,40 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             {onOpenPublicForm && (
               <button
                 onClick={onOpenPublicForm}
-                className="px-3 py-2 rounded-2xl bg-purple-950/60 hover:bg-purple-900/60 text-purple-200 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
-                title="Abrir formulario web público que reemplaza al Google Form"
+                className="px-3 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#E5E5E5] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333] text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[40px]"
+                title="Abrir formulario web público"
               >
-                <Globe className="w-3.5 h-3.5 text-purple-400" />
-                <span>Formulario Web</span>
+                <Globe className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                <span>Formulario web</span>
               </button>
             )}
 
             {isAdmin && (
               <button
                 onClick={() => setIsTariffModalOpen(true)}
-                className="px-3 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all"
+                className="px-3 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#E5E5E5] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333] text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[40px]"
               >
-                <Settings className="w-3.5 h-3.5 text-purple-400" />
+                <Settings className="w-3.5 h-3.5 text-[#6B6B6B]" />
                 <span>Tarifario</span>
               </button>
             )}
 
             <button
               onClick={() => setIsMigrationModalOpen(true)}
-              className="px-3 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all"
-              title="Importar datos de DetailVlak anterior sin duplicar"
+              className="px-3 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#E5E5E5] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333] text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[40px]"
+              title="Importar datos"
             >
-              <UploadCloud className="w-3.5 h-3.5 text-purple-400" />
-              <span>Migrar Datos</span>
+              <UploadCloud className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <span>Migrar datos</span>
             </button>
 
+            {/* UNICO BOTÓN PRINCIPAL EN ROJO #D7141A */}
             <button
               onClick={() => {
                 setQuoteToEdit(null);
                 setIsQuoterModalOpen(true);
               }}
-              className="px-4 py-2 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-purple-600/30 transition-all"
+              className="px-4 py-2 rounded-md bg-[#D7141A] hover:bg-[#B50F14] text-white font-title font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors min-h-[40px] shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>+ Cotizar</span>
@@ -177,69 +177,69 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
       </div>
 
       {/* Navegación por Pestañas del Módulo */}
-      <div className="border-b border-slate-800/80 flex items-center gap-1 overflow-x-auto no-scrollbar">
+      <div className="border-b border-[#D9D9D9] dark:border-[#2A2A2A] flex items-center gap-1 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('quotes')}
-          className={`px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'quotes'
-              ? 'border-purple-500 text-purple-300 bg-purple-500/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
-          <span>Cotizaciones &amp; Trabajos</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-bold">
+          <Droplets className="w-4 h-4" />
+          <span>Cotizaciones y trabajos</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/20 text-white font-bold">
             {detailingQuotes.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('stock')}
-          className={`px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'stock'
-              ? 'border-purple-500 text-purple-300 bg-purple-500/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Package className="w-4 h-4" />
-          <span>Insumos &amp; Stock</span>
+          <span>Insumos y stock</span>
         </button>
 
         <button
           onClick={() => setActiveTab('expenses')}
-          className={`px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'expenses'
-              ? 'border-purple-500 text-purple-300 bg-purple-500/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <DollarSign className="w-4 h-4" />
-          <span>Gastos Operativos</span>
+          <span>Gastos operativos</span>
         </button>
 
         <button
           onClick={() => setActiveTab('commissions')}
-          className={`px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'commissions'
-              ? 'border-purple-500 text-purple-300 bg-purple-500/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Award className="w-4 h-4" />
-          <span>Comisiones {isAdmin && '(Admin)'}</span>
+          <span>Comisiones</span>
         </button>
 
         {isAdmin && (
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2.5 rounded-t-2xl text-xs font-bold transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
               activeTab === 'dashboard'
-                ? 'border-purple-500 text-purple-300 bg-purple-500/10'
-                : 'border-transparent text-slate-400 hover:text-white'
+                ? 'bg-[#D7141A] text-white shadow-sm'
+                : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Balance &amp; Métricas</span>
+            <span>Métricas</span>
           </button>
         )}
       </div>

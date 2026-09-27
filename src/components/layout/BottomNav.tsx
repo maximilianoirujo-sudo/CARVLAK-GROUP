@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Calendar, Car, Users, CheckSquare, Sparkles, ClipboardCheck, Building2 } from 'lucide-react';
+import { Home, Calendar, Car, Droplets, ClipboardCheck } from 'lucide-react';
 
 interface BottomNavProps {
   currentTab: string;
@@ -10,13 +10,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
   const tabs = [
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'agenda', label: 'Agenda', icon: Calendar },
-    { id: 'mod-automotora', label: 'Automotora', icon: Building2, color: 'text-amber-400' },
-    { id: 'mod-detailing', label: 'Detailing', icon: Sparkles, color: 'text-purple-400' },
-    { id: 'mod-inspeccion', label: 'Peritaje', icon: ClipboardCheck, color: 'text-emerald-400' }
+    { id: 'mod-automotora', label: 'Automotora', icon: Car },
+    { id: 'mod-detailing', label: 'Detailing', icon: Droplets },
+    { id: 'mod-inspeccion', label: 'Inspección', icon: ClipboardCheck }
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0E14]/95 backdrop-blur-2xl border-t border-slate-800/90 px-2 py-2 safe-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#000000] border-t border-[#222222] px-1 py-1 safe-bottom">
       <div className="flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -26,26 +26,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab })
             <button
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all ${
+              className={`flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-md min-h-[48px] transition-colors relative ${
                 isActive
-                  ? tab.id === 'mod-detailing'
-                    ? 'text-purple-400 bg-purple-500/15 font-bold'
-                    : tab.id === 'mod-inspeccion'
-                    ? 'text-emerald-400 bg-emerald-500/15 font-bold'
-                    : 'text-amber-400 bg-amber-500/10 font-bold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'text-white font-bold'
+                  : 'text-[#888888] hover:text-[#D9D9D9]'
               }`}
             >
-              <Icon className={`w-5 h-5 mb-1 ${
-                isActive
-                  ? tab.id === 'mod-detailing'
-                    ? 'scale-110 text-purple-400'
-                    : tab.id === 'mod-inspeccion'
-                    ? 'scale-110 text-emerald-400'
-                    : 'scale-110 text-amber-400'
-                  : ''
-              } transition-transform`} />
-              <span className="text-[10px] tracking-tight">{tab.label}</span>
+              {isActive && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#D7141A] rounded-full"></span>
+              )}
+              <Icon className={`w-5 h-5 mb-1 ${isActive ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+              <span className={`text-[10px] tracking-tight ${isActive ? 'text-white font-bold' : 'text-[#888888]'}`}>
+                {tab.label}
+              </span>
             </button>
           );
         })}

@@ -6,10 +6,9 @@ import {
   Users,
   CheckSquare,
   UserCog,
-  Sparkles,
+  Droplets,
   ClipboardCheck,
-  Building2,
-  Lock
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { isEncargado } from '../../lib/permissions';
@@ -24,24 +23,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
   const canManageTeam = isEncargado(profile);
 
   const mainTabs = [
-    { id: 'inicio', label: 'Inicio / Dashboard', icon: Home },
-    { id: 'agenda', label: 'Agenda Unificada', icon: Calendar },
+    { id: 'inicio', label: 'Inicio / Resumen', icon: Home },
+    { id: 'agenda', label: 'Agenda unificada', icon: Calendar },
     { id: 'vehiculos', label: 'Vehículos (Matrículas)', icon: Car },
-    { id: 'clientes', label: 'Directorio de Clientes', icon: Users },
-    { id: 'tareas', label: 'Tareas del Equipo', icon: CheckSquare }
+    { id: 'clientes', label: 'Directorio de clientes', icon: Users },
+    { id: 'tareas', label: 'Tareas del equipo', icon: CheckSquare }
   ];
 
-  const futureModules = [
-    { id: 'mod-automotora', label: 'Automotora Multi-SaaS', phase: 'Fase 4', icon: Building2, color: 'text-amber-400' }
+  const businessModules = [
+    { id: 'mod-automotora', label: 'Automotora', subtext: 'Stock y ventas', icon: Building2 },
+    { id: 'mod-detailing', label: 'Detailing', subtext: 'Taller Shangrilá', icon: Droplets },
+    { id: 'mod-inspeccion', label: 'Inspección', subtext: 'Peritaje vehicular', icon: ClipboardCheck }
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-[#0B0E14] border-r border-slate-800/80 p-4 space-y-5 shrink-0 h-[calc(100vh-61px)] sticky top-[61px] overflow-y-auto">
+    <aside className="hidden md:flex flex-col w-64 bg-[#000000] border-r border-[#222222] p-3 space-y-4 shrink-0 h-[calc(100vh-53px)] sticky top-[53px] overflow-y-auto">
       
       {/* Base Común */}
       <div className="space-y-1">
-        <div className="px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-          Base Común
+        <div className="px-3 text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider mb-1.5">
+          Operación diaria
         </div>
         {mainTabs.map((tab) => {
           const Icon = tab.icon;
@@ -51,14 +52,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             <button
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors min-h-[42px] ${
                 isActive
-                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-lg shadow-amber-500/5'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+                  ? 'bg-[#1A1A1A] text-white border-l-4 border-[#D7141A]'
+                  : 'text-[#AAAAAA] hover:text-white hover:bg-[#111111]'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
-              <span>{tab.label}</span>
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+              <span className="truncate">{tab.label}</span>
             </button>
           );
         })}
@@ -66,102 +67,59 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
         {canManageTeam && (
           <button
             onClick={() => onSelectTab('empleados')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors min-h-[42px] ${
               currentTab === 'empleados'
-                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+                ? 'bg-[#1A1A1A] text-white border-l-4 border-[#D7141A]'
+                : 'text-[#AAAAAA] hover:text-white hover:bg-[#111111]'
             }`}
           >
-            <UserCog className="w-4 h-4 text-slate-400" />
-            <span>Equipo & Permisos</span>
+            <UserCog className={`w-4 h-4 shrink-0 ${currentTab === 'empleados' ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+            <span className="truncate">Equipo y permisos</span>
           </button>
         )}
       </div>
 
-      {/* Módulo Especializado: DetailVlak Pro */}
-      <div className="pt-3 border-t border-slate-800/80 space-y-1">
-        <div className="px-3 text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Taller Shangrilá</span>
-          <span className="text-[10px] text-purple-300 font-extrabold bg-purple-500/20 px-1.5 py-0.5 rounded">Fase 2 Activa</span>
+      {/* Módulos de Negocio */}
+      <div className="pt-3 border-t border-[#222222] space-y-1">
+        <div className="px-3 text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider mb-1.5">
+          Negocios del grupo
         </div>
 
-        <button
-          onClick={() => onSelectTab('mod-detailing')}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
-            currentTab === 'mod-detailing'
-              ? 'bg-purple-600/20 text-purple-300 font-black border border-purple-500/40 shadow-lg shadow-purple-600/10'
-              : 'text-slate-300 hover:bg-purple-950/20 hover:text-white border border-transparent'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <span>DetailVlak Pro</span>
-          </div>
-          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
-            PRO
-          </span>
-        </button>
+        {businessModules.map((m) => {
+          const Icon = m.icon;
+          const isActive = currentTab === m.id;
+
+          return (
+            <button
+              key={m.id}
+              onClick={() => onSelectTab(m.id)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-semibold transition-colors min-h-[44px] ${
+                isActive
+                  ? 'bg-[#1A1A1A] text-white border-l-4 border-[#D7141A]'
+                  : 'text-[#AAAAAA] hover:text-white hover:bg-[#111111]'
+              }`}
+            >
+              <div className="flex items-center gap-3 truncate">
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#888888]'}`} />
+                <div className="text-left truncate">
+                  <div className="truncate font-semibold">{m.label}</div>
+                  <div className="text-[10px] text-[#6B6B6B] font-normal">{m.subtext}</div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* FASE 3: Módulo Inspección & Patio */}
-      <div className="pt-3 border-t border-slate-800/80 space-y-1">
-        <div className="px-3 text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Peritaje & Patio</span>
-          <span className="text-[10px] text-emerald-300 font-extrabold bg-emerald-500/20 px-1.5 py-0.5 rounded">Fase 3 Activa</span>
-        </div>
-
-        <button
-          onClick={() => onSelectTab('mod-inspeccion')}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
-            currentTab === 'mod-inspeccion'
-              ? 'bg-emerald-500/20 text-emerald-300 font-black border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-              : 'text-slate-300 hover:bg-emerald-950/20 hover:text-white border border-transparent'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <ClipboardCheck className="w-4 h-4 text-emerald-400" />
-            <span>Inspección Vehicular</span>
-          </div>
-          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-            PERITAJE
-          </span>
-        </button>
-      </div>
-
-      {/* FASE 4: Módulo Automotora CARVLAK */}
-      <div className="pt-3 border-t border-slate-800/80 space-y-1">
-        <div className="px-3 text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-          <span>Automotora &amp; Stock</span>
-          <span className="text-[10px] text-amber-300 font-extrabold bg-amber-500/20 px-1.5 py-0.5 rounded">Fase 4 Activa</span>
-        </div>
-
-        <button
-          onClick={() => onSelectTab('mod-automotora')}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
-            currentTab === 'mod-automotora'
-              ? 'bg-amber-500/20 text-amber-300 font-black border border-amber-500/40 shadow-lg shadow-amber-500/10'
-              : 'text-slate-300 hover:bg-amber-950/20 hover:text-white border border-transparent'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Building2 className="w-4 h-4 text-amber-400" />
-            <span>Automotora CARVLAK</span>
-          </div>
-          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
-            STOCK
-          </span>
-        </button>
-      </div>
-
-      {/*  */}
-      <div className="mt-auto pt-4 border-t border-slate-800/80">
-        <div className="p-3 rounded-2xl bg-[#121721] border border-slate-800 text-[11px] text-slate-400 space-y-1">
+      {/* Estado del Hub */}
+      <div className="mt-auto pt-3 border-t border-[#222222]">
+        <div className="p-3 rounded-md bg-[#111111] border border-[#222222] text-[11px] text-[#888888] space-y-1">
           <div className="font-bold text-white flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span className="w-2 h-2 rounded-full bg-[#D7141A]"></span>
             CARVLAK Group Hub
           </div>
-          <p className="text-[10px] text-slate-400 leading-relaxed">
-            3 negocios conectados: Automotora, DetailVlak e Inspección.
+          <p className="text-[10px] text-[#6B6B6B] leading-relaxed">
+            Automotora • Detailing • Inspecciones
           </p>
         </div>
       </div>

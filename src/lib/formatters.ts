@@ -75,31 +75,35 @@ export function generateAppointmentWhatsAppMessage(
 }
 
 /**
- * Colores y etiquetas por negocio
+ * Configuración visual por negocio: Sin colores individuales, diferenciados por ícono y tonos de gris
  */
-export const BUSINESS_CONFIG: Record<Business, { name: string; shortName: string; color: string; bgLight: string; textClass: string; borderClass: string }> = {
+export const BUSINESS_CONFIG: Record<Business, { name: string; shortName: string; color: string; bgLight: string; textClass: string; borderClass: string; iconName: string }> = {
   automotora: {
     name: 'CARVLAK Automotores',
     shortName: 'Automotora',
-    color: '#F59E0B',
-    bgLight: 'bg-amber-500/10',
-    textClass: 'text-amber-400',
-    borderClass: 'border-amber-500/30'
+    color: '#000000',
+    bgLight: 'bg-[#F2F2F2] dark:bg-[#1A1A1A]',
+    textClass: 'text-black dark:text-white',
+    borderClass: 'border-[#D9D9D9] dark:border-[#333333]',
+    iconName: 'Car'
   },
   detailing: {
     name: 'DetailVlak Shangrilá',
     shortName: 'Detailing',
-    color: '#8B5CF6',
-    bgLight: 'bg-purple-500/10',
-    textClass: 'text-purple-400',
-    borderClass: 'border-purple-500/30'
+    color: '#000000',
+    bgLight: 'bg-[#F2F2F2] dark:bg-[#1E1E1E]',
+    textClass: 'text-black dark:text-white',
+    borderClass: 'border-[#D9D9D9] dark:border-[#404040]',
+    iconName: 'Droplets'
   },
   inspeccion: {
     name: 'Inspección Vehicular',
     shortName: 'Inspección',
-    color: '#10B981',
-    bgLight: 'bg-emerald-500/10',
-    textClass: 'text-emerald-400',
-    borderClass: 'border-emerald-500/30'
+    color: '#000000',
+    bgLight: 'bg-[#F2F2F2] dark:bg-[#161616]',
+    textClass: 'text-black dark:text-white',
+    borderClass: 'border-[#D9D9D9] dark:border-[#2A2A2A]',
+    iconName: 'ClipboardCheck'
   }
 };
+

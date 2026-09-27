@@ -95,17 +95,21 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               </button>
             )}
 
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg shadow-lg shadow-amber-500/20">
-                🚗
-              </div>
-              <div>
-                <h1 className="text-sm sm:text-base font-black tracking-tight text-white flex items-center gap-2">
-                  <span>CARVLAK</span>
-                  <span className="text-amber-400 font-medium text-xs">Automotora</span>
-                </h1>
-                <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-amber-400" />
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-carvlak-white.png"
+                alt="CARVLAK Automotores"
+                className="h-7 sm:h-8 w-auto object-contain"
+              />
+              <div className="hidden sm:block border-l border-[#222222] pl-3">
+                <span className="text-xs font-semibold text-white flex items-center gap-2">
+                  <span>Automotores</span>
+                  <span className="text-[10px] font-title font-bold px-1.5 py-0.2 rounded bg-[#222222] text-[#D9D9D9] border border-[#333333]">
+                    Catálogo
+                  </span>
+                </span>
+                <p className="text-[10px] text-[#6B6B6B] flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[#D7141A]" />
                   <span>Shangrilá, Canelones • Uruguay</span>
                 </p>
               </div>
@@ -117,26 +121,26 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               href="https://wa.me/59899267964?text=Hola%20CARVLAK%20Automotora,%20quiero%20hacer%20una%20consulta"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3.5 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 rounded-md bg-[#D7141A] hover:bg-[#B50F14] text-white font-title font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors min-h-[42px] shadow-sm"
             >
               <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">WhatsApp Directo</span>
-              <span className="sm:hidden">099 267 964</span>
+              <span className="hidden sm:inline">WhatsApp directo</span>
+              <span className="sm:hidden">WhatsApp</span>
             </a>
           </div>
         </div>
       </header>
 
       {/* Hero Banner */}
-      <section className="relative px-4 py-8 sm:py-12 bg-gradient-to-b from-[#0F141E] to-[#070A0F] border-b border-slate-800/80">
+      <section className="relative px-4 py-8 sm:py-10 bg-[#000000] border-b border-[#222222]">
         <div className="max-w-4xl mx-auto text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-black uppercase tracking-wider">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>Vehículos Seleccionados &amp; Garantizados</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#111111] border border-[#222222] text-[#D9D9D9] text-xs font-title font-bold uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-[#D7141A]" />
+            <span>Vehículos seleccionados &amp; garantizados</span>
           </div>
 
-          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            Encontrá tu próximo auto en <span className="text-amber-400">CARVLAK</span>
+          <h2 className="text-2xl sm:text-4xl font-title font-bold text-white tracking-tight">
+            Encontrá tu próximo auto en CARVLAK
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">

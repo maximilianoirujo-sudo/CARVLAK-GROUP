@@ -4,39 +4,61 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'media',
   theme: {
     extend: {
       colors: {
+        carvlak: {
+          black: '#000000',
+          white: '#FFFFFF',
+          red: '#D7141A',
+          grayBg: '#F2F2F2',
+          grayBorder: '#D9D9D9',
+          grayText: '#6B6B6B',
+          darkBg: '#000000',
+          darkCard: '#161616',
+          darkBorder: '#2A2A2A'
+        },
+        // Grises auxiliares para compatibilidad
+        slate: {
+          950: '#000000',
+          900: '#111111',
+          850: '#161616',
+          800: '#222222',
+          700: '#333333',
+          600: '#555555',
+          500: '#6B6B6B',
+          400: '#888888',
+          300: '#AAAAAA',
+          200: '#D9D9D9',
+          100: '#F2F2F2',
+          50: '#FAFAFA'
+        },
         dark: {
-          950: '#070A0E',
-          900: '#0B0E14',
-          850: '#10151E',
-          800: '#161D2A',
-          750: '#1D2637',
-          700: '#253046',
-          600: '#344360'
-        },
-        business: {
-          auto: '#F59E0B',      // Automotora CARVLAK (Ámbar)
-          autoDark: '#B45309',
-          autoLight: '#FDE68A',
-          detail: '#8B5CF6',    // DetailVlak (Violeta)
-          detailDark: '#6D28D9',
-          detailLight: '#DDD6FE',
-          inspect: '#10B981',   // Inspección Vehicular (Esmeralda)
-          inspectDark: '#047857',
-          inspectLight: '#A7F3D0'
-        },
-        gold: {
-          400: '#FACC15',
-          500: '#EAB308',
-          600: '#CA8A04',
-          700: '#A16207'
+          950: '#000000',
+          900: '#111111',
+          850: '#161616',
+          800: '#222222',
+          750: '#2A2A2A',
+          700: '#333333',
+          600: '#555555'
         }
       },
+      borderRadius: {
+        none: '0px',
+        sm: '4px',
+        DEFAULT: '6px',
+        md: '6px',
+        lg: '8px',
+        xl: '8px',
+        '2xl': '8px',
+        '3xl': '8px',
+        full: '9999px'
+      },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['"Instrument Sans"', 'system-ui', 'sans-serif']
+        title: ['"Archivo"', 'system-ui', 'sans-serif'],
+        display: ['"Archivo"', 'system-ui', 'sans-serif'],
+        sans: ['"Barlow"', 'system-ui', '-apple-system', 'sans-serif']
       }
     },
   },

@@ -4,8 +4,8 @@
   "description": "Hub interno centralizado para Automotora, Detailing e Inspección Vehicular",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#070A0E",
-  "theme_color": "#070A0E",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {

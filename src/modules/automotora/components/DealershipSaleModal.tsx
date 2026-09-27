@@ -589,22 +589,18 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
           </div>
 
           {/* BOTONES DE ACCIÓN */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+          <div className="pt-4 border-t border-[#D9D9D9] dark:border-[#2A2A2A] flex items-center justify-between">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+              className="px-4 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#D9D9D9] dark:hover:bg-[#333333] text-black dark:text-white text-xs font-medium border border-[#D9D9D9] dark:border-[#333333] transition-colors"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className={`px-5 py-2.5 rounded-xl font-black text-xs shadow-lg flex items-center gap-1.5 transition-all ${
-                operationType === 'reserva'
-                  ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
-              }`}
+              className="px-5 py-2.5 rounded-md font-title font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all bg-[#D7141A] hover:bg-[#b50f14] text-white"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{operationType === 'reserva' ? 'Confirmar Reserva (Seña)' : 'Cerrar y Liquidar Venta'}</span>

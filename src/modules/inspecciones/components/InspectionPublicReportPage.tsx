@@ -38,20 +38,22 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
   }
 
   return (
-    <div className="min-h-screen bg-[#080B11] text-slate-100 pb-16">
-      {/* HEADER PÚBLICO */}
-      <header className="sticky top-0 z-40 bg-[#0F1420]/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
+    <div className="min-h-screen bg-[#F2F2F2] dark:bg-[#000000] text-black dark:text-white pb-16">
+      {/* HEADER PÚBLICO CON LOGO OFICIAL */}
+      <header className="sticky top-0 z-40 bg-[#000000] border-b border-[#222222] px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center font-black text-slate-950 text-sm shadow-lg shadow-emerald-500/20">
-              C
-            </div>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                CARVLAK Group
+            <img
+              src="/logo-carvlak-white.png"
+              alt="CARVLAK Group"
+              className="h-7 w-auto object-contain"
+            />
+            <div className="hidden sm:block border-l border-[#222222] pl-3">
+              <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B] block">
+                Departamento Pericial
               </span>
-              <h1 className="text-sm font-bold text-white leading-tight">
-                Portal de Informes Técnicos
+              <h1 className="text-xs font-semibold text-white leading-tight">
+                Informe técnico pericial
               </h1>
             </div>
           </div>
@@ -60,9 +62,9 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
             href="https://wa.me/59899267964"
             target="_blank"
             rel="noreferrer"
-            className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold text-xs hover:bg-emerald-500/25 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 rounded-md bg-[#111111] hover:bg-[#222222] border border-[#2A2A2A] text-white font-semibold text-xs flex items-center gap-1.5 transition-colors min-h-[38px]"
           >
-            <Phone className="w-3.5 h-3.5" />
+            <Phone className="w-3.5 h-3.5 text-[#D7141A]" />
             <span className="hidden sm:inline">Consultar por WhatsApp</span>
             <span className="sm:hidden">+598 99 267 964</span>
           </a>

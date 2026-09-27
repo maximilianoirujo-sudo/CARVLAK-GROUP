@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Business, Appointment, AppointmentStatus, Currency } from '../../types';
 import { normalizePlate } from '../../lib/formatters';
+import { Droplets, ClipboardCheck, Car } from 'lucide-react';
 
 interface AppointmentModalProps {
   isOpen: boolean;
@@ -121,69 +122,73 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         
         {/*  */}
+        {/* Negocio Responsable */}
         <div>
-          <label className="block text-slate-400 font-bold uppercase tracking-wider mb-1.5">
+          <label className="block text-[#6B6B6B] font-title font-bold uppercase tracking-wider mb-1.5">
             Negocio Responsable *
           </label>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setBusiness('detailing')}
-              className={`py-2.5 px-2 rounded-xl font-bold border transition-all text-center ${
+              className={`py-2 px-2 rounded-md font-title font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
                 business === 'detailing'
-                  ? 'bg-purple-600/20 text-purple-300 border-purple-500 shadow-lg'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-sm'
+                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
               }`}
             >
-              ✨ DetailVlak
+              <Droplets className="w-3.5 h-3.5" />
+              <span>DetailVlak</span>
             </button>
             <button
               type="button"
               onClick={() => setBusiness('inspeccion')}
-              className={`py-2.5 px-2 rounded-xl font-bold border transition-all text-center ${
+              className={`py-2 px-2 rounded-md font-title font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
                 business === 'inspeccion'
-                  ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500 shadow-lg'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-sm'
+                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
               }`}
             >
-              🔍 Inspección
+              <ClipboardCheck className="w-3.5 h-3.5" />
+              <span>Inspección</span>
             </button>
             <button
               type="button"
               onClick={() => setBusiness('automotora')}
-              className={`py-2.5 px-2 rounded-xl font-bold border transition-all text-center ${
+              className={`py-2 px-2 rounded-md font-title font-bold border transition-all text-center flex items-center justify-center gap-1.5 ${
                 business === 'automotora'
-                  ? 'bg-amber-600/20 text-amber-300 border-amber-500 shadow-lg'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow-sm'
+                  : 'bg-[#F2F2F2] dark:bg-[#222222] border-[#D9D9D9] dark:border-[#333333] text-[#6B6B6B] hover:text-black dark:hover:text-white'
               }`}
             >
-              🚗 Automotora
+              <Car className="w-3.5 h-3.5" />
+              <span>Automotora</span>
             </button>
           </div>
         </div>
 
-        {/*  */}
+        {/* Título */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Título o Servicio *</label>
+          <label className="block text-[#6B6B6B] font-bold mb-1">Título o Servicio *</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ej: Cerámico 3 años, Peritaje en patio, Entrega de unidad..."
             required
-            className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-semibold focus:outline-none focus:border-amber-400"
+            className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white font-medium focus:outline-none focus:border-black dark:focus:border-white"
           />
         </div>
 
-        {/*  */}
+        {/* Cliente y Vehículo */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Cliente *</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Cliente *</label>
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               required
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
             >
               <option value="">Seleccionar cliente...</option>
               {clients.map((c) => (
@@ -195,11 +200,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Vehículo Asociado</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Vehículo Asociado</label>
             <select
               value={vehicleId}
               onChange={(e) => setVehicleId(e.target.value)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
             >
               <option value="">Sin vehículo específico</option>
               {vehicles.map((v) => (
@@ -211,36 +216,34 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
         </div>
 
-        {/*  */}
+        {/* Fecha, Hora, Duración */}
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Fecha</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Fecha</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
-            >
-            </input>
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+            />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Hora</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Hora</label>
             <input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
-            >
-            </input>
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
+            />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Duración</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Duración</label>
             <select
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
             >
               <option value={30}>30 min</option>
               <option value={45}>45 min</option>
@@ -254,14 +257,14 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
         </div>
 
-        {/*  */}
+        {/* Asignado y Estado */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Empleado Asignado</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Empleado Asignado</label>
             <select
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
             >
               <option value="">Sin asignar</option>
               {availableProfiles.map((p) => (
@@ -273,41 +276,41 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Estado del Turno</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Estado del Turno</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as AppointmentStatus)}
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white"
             >
-              <option value="Pendiente">🟡 Pendiente</option>
-              <option value="Confirmado">🟢 Confirmado</option>
-              <option value="En curso">🔵 En curso</option>
-              <option value="Finalizado">✅ Finalizado</option>
-              <option value="Cancelado">🔴 Cancelado</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="En curso">En curso</option>
+              <option value="Finalizado">Finalizado</option>
+              <option value="Cancelado">Cancelado</option>
             </select>
           </div>
         </div>
 
-        {/*  */}
+        {/* Presupuesto y Moneda */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Monto Presupuesto</label>
+            <label className="block text-[#6B6B6B] font-bold mb-1">Monto Presupuesto</label>
             <input
               type="number"
               value={priceAmount}
               onChange={(e) => setPriceAmount(Number(e.target.value))}
               placeholder="0"
-              className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white font-bold text-sm focus:outline-none focus:border-amber-400"
+              className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white font-title font-bold text-sm focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
           <div>
-            <label className="block text-slate-400 font-bold mb-1">Moneda</label>
-            <div className="flex rounded-xl overflow-hidden border border-slate-700">
+            <label className="block text-[#6B6B6B] font-bold mb-1">Moneda</label>
+            <div className="flex rounded-md overflow-hidden border border-[#D9D9D9] dark:border-[#333333]">
               <button
                 type="button"
                 onClick={() => setPriceCurrency('UYU')}
-                className={`flex-1 py-2 font-black transition-colors ${
-                  priceCurrency === 'UYU' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-400'
+                className={`flex-1 py-2 font-title font-bold transition-colors ${
+                  priceCurrency === 'UYU' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B]'
                 }`}
               >
                 $UYU
@@ -315,8 +318,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPriceCurrency('USD')}
-                className={`flex-1 py-2 font-black transition-colors ${
-                  priceCurrency === 'USD' ? 'bg-amber-500 text-slate-950' : 'bg-slate-900 text-slate-400'
+                className={`flex-1 py-2 font-title font-bold transition-colors ${
+                  priceCurrency === 'USD' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B]'
                 }`}
               >
                 USD $
@@ -325,30 +328,30 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
         </div>
 
-        {/*  */}
+        {/* Notas */}
         <div>
-          <label className="block text-slate-400 font-bold mb-1">Notas u Observaciones</label>
+          <label className="block text-[#6B6B6B] font-bold mb-1">Notas u Observaciones</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             placeholder="Detalles sobre el trabajo o requerimientos del cliente..."
-            className="w-full bg-[#131924] border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-400"
+            className="w-full bg-[#F2F2F2] dark:bg-[#222222] border border-[#D9D9D9] dark:border-[#333333] rounded-md p-2.5 text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white resize-none"
           />
         </div>
 
-        {/*  */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        {/* Botones de Acción */}
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#D9D9D9] dark:border-[#2A2A2A]">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold"
+            className="px-4 py-2.5 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#D9D9D9] dark:hover:bg-[#333333] text-black dark:text-white font-medium border border-[#D9D9D9] dark:border-[#333333] transition-colors"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/20"
+            className="px-5 py-2.5 rounded-md bg-[#D7141A] hover:bg-[#b50f14] text-white font-title font-bold shadow-sm transition-all"
           >
             {appointmentToEdit ? 'Guardar Cambios' : 'Agendar Turno'}
           </button>

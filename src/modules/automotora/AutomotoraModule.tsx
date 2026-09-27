@@ -80,125 +80,120 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="space-y-5 animate-fade-in pb-12">
       {/* Banner Principal de la Automotora */}
-      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#181D26] to-[#0E131C] border border-amber-500/30 relative overflow-hidden shadow-xl">
-        <div className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-5 sm:p-6 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-widest text-amber-400">
-                Fase 4 • Automotora CARVLAK
+              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+                CARVLAK Automotores
               </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">
-                Multi-SaaS Ready
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                {dealershipVehicles.length} vehículos
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333]">
+                {dealershipVehicles.length} vehículos en stock
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-black text-white mt-1">
-              Gestión Integral de Automotora &amp; Stock
+            <h1 className="text-xl sm:text-2xl font-title font-bold text-black dark:text-white mt-1">
+              Gestión integral de stock y ventas
             </h1>
 
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              Catálogo centralizado, peritajes previos, alistamiento en taller, señas bancarias, permutas y comisiones de venta conectados a la base común.
+            <p className="text-xs text-[#6B6B6B] mt-1 max-w-2xl leading-relaxed">
+              Inventario de usados seleccionados y eléctricos 0km, señas bancarias, permutas, cuentas por pagar y comisiones de venta.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleOpenCatalog}
-              className="px-3.5 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all shadow-sm"
+              className="px-3.5 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#E5E5E5] text-black dark:text-white font-semibold text-xs border border-[#D9D9D9] dark:border-[#333333] flex items-center gap-1.5 transition-colors min-h-[40px]"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Ver Catálogo Web</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <span>Ver catálogo web</span>
             </button>
 
             <button
               onClick={() => setIsMigrationModalOpen(true)}
-              className="px-3.5 py-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-amber-500/30 flex items-center gap-1.5 transition-all shadow-sm"
+              className="px-3.5 py-2 rounded-md bg-[#111111] dark:bg-white text-white dark:text-black font-semibold text-xs border border-[#222222] flex items-center gap-1.5 transition-colors min-h-[40px]"
             >
-              <Download className="w-3.5 h-3.5 text-amber-400" />
+              <Download className="w-3.5 h-3.5" />
               <span>Importar AppAuto</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Navegación Modular (Tabs) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-800/80">
+      {/* Navegación Modular (Tabs con Rojo #D7141A para la pestaña activa) */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none border-b border-[#D9D9D9] dark:border-[#2A2A2A]">
         <button
           onClick={() => setActiveTab('stock')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'stock'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Car className="w-4 h-4" />
-          <span>Stock &amp; Inventario</span>
+          <span>Stock e inventario</span>
         </button>
 
         <button
           onClick={() => setActiveTab('crm')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'crm'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>CRM &amp; Clientes Interesados</span>
+          <span>CRM interesados</span>
         </button>
 
         <button
           onClick={() => setActiveTab('gastos')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'gastos'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <DollarSign className="w-4 h-4" />
-          <span>Gastos Automotora</span>
+          <span>Gastos automotora</span>
         </button>
 
         <button
           onClick={() => setActiveTab('comisiones')}
-          className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
             activeTab === 'comisiones'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Award className="w-4 h-4" />
-          <span>Comisiones de Venta</span>
+          <span>Comisiones</span>
         </button>
 
         {isAdmin && (
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
               activeTab === 'dashboard'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-[#D7141A] text-white shadow-sm'
+                : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Métricas &amp; Rentabilidad</span>
+            <span>Rentabilidad</span>
           </button>
         )}
 
         {isAdmin && (
           <button
             onClick={() => setActiveTab('config')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] ${
               activeTab === 'config'
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/10'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                ? 'bg-[#D7141A] text-white shadow-sm'
+                : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
             }`}
           >
             <Settings className="w-4 h-4" />

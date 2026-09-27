@@ -21,8 +21,11 @@ import { PublicQuoteRequestPage } from '../public/PublicQuoteRequestPage';
 import { InspectionPublicReportPage } from '../../modules/inspecciones/components/InspectionPublicReportPage';
 import { DealershipPublicCatalogPage } from '../../modules/automotora/components/DealershipPublicCatalogPage';
 import { Vehicle, Client, Appointment } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { LoginPage } from '../auth/LoginPage';
 
 export const AppLayout: React.FC = () => {
+  const { profile } = useAuth();
   const [currentTab, setCurrentTab] = useState('inicio');
 
   // Vista Pública de Presupuestos (sin login / accesible por URL o toggle)
@@ -91,8 +94,13 @@ export const AppLayout: React.FC = () => {
     return <DealershipPublicCatalogPage onBackToApp={() => setIsPublicCatalogView(false)} />;
   }
 
+  // Si el usuario no ha iniciado sesión, mostrar pantalla de Login corporativa
+  if (!profile) {
+    return <LoginPage />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#070A0E] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#F2F2F2] dark:bg-[#000000] text-black dark:text-white">
       
       {/*  */}
       <TopBar onOpenQuickSearch={() => setIsQuickSearchOpen(true)} />

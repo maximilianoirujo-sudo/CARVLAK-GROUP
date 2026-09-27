@@ -177,32 +177,31 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
       </div>
 
       {/* BANNER DE CROSS-SELLING DETAILVLAK (1 TOQUE) */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-[#111A24] to-blue-950/40 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+      <div className="p-4 sm:p-5 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
-              Cross-Selling DetailVlak Pro
+            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+              Servicio adicional sugerido
             </span>
           </div>
-          <h4 className="text-sm font-black text-white">
-            ¿Mejora estética sugerida para este vehículo?
+          <h4 className="text-sm font-title font-bold text-black dark:text-white">
+            ¿Mejora estética recomendada para este vehículo?
           </h4>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-[#6B6B6B]">
             Crea una cotización en DetailVlak pre-cargada con el cliente, el vehículo y los servicios sugeridos (Tratamiento cerámico, Limpieza de tapizados, Ópticas).
           </p>
         </div>
 
         {createdQuoteId ? (
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-xl border border-emerald-500/30 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" /> Cotización #{createdQuoteId.slice(-6)} Creada
+            <span className="text-xs font-semibold text-black dark:text-white bg-[#F2F2F2] dark:bg-[#222222] px-3 py-2 rounded-md border border-[#D9D9D9] dark:border-[#333333] flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Cotización #{createdQuoteId.slice(-6)} Creada
             </span>
             {onNavigateToDetailing && (
               <button
                 type="button"
                 onClick={() => onNavigateToDetailing(createdQuoteId)}
-                className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs hover:bg-emerald-400 flex items-center gap-1"
+                className="px-4 py-2 rounded-md bg-black dark:bg-white text-white dark:text-black font-semibold text-xs hover:bg-[#222222] flex items-center gap-1 min-h-[40px]"
               >
                 <span>Ver en Detailing</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -213,48 +212,60 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
           <button
             type="button"
             onClick={handleGenerateDetailing}
-            className="shrink-0 px-5 py-2.5 rounded-2xl bg-emerald-500 text-slate-950 font-black text-xs hover:bg-emerald-400 flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+            className="shrink-0 px-4 py-2.5 rounded-md bg-[#D7141A] hover:bg-[#B50F14] text-white font-title font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px] flex items-center gap-2 shadow-sm"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Crear Cotización en DetailVlak (1 Toque)</span>
+            <span>Crear cotización en DetailVlak</span>
           </button>
         )}
       </div>
 
-      {/* DOCUMENTO FORMAL DE INFORME TÉCNICO (APTO PARA PRINT) */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-[#0F1420] border border-slate-800 space-y-6 print:bg-white print:text-black print:border-none print:shadow-none">
-        {/* ENCABEZADO DEL INFORME */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 print:border-slate-300 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-widest text-emerald-500 print:text-emerald-700">
-                CARVLAK GROUP • DEPARTAMENTO PERICIAL
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 print:bg-slate-200 print:text-slate-800">
+      {/* DOCUMENTO FORMAL DE INFORME TÉCNICO (APTO PARA PRINT / PDF) */}
+      <div className="p-6 sm:p-8 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
+        {/* ENCABEZADO DEL INFORME CON LOGO OFICIAL */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D9D9D9] dark:border-[#2A2A2A] print:border-[#D9D9D9] pb-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-carvlak-black.png"
+                alt="CARVLAK Group"
+                className="h-8 w-auto object-contain hidden print:block dark:hidden"
+              />
+              <img
+                src="/logo-carvlak-white.png"
+                alt="CARVLAK Group"
+                className="h-8 w-auto object-contain hidden dark:block print:hidden"
+              />
+              <img
+                src="/logo-carvlak-black.png"
+                alt="CARVLAK Group"
+                className="h-8 w-auto object-contain block dark:hidden print:hidden"
+              />
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333] print:bg-[#F2F2F2] print:text-black">
                 {inspection.type === 'precompra' ? 'Peritaje Precompra' : 'Inspección Interna Automotora'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white print:text-black">
+            <h1 className="text-2xl sm:text-3xl font-title font-bold text-black dark:text-white print:text-black">
               Informe Técnico de Inspección
             </h1>
-            <p className="text-xs text-slate-400 print:text-slate-600">
-              Emitido el {new Date(inspection.completed_at || inspection.scheduled_at || inspection.created_at).toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })} • Taller Shangrilá (Av. Calcagno)
+            <p className="text-xs text-[#6B6B6B] print:text-[#444444]">
+              Emitido el {new Date(inspection.completed_at || inspection.scheduled_at || inspection.created_at).toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })} • Taller Shangrilá (Av. Giannattasio)
             </p>
           </div>
 
-          {/* Puntaje y Semáforo */}
+          {/* Puntaje y Semáforo Pericial de Seguridad (Verde / Amarillo / Rojo) */}
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <span className="text-[11px] font-bold uppercase text-slate-400 print:text-slate-600 block">
-                Dictamen
+              <span className="text-[11px] font-semibold uppercase text-[#6B6B6B] print:text-[#444444] block">
+                Dictamen pericial
               </span>
               <span
-                className={`text-sm sm:text-base font-black px-3 py-1 rounded-xl uppercase tracking-wider inline-block ${
+                className={`text-sm sm:text-base font-title font-bold px-3 py-1 rounded-md uppercase tracking-wider inline-block ${
                   inspection.traffic_light === 'Recomendable'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 print:bg-emerald-100 print:text-emerald-800'
+                    ? 'bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/30 print:bg-emerald-50 print:text-emerald-800'
                     : inspection.traffic_light === 'Con reparos'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 print:bg-amber-100 print:text-amber-800'
-                    : 'bg-red-500/20 text-red-400 border border-red-500/30 print:bg-red-100 print:text-red-800'
+                    ? 'bg-[#CA8A04]/10 text-[#CA8A04] border border-[#CA8A04]/30 print:bg-amber-50 print:text-amber-800'
+                    : 'bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/30 print:bg-red-50 print:text-red-800'
                 }`}
               >
                 {inspection.traffic_light}
@@ -262,12 +273,12 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             </div>
 
             <div
-              className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black border shadow-lg ${
+              className={`w-16 h-16 rounded-md flex flex-col items-center justify-center font-title font-bold border ${
                 inspection.traffic_light === 'Recomendable'
-                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 print:bg-emerald-50 print:text-emerald-800'
+                  ? 'bg-[#15803D]/10 border-[#15803D]/30 text-[#15803D] print:bg-emerald-50 print:text-emerald-800'
                   : inspection.traffic_light === 'Con reparos'
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 print:bg-amber-50 print:text-amber-800'
-                  : 'bg-red-500/20 border-red-500/40 text-red-400 print:bg-red-50 print:text-red-800'
+                  ? 'bg-[#CA8A04]/10 border-[#CA8A04]/30 text-[#CA8A04] print:bg-amber-50 print:text-amber-800'
+                  : 'bg-[#D7141A]/10 border-[#D7141A]/30 text-[#D7141A] print:bg-red-50 print:text-red-800'
               }`}
             >
               <span className="text-2xl leading-none">{inspection.score}</span>

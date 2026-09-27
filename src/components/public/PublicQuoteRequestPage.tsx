@@ -155,23 +155,25 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#070A0E] text-slate-100 flex flex-col justify-between antialiased selection:bg-purple-500/30 selection:text-purple-200">
+    <div className="min-h-screen bg-[#F2F2F2] dark:bg-[#000000] text-black dark:text-white flex flex-col justify-between antialiased selection:bg-[#D7141A]/20 selection:text-[#D7141A]">
       
-      {/* Barra Superior */}
-      <header className="border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur-xl sticky top-0 z-40 px-4 py-3.5">
+      {/* Barra Superior con Logo Oficial CARVLAK */}
+      <header className="border-b border-[#222222] bg-[#000000] sticky top-0 z-40 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-purple-600/25">
-              DV
-            </div>
-            <div>
-              <div className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
+            <img
+              src="/logo-carvlak-white.png"
+              alt="CARVLAK Group"
+              className="h-7 w-auto object-contain"
+            />
+            <div className="border-l border-[#222222] pl-3">
+              <div className="text-xs font-semibold text-white flex items-center gap-1.5">
                 <span>DetailVlak</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
-                  Shangrilá
+                <span className="text-[10px] font-title font-bold px-1.5 py-0.5 rounded bg-[#222222] text-[#D9D9D9] border border-[#333333]">
+                  Taller
                 </span>
               </div>
-              <div className="text-[11px] text-slate-400">Estética Automotriz • CARVLAK Group</div>
+              <div className="text-[10px] text-[#6B6B6B]">Estética automotriz • Shangrilá</div>
             </div>
           </div>
 

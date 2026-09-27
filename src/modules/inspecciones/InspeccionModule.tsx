@@ -136,64 +136,65 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
-      {/* CABECERA PRINCIPAL CON IDENTIDAD FASE 3 */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-[#0F241C] via-[#0A1813] to-[#080D14] border border-emerald-500/30 relative overflow-hidden shadow-2xl">
+    <div className="space-y-5 animate-fade-in pb-16">
+      {/* CABECERA PRINCIPAL CON IDENTIDAD CARVLAK */}
+      <div className="p-5 sm:p-6 rounded-lg bg-white dark:bg-[#161616] border border-[#D9D9D9] dark:border-[#2A2A2A] shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">
-                Fase 3 Activa • Peritaje Vehicular
+              <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+                Departamento Pericial
               </span>
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F2F2F2] dark:bg-[#222222] text-[#6B6B6B] border border-[#D9D9D9] dark:border-[#333333]">
                 15 Paneles • OBD-II • SUCIVE
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
-              CARVLAK Inspección & Patio
+            <h1 className="text-xl sm:text-2xl font-title font-bold text-black dark:text-white mt-1">
+              Inspección y peritaje vehicular
             </h1>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Peritaje técnico precompra para clientes e inspección interna para adquisición de stock automotora. Checklist táctil mobile-first (&lt; 3 min) y reporte con semáforo automático.
+            <p className="text-xs text-[#6B6B6B] max-w-2xl leading-relaxed">
+              Peritaje técnico precompra para clientes e inspección interna para adquisición de stock automotora. Checklist táctil mobile-first y reporte con semáforo pericial.
             </p>
           </div>
 
           {/* Botones de Cabecera */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             {isAdmin && (
               <button
                 type="button"
                 onClick={() => setIsTariffModalOpen(true)}
-                className="px-3.5 py-2.5 rounded-2xl bg-slate-900/80 border border-slate-700 text-xs font-bold text-slate-200 hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2 rounded-md bg-[#F2F2F2] dark:bg-[#222222] hover:bg-[#E5E5E5] text-black dark:text-white border border-[#D9D9D9] dark:border-[#333333] text-xs font-semibold flex items-center gap-1.5 transition-colors min-h-[40px]"
               >
-                <Settings className="w-4 h-4 text-emerald-400" />
+                <Settings className="w-3.5 h-3.5 text-[#6B6B6B]" />
                 <span>Tarifario</span>
               </button>
             )}
 
+            {/* UNICO BOTÓN PRINCIPAL EN ROJO #D7141A */}
             <button
               type="button"
               onClick={() => {
                 setInspectionToEdit(null);
                 setIsModalOpen(true);
               }}
-              className="px-4 py-2.5 rounded-2xl bg-emerald-500 text-slate-950 font-black text-xs hover:bg-emerald-400 flex items-center gap-2 shadow-lg shadow-emerald-500/25 transition-all active:scale-95"
+              className="px-4 py-2 rounded-md bg-[#D7141A] hover:bg-[#B50F14] text-white font-title font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-colors min-h-[40px] shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              <span>Nueva Inspección</span>
+              <span>+ Nueva inspección</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* PESTAÑAS DEL MÓDULO */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {/* PESTAÑAS DEL MÓDULO CON ROJO #D7141A PARA LA PESTAÑA ACTIVA */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none border-b border-[#D9D9D9] dark:border-[#2A2A2A]">
         <button
           type="button"
           onClick={() => setActiveTab('list')}
-          className={`shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
+          className={`shrink-0 px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 min-h-[40px] ${
             activeTab === 'list'
-              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md'
-              : 'bg-[#0E1420] border-slate-800 text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <ClipboardCheck className="w-4 h-4" />
@@ -203,17 +204,17 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         {activeInspection && activeTab === 'peritaje_live' && (
           <button
             type="button"
-            className="shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold bg-amber-500/20 border border-amber-500 text-amber-300 shadow-md flex items-center gap-2"
+            className="shrink-0 px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider bg-[#111111] text-white border border-[#333333] flex items-center gap-2 min-h-[40px]"
           >
-            <Clock className="w-4 h-4 animate-spin" />
-            <span>Peritaje en Curso: {activeInspection.vehicle_plate}</span>
+            <Clock className="w-4 h-4" />
+            <span>Peritaje en curso: {activeInspection.vehicle_plate}</span>
           </button>
         )}
 
         {activeInspection && activeTab === 'report_view' && (
           <button
             type="button"
-            className="shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold bg-blue-500/20 border border-blue-500 text-blue-300 shadow-md flex items-center gap-2"
+            className="shrink-0 px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider bg-[#111111] text-white border border-[#333333] flex items-center gap-2 min-h-[40px]"
           >
             <ShieldCheck className="w-4 h-4" />
             <span>Informe: {activeInspection.vehicle_plate}</span>
@@ -223,41 +224,41 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         <button
           type="button"
           onClick={() => setActiveTab('expenses')}
-          className={`shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
+          className={`shrink-0 px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 min-h-[40px] ${
             activeTab === 'expenses'
-              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md'
-              : 'bg-[#0E1420] border-slate-800 text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Receipt className="w-4 h-4" />
-          <span>Gastos de Inspección</span>
+          <span>Gastos inspección</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('commissions')}
-          className={`shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
+          className={`shrink-0 px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 min-h-[40px] ${
             activeTab === 'commissions'
-              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md'
-              : 'bg-[#0E1420] border-slate-800 text-slate-400 hover:text-white'
+              ? 'bg-[#D7141A] text-white shadow-sm'
+              : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
           }`}
         >
           <Award className="w-4 h-4" />
-          <span>Comisiones Peritos</span>
+          <span>Comisiones</span>
         </button>
 
         {isEncargado && (
           <button
             type="button"
             onClick={() => setActiveTab('dashboard')}
-            className={`shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
+            className={`shrink-0 px-3.5 py-2 rounded-md text-xs font-title font-bold uppercase tracking-wider transition-colors flex items-center gap-2 min-h-[40px] ${
               activeTab === 'dashboard'
-                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 shadow-md'
-                : 'bg-[#0E1420] border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-[#D7141A] text-white shadow-sm'
+                : 'text-[#6B6B6B] hover:text-black dark:hover:text-white hover:bg-[#F2F2F2] dark:hover:bg-[#1A1A1A]'
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            <span>Dashboard Pericial</span>
+            <span>Métricas</span>
           </button>
         )}
       </div>
