@@ -40,35 +40,35 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
 
   if (!hasAccess) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-[#141414] rounded-3xl border border-[#2A2A2A] text-center space-y-4 shadow-xl">
-        <div className="w-14 h-14 rounded-2xl bg-[#D7141A]/10 border border-[#D7141A]/30 flex items-center justify-center mx-auto text-[#D7141A]">
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white rounded-2xl border border-[#E5E5E3] text-center space-y-4 shadow-sm">
+        <div className="w-14 h-14 rounded-2xl bg-[#FDF2F2] border border-[#FACDCD] flex items-center justify-center mx-auto text-[#D7141A]">
           <Lock className="w-7 h-7" />
         </div>
-        <h2 className="text-lg font-bold text-white">Acceso Restringido a Redes Sociales</h2>
-        <p className="text-xs text-[#8A8A8A] leading-relaxed">
+        <h2 className="text-lg font-title font-bold text-[#161616]">Acceso restringido a redes sociales</h2>
+        <p className="text-xs text-[#6B6B6B] leading-relaxed">
           La creación de imágenes y publicaciones oficiales de CARVLAK Group está configurada únicamente para <strong>Administradores y Encargados</strong>.
         </p>
-        <p className="text-[11px] text-[#8A8A8A]">
-          Si requerís generar contenido como vendedor, solicitá al administrador que habilite tu rol desde el panel de configuración de Redes.
+        <p className="text-[11px] text-[#9A9A9A]">
+          Si requerís generar contenido como vendedor, solicitá al administrador que habilite tu rol desde el panel de configuración de redes.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in pb-16">
       {/* Encabezado Principal y Pestañas */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#2A2A2A]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-[#E5E5E3]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/20">
+            <span className="p-2 rounded-xl bg-[#F5F5F4] text-[#D7141A] border border-[#E5E5E3]">
               <Share2 className="w-5 h-5" />
             </span>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">
-                Redes Sociales & Marketing Studio
+              <h1 className="text-xl sm:text-2xl font-title font-bold text-[#161616] tracking-tight">
+                Redes sociales
               </h1>
-              <p className="text-xs text-[#8A8A8A]">
+              <p className="text-xs text-[#6B6B6B]">
                 Generá historias y publicaciones profesionales en 1080px con la identidad visual oficial de CARVLAK.
               </p>
             </div>
@@ -76,27 +76,27 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
         </div>
 
         {/* Selector de sub-pestañas */}
-        <div className="flex items-center bg-[#141414] p-1.5 rounded-2xl border border-[#2A2A2A] self-start md:self-auto">
+        <div className="flex items-center bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3] self-start md:self-auto">
           <button
             type="button"
             onClick={() => setActiveTab('studio')}
-            className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'studio'
-                ? 'bg-[#D7141A] text-white shadow-md'
-                : 'text-[#8A8A8A] hover:text-white'
+                ? 'bg-white text-[#161616] shadow-sm'
+                : 'text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Estudio Creativo</span>
+            <span>Estudio creativo</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'history'
-                ? 'bg-[#D7141A] text-white shadow-md'
-                : 'text-[#8A8A8A] hover:text-white'
+                ? 'bg-white text-[#161616] shadow-sm'
+                : 'text-[#6B6B6B] hover:text-[#161616]'
             }`}
           >
             <History className="w-3.5 h-3.5" />
@@ -107,10 +107,10 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('config')}
-              className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === 'config'
-                  ? 'bg-[#D7141A] text-white shadow-md'
-                  : 'text-[#8A8A8A] hover:text-white'
+                  ? 'bg-white text-[#161616] shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               <Settings className="w-3.5 h-3.5" />

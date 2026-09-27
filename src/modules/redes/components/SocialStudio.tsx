@@ -29,10 +29,13 @@ import {
 } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
 import { SocialCanvasPreview } from './SocialCanvasPreview';
 import { generateSocialCopy } from '../services/socialCopyEngine';
 import { formatCurrency } from '../../../lib/formatters';
 import { renderSocialCanvas, exportCanvasToBlob, downloadBlob } from '../services/socialCanvasEngine';
+import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
+import { Button } from '../../../components/ui/Button';
 
 interface SocialStudioProps {
   initialVehicleId?: string;
@@ -43,6 +46,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
   initialVehicleId,
   initialTemplateId
 }) => {
+  const { profile } = useAuth();
   const {
     dealershipVehicles,
     detailingQuotes,
@@ -61,7 +65,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
   const [selectedTemplateId, setSelectedTemplateId] = useState<SocialMediaTemplateId>(
     initialTemplateId || 'auto-vendido'
   );
-  const [format, setFormat] = useState<SocialMediaFormat>('post');
+  const [format, setFormat] = useState<SocialMediaFormat>('story');
 
   // 2. Selección de Item (Auto, Detailing o Inspección)
   const [selectedCarId, setSelectedCarId] = useState<string>(initialVehicleId || '');
@@ -148,225 +152,212 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
         : 'Consultar precio';
       setPrice(priceFormatted);
 
-      if (selectedTemplateId === 'auto-descuento') {
-        const origPrice = activeCar.sale_price ? Math.round(activeCar.sale_price * 1.08) : 0;
-        setOriginalPrice(origPrice > 0 ? formatCurrency(origPrice, activeCar.sale_currency || 'USD') : '');
+      setOriginalPrice('');
+      setBadgeTag('Stock CARVLAK');
+
+      const carSpecs = [
+        activeCar.fuel || 'Nafta',
+        activeCar.transmission || 'Manual',
+        activeCar.mileage ? `${activeCar.mileage.toLocaleString('es-UY')} km` : '0 km',
+        activeCar.year ? `Año ${activeCar.year}` : ''
+      ].filter(Boolean);
+      setSpecs(carSpecs);
+
+      if (activeCar.images && activeCar.images.length > 0) {
+        setSelectedImage(activeCar.images[0]);
+        setCarouselPhotos(activeCar.images.slice(0, 6));
       } else {
-        setOriginalPrice('');
-      }
-
-      // Specs chips
-      const sp: string[] = [];
-      if (activeCar.year) sp.push(`Año ${activeCar.year}`);
-      if (activeCar.mileage) {
-        sp.push(`${activeCar.mileage.toLocaleString('es-UY')} km`);
-      } else if (activeCar.condition === '0km') {
-        sp.push('0 km');
-      }
-      if (activeCar.engine) sp.push(activeCar.engine);
-      if (activeCar.fuel) sp.push(activeCar.fuel);
-      setSpecs(sp);
-
-      // Foto principal
-      const carImages = activeCar.images && activeCar.images.length > 0
-        ? activeCar.images
-        : (activeCar.cover_image ? [activeCar.cover_image] : []);
-
-      if (carImages.length > 0) {
-        setSelectedImage(carImages[0]);
-        setCarouselPhotos(carImages);
-      } else {
-        setSelectedImage('');
+        setSelectedImage('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80');
         setCarouselPhotos([]);
       }
 
-      // Tags específicos
-      if (selectedTemplateId === 'auto-electricos-0km') {
-        setBadgeTag('100% ELÉCTRICO • 0KM');
-      } else if (selectedTemplateId === 'auto-catalogo-semana') {
-        setBadgeTag('DESTACADO DE LA SEMANA');
-      } else {
-        setBadgeTag('');
-      }
-
+      // Generar copy sugerido para Instagram
+      const generatedCopy = generateSocialCopy({
+        templateId: selectedTemplateId,
+        car: activeCar,
+        customHeadline: carTitle,
+        customPrice: priceFormatted,
+        config: socialMediaConfig
+      });
+      setCaption(generatedCopy);
     } else if (selectedCategory === 'detailing' && activeQuote) {
-      setHeadline(activeQuote.vehicle_info || 'Detallado Profesional');
-      const servicesStr = activeQuote.selected_services?.map((s) => s.serviceName).join(' + ') || 'Tratamiento Integral';
-      setSubtitle(servicesStr);
-      setPrice(activeQuote.total_amount ? formatCurrency(activeQuote.total_amount) : '');
-      setOriginalPrice('');
-      setSpecs(['Garantía Escrita', 'Productos Premium']);
+      setHeadline(activeQuote.vehicle_info);
+      setSubtitle(`Trabajo de Detailing • ${activeQuote.client_name}`);
+      setPrice(formatCurrency(activeQuote.total_amount));
+      setBadgeTag('DetailVlak');
+      setStampText(templateConfig?.stamp_text || 'RESULTADO PREMIUM');
+      
+      const serviceNames = (activeQuote.selected_services || []).map((i) => i.serviceName).slice(0, 3);
+      setSpecs(serviceNames);
 
-      // Fotos de cotización si tiene
-      setSelectedImage(activeQuote.photos_before?.[0] || '');
-      setSecondaryImage(activeQuote.photos_after?.[0] || '');
+      const beforeImg = activeQuote.photos_before?.[0] || 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?auto=format&fit=crop&w=1200&q=80';
+      const afterImg = activeQuote.photos_after?.[0] || 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1200&q=80';
+      setSelectedImage(beforeImg);
+      setSecondaryImage(afterImg);
 
+      const generatedCopy = generateSocialCopy({
+        templateId: selectedTemplateId,
+        quote: activeQuote,
+        customHeadline: activeQuote.vehicle_info,
+        config: socialMediaConfig
+      });
+      setCaption(generatedCopy);
     } else if (selectedCategory === 'inspeccion' && activeInspection) {
-      setHeadline(activeInspection.vehicle_info || 'Inspección Precompra Certificada');
-      setSubtitle(`Dictamen: ${activeInspection.traffic_light} • Puntaje: ${activeInspection.score}/100`);
-      setPrice('Peritaje 120+ Puntos');
-      setOriginalPrice('');
-      setSpecs(['Escaneo OBD-II', 'Pintura Original', 'Chasis OK']);
-      setSelectedImage(activeInspection.photos?.[0] || '');
-    }
-  }, [selectedCategory, selectedTemplateId, activeCar, activeQuote, activeInspection, socialMediaConfig]);
+      setHeadline(activeInspection.vehicle_info || `Inspección ${activeInspection.vehicle_plate}`);
+      setSubtitle(`Peritaje Oficial • Dictamen ${activeInspection.traffic_light.toUpperCase()}`);
+      setPrice(`Score: ${activeInspection.score}/100`);
+      setBadgeTag('Peritaje CARVLAK');
+      setStampText(activeInspection.traffic_light === 'Recomendable' ? 'APROBADO' : 'OBSERVADO');
 
-  // Regenerar copy para Instagram al cambiar variables relevantes
-  useEffect(() => {
-    const copy = generateSocialCopy({
-      templateId: selectedTemplateId,
-      car: selectedCategory === 'automotora' ? activeCar : null,
-      quote: selectedCategory === 'detailing' ? activeQuote : null,
-      inspection: selectedCategory === 'inspeccion' ? activeInspection : null,
-      customHeadline: headline,
-      customSubtitle: subtitle,
-      customPrice: price,
-      config: socialMediaConfig
-    });
-    setCaption(copy);
+      const inspSpecs = [
+        `Puntaje: ${activeInspection.score}/100`,
+        `Dictamen: ${activeInspection.traffic_light}`,
+        `Placa: ${activeInspection.vehicle_plate}`,
+        activeInspection.estimated_repair_cost ? `Arreglos: $U ${activeInspection.estimated_repair_cost.toLocaleString('es-UY')}` : 'Sin reparaciones requeridas'
+      ];
+      setSpecs(inspSpecs);
+
+      setSelectedImage('https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1200&q=80');
+
+      const generatedCopy = generateSocialCopy({
+        templateId: selectedTemplateId,
+        inspection: activeInspection,
+        config: socialMediaConfig
+      });
+      setCaption(generatedCopy);
+    }
   }, [
-    selectedTemplateId,
     selectedCategory,
+    selectedTemplateId,
+    selectedCarId,
+    selectedQuoteId,
+    selectedInspectionId,
     activeCar,
     activeQuote,
     activeInspection,
-    headline,
-    subtitle,
-    price,
     socialMediaConfig
   ]);
 
-  // Manejador de copia de texto al portapapeles
-  const handleCopyCaption = () => {
-    if (!caption) return;
-    navigator.clipboard.writeText(caption);
-    setIsCopied(true);
-    showToast('Texto y hashtags copiados para Instagram', 'success');
-    setTimeout(() => setIsCopied(false), 2500);
-  };
-
-  // Guardar en Historial
-  const handleSaveToHistory = (thumbnailData: string) => {
-    addSocialMediaPost({
-      template_id: selectedTemplateId,
-      template_title: currentTemplateConfig?.title || 'Publicación CARVLAK',
-      category: selectedCategory,
-      format,
-      item_id: activeCar?.id || activeQuote?.id || activeInspection?.id,
-      item_title: headline || 'Vehículo',
-      thumbnail_data: thumbnailData,
-      suggested_caption: caption,
-      is_published: false,
-      created_by_name: 'Admin'
-    });
-  };
-
-  // Manejo de sincronización de precio con stock
+  // Manejo de actualización de precio en stock si está tildado
   const handlePriceBlur = () => {
-    if (syncPriceWithStock && activeCar && price) {
-      // Extraer número de string (ej "$ 19.500" o "USD 19500")
-      const digits = price.replace(/[^0-9]/g, '');
-      const parsed = parseInt(digits, 10);
-      if (!isNaN(parsed) && parsed > 0) {
-        updateDealershipVehicle(activeCar.id, { sale_price: parsed });
-        showToast(`Precio de lista actualizado a ${formatCurrency(parsed, activeCar.sale_currency || 'USD')} en inventario`, 'success');
+    if (syncPriceWithStock && activeCar) {
+      const numericVal = parseFloat(price.replace(/[^0-9.]/g, ''));
+      if (!isNaN(numericVal) && numericVal > 0) {
+        updateDealershipVehicle(activeCar.id, {
+          sale_price: numericVal
+        });
+        showToast('Precio sincronizado con el inventario de Automotora', 'info');
       }
     }
   };
 
-  // Validación de consentimiento para la plantilla 'auto-entrega'
-  const clientBuyer = useMemo<Client | null>(() => {
-    if (!activeCar) return null;
-    const buyerPhone = activeCar.sale_record?.buyer_phone;
-    const buyerName = activeCar.sale_record?.buyer_name;
-    if (!buyerPhone && !buyerName) return null;
+  // Copiar copy al portapapeles
+  const handleCopyCaption = () => {
+    navigator.clipboard.writeText(caption);
+    setIsCopied(true);
+    showToast('Texto copiado al portapapeles', 'success');
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
-    return (
-      clients.find(
-        (c) =>
-          (buyerPhone && c.phone.includes(buyerPhone)) ||
-          (buyerName && c.full_name.toLowerCase() === buyerName.toLowerCase())
-      ) || null
-    );
-  }, [activeCar, clients]);
+  // Guardar publicación en historial
+  const handleSaveToHistory = (thumbnailData: string) => {
+    addSocialMediaPost({
+      category: selectedCategory,
+      template_id: selectedTemplateId,
+      template_title: currentTemplateConfig?.title || 'Plantilla',
+      format,
+      item_id: activeCar?.id || activeQuote?.id || activeInspection?.id || '',
+      item_title: headline || 'Sin título',
+      suggested_caption: caption,
+      thumbnail_data: thumbnailData,
+      is_published: false,
+      created_by_name: profile?.full_name || 'Admin CARVLAK'
+    });
+  };
 
-  // Descarga de Carrusel Completo
+  // Descarga del carrusel completo
   const handleDownloadFullCarousel = async () => {
-    if (carouselPhotos.length === 0) {
-      showToast('No hay fotos seleccionadas para el carrusel', 'warning');
-      return;
-    }
-
+    if (carouselPhotos.length === 0) return;
     setIsDownloadingCarousel(true);
-    showToast(`Generando y descargando ${carouselPhotos.length} slides del carrusel...`, 'info');
+    showToast(`Generando ${carouselPhotos.length} imágenes del carrusel...`, 'info');
 
     try {
       const offscreenCanvas = document.createElement('canvas');
       for (let i = 0; i < carouselPhotos.length; i++) {
-        const photoUrl = carouselPhotos[i];
-        const slideSubtitle = i === 0
-          ? subtitle
-          : `Foto ${i + 1} de ${carouselPhotos.length} • ${activeCar?.brand || ''} ${activeCar?.model || ''}`;
+        const photo = carouselPhotos[i];
+        const isCover = i === 0;
 
         await renderSocialCanvas(offscreenCanvas, {
           format,
-          templateId: selectedTemplateId,
-          imageUrl: photoUrl,
+          templateId: 'auto-ficha-carrusel',
+          imageUrl: photo,
           headline,
-          subtitle: slideSubtitle,
-          price: i === 0 ? price : '', // Solo primer slide lleva precio gigante
-          specs: i === 0 ? specs : [],
+          subtitle: isCover ? subtitle : `Detalle ${i + 1} de ${carouselPhotos.length}`,
+          price: isCover ? price : '',
+          specs: isCover ? specs : [],
+          stampText: isCover ? stampText : '',
           coverPlate,
           platePosition,
           imagePan,
           logoPosition,
           instagramHandle: socialMediaConfig.instagram_handle,
-          locationName: socialMediaConfig.location_name
+          locationName: socialMediaConfig.location_name,
+          badgeTag: isCover ? badgeTag : undefined
         });
 
         const blob = await exportCanvasToBlob(offscreenCanvas);
-        const filename = `${headline.replace(/[^a-zA-Z0-9]/g, '_')}-slide-${i + 1}.png`;
+        const filename = `${headline.toLowerCase().replace(/[^a-z0-9]/g, '-')}-slide-${i + 1}.png`;
         downloadBlob(blob, filename);
-
-        // Pequeña pausa para no bloquear la cola de descargas del navegador
         await new Promise((r) => setTimeout(r, 400));
       }
 
-      showToast(`¡Las ${carouselPhotos.length} fotos del carrusel se descargaron con éxito!`, 'success');
+      showToast('Carrusel completo descargado con éxito', 'success');
     } catch (err) {
-      showToast('Error al descargar algunas diapositivas del carrusel', 'error');
+      console.error(err);
+      showToast('Error al exportar el carrusel', 'error');
     } finally {
       setIsDownloadingCarousel(false);
     }
   };
 
+  // Comprador para plantilla 'auto-entrega'
+  const clientBuyer = useMemo(() => {
+    if (selectedTemplateId === 'auto-entrega') {
+      const buyerId = activeCar?.sale_record?.buyer_client_id || activeCar?.reservation?.client_id;
+      if (buyerId) {
+        return clients.find((c) => c.id === buyerId) || null;
+      }
+    }
+    return null;
+  }, [selectedTemplateId, activeCar, clients]);
+
   return (
     <div className="space-y-6">
-      {/* 1. SELECCIÓN DE CATEGORÍA & PLANTILLA */}
-      <div className="bg-[#141414] p-5 rounded-3xl border border-[#2A2A2A] shadow-md space-y-4">
+      {/* 1. SELECCIÓN DE NEGOCIO Y PLANTILLA */}
+      <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#E5E5E3] shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <h2 className="text-base font-title font-bold text-[#161616] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#D7141A]" />
-              Estudio Creativo de Redes Sociales
+              <span>Estudio creativo de redes sociales</span>
             </h2>
-            <p className="text-xs text-[#8A8A8A]">
+            <p className="text-xs text-[#6B6B6B]">
               Elegí una plantilla oficial, vinculá el vehículo o servicio y personalizá los detalles en segundos.
             </p>
           </div>
 
           {/* Selector de Negocio */}
-          <div className="flex items-center bg-black p-1 rounded-2xl border border-[#2A2A2A]">
+          <div className="flex items-center bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3]">
             <button
               type="button"
               onClick={() => {
                 setSelectedCategory('automotora');
                 setSelectedTemplateId('auto-vendido');
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'automotora'
-                  ? 'bg-[#D7141A] text-white shadow-sm'
-                  : 'text-[#8A8A8A] hover:text-white'
+                  ? 'bg-white text-[#161616] shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               <Car className="w-3.5 h-3.5" />
@@ -379,10 +370,10 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                 setSelectedCategory('detailing');
                 setSelectedTemplateId('detailing-antes-despues');
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'detailing'
-                  ? 'bg-[#D7141A] text-white shadow-sm'
-                  : 'text-[#8A8A8A] hover:text-white'
+                  ? 'bg-white text-[#161616] shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               <Sparkle className="w-3.5 h-3.5" />
@@ -395,10 +386,10 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                 setSelectedCategory('inspeccion');
                 setSelectedTemplateId('inspeccion-precompra');
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 selectedCategory === 'inspeccion'
-                  ? 'bg-[#D7141A] text-white shadow-sm'
-                  : 'text-[#8A8A8A] hover:text-white'
+                  ? 'bg-white text-[#161616] shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -418,21 +409,21 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                   key={template.id}
                   type="button"
                   onClick={() => setSelectedTemplateId(template.id)}
-                  className={`p-3 rounded-2xl border text-left transition-all relative overflow-hidden cursor-pointer ${
+                  className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer ${
                     isSelected
-                      ? 'bg-black border-[#D7141A] shadow-md ring-1 ring-[#D7141A]'
-                      : 'bg-black/60 border-[#2A2A2A] hover:border-[#8A8A8A]/50 text-[#8A8A8A]'
+                      ? 'bg-white border-2 border-[#D7141A] shadow-sm'
+                      : 'bg-white border-[#E5E5E3] hover:border-[#D0D0CD] text-[#6B6B6B]'
                   }`}
                 >
                   {isSelected && (
                     <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#D7141A]" />
                   )}
-                  <div className="font-bold text-xs text-white mb-0.5">{template.title}</div>
-                  <p className="text-[10px] text-[#8A8A8A] line-clamp-2 leading-relaxed">
+                  <div className="font-title font-bold text-xs text-[#161616] mb-0.5">{template.title}</div>
+                  <p className="text-[10px] text-[#6B6B6B] line-clamp-2 leading-relaxed">
                     {template.description}
                   </p>
                   {template.stamp_text && (
-                    <span className="inline-block mt-2 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-[#D7141A]/10 text-[#D7141A] border border-[#D7141A]/20">
+                    <span className="inline-block mt-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]">
                       {template.stamp_text}
                     </span>
                   )}
@@ -446,25 +437,25 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* COLUMNA IZQUIERDA (7 cols): CONTROLES Y DATOS */}
-        <div className="lg:col-span-7 space-y-5">
+        <div className="lg:col-span-7 space-y-4">
           
           {/* Selector de Item Vinculado */}
-          <div className="bg-[#141414] p-5 rounded-3xl border border-[#2A2A2A] space-y-3">
-            <label className="block text-xs font-bold text-white uppercase tracking-wider">
-              {selectedCategory === 'automotora' && '1. Seleccionar Vehículo de Stock'}
-              {selectedCategory === 'detailing' && '1. Seleccionar Trabajo o Cotización'}
-              {selectedCategory === 'inspeccion' && '1. Seleccionar Inspección Realizada'}
+          <div className="bg-white p-5 rounded-xl border border-[#E5E5E3] shadow-sm space-y-3">
+            <label className="block text-xs font-bold text-[#161616] uppercase tracking-wider">
+              {selectedCategory === 'automotora' && '1. Seleccionar vehículo de stock'}
+              {selectedCategory === 'detailing' && '1. Seleccionar trabajo o cotización'}
+              {selectedCategory === 'inspeccion' && '1. Seleccionar inspección realizada'}
             </label>
 
             {selectedCategory === 'automotora' && (
               <select
                 value={selectedCarId}
                 onChange={(e) => setSelectedCarId(e.target.value)}
-                className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-xs text-white font-medium focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] font-medium focus:bg-white focus:border-[#161616] focus:outline-none cursor-pointer"
               >
                 {dealershipVehicles.map((car) => (
                   <option key={car.id} value={car.id}>
-                    {car.brand} {car.model} {car.version || ''} ({car.year}) - {car.status.toUpperCase()} - {formatCurrency(car.sale_price, car.sale_currency || 'USD')}
+                    {car.brand} {car.model} {car.version || ''} ({car.year}) - {car.status} - {formatCurrency(car.sale_price, car.sale_currency || 'USD')}
                   </option>
                 ))}
               </select>
@@ -474,7 +465,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
               <select
                 value={selectedQuoteId}
                 onChange={(e) => setSelectedQuoteId(e.target.value)}
-                className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-xs text-white font-medium focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] font-medium focus:bg-white focus:border-[#161616] focus:outline-none cursor-pointer"
               >
                 {detailingQuotes.map((q) => (
                   <option key={q.id} value={q.id}>
@@ -488,7 +479,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
               <select
                 value={selectedInspectionId}
                 onChange={(e) => setSelectedInspectionId(e.target.value)}
-                className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-xs text-white font-medium focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] font-medium focus:bg-white focus:border-[#161616] focus:outline-none cursor-pointer"
               >
                 {inspections.map((i) => (
                   <option key={i.id} value={i.id}>
@@ -500,20 +491,20 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
 
             {/* Aviso de Consentimiento para Plantilla 'auto-entrega' */}
             {selectedTemplateId === 'auto-entrega' && (
-              <div className="mt-3 p-3.5 rounded-2xl bg-black border border-[#2A2A2A] space-y-2">
+              <div className="mt-3 p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-2">
                 <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-[#eab308] shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-[#945B0E] shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <p className="font-bold text-white">
-                      Verificación de Consentimiento de Imagen
+                    <p className="font-bold text-[#161616]">
+                      Verificación de consentimiento de imagen
                     </p>
                     {clientBuyer ? (
                       clientBuyer.social_media_consent ? (
-                        <p className="text-[#22c55e] text-[11px] mt-0.5">
+                        <p className="text-[#1E6B43] text-[11px] mt-0.5 font-semibold">
                           ✓ El comprador <strong>{clientBuyer.full_name}</strong> tiene el consentimiento autorizado en su ficha.
                         </p>
                       ) : (
-                        <div className="text-[11px] text-[#8A8A8A] mt-1 space-y-2">
+                        <div className="text-[11px] text-[#6B6B6B] mt-1 space-y-2">
                           <p>
                             El comprador <strong>{clientBuyer.full_name}</strong> aún no tiene registrado consentimiento para publicaciones.
                           </p>
@@ -523,14 +514,14 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                               updateClientConsent(clientBuyer.id, true);
                               showToast('Consentimiento autorizado para este cliente', 'success');
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 font-bold hover:bg-[#22c55e]/30 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9] font-bold hover:bg-[#D9EFE3] transition-colors cursor-pointer"
                           >
-                            Autorizar Consentimiento Ahora
+                            Autorizar consentimiento ahora
                           </button>
                         </div>
                       )
                     ) : (
-                      <p className="text-[11px] text-[#8A8A8A] mt-0.5">
+                      <p className="text-[11px] text-[#6B6B6B] mt-0.5">
                         Asegurate de contar con la autorización verbal o firmada del comprador antes de subir fotos de la entrega.
                       </p>
                     )}
@@ -541,24 +532,24 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
           </div>
 
           {/* Selector de Fotos Disponibles */}
-          <div className="bg-[#141414] p-5 rounded-3xl border border-[#2A2A2A] space-y-3">
+          <div className="bg-white p-5 rounded-xl border border-[#E5E5E3] shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-[#D7141A]" />
-                2. Seleccionar Foto del Vehículo
+                <span>2. Seleccionar foto del vehículo</span>
               </label>
 
               {/* Si es carrusel, botón de descarga masiva */}
               {selectedTemplateId === 'auto-ficha-carrusel' && (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   disabled={isDownloadingCarousel}
                   onClick={handleDownloadFullCarousel}
-                  className="px-3 py-1.5 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white text-[11px] font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  <span>{isDownloadingCarousel ? 'Descargando...' : 'Descargar Carrusel Completo'}</span>
-                </button>
+                  <span>{isDownloadingCarousel ? 'Descargando...' : 'Descargar carrusel completo'}</span>
+                </Button>
               )}
             </div>
 
@@ -573,10 +564,10 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                       setCarouselSlideIndex(idx);
                       setSelectedImage(photo);
                     }}
-                    className={`px-3 py-1 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
                       carouselSlideIndex === idx
-                        ? 'bg-[#D7141A] text-white border-[#D7141A]'
-                        : 'bg-black border-[#2A2A2A] text-[#8A8A8A] hover:text-white'
+                        ? 'bg-[#161616] text-white border-[#161616]'
+                        : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
                     }`}
                   >
                     Slide {idx + 1} {idx === 0 ? '(Portada)' : ''}
@@ -593,10 +584,10 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setSelectedImage(img)}
-                    className={`aspect-video rounded-xl overflow-hidden border-2 transition-all relative cursor-pointer ${
+                    className={`aspect-video rounded-lg overflow-hidden border-2 transition-all relative cursor-pointer ${
                       selectedImage === img
-                        ? 'border-[#D7141A] ring-2 ring-[#D7141A]/50 scale-95'
-                        : 'border-[#2A2A2A] opacity-70 hover:opacity-100'
+                        ? 'border-[#D7141A] ring-2 ring-[#D7141A]/30 scale-95'
+                        : 'border-[#E5E5E3] opacity-75 hover:opacity-100'
                     }`}
                   >
                     <img src={img} alt={`Foto ${idx}`} className="w-full h-full object-cover" />
@@ -604,7 +595,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-black border border-[#2A2A2A] text-center text-xs text-[#8A8A8A]">
+              <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-center text-xs text-[#6B6B6B]">
                 No hay fotos cargadas en este registro. Podés pegar una URL de imagen abajo.
               </div>
             )}
@@ -616,14 +607,14 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                 placeholder="O pegá una URL directa de imagen (https://...)"
                 value={selectedImage}
                 onChange={(e) => setSelectedImage(e.target.value)}
-                className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-xs text-white placeholder-[#8A8A8A] focus:border-[#D7141A] focus:outline-none font-mono"
+                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:bg-white focus:border-[#161616] focus:outline-none font-mono"
               />
             </div>
 
             {/* Si es Antes y Después, selector de segunda foto */}
             {selectedTemplateId === 'detailing-antes-despues' && (
-              <div className="pt-2 border-t border-[#2A2A2A] space-y-2">
-                <label className="text-[11px] font-bold text-white uppercase tracking-wider block">
+              <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
+                <label className="text-[11px] font-bold text-[#161616] uppercase tracking-wider block">
                   Foto del "DESPUÉS" (Mitad inferior)
                 </label>
                 <input
@@ -631,51 +622,51 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                   placeholder="URL o foto del resultado final"
                   value={secondaryImage}
                   onChange={(e) => setSecondaryImage(e.target.value)}
-                  className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-xs text-white placeholder-[#8A8A8A] focus:border-[#D7141A] focus:outline-none font-mono"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:bg-white focus:border-[#161616] focus:outline-none font-mono"
                 />
               </div>
             )}
           </div>
 
           {/* Edición de Textos y Precios */}
-          <div className="bg-[#141414] p-5 rounded-3xl border border-[#2A2A2A] space-y-4">
-            <label className="block text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+          <div className="bg-white p-5 rounded-xl border border-[#E5E5E3] shadow-sm space-y-4">
+            <label className="block text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-1.5">
               <Type className="w-3.5 h-3.5 text-[#D7141A]" />
-              3. Personalizar Textos y Valores
+              <span>3. Personalizar textos y valores</span>
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="text-[11px] text-[#8A8A8A] font-semibold block mb-1">
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
                   Titular / Modelo
                 </label>
                 <input
                   type="text"
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
-                  className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-bold focus:border-[#D7141A] focus:outline-none"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] font-bold focus:bg-white focus:border-[#161616] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-[#8A8A8A] font-semibold block mb-1">
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
                   Subtítulo / Versión / Año
                 </label>
                 <input
                   type="text"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:border-[#D7141A] focus:outline-none"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] focus:outline-none"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] text-[#8A8A8A] font-semibold">
-                    Precio Visible
+                  <label className="text-[11px] text-[#6B6B6B] font-semibold">
+                    Precio visible
                   </label>
                   {selectedCategory === 'automotora' && (
-                    <label className="text-[10px] text-[#8A8A8A] hover:text-white flex items-center gap-1 cursor-pointer">
+                    <label className="text-[10px] text-[#6B6B6B] hover:text-[#161616] flex items-center gap-1 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={syncPriceWithStock}
@@ -692,76 +683,76 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                   onChange={(e) => setPrice(e.target.value)}
                   onBlur={handlePriceBlur}
                   placeholder="Ej: USD 18.900 o Consultar"
-                  className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white font-bold text-[#D7141A] focus:border-[#D7141A] focus:outline-none"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#D7141A] font-title font-bold text-sm focus:bg-white focus:border-[#161616] focus:outline-none"
                 />
               </div>
 
               {selectedTemplateId === 'auto-descuento' && (
                 <div>
-                  <label className="text-[11px] text-[#8A8A8A] font-semibold block mb-1">
-                    Precio Anterior (Tachado)
+                  <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                    Precio anterior (tachado)
                   </label>
                   <input
                     type="text"
                     value={originalPrice}
                     onChange={(e) => setOriginalPrice(e.target.value)}
                     placeholder="Ej: USD 21.000"
-                    className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-[#8A8A8A] line-through focus:border-[#D7141A] focus:outline-none"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#6B6B6B] line-through focus:bg-white focus:border-[#161616] focus:outline-none"
                   />
                 </div>
               )}
 
               <div>
-                <label className="text-[11px] text-[#8A8A8A] font-semibold block mb-1">
-                  Texto del Sello Central
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  Texto del sello central
                 </label>
                 <input
                   type="text"
                   value={stampText}
                   onChange={(e) => setStampText(e.target.value)}
                   placeholder="Ej: VENDIDO, RESERVADO, OFERTA"
-                  className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white uppercase font-bold focus:border-[#D7141A] focus:outline-none"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] uppercase font-bold focus:bg-white focus:border-[#161616] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-[#8A8A8A] font-semibold block mb-1">
-                  Posición del Logo CARVLAK
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  Posición del logo CARVLAK
                 </label>
                 <select
                   value={logoPosition}
                   onChange={(e) => setLogoPosition(e.target.value as LogoPosition)}
-                  className="w-full bg-black border border-[#2A2A2A] rounded-xl p-2.5 text-white focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] focus:outline-none cursor-pointer"
                 >
-                  <option value="top-left">Superior Izquierda</option>
-                  <option value="top-center">Superior Centro</option>
-                  <option value="top-right">Superior Derecha</option>
-                  <option value="bottom-left">Inferior Izquierda</option>
-                  <option value="bottom-right">Inferior Derecha</option>
+                  <option value="top-left">Superior izquierda</option>
+                  <option value="top-center">Superior centro</option>
+                  <option value="top-right">Superior derecha</option>
+                  <option value="bottom-left">Inferior izquierda</option>
+                  <option value="bottom-right">Inferior derecha</option>
                 </select>
               </div>
             </div>
           </div>
 
           {/* Copy y Texto para Instagram con Botón Copiar */}
-          <div className="bg-[#141414] p-5 rounded-3xl border border-[#2A2A2A] space-y-3">
+          <div className="bg-white p-5 rounded-xl border border-[#E5E5E3] shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-1.5">
                 <Send className="w-3.5 h-3.5 text-[#D7141A]" />
-                4. Texto y Copy para Instagram
+                <span>4. Texto y copy para Instagram</span>
               </label>
 
               <button
                 type="button"
                 onClick={handleCopyCaption}
-                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   isCopied
-                    ? 'bg-[#22c55e] text-black shadow-md'
-                    : 'bg-[#D7141A] hover:bg-[#B51015] text-white'
+                    ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9]'
+                    : 'bg-white border border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
                 }`}
               >
                 {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{isCopied ? '¡Copiado!' : 'Copiar Texto'}</span>
+                <span>{isCopied ? '¡Copiado!' : 'Copiar texto'}</span>
               </button>
             </div>
 
@@ -769,9 +760,9 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
               rows={6}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              className="w-full bg-black border border-[#2A2A2A] rounded-2xl p-3 text-xs text-white leading-relaxed focus:border-[#D7141A] focus:outline-none font-sans"
+              className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] leading-relaxed focus:bg-white focus:border-[#161616] focus:outline-none font-sans"
             />
-            <p className="text-[11px] text-[#8A8A8A]">
+            <p className="text-[11px] text-[#6B6B6B]">
               Podés retocar los hashtags o el llamado a la acción antes de pegarlo en Instagram.
             </p>
           </div>

@@ -19,6 +19,7 @@ import {
   RenderCanvasOptions
 } from '../services/socialCanvasEngine';
 import { useToast } from '../../../context/ToastContext';
+import { Button } from '../../../components/ui/Button';
 
 interface SocialCanvasPreviewProps {
   format: SocialMediaFormat;
@@ -198,57 +199,57 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
   return (
     <div className="flex flex-col items-center w-full max-w-md mx-auto space-y-4">
       {/* Selector de formato: Historia vs Publicación */}
-      <div className="flex items-center justify-between w-full bg-[#141414] p-1.5 rounded-2xl border border-[#2A2A2A]">
+      <div className="flex items-center justify-between w-full bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3]">
         <button
           type="button"
           onClick={() => onFormatChange('story')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             format === 'story'
-              ? 'bg-[#D7141A] text-white shadow-md'
-              : 'text-[#8A8A8A] hover:text-white'
+              ? 'bg-white text-[#161616] shadow-sm'
+              : 'text-[#6B6B6B] hover:text-[#161616]'
           }`}
         >
-          <span className="w-2.5 h-4 border-2 border-current rounded-sm"></span>
-          <span>Historia (1080×1920)</span>
+          <span className="w-2.5 h-3.5 border-2 border-current rounded-xs"></span>
+          <span>Historia (9:16)</span>
         </button>
 
         <button
           type="button"
           onClick={() => onFormatChange('post')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             format === 'post'
-              ? 'bg-[#D7141A] text-white shadow-md'
-              : 'text-[#8A8A8A] hover:text-white'
+              ? 'bg-white text-[#161616] shadow-sm'
+              : 'text-[#6B6B6B] hover:text-[#161616]'
           }`}
         >
-          <span className="w-3.5 h-4 border-2 border-current rounded-sm"></span>
-          <span>Publicación (1080×1350)</span>
+          <span className="w-3.5 h-3.5 border-2 border-current rounded-xs"></span>
+          <span>Post Feed (1:1)</span>
         </button>
       </div>
 
       {/* Contenedor del Canvas con Escala Proporcional Responsiva */}
-      <div className="relative w-full flex items-center justify-center p-3 bg-black/60 rounded-3xl border border-[#2A2A2A] shadow-2xl overflow-hidden min-h-[460px]">
+      <div className="relative w-full flex items-center justify-center p-4 bg-[#F5F5F4] rounded-2xl border border-[#E5E5E3] shadow-sm overflow-hidden min-h-[460px]">
         {isRendering && (
-          <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-xs flex items-center justify-center text-white text-xs font-bold">
-            <div className="animate-spin w-6 h-6 border-2 border-[#D7141A] border-t-transparent rounded-full mr-2"></div>
+          <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-xs flex items-center justify-center text-[#161616] text-xs font-bold">
+            <div className="animate-spin w-5 h-5 border-2 border-[#D7141A] border-t-transparent rounded-full mr-2"></div>
             Generando composición 1080px...
           </div>
         )}
 
         <div
-          className={`relative overflow-hidden rounded-2xl border border-[#2A2A2A] shadow-lg transition-all duration-300 ${
+          className={`relative overflow-hidden rounded-xl border border-[#E5E5E3] shadow-md transition-all duration-300 ${
             format === 'story' ? 'aspect-[9/16] max-h-[560px]' : 'aspect-[4/5] max-h-[510px]'
           }`}
           style={{ width: '100%', maxWidth: format === 'story' ? '315px' : '380px' }}
         >
           <canvas
             ref={canvasRef}
-            className="w-full h-full object-contain block bg-[#0a0a0a]"
+            className="w-full h-full object-contain block bg-[#161616]"
           />
         </div>
 
         {/* Acciones flotantes rápidas sobre la vista previa */}
-        <div className="absolute bottom-5 right-5 flex flex-col gap-2 z-10">
+        <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-10">
           <button
             type="button"
             title="Ajustar encuadre y zoom"
@@ -256,10 +257,10 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
               setShowPanControls(!showPanControls);
               setShowPlateControls(false);
             }}
-            className={`p-2.5 rounded-xl border backdrop-blur-md transition-all cursor-pointer ${
+            className={`p-2 rounded-lg border backdrop-blur-md shadow-sm transition-all cursor-pointer ${
               showPanControls
                 ? 'bg-[#D7141A] text-white border-[#D7141A]'
-                : 'bg-black/70 text-white/90 border-[#2A2A2A] hover:text-white'
+                : 'bg-white/90 text-[#161616] border-[#E5E5E3] hover:bg-white'
             }`}
           >
             <Move className="w-4 h-4" />
@@ -274,10 +275,10 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
               setShowPlateControls(next);
               setShowPanControls(false);
             }}
-            className={`p-2.5 rounded-xl border backdrop-blur-md transition-all cursor-pointer ${
+            className={`p-2 rounded-lg border backdrop-blur-md shadow-sm transition-all cursor-pointer ${
               coverPlate
                 ? 'bg-[#D7141A] text-white border-[#D7141A]'
-                : 'bg-black/70 text-white/90 border-[#2A2A2A] hover:text-white'
+                : 'bg-white/90 text-[#161616] border-[#E5E5E3] hover:bg-white'
             }`}
           >
             <Shield className="w-4 h-4" />
@@ -287,23 +288,23 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
       {/* Panel Desplegable: Controles de Encuadre & Zoom */}
       {showPanControls && (
-        <div className="w-full p-4 bg-[#141414] rounded-2xl border border-[#2A2A2A] text-xs space-y-3 animate-fade-in">
+        <div className="w-full p-4 bg-white rounded-xl border border-[#E5E5E3] shadow-sm text-xs space-y-3 animate-fade-in">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-white flex items-center gap-1.5">
+            <span className="font-title font-bold text-[#161616] flex items-center gap-1.5">
               <Move className="w-3.5 h-3.5 text-[#D7141A]" />
-              Ajuste de Encuadre y Zoom
+              <span>Ajuste de encuadre y zoom</span>
             </span>
             <button
               type="button"
               onClick={() => onImagePanChange({ x: 0, y: 0, zoom: 1 })}
-              className="text-[11px] text-[#8A8A8A] hover:text-white flex items-center gap-1 cursor-pointer"
+              className="text-[11px] text-[#6B6B6B] hover:text-[#161616] flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" /> Restablecer
             </button>
           </div>
 
           <div>
-            <div className="flex justify-between text-[#8A8A8A] text-[11px] mb-1">
+            <div className="flex justify-between text-[#6B6B6B] text-[11px] mb-1">
               <span>Zoom</span>
               <span>{(imagePan.zoom * 100).toFixed(0)}%</span>
             </div>
@@ -322,8 +323,8 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="flex justify-between text-[#8A8A8A] text-[11px] mb-1">
-                <span>Mover Horizontal</span>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px] mb-1">
+                <span>Mover horizontal</span>
                 <span>{imagePan.x}px</span>
               </div>
               <input
@@ -339,8 +340,8 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
               />
             </div>
             <div>
-              <div className="flex justify-between text-[#8A8A8A] text-[11px] mb-1">
-                <span>Mover Vertical</span>
+              <div className="flex justify-between text-[#6B6B6B] text-[11px] mb-1">
+                <span>Mover vertical</span>
                 <span>{imagePan.y}px</span>
               </div>
               <input
@@ -361,24 +362,24 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
       {/* Panel Desplegable: Controles de Tapar Matrícula */}
       {showPlateControls && coverPlate && (
-        <div className="w-full p-4 bg-[#141414] rounded-2xl border border-[#2A2A2A] text-xs space-y-3 animate-fade-in">
+        <div className="w-full p-4 bg-white rounded-xl border border-[#E5E5E3] shadow-sm text-xs space-y-3 animate-fade-in">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-white flex items-center gap-1.5">
+            <span className="font-title font-bold text-[#161616] flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-[#D7141A]" />
-              Posición del Sello de Matrícula
+              <span>Posición del sello de matrícula</span>
             </span>
             <button
               type="button"
               onClick={() => onCoverPlateChange(false)}
-              className="text-[11px] text-[#8A8A8A] hover:text-[#D7141A] cursor-pointer"
+              className="text-[11px] text-[#6B6B6B] hover:text-[#D7141A] cursor-pointer"
             >
-              Quitar Sello
+              Quitar sello
             </button>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[10px] text-[#8A8A8A] uppercase font-bold block mb-1">Horizontal (X)</label>
+              <label className="text-[10px] text-[#6B6B6B] uppercase font-bold block mb-1">Horizontal (X)</label>
               <input
                 type="range"
                 min="100"
@@ -393,7 +394,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] text-[#8A8A8A] uppercase font-bold block mb-1">Vertical (Y)</label>
+              <label className="text-[10px] text-[#6B6B6B] uppercase font-bold block mb-1">Vertical (Y)</label>
               <input
                 type="range"
                 min="300"
@@ -408,7 +409,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] text-[#8A8A8A] uppercase font-bold block mb-1">Tamaño</label>
+              <label className="text-[10px] text-[#6B6B6B] uppercase font-bold block mb-1">Tamaño</label>
               <input
                 type="range"
                 min="0.6"
@@ -425,37 +426,39 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
         </div>
       )}
 
-      {/* Botonera Principal: Descargar y Compartir */}
-      <div className="w-full grid grid-cols-2 gap-3 pt-2">
-        <button
+      {/* Botonera Principal: Descargar y Compartir (UN SOLO BOTÓN PRIMARIO ROJO) */}
+      <div className="w-full space-y-2 pt-1">
+        <Button
           type="button"
-          onClick={handleDownload}
-          className="py-3 px-4 rounded-xl bg-[#D7141A] hover:bg-[#B51015] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
-        >
-          <Download className="w-4 h-4" />
-          <span>Descargar PNG</span>
-        </button>
-
-        <button
-          type="button"
+          variant="primary"
           onClick={handleShare}
-          className="py-3 px-4 rounded-xl bg-black hover:bg-[#1f1f1f] text-white border border-[#2A2A2A] hover:border-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+          className="w-full h-11 justify-center shadow-md text-xs font-title font-bold uppercase tracking-wider"
         >
-          <Share2 className="w-4 h-4 text-[#D7141A]" />
-          <span>Compartir</span>
-        </button>
-      </div>
+          <Share2 className="w-4 h-4 mr-1" />
+          <span>Compartir en Instagram {format === 'story' ? 'Stories (9:16)' : 'Feed (1:1)'}</span>
+        </Button>
 
-      {/* Guardar en Historial sin descargar */}
-      <div className="w-full flex justify-end">
-        <button
-          type="button"
-          onClick={handleManualSave}
-          className="text-xs text-[#8A8A8A] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer py-1"
-        >
-          <BookmarkCheck className="w-3.5 h-3.5" />
-          <span>Guardar en historial de piezas</span>
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleDownload}
+            className="w-full h-10 justify-center text-xs"
+          >
+            <Download className="w-4 h-4 text-[#6B6B6B]" />
+            <span>Descargar HD</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleManualSave}
+            className="w-full h-10 justify-center text-xs"
+          >
+            <BookmarkCheck className="w-4 h-4 text-[#6B6B6B]" />
+            <span>Guardar pieza</span>
+          </Button>
+        </div>
       </div>
     </div>
   );
