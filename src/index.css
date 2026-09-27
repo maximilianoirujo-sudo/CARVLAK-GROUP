@@ -6,25 +6,67 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Tema Unificado CARVLAK Group */
+  /* Tema Único Claro Oficial CARVLAK Group */
+  --canvas-bg: #F5F5F4;
+  --surface-card: #FFFFFF;
+  --border-subtle: #E5E5E3;
+  --border-strong: #D0D0CD;
+  --text-primary: #161616;
+  --text-secondary: #6B6B6B;
+  --text-muted: #9A9A9A;
+  --brand-black: #000000;
+  --accent-red: #D7141A;
+  --accent-red-hover: #B80E14;
+  --plate-blue: #002B7A;
+
+  /* Estados de inspección */
+  --status-success-bg: #EEF7F2;
+  --status-success-text: #1E6B43;
+  --status-warning-bg: #FEF7EC;
+  --status-warning-text: #945B0E;
+  --status-danger-bg: #FDF2F2;
+  --status-danger-text: #B80E14;
+
+  /* Estados operativos */
+  --status-op-bg: #EBEBEA;
+  --status-op-text: #161616;
+
+  /* Alias de compatibilidad */
   --negro: #000000;
-  --panel: #141414;
-  --borde: #2A2A2A;
-  --gris-texto: #8A8A8A;
+  --panel: #FFFFFF;
+  --borde: #E5E5E3;
+  --gris-texto: #6B6B6B;
   --blanco: #FFFFFF;
   --rojo: #D7141A;
-  --rojo-hover: #B51015;
+  --rojo-hover: #B80E14;
 }
 
 @layer utilities {
+  .bg-canvas { background-color: #F5F5F4; }
+  .bg-surface { background-color: #FFFFFF; }
+  .border-subtle { border-color: #E5E5E3; }
+  .border-strong { border-color: #D0D0CD; }
+  .text-primary-color { color: #161616; }
+  .text-secondary-color { color: #6B6B6B; }
+  .text-muted-color { color: #9A9A9A; }
+  .bg-accent-red { background-color: #D7141A; }
+  .bg-accent-red-hover:hover { background-color: #B80E14; }
+
+  /* Utilidades para compatibilidad durante migración */
+  .bg-panel { background-color: #FFFFFF; }
   .bg-negro { background-color: #000000; }
-  .bg-panel { background-color: #141414; }
-  .border-borde { border-color: #2A2A2A; }
-  .text-gris-texto { color: #8A8A8A; }
+  .border-borde { border-color: #E5E5E3; }
+  .text-gris-texto { color: #6B6B6B; }
   .text-blanco { color: #FFFFFF; }
   .text-rojo { color: #D7141A; }
   .bg-rojo { background-color: #D7141A; }
   .border-rojo { border-color: #D7141A; }
+
+  /* Números tabulares */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
 }
 
 * {
@@ -33,15 +75,22 @@
 }
 
 body {
-  font-family: 'Barlow', system-ui, -apple-system, sans-serif;
-  background-color: var(--negro);
-  color: var(--blanco);
+  font-family: 'Barlow Condensed', system-ui, -apple-system, sans-serif;
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, .font-title {
-  font-family: 'Archivo', system-ui, sans-serif;
-  letter-spacing: -0.02em;
+h1, h2, h3, h4, .font-title, .font-display, .font-plate {
+  font-family: 'Archivo Narrow', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Foco accesible y sobrio: borde #161616, nunca rojo */
+input:focus, select:focus, textarea:focus {
+  border-color: #161616 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px #161616 !important;
 }
 
 .safe-bottom {
@@ -57,18 +106,18 @@ h1, h2, h3, h4, .font-title {
   animation: fadeIn 0.18s ease-out forwards;
 }
 
-/* Custom modern scrollbars */
+/* Custom modern scrollbars en gris claro */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #111111;
+  background: #F5F5F4;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: #D0D0CD;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: #9A9A9A;
 }

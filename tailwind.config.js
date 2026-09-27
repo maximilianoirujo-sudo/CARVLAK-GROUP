@@ -4,55 +4,56 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'media',
   theme: {
     extend: {
       colors: {
+        // Paleta Oficial Clara CARVLAK Group
+        canvas: '#F5F5F4',
+        surface: '#FFFFFF',
+        'border-subtle': '#E5E5E3',
+        'border-strong': '#D0D0CD',
+        'text-primary': '#161616',
+        'text-secondary': '#6B6B6B',
+        'text-muted': '#9A9A9A',
+        'brand-black': '#000000',
+        'accent-red': '#D7141A',
+        'accent-red-hover': '#B80E14',
+        'plate-blue': '#002B7A',
+
+        // Estados de inspección
+        'status-success-bg': '#EEF7F2',
+        'status-success-text': '#1E6B43',
+        'status-warning-bg': '#FEF7EC',
+        'status-warning-text': '#945B0E',
+        'status-danger-bg': '#FDF2F2',
+        'status-danger-text': '#B80E14',
+
+        // Estados operativos
+        'status-op-bg': '#EBEBEA',
+        'status-op-text': '#161616',
+
+        // Mapeos de compatibilidad semántica hacia el tema claro
         negro: '#000000',
-        panel: '#141414',
-        borde: '#2A2A2A',
-        'gris-texto': '#8A8A8A',
+        panel: '#FFFFFF',
+        borde: '#E5E5E3',
+        'gris-texto': '#6B6B6B',
         blanco: '#FFFFFF',
         rojo: {
           DEFAULT: '#D7141A',
-          hover: '#B51015',
-          dark: '#8C0B0F',
+          hover: '#B80E14',
+          dark: '#B80E14',
           light: '#EF4444'
         },
         carvlak: {
           black: '#000000',
           white: '#FFFFFF',
           red: '#D7141A',
-          grayBg: '#141414',
-          grayBorder: '#2A2A2A',
-          grayText: '#8A8A8A',
-          darkBg: '#000000',
-          darkCard: '#141414',
-          darkBorder: '#2A2A2A'
-        },
-        // Mapear slate/dark hacia el tema sobrio blanco/negro/panel/borde
-        slate: {
-          950: '#000000',
-          900: '#141414',
-          850: '#141414',
-          800: '#2A2A2A',
-          700: '#333333',
-          600: '#555555',
-          500: '#8A8A8A',
-          400: '#8A8A8A',
-          300: '#D9D9D9',
-          200: '#E5E5E5',
-          100: '#F2F2F2',
-          50: '#FFFFFF'
-        },
-        dark: {
-          950: '#000000',
-          900: '#141414',
-          850: '#141414',
-          800: '#2A2A2A',
-          750: '#2A2A2A',
-          700: '#333333',
-          600: '#555555'
+          grayBg: '#F5F5F4',
+          grayBorder: '#E5E5E3',
+          grayText: '#6B6B6B',
+          darkBg: '#F5F5F4',
+          darkCard: '#FFFFFF',
+          darkBorder: '#E5E5E3'
         }
       },
       borderRadius: {
@@ -61,15 +62,22 @@ export default {
         DEFAULT: '6px',
         md: '6px',
         lg: '8px',
-        xl: '8px',
-        '2xl': '8px',
-        '3xl': '8px',
+        xl: '12px',
+        '2xl': '12px',
+        '3xl': '16px',
         full: '9999px'
       },
+      boxShadow: {
+        subtle: '0 2px 4px rgba(0, 0, 0, 0.03)',
+        card: '0 1px 3px rgba(0, 0, 0, 0.02)',
+        modal: '0 12px 32px rgba(22, 22, 22, 0.08)'
+      },
       fontFamily: {
-        title: ['"Archivo"', 'system-ui', 'sans-serif'],
-        display: ['"Archivo"', 'system-ui', 'sans-serif'],
-        sans: ['"Barlow"', 'system-ui', '-apple-system', 'sans-serif']
+        title: ['"Archivo Narrow"', 'system-ui', 'sans-serif'],
+        display: ['"Archivo Narrow"', 'system-ui', 'sans-serif'],
+        plate: ['"Archivo Narrow"', 'system-ui', 'sans-serif'],
+        sans: ['"Barlow Condensed"', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['"Barlow Condensed"', 'system-ui', '-apple-system', 'sans-serif']
       }
     },
   },
