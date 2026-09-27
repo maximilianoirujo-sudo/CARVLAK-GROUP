@@ -30,11 +30,16 @@ export const LoginPage: React.FC = () => {
         
         {/* Logo Oficial CARVLAK (Negro sobre fondo claro) */}
         <div className="text-center space-y-3">
-          <img
-            src="/logo-carvlak-black.png"
-            alt="CARVLAK Group"
-            className="h-10 sm:h-12 w-auto mx-auto object-contain"
-          />
+          <div className="flex items-center justify-center gap-2">
+            <img
+              src="/carvlak-logo-negro.png"
+              alt="CARVLAK"
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
+            <span className="text-sm font-sans font-medium text-[#6B6B6B] tracking-wide">
+              Group
+            </span>
+          </div>
           <div>
             <h1 className="text-xl font-title font-bold text-[#161616]">
               Hub operativo central

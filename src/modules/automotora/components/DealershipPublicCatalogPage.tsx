@@ -92,12 +92,9 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
             <div className="flex items-center gap-3">
               <img
-                src="/logo-carvlak-black.svg"
-                alt="CARVLAK Automotores"
+                src="/carvlak-logo-negro.png"
+                alt="CARVLAK"
                 className="h-7 sm:h-8 w-auto object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).setAttribute('src', '/logo-carvlak-black.png');
-                }}
               />
               <div className="hidden sm:block border-l border-[#E5E5E3] pl-3">
                 <span className="text-xs font-bold text-[#161616] flex items-center gap-2">

@@ -340,7 +340,8 @@ async function drawBrandHeader(
   h: number,
   logoPos: LogoPosition,
   instagramHandle: string,
-  locationName: string
+  locationName: string,
+  isLightBackground: boolean = false
 ) {
   const pad = 60;
   let logoX = pad;
@@ -360,33 +361,31 @@ async function drawBrandHeader(
     logoY = h - 200;
   }
 
-  // Intentar cargar logo blanco oficial
+  // Intentar cargar logo oficial (blanco sobre oscuro/foto, negro sobre claro)
   let loaded = false;
   try {
-    const logoImg = await loadImage('/logo-carvlak-white.png');
-    const targetW = 250;
+    const logoSrc = isLightBackground ? '/carvlak-logo-negro.png' : '/carvlak-logo-blanco.png';
+    const logoImg = await loadImage(logoSrc);
+    const targetW = 280;
     const aspect = logoImg.width / logoImg.height;
     const targetH = targetW / aspect;
     ctx.drawImage(logoImg, logoX, logoY, targetW, targetH);
     loaded = true;
   } catch {
-    // Dibujo tipográfico de alta fidelidad si no se pudo cargar la imagen
+    // Dibujo tipográfico limpio si no se pudo cargar la imagen
   }
 
   if (!loaded) {
     ctx.save();
-    ctx.font = '900 38px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.letterSpacing = '3px';
-    ctx.fillText('CARVLAK', logoX, logoY + 36);
-
-    ctx.fillStyle = '#D7141A';
-    ctx.fillRect(logoX + 205, logoY + 12, 10, 24);
-
-    ctx.font = '600 13px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#8A8A8A';
+    ctx.font = '700 36px "Archivo Narrow", sans-serif';
+    ctx.fillStyle = isLightBackground ? '#161616' : '#FFFFFF';
     ctx.letterSpacing = '2px';
-    ctx.fillText('GROUP • AUTOMOTORA & STUDIO', logoX, logoY + 58);
+    ctx.fillText('CARVLAK', logoX, logoY + 34);
+
+    ctx.font = '500 13px "Barlow Condensed", sans-serif';
+    ctx.fillStyle = isLightBackground ? '#6B6B6B' : '#A0A0A0';
+    ctx.letterSpacing = '1.5px';
+    ctx.fillText('GROUP', logoX + 175, logoY + 34);
     ctx.restore();
   }
 

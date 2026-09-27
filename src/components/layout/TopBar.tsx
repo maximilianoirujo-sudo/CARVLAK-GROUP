@@ -18,11 +18,11 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
             <img
-              src="/logo-carvlak-black.png"
-              alt="CARVLAK Group"
-              className="h-7 sm:h-8 w-auto object-contain shrink-0"
+              src="/carvlak-logo-negro.png"
+              alt="CARVLAK"
+              className="h-[23px] sm:h-[30px] w-auto object-contain shrink-0"
             />
-            <span className="text-[10px] font-title font-bold px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] tracking-widest uppercase">
+            <span className="text-[12px] sm:text-[13px] font-sans font-medium text-[#6B6B6B] tracking-wide select-none">
               Group
             </span>
           </div>

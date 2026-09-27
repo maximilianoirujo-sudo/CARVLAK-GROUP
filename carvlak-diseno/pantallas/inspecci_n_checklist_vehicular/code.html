@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400..700;1,400..700&amp;family=Barlow+Condensed:ital,wght@0,300..700;1,300..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "text-secondary": "#6B6B6B",
+        "tertiary-fixed-dim": "#b4c5ff",
+        "on-error-container": "#93000a",
+        "inverse-surface": "#2f3130",
+        "on-secondary-container": "#636262",
+        "on-tertiary-fixed-variant": "#224290",
+        "canvas-bg": "#F5F5F4",
+        "surface-container-highest": "#e2e2e2",
+        "surface-card": "#FFFFFF",
+        "secondary-fixed-dim": "#c8c6c5",
+        "on-surface": "#1a1c1c",
+        "tertiary-fixed": "#dbe1ff",
+        "surface-tint": "#c00010",
+        "on-tertiary-fixed": "#00174b",
+        "brand-black": "#000000",
+        "on-surface-variant": "#5d3f3c",
+        "surface-container-low": "#f4f4f3",
+        "on-secondary-fixed": "#1c1b1b",
+        "tertiary": "#324f9e",
+        "primary-fixed-dim": "#ffb4ab",
+        "primary-container": "#d7141a",
+        "tertiary-container": "#4c68b8",
+        "inverse-primary": "#ffb4ab",
+        "status-warning-text": "#945B0E",
+        "on-secondary-fixed-variant": "#474746",
+        "surface-container-lowest": "#ffffff",
+        "on-primary-fixed-variant": "#930009",
+        "surface": "#f9f9f8",
+        "on-error": "#ffffff",
+        "primary": "#ac000d",
+        "outline-variant": "#e7bdb7",
+        "outline": "#926f6a",
+        "on-background": "#1a1c1c",
+        "status-danger-bg": "#FDF2F2",
+        "text-muted": "#9A9A9A",
+        "on-primary-fixed": "#410002",
+        "background": "#f9f9f8",
+        "error": "#ba1a1a",
+        "on-tertiary-container": "#ebedff",
+        "on-tertiary": "#ffffff",
+        "secondary": "#5f5e5e",
+        "secondary-fixed": "#e5e2e1",
+        "error-container": "#ffdad6",
+        "on-primary-container": "#ffeae7",
+        "border-strong": "#D0D0CD",
+        "surface-container": "#eeeeed",
+        "border-subtle": "#E5E5E3",
+        "on-primary": "#ffffff",
+        "primary-fixed": "#ffdad5",
+        "status-danger-text": "#B80E14",
+        "accent-red-hover": "#B80E14",
+        "accent-red": "#D7141A",
+        "status-success-text": "#1E6B43",
+        "surface-variant": "#e2e2e2",
+        "surface-dim": "#dadad9",
+        "inverse-on-surface": "#f1f1f0",
+        "on-secondary": "#ffffff",
+        "text-primary": "#161616",
+        "surface-container-high": "#e8e8e7",
+        "status-warning-bg": "#FEF7EC",
+        "secondary-container": "#e2dfde",
+        "surface-bright": "#f9f9f8",
+        "status-success-bg": "#EEF7F2",
+        "plate-blue": "#002B7A"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "margin": "1rem",
+        "space-xs": "0.25rem",
+        "space-lg": "1.5rem",
+        "gutter-desktop": "1.5rem",
+        "space-xl": "2rem",
+        "space-md": "1rem",
+        "margin-desktop": "2rem",
+        "space-sm": "0.5rem",
+        "gutter": "1rem"
+      },
+      "fontFamily": {
+        "label-sm": ["Barlow Condensed"],
+        "body-sm": ["Barlow Condensed"],
+        "body-lg": ["Barlow Condensed"],
+        "headline-sm": ["Archivo Narrow"],
+        "display": ["Archivo Narrow"],
+        "label-lg": ["Barlow Condensed"],
+        "headline-lg": ["Archivo Narrow"],
+        "body-md": ["Barlow Condensed"],
+        "headline-md": ["Archivo Narrow"],
+        "label-md": ["Barlow Condensed"],
+        "title-md": ["Barlow Condensed"],
+        "plate-text": ["Archivo Narrow"],
+        "headline-lg-mobile": ["Archivo Narrow"],
+        "metric-currency": ["Archivo Narrow"]
+      },
+      "fontSize": {
+        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+        "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+        "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "0", "fontWeight": "600" }],
+        "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+        "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.025em", "fontWeight": "600" }],
+        "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.015em", "fontWeight": "400" }],
+        "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "600" }],
+        "title-md": ["18px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+        "plate-text": ["22px", { "lineHeight": "24px", "letterSpacing": "0.14em", "fontWeight": "700" }],
+        "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "metric-currency": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "800" }]
+      }
+    }
+  }
+}</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-canvas-bg font-body-md text-body-md text-text-primary flex flex-col min-h-screen antialiased"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-card/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm shrink-0"><img alt="CARVLAK Group Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WU2LZsNlKcQHeN2pTf4kv8FAueNeowx3Wh_zRZ6y5UzZBWjkurD-Dd7cyD-Lh4imF67rGg9N842uHNxmQ-knK9hXwD_uo8EF4p5U0QGhQDvZYYsxHsYgkl57Qe-_0z6YIQNemL4mmP6fCuQxeFf3ffZj8DvW3dcmeWFdpWOfB4qkHB0sVw3qVgwhmHFoVgYJXVJhoEgtwL8Fz5s5nhIHD60FzSIf18YLKVo6EvRl_Ff6TP7lKgY9UiVaws"/><span class="font-headline-sm text-headline-sm text-text-primary hidden sm:inline tracking-tight">CARVLAK</span><span class="sr-only">Detailing</span></div><div class="flex-1 max-w-xs mx-space-xs"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-secondary text-[18px] pointer-events-none">search</span><input class="w-full h-10 pl-8 pr-3 bg-surface-container-low rounded-lg font-body-sm text-body-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:bg-surface-card transition-all uppercase placeholder:normal-case" placeholder="Buscar matrícula ej. SBX 1234" type="search"/></div></div><div class="flex items-center gap-space-xs shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden xs:flex flex-col text-left"><span class="font-label-sm text-label-sm text-text-primary leading-none">Martín F.</span><span class="font-label-sm text-[10px] text-text-secondary uppercase leading-none mt-0.5">Admin</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-canvas-bg"><div class="flex flex-col w-full pb-6">
+<!-- ENCABEZADO DE CONTEXTO TÉCNICO -->
+<div class="px-margin pt-2 pb-3">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Módulo Peritajes • Taller Central</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary tracking-tight">Inspección técnica</h1>
+<p class="font-body-sm text-body-sm text-text-secondary -mt-0.5">Peritaje oficial para toma y venta garantizada</p>
+</div>
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-success-bg text-status-success-text shadow-sm">
+<span class="w-2 h-2 rounded-full bg-status-success-text animate-pulse"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wide">En curso</span>
+</div>
+</div>
+</div>
+<!-- TARJETA DEL VEHÍCULO EN REVISIÓN (CARVLAK High-Precision Sheet) -->
+<div class="px-margin mb-3">
+<div class="bg-surface-card rounded-xl shadow-sm p-3.5 flex flex-col gap-3">
+<!-- Fila superior: Placa y Modelo -->
+<div class="flex items-center justify-between gap-3">
+<div class="min-w-0">
+<span class="font-label-sm text-[10px] text-text-muted uppercase tracking-wider block">Unidad peritada</span>
+<h2 class="font-headline-sm text-headline-sm text-text-primary truncate">Volkswagen Taos 1.4 TSI</h2>
+<span class="font-body-sm text-body-sm text-text-secondary block">Versión Highline 250TSI AT6 • Año 2022</span>
+</div>
+<!-- Matrícula Mercosur Uruguay Oficial -->
+<div class="shrink-0 flex flex-col items-center bg-surface-card rounded-lg shadow-sm overflow-hidden w-[118px]">
+<div class="w-full bg-plate-blue px-1.5 py-0.5 flex items-center justify-between text-on-tertiary">
+<span class="font-plate-text text-[8px] font-bold tracking-tight">MERCOSUR</span>
+<span class="font-plate-text text-[8px] font-bold tracking-widest uppercase">URUGUAY</span>
+<span class="material-symbols-outlined text-[9px] text-amber-300">stars</span>
+</div>
+<div class="w-full py-1 text-center bg-surface-card">
+<span class="font-plate-text text-plate-text text-text-primary tracking-[0.14em] leading-none block">SBV 4120</span>
+</div>
+</div>
+</div>
+<!-- Fila de Metadatos Operativos -->
+<div class="grid grid-cols-2 gap-2 pt-2.5 bg-surface-container-low rounded-lg p-2.5">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-surface-card flex items-center justify-center text-text-secondary shadow-sm">
+<span class="material-symbols-outlined text-[16px]">engineering</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-sm text-[10px] text-text-muted uppercase leading-none block">Perito asignado</span>
+<span class="font-label-lg text-label-lg text-text-primary leading-tight truncate block">Diego Techera</span>
+<span class="font-body-sm text-[11px] text-text-secondary leading-none">Turno 11:00 hs</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-md bg-surface-card flex items-center justify-center text-text-secondary shadow-sm">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-sm text-[10px] text-text-muted uppercase leading-none block">Odómetro digital</span>
+<span class="font-headline-sm text-headline-sm text-text-primary leading-tight block">34.200 <span class="font-label-md text-label-md text-text-secondary">km</span></span>
+<span class="font-body-sm text-[11px] text-status-success-text leading-none flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">verified</span> Verificado
+            </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- BARRA DE PROGRESO Y SCORE TÉCNICO EN VIVO -->
+<div class="px-margin mb-4">
+<div class="bg-surface-card rounded-xl p-3.5 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-end justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm uppercase text-text-secondary">Auditoría global</span>
+<span class="text-text-muted text-[10px]">•</span>
+<span class="font-body-sm text-body-sm font-semibold text-text-primary">32 de 48 puntos</span>
+</div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary leading-none">67% completado</span>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="font-label-sm text-[10px] uppercase text-text-secondary">Score preliminar</span>
+<div class="flex items-baseline gap-1">
+<span class="font-display text-[30px] leading-none text-text-primary tracking-tight">92</span>
+<span class="font-label-md text-label-md text-text-muted">/100</span>
+</div>
+<span class="font-label-sm text-[11px] px-2 py-0.5 rounded-full bg-status-success-bg text-status-success-text font-medium mt-0.5">Apto Comercial</span>
+</div>
+</div>
+<!-- Barra de progreso segmentada -->
+<div class="w-full h-2.5 bg-surface-container rounded-full overflow-hidden flex">
+<div class="bg-primary-container h-full transition-all duration-500 rounded-full" style="width: 67%;"></div>
+</div>
+<!-- Chips de desglose de estado -->
+<div class="grid grid-cols-3 gap-2 pt-1">
+<div class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-status-success-bg text-status-success-text">
+<span class="material-symbols-outlined text-[15px]">check_circle</span>
+<span class="font-label-lg text-label-lg font-bold">28</span>
+<span class="font-label-sm text-label-sm">Conformes</span>
+</div>
+<div class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-status-warning-bg text-status-warning-text">
+<span class="material-symbols-outlined text-[15px]">warning</span>
+<span class="font-label-lg text-label-lg font-bold">3</span>
+<span class="font-label-sm text-label-sm">Obs. leves</span>
+</div>
+<div class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-status-danger-bg text-status-danger-text">
+<span class="material-symbols-outlined text-[15px]">cancel</span>
+<span class="font-label-lg text-label-lg font-bold">1</span>
+<span class="font-label-sm text-label-sm">Falla</span>
+</div>
+</div>
+</div>
+</div>
+<!-- CHECKLIST MODULAR ACCORDION -->
+<div class="px-margin flex flex-col gap-2.5">
+<div class="flex items-center justify-between px-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-text-secondary">Módulos de certificación</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Desplegar todo</span>
+</div>
+<!-- SECCIÓN 1: ABIERTA (Carrocería y Pintura) -->
+<div class="bg-surface-card rounded-xl shadow-sm overflow-hidden transition-all">
+<!-- Encabezado Sección 1 -->
+<div class="p-3.5 bg-surface-container-low flex items-center justify-between cursor-pointer" onclick="toggleSection('sec-carroceria', 'icon-carroceria')">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-card flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">directions_car</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">1. Carrocería y Pintura</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-card text-text-secondary font-semibold">12 pts</span>
+</div>
+<span class="font-body-sm text-[12px] text-text-secondary">4 auditados en esta sección • 1 Falla crítica</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-secondary transition-transform rotate-180" id="icon-carroceria">expand_more</span>
+</div>
+<!-- Contenido Ítems Sección 1 -->
+<div class="flex flex-col divide-y-0 p-3 gap-3.5" id="sec-carroceria">
+<!-- ÍTEM A: Paragolpes delantero -->
+<div class="bg-surface-container-lowest rounded-lg p-3 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="font-title-md text-title-md text-text-primary block">Paragolpes delantero y ópticas Full LED</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Alineación de encastres, fijaciones y micas sin opacidad</span>
+</div>
+<div class="flex items-center gap-1 text-primary shrink-0 bg-primary/5 px-2 py-1 rounded-full cursor-pointer hover:bg-primary/10">
+<span class="material-symbols-outlined text-[16px]">photo_camera</span>
+<span class="font-label-sm text-label-sm font-bold">2 fotos</span>
+</div>
+</div>
+<!-- Selector táctil de 3 vías -->
+<div class="grid grid-cols-3 gap-1.5 p-1 bg-surface-container-low rounded-lg">
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 bg-status-success-bg text-status-success-text shadow-sm font-bold" type="button">
+<span class="material-symbols-outlined text-[15px]">check_circle</span> OK
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-text-primary" type="button">
+<span class="material-symbols-outlined text-[15px]">warning</span> Obs.
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-danger-text" type="button">
+<span class="material-symbols-outlined text-[15px]">cancel</span> Falla
+            </button>
+</div>
+</div>
+<!-- ÍTEM B: Panel lateral derecho -->
+<div class="bg-surface-container-lowest rounded-lg p-3 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="font-title-md text-title-md text-text-primary block">Panel lateral derecho y puertas</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Chequeo de bordes, burletes y líneas de fuga</span>
+</div>
+</div>
+<!-- Selector táctil con Obs. Seleccionada -->
+<div class="grid grid-cols-3 gap-1.5 p-1 bg-surface-container-low rounded-lg">
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-success-text" type="button">
+<span class="material-symbols-outlined text-[15px]">check_circle</span> OK
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 bg-status-warning-bg text-status-warning-text shadow-sm font-bold" type="button">
+<span class="material-symbols-outlined text-[15px]">warning</span> Obs.
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-danger-text" type="button">
+<span class="material-symbols-outlined text-[15px]">cancel</span> Falla
+            </button>
+</div>
+<!-- Detalle de la observación con llamada a cámara -->
+<div class="bg-status-warning-bg/40 rounded-lg p-2.5 flex flex-col gap-2">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-status-warning-text text-[18px] shrink-0 mt-0.5">report_problem</span>
+<p class="font-body-sm text-body-sm text-text-primary leading-tight">
+                Microrayón superficial en puerta trasera derecha, sale con pulido paso 2 (Detailing). Sin deformación de chapa.
+              </p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-card text-text-primary hover:bg-surface-container-high transition-colors shadow-sm font-label-sm text-label-sm" type="button">
+<span class="material-symbols-outlined text-[16px] text-accent-red">add_a_photo</span>
+<span>+ Agregar foto evidencia</span>
+</button>
+<span class="font-label-sm text-[10px] text-text-secondary uppercase">Gravedad: Estética Leve</span>
+</div>
+</div>
+</div>
+<!-- ÍTEM C: Espesor de pintura -->
+<div class="bg-surface-container-lowest rounded-lg p-3 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="font-title-md text-title-md text-text-primary block">Espesor de pintura (micrómetro digital)</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Lectura en capó, guardabarros, techo y portón</span>
+</div>
+<div class="px-2 py-0.5 rounded bg-surface-container text-text-primary font-metric-currency text-[13px] tracking-normal font-bold">
+              115 - 130 µm
+            </div>
+</div>
+<div class="flex items-center justify-between px-1">
+<span class="font-body-sm text-[12px] text-status-success-text flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shield_with_heart</span> Rango original de fábrica (sin repintado)
+            </span>
+</div>
+<!-- Selector táctil con OK Seleccionado -->
+<div class="grid grid-cols-3 gap-1.5 p-1 bg-surface-container-low rounded-lg">
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 bg-status-success-bg text-status-success-text shadow-sm font-bold" type="button">
+<span class="material-symbols-outlined text-[15px]">check_circle</span> OK
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-warning-text" type="button">
+<span class="material-symbols-outlined text-[15px]">warning</span> Obs.
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-danger-text" type="button">
+<span class="material-symbols-outlined text-[15px]">cancel</span> Falla
+            </button>
+</div>
+</div>
+<!-- ÍTEM D: Parabrisas con FALLA -->
+<div class="bg-surface-container-lowest rounded-lg p-3 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="font-title-md text-title-md text-text-primary block">Parabrisas y cristales templados</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Sellado acústico, sensores ADAS y visual panorámica</span>
+</div>
+<div class="shrink-0 flex items-center gap-1 text-status-danger-text bg-status-danger-bg px-2 py-0.5 rounded text-[11px] font-bold uppercase">
+              Urgente
+            </div>
+</div>
+<!-- Selector táctil con FALLA Seleccionada -->
+<div class="grid grid-cols-3 gap-1.5 p-1 bg-surface-container-low rounded-lg">
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-success-text" type="button">
+<span class="material-symbols-outlined text-[15px]">check_circle</span> OK
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 text-text-secondary hover:text-status-warning-text" type="button">
+<span class="material-symbols-outlined text-[15px]">warning</span> Obs.
+            </button>
+<button class="py-1.5 rounded-md font-label-md text-label-md flex items-center justify-center gap-1 bg-status-danger-bg text-status-danger-text shadow-sm font-bold" type="button">
+<span class="material-symbols-outlined text-[15px]">cancel</span> Falla
+            </button>
+</div>
+<!-- Detalle de la falla crítica con miniatura -->
+<div class="bg-status-danger-bg/50 rounded-lg p-2.5 flex flex-col gap-2">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-status-danger-text text-[18px] shrink-0 mt-0.5">error</span>
+<p class="font-body-sm text-body-sm text-text-primary leading-tight">
+                Piquete con fisura de 2cm en zona baja derecha. Requiere cambio antes de entrega comercial por normativa de seguridad.
+              </p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded bg-surface-card overflow-hidden shadow-sm flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="Close up automotive inspection macro photo of a cracked car windshield showing a 2cm stone chip fissure with polarized laboratory lighting, clean technical view, automotive reconditioning standard" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbb2FmxSedtiRLIw8k2lGWyvrjjLVEfMRjsKTnImrcXsHvB_45y7LBzja2yBXCL5cOxBsa2K8_Aj6V4hEIR0eb7DETyHvKyjb-cuEAPJ-rU2TLjgkHo_egjLBW4HLu8iEdrUTdnK3nTWyg_Z9b2iLRKLwCM11yZglI7yBB7U-YDq-FPi1bwKOiyxtIqlvrEmMnJrpYyhYvbOCpgahI68tkLI4yw7UK1VobN8bPIUgCPoIjmuMbcQ_nLA"/>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary">1 foto adjunta</span>
+</div>
+<button class="flex items-center gap-1 px-2 py-1 rounded bg-surface-card text-text-primary hover:bg-surface-container-high transition-colors shadow-sm font-label-sm text-label-sm" type="button">
+<span class="material-symbols-outlined text-[15px] text-text-secondary">photo_library</span>
+<span>Ver foto</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECCIÓN 2: PLEGADA (Mecánica y Tren Delantero) -->
+<div class="bg-surface-card rounded-xl shadow-sm overflow-hidden transition-all">
+<div class="p-3.5 bg-surface-container-low flex items-center justify-between cursor-pointer" onclick="toggleSection('sec-mecanica', 'icon-mecanica')">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-card flex items-center justify-center text-status-success-text shadow-sm">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">2. Mecánica y Tren Delantero</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-card text-text-secondary font-semibold">10 pts</span>
+</div>
+<span class="font-body-sm text-[12px] text-status-success-text font-medium">10/10 auditados • 10 OK • Sin observaciones</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-secondary transition-transform" id="icon-mecanica">expand_more</span>
+</div>
+<div class="hidden p-3 bg-surface-card flex flex-col gap-2" id="sec-mecanica">
+<div class="p-2.5 rounded-lg bg-surface-container-low text-text-secondary font-body-sm text-body-sm">
+          Todos los puntos mecánicos (fluido de frenos, cárter, semiejes, bujes y suspensión) fueron verificados con conformidad plena.
+        </div>
+</div>
+</div>
+<!-- SECCIÓN 3: PLEGADA / EN CURSO (Neumáticos, Llantas y Frenos) -->
+<div class="bg-surface-card rounded-xl shadow-sm overflow-hidden transition-all">
+<div class="p-3.5 bg-surface-container-low flex items-center justify-between cursor-pointer" onclick="toggleSection('sec-neumaticos', 'icon-neumaticos')">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-card flex items-center justify-center text-status-warning-text shadow-sm">
+<span class="material-symbols-outlined text-[20px]">tire_repair</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">3. Neumáticos, Llantas y Frenos</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-card text-text-secondary font-semibold">8 pts</span>
+</div>
+<span class="font-body-sm text-[12px] text-status-warning-text font-medium">4/8 auditados • 1 observación en pastillas traseras</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-secondary transition-transform" id="icon-neumaticos">expand_more</span>
+</div>
+<div class="hidden p-3 bg-surface-card flex flex-col gap-2" id="sec-neumaticos">
+<div class="p-2.5 rounded-lg bg-surface-container-low text-text-secondary font-body-sm text-body-sm">
+          Profundidad de dibujo promedio: 5.8 mm. Pastillas traseras con 30% de vida útil remanente.
+        </div>
+</div>
+</div>
+<!-- SECCIÓN 4: PLEGADA (Interior, Tapizados y Confort) -->
+<div class="bg-surface-card rounded-xl shadow-sm overflow-hidden transition-all opacity-80">
+<div class="p-3.5 bg-surface-container-low flex items-center justify-between cursor-pointer" onclick="toggleSection('sec-interior', 'icon-interior')">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-card flex items-center justify-center text-text-muted shadow-sm">
+<span class="material-symbols-outlined text-[20px]">airline_seat_recline_extra</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">4. Interior, Tapizados y Confort</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-card text-text-secondary font-semibold">10 pts</span>
+</div>
+<span class="font-body-sm text-[12px] text-text-secondary">Pendiente de inicio</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted transition-transform" id="icon-interior">expand_more</span>
+</div>
+<div class="hidden p-3 bg-surface-card" id="sec-interior">
+<span class="font-body-sm text-body-sm text-text-secondary">Módulo preparado para verificar cueros, climatizador bi-zona y techo solar.</span>
+</div>
+</div>
+<!-- SECCIÓN 5: PLEGADA (Diagnóstico OBD-II y Sensores) -->
+<div class="bg-surface-card rounded-xl shadow-sm overflow-hidden transition-all opacity-80">
+<div class="p-3.5 bg-surface-container-low flex items-center justify-between cursor-pointer" onclick="toggleSection('sec-obd', 'icon-obd')">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-card flex items-center justify-center text-text-muted shadow-sm">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-text-primary">5. Diagnóstico OBD-II y Sensores</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-card text-text-secondary font-semibold">8 pts</span>
+</div>
+<span class="font-body-sm text-[12px] text-text-secondary">Listo para conectar escáner Autel MaxiSys</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted transition-transform" id="icon-obd">expand_more</span>
+</div>
+<div class="hidden p-3 bg-surface-card" id="sec-obd">
+<span class="font-body-sm text-body-sm text-text-secondary">Escáner listo vía Bluetooth en puerto OBD inferior de la columna de dirección.</span>
+</div>
+</div>
+</div>
+<!-- ACCIONES DE CIERRE Y CONTROL -->
+<div class="px-margin mt-5 flex flex-col gap-2.5">
+<!-- Botón Primario Único -->
+<button class="w-full h-12 rounded-lg bg-accent-red hover:bg-accent-red-hover text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-[22px]">save</span>
+<span>Guardar avance y emitir informe parcial</span>
+</button>
+<!-- Botones Secundarios -->
+<div class="grid grid-cols-2 gap-2">
+<button class="h-11 rounded-lg bg-surface-card hover:bg-surface-container-high text-text-primary font-label-lg text-label-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">pause_circle</span>
+<span>Pausar peritaje</span>
+</button>
+<button class="h-11 rounded-lg bg-surface-card hover:bg-surface-container-high text-text-primary font-label-lg text-label-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px] text-text-secondary">picture_as_pdf</span>
+<span>Ver borrador PDF</span>
+</button>
+</div>
+</div>
+<!-- SCRIPT PARA INTERACCIÓN DE ACORDEONES Y SELECCIONES -->
+<script>
+    function toggleSection(contentId, iconId) {
+      const content = document.getElementById(contentId);
+      const icon = document.getElementById(iconId);
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+  </script>
+</div></main><aside class="fixed right-margin bottom-20 z-40 pb-safe"><button aria-label="Nueva acción rápida" class="w-14 h-14 rounded-full bg-accent-red hover:bg-accent-red-hover text-on-primary shadow-[0_4px_16px_rgba(215,20,26,0.35)] flex items-center justify-center transition-transform active:scale-95 focus:outline-none" type="button"><span class="material-symbols-outlined text-[28px]">add</span></button></aside><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-card/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-accent-red font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="inicio" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm mt-0.5">Inicio</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="stock" href="#"><span class="material-symbols-outlined text-[22px]">directions_car</span><span class="font-label-sm text-label-sm mt-0.5">Stock</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="detailing" href="#"><span class="material-symbols-outlined text-[22px]">cloud_download</span><span class="font-label-sm text-label-sm mt-0.5">Detailing</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="inspeccion" href="#"><span class="material-symbols-outlined text-[22px]">fact_check</span><span class="font-label-sm text-label-sm mt-0.5">Inspección</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="agenda" href="#"><span class="material-symbols-outlined text-[22px]">calendar_today</span><span class="font-label-sm text-label-sm mt-0.5">Agenda</span></a></div></nav></body></html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html><html lang="es" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400..700;1,400..700&amp;family=Barlow+Condensed:ital,wght@0,300..700;1,300..700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "text-secondary": "#6B6B6B",
+        "tertiary-fixed-dim": "#b4c5ff",
+        "on-error-container": "#93000a",
+        "inverse-surface": "#2f3130",
+        "on-secondary-container": "#636262",
+        "on-tertiary-fixed-variant": "#224290",
+        "canvas-bg": "#F5F5F4",
+        "surface-container-highest": "#e2e2e2",
+        "surface-card": "#FFFFFF",
+        "secondary-fixed-dim": "#c8c6c5",
+        "on-surface": "#1a1c1c",
+        "tertiary-fixed": "#dbe1ff",
+        "surface-tint": "#c00010",
+        "on-tertiary-fixed": "#00174b",
+        "brand-black": "#000000",
+        "on-surface-variant": "#5d3f3c",
+        "surface-container-low": "#f4f4f3",
+        "on-secondary-fixed": "#1c1b1b",
+        "tertiary": "#324f9e",
+        "primary-fixed-dim": "#ffb4ab",
+        "primary-container": "#d7141a",
+        "tertiary-container": "#4c68b8",
+        "inverse-primary": "#ffb4ab",
+        "status-warning-text": "#945B0E",
+        "on-secondary-fixed-variant": "#474746",
+        "surface-container-lowest": "#ffffff",
+        "on-primary-fixed-variant": "#930009",
+        "surface": "#f9f9f8",
+        "on-error": "#ffffff",
+        "primary": "#ac000d",
+        "outline-variant": "#e7bdb7",
+        "outline": "#926f6a",
+        "on-background": "#1a1c1c",
+        "status-danger-bg": "#FDF2F2",
+        "text-muted": "#9A9A9A",
+        "on-primary-fixed": "#410002",
+        "background": "#f9f9f8",
+        "error": "#ba1a1a",
+        "on-tertiary-container": "#ebedff",
+        "on-tertiary": "#ffffff",
+        "secondary": "#5f5e5e",
+        "secondary-fixed": "#e5e2e1",
+        "error-container": "#ffdad6",
+        "on-primary-container": "#ffeae7",
+        "border-strong": "#D0D0CD",
+        "surface-container": "#eeeeed",
+        "border-subtle": "#E5E5E3",
+        "on-primary": "#ffffff",
+        "primary-fixed": "#ffdad5",
+        "status-danger-text": "#B80E14",
+        "accent-red-hover": "#B80E14",
+        "accent-red": "#D7141A",
+        "status-success-text": "#1E6B43",
+        "surface-variant": "#e2e2e2",
+        "surface-dim": "#dadad9",
+        "inverse-on-surface": "#f1f1f0",
+        "on-secondary": "#ffffff",
+        "text-primary": "#161616",
+        "surface-container-high": "#e8e8e7",
+        "status-warning-bg": "#FEF7EC",
+        "secondary-container": "#e2dfde",
+        "surface-bright": "#f9f9f8",
+        "status-success-bg": "#EEF7F2",
+        "plate-blue": "#002B7A"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "margin": "1rem",
+        "space-xs": "0.25rem",
+        "space-lg": "1.5rem",
+        "gutter-desktop": "1.5rem",
+        "space-xl": "2rem",
+        "space-md": "1rem",
+        "margin-desktop": "2rem",
+        "space-sm": "0.5rem",
+        "gutter": "1rem"
+      },
+      "fontFamily": {
+        "label-sm": ["Barlow Condensed"],
+        "body-sm": ["Barlow Condensed"],
+        "body-lg": ["Barlow Condensed"],
+        "headline-sm": ["Archivo Narrow"],
+        "display": ["Archivo Narrow"],
+        "label-lg": ["Barlow Condensed"],
+        "headline-lg": ["Archivo Narrow"],
+        "body-md": ["Barlow Condensed"],
+        "headline-md": ["Archivo Narrow"],
+        "label-md": ["Barlow Condensed"],
+        "title-md": ["Barlow Condensed"],
+        "plate-text": ["Archivo Narrow"],
+        "headline-lg-mobile": ["Archivo Narrow"],
+        "metric-currency": ["Archivo Narrow"]
+      },
+      "fontSize": {
+        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+        "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+        "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "0", "fontWeight": "600" }],
+        "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+        "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.025em", "fontWeight": "600" }],
+        "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.015em", "fontWeight": "400" }],
+        "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "600" }],
+        "title-md": ["18px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+        "plate-text": ["22px", { "lineHeight": "24px", "letterSpacing": "0.14em", "fontWeight": "700" }],
+        "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "metric-currency": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "800" }]
+      }
+    }
+  }
+}</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-canvas-bg font-body-md text-body-md text-text-primary flex flex-col min-h-screen antialiased"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-card/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm shrink-0"><img alt="CARVLAK Group Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WU2LZsNlKcQHeN2pTf4kv8FAueNeowx3Wh_zRZ6y5UzZBWjkurD-Dd7cyD-Lh4imF67rGg9N842uHNxmQ-knK9hXwD_uo8EF4p5U0QGhQDvZYYsxHsYgkl57Qe-_0z6YIQNemL4mmP6fCuQxeFf3ffZj8DvW3dcmeWFdpWOfB4qkHB0sVw3qVgwhmHFoVgYJXVJhoEgtwL8Fz5s5nhIHD60FzSIf18YLKVo6EvRl_Ff6TP7lKgY9UiVaws"><span class="font-headline-sm text-headline-sm text-text-primary hidden sm:inline tracking-tight">CARVLAK</span><span class="sr-only">Detailing</span></div><div class="flex-1 max-w-xs mx-space-xs"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-secondary text-[18px] pointer-events-none">search</span><input class="w-full h-10 pl-8 pr-3 bg-surface-container-low rounded-lg font-body-sm text-body-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:bg-surface-card transition-all uppercase placeholder:normal-case" placeholder="Buscar matrícula ej. SBX 1234" type="search"></div></div><div class="flex items-center gap-space-xs shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden xs:flex flex-col text-left"><span class="font-label-sm text-label-sm text-text-primary leading-none">Martín F.</span><span class="font-label-sm text-[10px] text-text-secondary uppercase leading-none mt-0.5">Admin</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-canvas-bg"><div class="flex flex-col w-full">
+<div class="px-margin pt-space-sm pb-space-lg flex flex-col gap-space-lg">
+<!-- Header Context -->
+<header class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-container-high text-text-primary text-[14px]">
+<span class="material-symbols-outlined text-[15px]">campaign</span>
+</span>
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-widest">Marketing &amp; Ventas</span>
+</div>
+<div class="inline-flex items-center p-0.5 rounded-lg bg-surface-container-high text-label-sm" id="header-format-toggle"><button class="tab-btn-header px-2 py-1 rounded-md bg-surface-card text-text-primary font-bold shadow-sm flex items-center gap-1 font-label-sm transition-all" data-target="story" type="button"><span class="material-symbols-outlined text-[13px] text-accent-red">crop_portrait</span><span class="">Historia (9:16)</span></button><button class="tab-btn-header px-2 py-1 rounded-md text-text-secondary hover:text-text-primary transition-all flex items-center gap-1 font-label-sm" data-target="post" type="button"><span class="material-symbols-outlined text-[13px]">crop_square</span><span class="">Post Feed (1:1)</span></button></div>
+</div>
+<div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary tracking-tight">Redes sociales</h1>
+<p class="font-body-md text-body-md text-text-secondary leading-snug">Generador automático de historias y piezas de stock para Instagram y WhatsApp.</p>
+</div>
+</header>
+<!-- STEP 1: Selector de Plantillas -->
+<section class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="flex items-center justify-center w-5 h-5 rounded-full bg-brand-black text-on-primary font-label-sm text-[10px]">1</span>
+<h2 class="font-title-md text-title-md text-text-primary">Elegí la plantilla</h2>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary">5 formatos listos</span>
+</div>
+<!-- Horizontal Scrollable Templates -->
+<div class="flex items-stretch gap-space-sm overflow-x-auto pb-1 -mx-margin px-margin no-scrollbar"><!-- Plantilla 1: Vendido (Activa) -->
+<button class="group relative flex flex-col items-start p-3 w-40 shrink-0 rounded-xl bg-surface-container-low hover:bg-surface-card border border-border-subtle shadow-sm text-left transition-all active:scale-98 cursor-pointer" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high text-status-success-text flex items-center justify-center mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<span class="font-label-lg text-label-lg text-text-primary font-bold">Vendido</span>
+<span class="font-body-sm text-body-sm text-text-secondary line-clamp-1 mt-0.5">Cierre y felicitación</span>
+<span class="mt-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container-high text-text-secondary font-label-sm text-[10px]">
+Casos de éxito
+</span>
+</button>
+<!-- Plantilla 2: Nuevo ingreso -->
+<button class="group relative flex flex-col items-start p-3 w-40 shrink-0 rounded-xl bg-surface-container-low hover:bg-surface-card border border-border-subtle shadow-sm text-left transition-all active:scale-98 cursor-pointer" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high text-text-primary flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-[18px]">key</span>
+</div>
+<span class="font-label-lg text-label-lg text-text-primary font-bold">Nuevo ingreso</span>
+<span class="font-body-sm text-body-sm text-text-secondary line-clamp-1 mt-0.5">Recién llegado a salón</span>
+<span class="mt-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container-high text-text-secondary font-label-sm text-[10px]">
+Stock diario
+</span>
+</button>
+<!-- Plantilla 3: Descuento de la semana / Oportunidad -->
+<button class="group relative flex flex-col items-start p-3 w-40 shrink-0 rounded-xl bg-surface-card border-2 border-accent-red shadow-sm text-left transition-all active:scale-98 cursor-pointer" type="button">
+<div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent-red animate-pulse"></div>
+<div class="w-8 h-8 rounded-lg bg-status-warning-bg text-status-warning-text flex items-center justify-center mb-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">local_offer</span>
+</div>
+<span class="font-label-lg text-label-lg text-text-primary font-bold">Oportunidad</span>
+<span class="font-body-sm text-body-sm text-text-secondary line-clamp-1 mt-0.5">Semana de descuento</span>
+<span class="mt-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-status-warning-bg text-status-warning-text font-label-sm text-[10px] font-bold">
+Activa en preview
+</span>
+</button>
+<!-- Plantilla 4: Permuta aceptada -->
+<button class="group relative flex flex-col items-start p-3 w-40 shrink-0 rounded-xl bg-surface-container-low hover:bg-surface-card border border-border-subtle shadow-sm text-left transition-all active:scale-98 cursor-pointer" type="button">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high text-accent-red flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+</div>
+<span class="font-label-lg text-label-lg text-text-primary font-bold">Permuta aceptada</span>
+<span class="font-body-sm text-body-sm text-text-secondary line-clamp-1 mt-0.5">Tomamos tu usado</span>
+<span class="mt-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container-high text-text-primary font-label-sm text-[10px]">
+Llave por llave
+</span>
+</button>
+<!-- Plantilla 5: En preparación -->
+<button class="group relative flex flex-col items-start p-3 w-40 shrink-0 rounded-xl bg-surface-container-low hover:bg-surface-card border border-border-subtle shadow-sm text-left transition-all active:scale-98 cursor-pointer" type="button">
+<div class="w-8 h-8 rounded-lg bg-secondary-container text-text-primary flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-[18px]">build_circle</span>
+</div>
+<span class="font-label-lg text-label-lg text-text-primary font-bold">En preparación</span>
+<span class="font-body-sm text-body-sm text-text-secondary line-clamp-1 mt-0.5">Detailing &amp; Peritaje</span>
+<span class="mt-2.5 inline-flex items-center px-1.5 py-0.5 rounded bg-secondary-container text-text-secondary font-label-sm text-[10px]">
+Próximamente
+</span>
+</button></div>
+</section>
+<!-- STEP 2: Selector de Vehículo & Ajustes Rápidos -->
+<section class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="flex items-center justify-center w-5 h-5 rounded-full bg-brand-black text-on-primary font-label-sm text-[10px]">2</span>
+<h2 class="font-title-md text-title-md text-text-primary">Vehículo del inventario</h2>
+</div>
+<button class="font-label-md text-label-md text-accent-red hover:text-accent-red-hover flex items-center gap-0.5" type="button">
+<span class="">Cambiar vehículo</span>
+<span class="material-symbols-outlined text-[16px]">sync_alt</span>
+</button>
+</div>
+<!-- Selected Vehicle Card -->
+<div class="p-3.5 bg-surface-card rounded-xl shadow-sm flex flex-col gap-3">
+<div class="flex items-start gap-3">
+<!-- Chapa Mercosur Uruguay -->
+<div class="shrink-0 flex flex-col items-center justify-between w-24 h-12 bg-surface-card rounded-md shadow-sm overflow-hidden p-0.5">
+<div class="w-full h-3.5 bg-plate-blue flex items-center justify-between px-1">
+<span class="text-[6px] text-on-primary font-bold tracking-tighter">MERCOSUR</span>
+<span class="text-[7px] text-on-primary font-extrabold tracking-wider font-plate-text">URUGUAY</span>
+<span class="text-[6px] text-on-primary font-bold">UY</span>
+</div>
+<div class="flex-1 flex items-center justify-center">
+<span class="font-plate-text text-label-lg tracking-widest text-text-primary font-bold uppercase">SCA 8924</span>
+</div>
+</div>
+<!-- Vehicle details -->
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-container text-text-secondary font-label-sm text-[10px]">Stock #1940</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-status-success-bg text-status-success-text font-label-sm text-[10px]">Disponible para retiro</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-text-primary truncate mt-0.5">Mercedes-Benz GLC 300 4MATIC</h3>
+<p class="font-body-sm text-body-sm text-text-secondary">AMG-Line 2.0 Turbo • 2023 • 21.000 km</p>
+</div>
+</div>
+<!-- Quick Toggles -->
+<div class="pt-2.5 bg-surface-container-low rounded-lg p-2.5 flex flex-col gap-2">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Ajustes visuales de la historia</span>
+<div class="grid grid-cols-1 gap-1.5"><label class="flex items-center justify-between py-1 px-1 cursor-pointer"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-accent-red">payments</span><span class="font-body-md text-body-md text-text-primary">Mostrar precio promocional (USD 74.900 — Antes USD 78.500)</span></div><input checked="" class="w-4 h-4 accent-accent-red rounded cursor-pointer" type="checkbox"></label><label class="flex items-center justify-between py-1 px-1 cursor-pointer"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-text-secondary">local_offer</span><span class="font-body-md text-body-md text-text-primary">Sello «Oportunidad Seleccionada» (Ahorro USD 3.600)</span></div><input checked="" class="w-4 h-4 accent-accent-red rounded cursor-pointer" type="checkbox"></label><label class="flex items-center justify-between py-1 px-1 cursor-pointer"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-text-secondary">verified_user</span><span class="font-body-md text-body-md text-text-primary">Sello «Garantía Oficial CARVLAK 1 Año»</span></div><input checked="" class="w-4 h-4 accent-accent-red rounded cursor-pointer" type="checkbox"></label><label class="flex items-center justify-between py-1 px-1 cursor-pointer"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-accent-red">visibility_off</span><span class="font-body-md text-body-md text-text-primary">Ocultar matrícula en historias por privacidad</span></div><input checked="" class="w-4 h-4 accent-accent-red rounded cursor-pointer" type="checkbox"></label></div>
+</div>
+</div>
+</section>
+<!-- STEP 3: Preview de la Historia / Post (Switcher interactivo) -->
+<section class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="flex items-center justify-center w-5 h-5 rounded-full bg-brand-black text-on-primary font-label-sm text-[10px]">3</span>
+<h2 class="font-title-md text-title-md text-text-primary">Vista previa en tiempo real</h2>
+</div>
+<span class="font-label-sm text-label-sm text-text-secondary flex items-center gap-1" id="active-format-indicator">
+<span class="w-1.5 h-1.5 rounded-full bg-status-success-text animate-pulse"></span>
+<span id="indicator-text" class="">Historia (9:16) • 1080x1920</span>
+</span>
+</div>
+<!-- Interactive Tab Segmented Switcher Controls -->
+<div class="grid grid-cols-2 gap-1.5 p-1 bg-surface-container rounded-xl text-center">
+<button class="py-2 px-3 rounded-lg bg-surface-card text-text-primary font-bold shadow-sm font-label-md flex items-center justify-center gap-1.5 transition-all active:scale-98" id="tab-btn-story" type="button"><span class="material-symbols-outlined text-[16px] text-accent-red">crop_portrait</span><span class="">Historia (9:16)</span></button>
+<button class="py-2 px-3 rounded-lg text-text-secondary hover:text-text-primary font-label-md flex items-center justify-center gap-1.5 transition-all active:scale-98" id="tab-btn-post" type="button"><span class="material-symbols-outlined text-[16px]">crop_square</span><span class="">Post Feed (1:1)</span></button>
+</div>
+<!-- CONTAINER FOR PREVIEWS -->
+<div class="relative w-full flex justify-center">
+<!-- PREVIEW 1: Instagram Story 9:16 (Vertical Canvas) -->
+<div class="w-full max-w-[310px] aspect-[9/16] rounded-2xl bg-brand-black border border-border-subtle shadow-md overflow-hidden relative flex flex-col justify-between text-on-primary animate-fadeIn" id="preview-story">
+<!-- Story Background Photo -->
+<img class="absolute inset-0 w-full h-full object-cover object-center" data-alt="Mercedes-Benz GLC 300 in showroom" src="https://lh3.googleusercontent.com/aida/AEtjO1WXzR0DafqWG9e8xZl_HkBl5C9mOJ9MS_FY7tZHz71Q9_gUVZQeUks6eG-z4D4o_CpnyF3Dt-tmaG7rNIYu5e2QvU-uJvwySTaDGkbzxvnJYykI143Js2ZAoqTjEYMfB469oIkiW228CVF9y9BKN60UIGnkiULlcvN7MdrsAa_FKdak0wx1fGgMzVKcElVQg7iMA1XSwgGKR9iz7-pbXwIy-dMVzR6dyVUvxvbLpXwrfYH6jd1oCOjPplsU">
+<!-- Top & Bottom Gradient Shadows for Legibility -->
+<div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-brand-black/85 via-brand-black/40 to-transparent pointer-events-none"></div>
+<div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-brand-black/95 via-brand-black/60 to-transparent pointer-events-none"></div>
+<!-- Story Header (Progress Bar + Instagram Profile) -->
+<div class="relative z-10 p-3 pt-2.5 flex flex-col gap-2">
+<!-- Story Segments Bar -->
+<div class="w-full flex items-center gap-1">
+<div class="h-0.5 flex-1 bg-on-primary rounded-full"></div>
+<div class="h-0.5 flex-1 bg-on-primary/35 rounded-full"></div>
+<div class="h-0.5 flex-1 bg-on-primary/35 rounded-full"></div>
+</div>
+<!-- Account Info & Close -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-accent-red flex items-center justify-center font-bold text-[11px] text-on-primary border border-on-primary/30">
+            C
+          </div>
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-[12px] font-bold tracking-tight text-on-primary">carvlakmotors</span>
+<span class="material-symbols-outlined text-[13px] text-[#2274e0]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[10px] text-on-primary/70 font-body-sm ml-1">hace 12m</span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-on-primary/90">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+<span class="material-symbols-outlined text-[16px]">close</span>
+</div>
+</div>
+</div>
+<!-- Story Center Overlays (Sticker 'Vendido' & Mercosur Plate) -->
+<div class="relative z-10 px-3.5 flex flex-col items-center gap-2 my-auto"><div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-red text-on-primary shadow-lg border border-on-primary/30 animate-pulse">
+<span class="material-symbols-outlined text-[16px]">local_fire_department</span>
+<span class="font-headline-sm text-label-md tracking-wider uppercase font-black">🔥 DESCUENTO DE LA SEMANA</span>
+</div>
+</div>
+<!-- Story Bottom Data & CTA Footer -->
+<div class="relative z-10 p-3.5 flex flex-col gap-2">
+<!-- Car Specs Card Overlay -->
+<div class="bg-brand-black/60 backdrop-blur-md rounded-xl p-2.5 border border-on-primary/10 flex flex-col gap-1"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-red/90 text-on-primary text-[9px] font-label-sm uppercase font-bold"><span class="material-symbols-outlined text-[11px]">verified</span> Garantía 1 Año</span><div class="text-right flex flex-col items-end"><span class="text-[9px] text-on-primary/70 line-through">USD 78.500</span><span class="font-metric-currency text-[18px] text-on-primary font-black leading-none">USD 74.900</span></div></div><h4 class="font-headline-sm text-[15px] font-bold text-on-primary leading-tight">Mercedes-Benz GLC 300 4MATIC</h4><p class="font-body-sm text-[11px] text-on-primary/80">AMG-Line • 2023 • 21.000 km</p><p class="font-body-sm text-[10px] text-accent-red font-bold pt-0.5">⚡ ¡Bonificación exclusiva de USD 3.600!</p></div>
+<!-- Instagram Story Footer Input Bar -->
+<div class="flex items-center gap-2 pt-1 text-on-primary">
+<div class="flex-1 h-9 rounded-full border border-on-primary/40 bg-brand-black/40 backdrop-blur-sm px-3 flex items-center justify-between text-on-primary/70 text-[11px]">
+<span class="">Enviar mensaje...</span>
+<span class="material-symbols-outlined text-[16px]">sentiment_satisfied</span>
+</div>
+<div class="w-9 h-9 rounded-full border border-on-primary/40 bg-brand-black/40 backdrop-blur-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">favorite</span>
+</div>
+<div class="w-9 h-9 rounded-full border border-on-primary/40 bg-brand-black/40 backdrop-blur-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</div>
+</div>
+</div>
+</div>
+<!-- PREVIEW 2: Instagram Post Feed 1:1 (Square Post Mockup Card) -->
+<div class="w-full max-w-[340px] rounded-2xl bg-surface-card border border-border-subtle shadow-sm overflow-hidden text-text-primary animate-fadeIn hidden" id="preview-post"><div class="px-3 py-2.5 flex items-center justify-between border-b border-border-subtle bg-surface-card"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-accent-red flex items-center justify-center text-on-primary font-bold text-[12px] shadow-sm">C</div><div class="flex flex-col text-left"><div class="flex items-center gap-1"><span class="font-headline-sm text-[13px] text-text-primary font-bold leading-none tracking-tight">carvlakmotors</span><span class="material-symbols-outlined text-[13px] text-[#2274e0]" style="font-variation-settings: 'FILL' 1;">verified</span></div><span class="text-[10px] text-text-secondary font-body-sm leading-none mt-0.5">Montevideo, Uruguay</span></div></div><button class="text-text-secondary hover:text-text-primary p-1" type="button"><span class="material-symbols-outlined text-[18px]">more_horiz</span></button></div><div class="relative w-full aspect-square bg-brand-black overflow-hidden"><img alt="Mercedes-Benz GLC 300 4MATIC en salón showroom CARVLAK" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WXzR0DafqWG9e8xZl_HkBl5C9mOJ9MS_FY7tZHz71Q9_gUVZQeUks6eG-z4D4o_CpnyF3Dt-tmaG7rNIYu5e2QvU-uJvwySTaDGkbzxvnJYykI143Js2ZAoqTjEYMfB469oIkiW228CVF9y9BKN60UIGnkiULlcvN7MdrsAa_FKdak0wx1fGgMzVKcElVQg7iMA1XSwgGKR9iz7-pbXwIy-dMVzR6dyVUvxvbLpXwrfYH6jd1oCOjPplsU"><div class="absolute top-3 left-3"><div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-red text-on-primary shadow-md border border-on-primary/30 animate-pulse"><span class="material-symbols-outlined text-[14px]">local_fire_department</span><span class="font-headline-sm text-label-sm tracking-wider uppercase font-bold">🔥 OPORTUNIDAD DE LA SEMANA - AHORRO USD 3.600</span></div></div><div class="absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 bg-gradient-to-b from-transparent to-brand-black/90 flex flex-col gap-1 text-on-primary"><div class="flex items-end justify-between"><div><div class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-brand-black/60 backdrop-blur-sm text-on-primary text-[10px] font-label-sm mb-1"><span class="material-symbols-outlined text-[12px] text-status-warning-text">verified</span><span class="">Garantía CARVLAK 1 Año</span></div><h4 class="font-headline-sm text-[16px] text-on-primary font-bold leading-tight drop-shadow-sm">Mercedes-Benz GLC 300 4MATIC 2023</h4><p class="font-body-sm text-[11px] text-on-primary/80">AMG-Line • 2023 • 21.000 km</p></div><div class="text-right shrink-0 flex flex-col items-end"><span class="font-label-sm text-[9px] text-on-primary/70 line-through tracking-wider block">Antes USD 78.500</span><span class="font-metric-currency text-[20px] text-on-primary font-black leading-none drop-shadow-sm">USD 74.900</span></div></div></div></div><div class="px-3 pt-2.5 pb-1 flex items-center justify-between"><div class="flex items-center gap-3 text-text-primary"><button class="hover:text-accent-red transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">favorite</span></button><button class="hover:text-text-secondary transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">chat_bubble</span></button><button class="hover:text-text-secondary transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">send</span></button></div><button class="text-text-primary hover:text-text-secondary transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">bookmark</span></button></div><div class="px-3 py-0.5"><span class="font-label-sm text-[12px] font-bold text-text-primary">142 Me gusta</span></div><div class="px-3 pb-3 pt-0.5 text-left"><p class="font-body-sm text-[12px] text-text-primary leading-snug line-clamp-2"><span class="font-bold font-headline-sm text-[12px] mr-1">carvlakmotors</span>¡Oportunidad exclusiva de la semana! ⚡ Mercedes-Benz GLC 300 4MATIC AMG-Line 2023 con 21.000 km y USD 3.600 de bonificación. Services oficiales al día y Garantía CARVLAK de 1 Año...</p><span class="text-[10px] text-text-muted mt-1 block uppercase font-label-sm">Hace 2 horas</span></div></div>
+</div>
+</section>
+<!-- STEP 4: Acciones de Publicación y Exportación -->
+<section class="flex flex-col gap-space-sm pt-space-xs">
+<div class="flex items-center gap-2">
+<span class="flex items-center justify-center w-5 h-5 rounded-full bg-brand-black text-on-primary font-label-sm text-[10px]">4</span>
+<h2 class="font-title-md text-title-md text-text-primary">Exportar y compartir</h2>
+</div>
+<!-- Main Action (Single Primary Red Button) -->
+<button class="w-full h-12 rounded-xl bg-accent-red hover:bg-accent-red-hover active:scale-98 text-on-primary font-headline-sm text-headline-sm flex items-center justify-center gap-2 shadow-md transition-all" id="btn-publish-instagram" type="button"><span class="material-symbols-outlined text-[20px]">share</span><span id="btn-publish-text" class="">Compartir en Instagram Stories (9:16)</span></button>
+<!-- Secondary Action Buttons Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<button class="h-11 px-3 rounded-lg bg-surface-card hover:bg-surface-container-low active:scale-98 text-text-primary font-label-lg text-label-lg shadow-sm flex items-center justify-center gap-2 transition-all" id="btn-download-hd" type="button"><span class="material-symbols-outlined text-[18px] text-text-secondary">download</span>
+<span id="btn-download-text" class="">Descargar HD (1080x1920)</span></button>
+<button class="h-11 px-3 rounded-lg bg-surface-card hover:bg-surface-container-low active:scale-98 text-text-primary font-label-lg text-label-lg shadow-sm flex items-center justify-center gap-2 transition-all" id="btn-share-whatsapp" type="button">
+<span class="material-symbols-outlined text-[18px] text-status-success-text">chat</span>
+<span class="">Enviar WhatsApp</span>
+</button>
+</div>
+<!-- Copy to Clipboard Box -->
+<div class="p-3 bg-surface-card rounded-xl shadow-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Texto listo para el post (Copy sugerido)</span>
+<button class="text-accent-red font-label-sm text-label-sm hover:underline flex items-center gap-1 active:scale-95 transition-transform" id="btn-copy-text" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span id="copy-status" class="">Copiar texto</span>
+</button>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-low text-text-primary font-body-sm text-body-sm leading-relaxed">🔥 <strong class="">¡OPORTUNIDAD EXCLUSIVA EN CARVLAK MOTORS!</strong> 🔥<br class=""><br class="">Llevate este imponente Mercedes-Benz GLC 300 4MATIC AMG-Line 2023 en estado inmaculado:<br class="">💰 <strong class="">PRECIO ESPECIAL: USD 74.900</strong> (Antes USD 78.500 - Ahorro USD 3.600)<br class="">✅ 21.000 km | Todos los services oficiales al día<br class="">🛡️ Garantía Certificada CARVLAK por 1 año<br class="">🔄 Tomamos tu vehículo usado como parte de pago y gestionamos financiación bancaria ágil.<br class=""><br class="">📍 Te esperamos en nuestro salón en Montevideo o coordiná tu test drive VIP por WhatsApp.<div class="mt-1 text-text-muted text-[11px]">#CarvlakMotors #MercedesBenz #GLC300 #AMGLine #Oportunidad #Montevideo #AutosUy</div></div>
+</div>
+<!-- Quick Tips Card -->
+<div class="p-3 rounded-xl bg-status-success-bg flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-status-success-text text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-status-success-text font-bold">Sincronización automática</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Al marcar como vendida, el estado en la web comercial cambiará de inmediato.</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  // Format Switcher interactive functionality (Story 9:16 vs Post Feed 1:1)
+  const tabStory = document.getElementById('tab-btn-story');
+  const tabPost = document.getElementById('tab-btn-post');
+  const previewStory = document.getElementById('preview-story');
+  const previewPost = document.getElementById('preview-post');
+  const indicatorText = document.getElementById('indicator-text');
+  const btnPublishText = document.getElementById('btn-publish-text');
+  const btnDownloadText = document.getElementById('btn-download-text');
+  const headerTabButtons = document.querySelectorAll('.tab-btn-header');
+
+  function setFormat(format) {
+    if (format === 'story') {
+      // Toggle previews
+      previewStory.classList.remove('hidden');
+      previewPost.classList.add('hidden');
+
+      // Update switcher tabs styling
+      tabStory.className = "py-2 px-3 rounded-lg bg-surface-card text-text-primary font-bold shadow-sm font-label-md flex items-center justify-center gap-1.5 transition-all active:scale-98";
+      tabStory.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[16px] text-accent-red";
+
+      tabPost.className = "py-2 px-3 rounded-lg text-text-secondary hover:text-text-primary font-label-md flex items-center justify-center gap-1.5 transition-all active:scale-98";
+      tabPost.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[16px]";
+
+      // Update header mini switcher
+      headerTabButtons.forEach(btn => {
+        if (btn.dataset.target === 'story') {
+          btn.className = "tab-btn-header px-2 py-1 rounded-md bg-surface-card text-text-primary font-bold shadow-sm flex items-center gap-1 font-label-sm transition-all";
+          btn.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[13px] text-accent-red";
+        } else {
+          btn.className = "tab-btn-header px-2 py-1 rounded-md text-text-secondary hover:text-text-primary transition-all flex items-center gap-1 font-label-sm";
+          btn.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[13px]";
+        }
+      });
+
+      // Update indicator & buttons texts
+      if (indicatorText) indicatorText.textContent = "Formato Historia (9:16) Activo";
+      if (btnPublishText) btnPublishText.textContent = "Compartir en Instagram Stories (9:16)";
+      if (btnDownloadText) btnDownloadText.textContent = "Descargar HD (1080x1920)";
+
+    } else {
+      // Format post (1:1)
+      previewStory.classList.add('hidden');
+      previewPost.classList.remove('hidden');
+
+      // Update switcher tabs styling
+      tabPost.className = "py-2 px-3 rounded-lg bg-surface-card text-text-primary font-bold shadow-sm font-label-md flex items-center justify-center gap-1.5 transition-all active:scale-98";
+      tabPost.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[16px] text-accent-red";
+
+      tabStory.className = "py-2 px-3 rounded-lg text-text-secondary hover:text-text-primary font-label-md flex items-center justify-center gap-1.5 transition-all active:scale-98";
+      tabStory.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[16px]";
+
+      // Update header mini switcher
+      headerTabButtons.forEach(btn => {
+        if (btn.dataset.target === 'post') {
+          btn.className = "tab-btn-header px-2 py-1 rounded-md bg-surface-card text-text-primary font-bold shadow-sm flex items-center gap-1 font-label-sm transition-all";
+          btn.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[13px] text-accent-red";
+        } else {
+          btn.className = "tab-btn-header px-2 py-1 rounded-md text-text-secondary hover:text-text-primary transition-all flex items-center gap-1 font-label-sm";
+          btn.querySelector('.material-symbols-outlined').className = "material-symbols-outlined text-[13px]";
+        }
+      });
+
+      // Update indicator & buttons texts
+      if (indicatorText) indicatorText.textContent = "Formato Feed (1:1) Activo";
+      if (btnPublishText) btnPublishText.textContent = "Compartir en Instagram Feed (1:1)";
+      if (btnDownloadText) btnDownloadText.textContent = "Descargar HD (1080x1080)";
+    }
+  }
+
+  tabStory?.addEventListener('click', () => setFormat('story'));
+  tabPost?.addEventListener('click', () => setFormat('post'));
+
+  headerTabButtons.forEach(btn => {
+    btn.addEventListener('click', () => setFormat(btn.dataset.target));
+  });
+
+  // Micro-interaction for copying text with feedback
+  document.getElementById('btn-copy-text')?.addEventListener('click', function() {
+    const statusLabel = document.getElementById('copy-status');
+    if (!statusLabel) return;
+    const originalText = statusLabel.textContent;
+    statusLabel.textContent = '¡Copiado!';
+    statusLabel.classList.add('text-status-success-text');
+    setTimeout(() => {
+      statusLabel.textContent = originalText;
+      statusLabel.classList.remove('text-status-success-text');
+    }, 2000);
+  });
+
+  // Action button simulated feedback
+  document.getElementById('btn-publish-instagram')?.addEventListener('click', function() {
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">refresh</span><span>Abriendo Instagram...</span>';
+    setTimeout(() => {
+      btn.innerHTML = originalHtml;
+    }, 1500);
+  });
+
+  document.getElementById('btn-download-hd')?.addEventListener('click', function() {
+    const btn = this;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px] text-status-success-text">check</span><span>Guardado</span>';
+    setTimeout(() => {
+      btn.innerHTML = original;
+    }, 1500);
+  });
+</script></main><aside class="fixed right-margin bottom-20 z-40 pb-safe"><button aria-label="Nueva acción rápida" class="w-14 h-14 rounded-full bg-accent-red hover:bg-accent-red-hover text-on-primary shadow-[0_4px_16px_rgba(215,20,26,0.35)] flex items-center justify-center transition-transform active:scale-95 focus:outline-none" type="button"><span class="material-symbols-outlined text-[28px]">add</span></button></aside><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-card/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-accent-red font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="inicio" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm mt-0.5">Inicio</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="stock" href="#"><span class="material-symbols-outlined text-[22px]">directions_car</span><span class="font-label-sm text-label-sm mt-0.5">Stock</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="detailing" href="#"><span class="material-symbols-outlined text-[22px]">cloud_download</span><span class="font-label-sm text-label-sm mt-0.5">Detailing</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="inspeccion" href="#"><span class="material-symbols-outlined text-[22px]">fact_check</span><span class="font-label-sm text-label-sm mt-0.5">Inspección</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="agenda" href="#"><span class="material-symbols-outlined text-[22px]">calendar_today</span><span class="font-label-sm text-label-sm mt-0.5">Agenda</span></a></div></nav>
+
+
+</body></html>

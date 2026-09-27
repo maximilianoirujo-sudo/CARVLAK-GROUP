@@ -46,12 +46,9 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="/logo-carvlak-black.svg"
-              alt="CARVLAK Group"
+              src="/carvlak-logo-negro.png"
+              alt="CARVLAK"
               className="h-7 w-auto object-contain"
-              onError={(e) => {
-                (e.target as HTMLElement).setAttribute('src', '/logo-carvlak-black.png');
-              }}
             />
             <div className="hidden sm:block border-l border-[#E5E5E3] pl-3">
               <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B] block">

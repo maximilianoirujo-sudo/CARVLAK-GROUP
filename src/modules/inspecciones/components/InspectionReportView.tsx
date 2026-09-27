@@ -228,9 +228,9 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <img
-                src="/logo-carvlak-black.png"
-                alt="CARVLAK Group"
-                className="h-8 w-auto object-contain"
+                src="/carvlak-logo-negro.png"
+                alt="CARVLAK"
+                className="h-7 sm:h-8 w-auto object-contain print:h-8"
               />
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3] print:bg-[#F5F5F4] print:text-black">
                 {inspection.type === 'precompra' ? 'Peritaje precompra' : 'Inspección interna automotora'}

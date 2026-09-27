@@ -163,12 +163,9 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="/logo-carvlak-black.svg"
-              alt="CARVLAK Group"
+              src="/carvlak-logo-negro.png"
+              alt="CARVLAK"
               className="h-7 w-auto object-contain"
-              onError={(e) => {
-                (e.target as HTMLElement).setAttribute('src', '/logo-carvlak-black.png');
-              }}
             />
             <div className="border-l border-[#E5E5E3] pl-3">
               <div className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">

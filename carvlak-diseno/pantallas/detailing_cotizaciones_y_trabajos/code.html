@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400..700;1,400..700&amp;family=Barlow+Condensed:ital,wght@0,300..700;1,300..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "text-secondary": "#6B6B6B",
+        "tertiary-fixed-dim": "#b4c5ff",
+        "on-error-container": "#93000a",
+        "inverse-surface": "#2f3130",
+        "on-secondary-container": "#636262",
+        "on-tertiary-fixed-variant": "#224290",
+        "canvas-bg": "#F5F5F4",
+        "surface-container-highest": "#e2e2e2",
+        "surface-card": "#FFFFFF",
+        "secondary-fixed-dim": "#c8c6c5",
+        "on-surface": "#1a1c1c",
+        "tertiary-fixed": "#dbe1ff",
+        "surface-tint": "#c00010",
+        "on-tertiary-fixed": "#00174b",
+        "brand-black": "#000000",
+        "on-surface-variant": "#5d3f3c",
+        "surface-container-low": "#f4f4f3",
+        "on-secondary-fixed": "#1c1b1b",
+        "tertiary": "#324f9e",
+        "primary-fixed-dim": "#ffb4ab",
+        "primary-container": "#d7141a",
+        "tertiary-container": "#4c68b8",
+        "inverse-primary": "#ffb4ab",
+        "status-warning-text": "#945B0E",
+        "on-secondary-fixed-variant": "#474746",
+        "surface-container-lowest": "#ffffff",
+        "on-primary-fixed-variant": "#930009",
+        "surface": "#f9f9f8",
+        "on-error": "#ffffff",
+        "primary": "#ac000d",
+        "outline-variant": "#e7bdb7",
+        "outline": "#926f6a",
+        "on-background": "#1a1c1c",
+        "status-danger-bg": "#FDF2F2",
+        "text-muted": "#9A9A9A",
+        "on-primary-fixed": "#410002",
+        "background": "#f9f9f8",
+        "error": "#ba1a1a",
+        "on-tertiary-container": "#ebedff",
+        "on-tertiary": "#ffffff",
+        "secondary": "#5f5e5e",
+        "secondary-fixed": "#e5e2e1",
+        "error-container": "#ffdad6",
+        "on-primary-container": "#ffeae7",
+        "border-strong": "#D0D0CD",
+        "surface-container": "#eeeeed",
+        "border-subtle": "#E5E5E3",
+        "on-primary": "#ffffff",
+        "primary-fixed": "#ffdad5",
+        "status-danger-text": "#B80E14",
+        "accent-red-hover": "#B80E14",
+        "accent-red": "#D7141A",
+        "status-success-text": "#1E6B43",
+        "surface-variant": "#e2e2e2",
+        "surface-dim": "#dadad9",
+        "inverse-on-surface": "#f1f1f0",
+        "on-secondary": "#ffffff",
+        "text-primary": "#161616",
+        "surface-container-high": "#e8e8e7",
+        "status-warning-bg": "#FEF7EC",
+        "secondary-container": "#e2dfde",
+        "surface-bright": "#f9f9f8",
+        "status-success-bg": "#EEF7F2",
+        "plate-blue": "#002B7A"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "margin": "1rem",
+        "space-xs": "0.25rem",
+        "space-lg": "1.5rem",
+        "gutter-desktop": "1.5rem",
+        "space-xl": "2rem",
+        "space-md": "1rem",
+        "margin-desktop": "2rem",
+        "space-sm": "0.5rem",
+        "gutter": "1rem"
+      },
+      "fontFamily": {
+        "label-sm": ["Barlow Condensed"],
+        "body-sm": ["Barlow Condensed"],
+        "body-lg": ["Barlow Condensed"],
+        "headline-sm": ["Archivo Narrow"],
+        "display": ["Archivo Narrow"],
+        "label-lg": ["Barlow Condensed"],
+        "headline-lg": ["Archivo Narrow"],
+        "body-md": ["Barlow Condensed"],
+        "headline-md": ["Archivo Narrow"],
+        "label-md": ["Barlow Condensed"],
+        "title-md": ["Barlow Condensed"],
+        "plate-text": ["Archivo Narrow"],
+        "headline-lg-mobile": ["Archivo Narrow"],
+        "metric-currency": ["Archivo Narrow"]
+      },
+      "fontSize": {
+        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+        "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "400" }],
+        "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+        "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "0", "fontWeight": "600" }],
+        "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+        "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.025em", "fontWeight": "600" }],
+        "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.015em", "fontWeight": "400" }],
+        "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "600" }],
+        "title-md": ["18px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+        "plate-text": ["22px", { "lineHeight": "24px", "letterSpacing": "0.14em", "fontWeight": "700" }],
+        "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+        "metric-currency": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "800" }]
+      }
+    }
+  }
+}</script><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style></head><body class="bg-canvas-bg font-body-md text-body-md text-text-primary flex flex-col min-h-screen antialiased"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-card/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm shrink-0"><img alt="CARVLAK Group Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WU2LZsNlKcQHeN2pTf4kv8FAueNeowx3Wh_zRZ6y5UzZBWjkurD-Dd7cyD-Lh4imF67rGg9N842uHNxmQ-knK9hXwD_uo8EF4p5U0QGhQDvZYYsxHsYgkl57Qe-_0z6YIQNemL4mmP6fCuQxeFf3ffZj8DvW3dcmeWFdpWOfB4qkHB0sVw3qVgwhmHFoVgYJXVJhoEgtwL8Fz5s5nhIHD60FzSIf18YLKVo6EvRl_Ff6TP7lKgY9UiVaws"/><span class="font-headline-sm text-headline-sm text-text-primary hidden sm:inline tracking-tight">CARVLAK</span><span class="sr-only">Detailing</span></div><div class="flex-1 max-w-xs mx-space-xs"><div class="relative flex items-center w-full"><span class="material-symbols-outlined absolute left-2.5 text-text-secondary text-[18px] pointer-events-none">search</span><input class="w-full h-10 pl-8 pr-3 bg-surface-container-low rounded-lg font-body-sm text-body-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:bg-surface-card transition-all uppercase placeholder:normal-case" placeholder="Buscar matrícula ej. SBX 1234" type="search"/></div></div><div class="flex items-center gap-space-xs shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden xs:flex flex-col text-left"><span class="font-label-sm text-label-sm text-text-primary leading-none">Martín F.</span><span class="font-label-sm text-[10px] text-text-secondary uppercase leading-none mt-0.5">Admin</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-canvas-bg"><div class="flex flex-col w-full">
+<!-- Pestañas horizontales con scroll táctil suave -->
+<div class="w-full bg-surface-card shadow-sm sticky top-16 z-30">
+<div class="flex items-center gap-space-md px-margin overflow-x-auto no-scrollbar">
+<button class="relative py-3.5 whitespace-nowrap font-label-lg text-label-lg text-text-primary font-bold flex items-center gap-1.5 focus:outline-none shrink-0" type="button">
+<span>Cotizaciones y trabajos</span>
+<span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[10px]">6</span>
+<span class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-red rounded-full"></span>
+</button>
+<button class="py-3.5 whitespace-nowrap font-label-lg text-label-lg text-text-secondary hover:text-text-primary transition-colors focus:outline-none shrink-0" type="button">
+        Insumos y stock
+      </button>
+<button class="py-3.5 whitespace-nowrap font-label-lg text-label-lg text-text-secondary hover:text-text-primary transition-colors focus:outline-none shrink-0" type="button">
+        Gastos
+      </button>
+<button class="py-3.5 whitespace-nowrap font-label-lg text-label-lg text-text-secondary hover:text-text-primary transition-colors focus:outline-none shrink-0" type="button">
+        Comisiones
+      </button>
+<button class="py-3.5 whitespace-nowrap font-label-lg text-label-lg text-text-secondary hover:text-text-primary transition-colors focus:outline-none shrink-0" type="button">
+        Métricas
+      </button>
+</div>
+</div>
+<div class="p-margin space-y-4">
+<!-- Botón de acción principal único de la vista -->
+<button class="w-full h-11 bg-accent-red hover:bg-accent-red-hover active:scale-[0.99] text-on-primary rounded-lg font-label-lg text-label-lg shadow-sm flex items-center justify-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Nueva orden de detailing</span>
+</button>
+<!-- Resumen rápido de la jornada -->
+<div class="bg-surface-card rounded-xl shadow-sm p-3.5">
+<div class="flex items-center justify-between mb-2.5">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Flujo de bahías hoy</span>
+<span class="font-label-sm text-[11px] text-text-secondary font-medium">Montevideo • Taller Central</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-surface-container-low p-2.5 rounded-lg flex flex-col">
+<div class="flex items-center gap-1.5 text-text-secondary mb-1">
+<span class="material-symbols-outlined text-[16px] text-accent-red">autorenew</span>
+<span class="font-label-sm text-[11px] uppercase">En proceso</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-text-primary leading-tight">3</span>
+<span class="font-body-sm text-[11px] text-text-secondary">bahías activas</span>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-lg flex flex-col">
+<div class="flex items-center gap-1.5 text-text-secondary mb-1">
+<span class="material-symbols-outlined text-[16px] text-status-success-text">check_circle</span>
+<span class="font-label-sm text-[11px] uppercase">Para entrega</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-text-primary leading-tight">2</span>
+<span class="font-body-sm text-[11px] text-text-secondary">listos p/ retirar</span>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-lg flex flex-col">
+<div class="flex items-center gap-1.5 text-text-secondary mb-1">
+<span class="material-symbols-outlined text-[16px] text-status-warning-text">login</span>
+<span class="font-label-sm text-[11px] uppercase">Por entrar</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-text-primary leading-tight">1</span>
+<span class="font-body-sm text-[11px] text-text-secondary">turno 15:30 hs</span>
+</div>
+</div>
+</div>
+<!-- Lista de tarjetas de trabajos -->
+<div class="space-y-3.5">
+<!-- Tarjeta 1: En Proceso -->
+<article class="bg-surface-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="p-3.5 space-y-3">
+<!-- Cabezal de la tarjeta: Auto, Chapa y Estado -->
+<div class="flex items-start justify-between gap-3">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-2 mb-0.5">
+<!-- Chapa Mercosur Uruguay -->
+<div class="shrink-0 w-24 bg-surface-card rounded-md shadow-sm overflow-hidden text-center select-none">
+<div class="h-3.5 bg-plate-blue px-1.5 flex items-center justify-between">
+<span class="text-[6px] text-on-primary font-bold tracking-tighter uppercase">Mercosur</span>
+<span class="text-[7px] text-on-primary font-bold tracking-widest uppercase">Uruguay</span>
+<span class="material-symbols-outlined text-on-primary text-[7px]">shield</span>
+</div>
+<div class="py-0.5 px-1 bg-surface-card">
+<span class="font-plate-text text-[15px] leading-none tracking-widest text-text-primary font-bold">SBC 8901</span>
+</div>
+</div>
+<div class="min-w-0">
+<h3 class="font-title-md text-title-md text-text-primary font-bold truncate">Mercedes-Benz C200</h3>
+<p class="font-body-sm text-body-sm text-text-secondary truncate">AMG Line (2021)</p>
+</div>
+</div>
+</div>
+<!-- Chip gris neutral "En proceso" -->
+<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-text-primary">
+<span class="material-symbols-outlined text-[14px] text-text-secondary animate-spin">sync</span>
+<span class="font-label-sm text-label-sm">En proceso (60%)</span>
+</div>
+</div>
+<!-- Imagen del progreso en bahía -->
+<div class="relative w-full h-32 rounded-lg overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A dark gray Mercedes-Benz C200 AMG sedan under bright professional LED hex detailing lights inside an automotive workshop in Montevideo, technician gently polishing the clear coat, pristine reflective environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnCZ_yZ5m_SsD9i3MhCfLp-nsjIO77nPUyma4xjqmGwV-Fk7vqeyk2x1zmIoJUKcskIawbT4CxbljuphdQpKuxXwkHAROyxKnk5RF8tSg3qprT_krD76R1mgFFff7ztktYeELtxt-TI_HC6gAWF-xDqoiLJD89MuMlAeg2XTxIDkYVcKNaR_K75rtYQl0F5VEEUGoin5Tn7O0Ps5pVzK31nElYl_IjII4ti3VP9OGQHUJLHzdKK-5kOA"/>
+<div class="absolute bottom-2 left-2 bg-brand-black/75 backdrop-blur-md px-2 py-0.5 rounded text-on-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">person</span>
+<span class="font-label-sm text-[11px]">Operario: Nahuel P.</span>
+</div>
+</div>
+<!-- Servicios contratados -->
+<div class="bg-surface-container-low p-2.5 rounded-lg space-y-1">
+<span class="font-label-sm text-[10px] text-text-secondary uppercase tracking-wider block">Servicios contratados</span>
+<p class="font-body-sm text-body-sm text-text-primary leading-snug">
+              Pulido 3 pasos + Sellado cerámico Gyeon Mohs 3 años + Limpieza detallada de cuero
+            </p>
+</div>
+<!-- Cliente y Total -->
+<div class="flex items-center justify-between pt-1">
+<div>
+<span class="font-label-sm text-[11px] text-text-secondary block">Cliente</span>
+<span class="font-title-md text-body-lg text-text-primary font-semibold">Gonzalo Varela</span>
+<span class="font-body-sm text-[12px] text-text-secondary block">099 234 567</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-[11px] text-text-secondary block">Total contratado</span>
+<span class="font-metric-currency text-headline-sm text-text-primary font-extrabold">$ 18.500 <span class="text-xs font-semibold text-text-secondary">UYU</span></span>
+</div>
+</div>
+<!-- Barra sutil de progreso -->
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-text-primary h-full rounded-full" style="width: 60%"></div>
+</div>
+<!-- Acciones de tarjeta -->
+<div class="grid grid-cols-3 gap-2 pt-1">
+<a class="h-9 px-2 bg-status-success-bg text-status-success-text hover:bg-status-success-bg/80 active:scale-95 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all text-center" href="https://wa.me/59899234567?text=Hola%20Gonzalo,%20te%20escribimos%20del%20taller%20CARVLAK%20sobre%20tu%20Mercedes-Benz." rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[16px]">chat</span>
+<span>WhatsApp</span>
+</a>
+<button class="h-9 px-2 bg-surface-container hover:bg-surface-container-high text-text-primary active:scale-95 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span>Estado</span>
+</button>
+<button class="h-9 px-2 bg-surface-container hover:bg-surface-container-high text-text-primary active:scale-95 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+<span>Editar</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Tarjeta 2: Listo para entrega -->
+<article class="bg-surface-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="p-3.5 space-y-3">
+<div class="flex items-start justify-between gap-3">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-2 mb-0.5">
+<!-- Chapa Mercosur Uruguay -->
+<div class="shrink-0 w-24 bg-surface-card rounded-md shadow-sm overflow-hidden text-center select-none">
+<div class="h-3.5 bg-plate-blue px-1.5 flex items-center justify-between">
+<span class="text-[6px] text-on-primary font-bold tracking-tighter uppercase">Mercosur</span>
+<span class="text-[7px] text-on-primary font-bold tracking-widest uppercase">Uruguay</span>
+<span class="material-symbols-outlined text-on-primary text-[7px]">shield</span>
+</div>
+<div class="py-0.5 px-1 bg-surface-card">
+<span class="font-plate-text text-[15px] leading-none tracking-widest text-text-primary font-bold">SBH 1123</span>
+</div>
+</div>
+<div class="min-w-0">
+<h3 class="font-title-md text-title-md text-text-primary font-bold truncate">Jeep Compass</h3>
+<p class="font-body-sm text-body-sm text-text-secondary truncate">Limited Edition</p>
+</div>
+</div>
+</div>
+<!-- Chip gris neutral con tilde -->
+<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-success-bg text-status-success-text">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span class="font-label-sm text-label-sm">Listo entrega</span>
+</div>
+</div>
+<!-- Servicios contratados -->
+<div class="bg-surface-container-low p-2.5 rounded-lg space-y-1">
+<span class="font-label-sm text-[10px] text-text-secondary uppercase tracking-wider block">Servicios concluidos</span>
+<p class="font-body-sm text-body-sm text-text-primary leading-snug">
+              Limpieza profunda de tapizados + Desinfección con ozono
+            </p>
+<div class="pt-1 flex items-center gap-1 text-[11px] font-label-sm text-status-warning-text">
+<span class="material-symbols-outlined text-[13px]">pending</span>
+<span>Pendiente cobro en mostrador</span>
+</div>
+</div>
+<!-- Cliente y Total -->
+<div class="flex items-center justify-between pt-1">
+<div>
+<span class="font-label-sm text-[11px] text-text-secondary block">Cliente</span>
+<span class="font-title-md text-body-lg text-text-primary font-semibold">Lucía Fernández</span>
+<span class="font-body-sm text-[12px] text-text-secondary block">098 765 432</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-[11px] text-text-secondary block">Monto a cobrar</span>
+<span class="font-metric-currency text-headline-sm text-text-primary font-extrabold">$ 6.200 <span class="text-xs font-semibold text-text-secondary">UYU</span></span>
+</div>
+</div>
+<!-- Botón de WhatsApp con mensaje prearmado rioplatense -->
+<div class="pt-1">
+<a class="w-full h-10 px-3 bg-status-success-bg hover:bg-status-success-bg/80 active:scale-[0.99] text-status-success-text rounded-lg font-label-md text-label-md flex items-center justify-between transition-all" href="https://wa.me/59898765432?text=Hola%20Luc%C3%ADa,%20tu%20Jeep%20Compass%20ya%20est%C3%A1%20pronto%20en%20el%20taller%20CARVLAK%20para%20retirar!%20Te%20esperamos%20cuando%20quieras." rel="noopener noreferrer" target="_blank">
+<div class="flex items-center gap-2 truncate">
+<span class="material-symbols-outlined text-[18px] shrink-0">chat</span>
+<span class="truncate">Avisar: "Hola Lucía, tu Jeep Compass ya está pronto..."</span>
+</div>
+<span class="material-symbols-outlined text-[16px] shrink-0">send</span>
+</a>
+</div>
+</div>
+</article>
+<!-- Tarjeta 3: Por cotizar -->
+<article class="bg-surface-card rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="p-3.5 space-y-3">
+<div class="flex items-start justify-between gap-3">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-text-secondary shrink-0">
+<span class="material-symbols-outlined text-[18px]">request_quote</span>
+</div>
+<div class="min-w-0">
+<h3 class="font-title-md text-title-md text-text-primary font-bold truncate">Peugeot 208</h3>
+<p class="font-body-sm text-body-sm text-text-secondary truncate">Cliente: Ignacio Rossi</p>
+</div>
+</div>
+</div>
+<!-- Chip estado -->
+<div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-warning-bg text-status-warning-text">
+<span class="material-symbols-outlined text-[14px]">history_edu</span>
+<span class="font-label-sm text-label-sm">Por cotizar</span>
+</div>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-lg space-y-1">
+<span class="font-label-sm text-[10px] text-text-secondary uppercase tracking-wider block">Trabajo solicitado</span>
+<p class="font-body-sm text-body-sm text-text-primary leading-snug">
+              Presupuesto pintura paragolpes delantero y tratamiento acrílico completo.
+            </p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div>
+<span class="font-label-sm text-[11px] text-text-secondary block">Teléfono de contacto</span>
+<span class="font-body-sm text-body-sm text-text-primary font-medium">091 889 002</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-[11px] text-text-secondary block">Total estimativo</span>
+<span class="font-metric-currency text-headline-sm text-text-primary font-extrabold">$ 9.800 <span class="text-xs font-semibold text-text-secondary">UYU</span></span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="h-9 px-3 bg-surface-container hover:bg-surface-container-high text-text-primary active:scale-95 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span>Ver ficha</span>
+</button>
+<button class="h-9 px-3 bg-brand-black text-on-primary hover:bg-brand-black/90 active:scale-95 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">send</span>
+<span>Enviar oferta</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+<!-- Micro-interacción: Acceso a inspección previa vinculada -->
+<div class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between text-text-secondary">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="font-body-sm text-body-sm">¿Tenés fotos de recepción pendientes?</span>
+</div>
+<button class="font-label-md text-label-md text-accent-red font-semibold hover:underline" type="button">
+        Subir fotos
+      </button>
+</div>
+</div>
+</div></main><aside class="fixed right-margin bottom-20 z-40 pb-safe"><button aria-label="Nueva acción rápida" class="w-14 h-14 rounded-full bg-accent-red hover:bg-accent-red-hover text-on-primary shadow-[0_4px_16px_rgba(215,20,26,0.35)] flex items-center justify-center transition-transform active:scale-95 focus:outline-none" type="button"><span class="material-symbols-outlined text-[28px]">add</span></button></aside><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-card/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-accent-red font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="inicio" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm mt-0.5">Inicio</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="stock" href="#"><span class="material-symbols-outlined text-[22px]">directions_car</span><span class="font-label-sm text-label-sm mt-0.5">Stock</span></a><a aria-current="page" class="flex flex-col items-center justify-center min-w-[56px] h-12 transition-colors text-accent-red font-semibold" data-path="detailing" href="#"><span class="material-symbols-outlined text-[22px]">cloud_download</span><span class="font-label-sm text-label-sm mt-0.5">Detailing</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="inspeccion" href="#"><span class="material-symbols-outlined text-[22px]">fact_check</span><span class="font-label-sm text-label-sm mt-0.5">Inspección</span></a><a class="flex flex-col items-center justify-center min-w-[56px] h-12 text-text-secondary hover:text-text-primary transition-colors" data-path="agenda" href="#"><span class="material-symbols-outlined text-[22px]">calendar_today</span><span class="font-label-sm text-label-sm mt-0.5">Agenda</span></a></div></nav></body></html>
