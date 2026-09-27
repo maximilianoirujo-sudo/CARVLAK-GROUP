@@ -4,6 +4,7 @@ import { MessageSquare, Send, Copy, Check } from 'lucide-react';
 import { Appointment, Client, Vehicle } from '../../types';
 import { generateAppointmentWhatsAppMessage, sanitizePhoneForWhatsApp, normalizePlate } from '../../lib/formatters';
 import { useToast } from '../../context/ToastContext';
+import { Button } from '../ui/Button';
 
 interface WhatsAppReminderModalProps {
   isOpen: boolean;
@@ -60,39 +61,41 @@ export const WhatsAppReminderModal: React.FC<WhatsAppReminderModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Recordatorio de Turno por WhatsApp"
+      title="Recordatorio de turno por WhatsApp"
       subtitle={`Enviar a ${client?.full_name || 'Cliente'} (${client?.phone || 'Sin tel.'})`}
       maxWidth="max-w-md"
     >
       <div className="space-y-3">
-        <label className="block text-[11px] font-semibold text-[#8A8A8A] uppercase tracking-wider">
+        <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider">
           Mensaje pre-armado
         </label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={9}
-          className="w-full bg-black border border-[#2A2A2A] rounded-xl p-3 text-xs sm:text-sm text-white leading-relaxed focus:outline-none focus:border-[#D7141A] focus:ring-1 focus:ring-[#D7141A]"
+          className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs sm:text-sm text-[#161616] leading-relaxed focus:bg-white focus:border-[#161616] outline-none"
         />
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#2A2A2A]">
-          <button
+        <div className="flex items-center justify-between pt-2 border-t border-[#E5E5E3]">
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={handleCopy}
-            className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            {copied ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4 text-white" />}
+            {copied ? <Check className="w-4 h-4 text-[#1E6B43]" /> : <Copy className="w-4 h-4 text-[#6B6B6B]" />}
             <span>{copied ? 'Copiado' : 'Copiar texto'}</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="whatsapp"
+            size="sm"
             onClick={handleSend}
-            className="px-4 py-2.5 rounded-xl bg-transparent hover:bg-white/10 text-white border border-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
           >
-            <Send className="w-4 h-4 text-white" />
+            <Send className="w-4 h-4" />
             <span>Abrir en WhatsApp</span>
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
