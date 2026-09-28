@@ -561,17 +561,26 @@ function renderTemplateContent(
         height
       );
     } else if (templateId === 'auto-vendido') {
-      drawHighImpactStamp(
-        ctx,
-        540,
-        isStory ? 700 : 480,
-        customStampText || 'VENDIDO',
-        customStampColor || '#D7141A',
-        customStampRotation ?? -12,
-        fontFamily,
-        width,
-        height
-      );
+      // Variante A: El sello VENDIDO horizontal con subrayado rojo se dibuja en la parte inferior sobre la foto
+    } else if (templateId === 'auto-destacado-semana') {
+      // VARIANTE A (Oficial): Etiqueta superior cápsula "DESTACADO DE LA SEMANA" en rojo
+      const tagY = isStory ? 310 : 140;
+      const tagW = isStory ? 340 : 280;
+      const tagH = isStory ? 48 : 40;
+
+      ctx.save();
+      roundRect(ctx, pad, tagY, tagW, tagH, tagH / 2);
+      ctx.fillStyle = '#D7141A';
+      ctx.fill();
+
+      ctx.font = `900 ${isStory ? 20 : 16}px "Archivo Narrow", sans-serif`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.letterSpacing = '2px';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const labelText = customStampText || 'DESTACADO DE LA SEMANA';
+      ctx.fillText(labelText, pad + tagW / 2, tagY + tagH / 2);
+      ctx.restore();
     } else if (templateId === 'auto-reservado') {
       drawHighImpactStamp(
         ctx,
@@ -785,8 +794,70 @@ function renderTemplateContent(
     ctx.fillText('Deslizá para ver más fotos ➡️', pad, swipeY);
     ctx.restore();
 
+  } else if (templateId === 'auto-vendido') {
+    // VARIANTE A (Oficial): VENDIDO grande en blanco con subrayado rojo, modelo y agradecimiento
+    const textY = isStory ? 1510 : 980;
+
+    ctx.save();
+    // 1. "VENDIDO" grande
+    ctx.font = `900 ${isStory ? 110 : 88}px "Archivo Narrow", sans-serif`;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.letterSpacing = '5px';
+    ctx.shadowColor = 'rgba(0,0,0,0.95)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 6;
+    ctx.fillText(customStampText || 'VENDIDO', pad, textY);
+
+    // 2. Subrayado deportivo rojo #D7141A
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#D7141A';
+    const underlineW = isStory ? 360 : 280;
+    const underlineH = isStory ? 10 : 8;
+    ctx.fillRect(pad, textY + (isStory ? 16 : 12), underlineW, underlineH);
+    ctx.restore();
+
+    // 3. Modelo del vehículo
+    const modelY = textY + (isStory ? 88 : 68);
+    ctx.save();
+    ctx.font = `700 ${isStory ? 50 : 42}px "Archivo Narrow", sans-serif`;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.letterSpacing = '1px';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 10;
+    ctx.fillText(headline || 'Vehículo', pad, modelY);
+
+    // 4. Frase de agradecimiento
+    ctx.font = `500 ${isStory ? 28 : 22}px "Barlow Condensed", sans-serif`;
+    ctx.fillStyle = '#D1D5DB';
+    ctx.fillText(subtitle || '¡Gracias por confiar en nosotros!', pad, modelY + (isStory ? 50 : 38));
+    ctx.restore();
+
+  } else if (templateId === 'auto-destacado-semana') {
+    // VARIANTE A (Oficial): Modelo blanco, precio gigante en rojo y CTA de WhatsApp
+    const contentY = baseY - (isStory ? 100 : 70);
+
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.font = `700 ${isStory ? 54 : 44}px "Archivo Narrow", sans-serif`;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 12;
+    ctx.fillText(headline || 'Vehículo Destacado', pad, contentY);
+
+    if (price && showPrice) {
+      ctx.font = `900 ${isStory ? 78 : 64}px "Archivo Narrow", sans-serif`;
+      ctx.fillStyle = '#D7141A';
+      ctx.fillText(price, pad, contentY + (isStory ? 85 : 68));
+    }
+
+    const ctaY = contentY + (price && showPrice ? (isStory ? 140 : 112) : (isStory ? 55 : 44));
+    ctx.font = `600 ${isStory ? 28 : 22}px "Barlow Condensed", sans-serif`;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('📲 Escribinos por WhatsApp al 099 267 964', pad, ctaY);
+    ctx.restore();
+
   } else {
-    // Plantillas estándar (auto-vendido, auto-nuevo-ingreso, auto-reservado, promo-detailing, etc.)
+    // Plantillas estándar (auto-nuevo-ingreso, auto-reservado, promo-detailing, etc.)
     const titleY = baseY - (price && showPrice ? 110 : 40);
     drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
 
@@ -1230,6 +1301,17 @@ export function drawCanvasTextElement(
     ctx.stroke();
   }
 
+  // Subrayado deportivo rojo si es sello VENDIDO horizontal (Variante A Oficial)
+  if (element.id === 'sello' && element.text.toUpperCase() === 'VENDIDO' && Math.abs(element.rotation || 0) < 3) {
+    const underlineW = Math.max(260, Math.min(360, textWidth * 0.95));
+    const underlineH = canvasHeight > 1500 ? 10 : 8;
+    const barX = element.align === 'left' ? 0 : element.align === 'center' ? -underlineW / 2 : -underlineW;
+    ctx.save();
+    ctx.fillStyle = '#D7141A';
+    ctx.fillRect(barX, textHeight / 2 + 10, underlineW, underlineH);
+    ctx.restore();
+  }
+
   ctx.restore();
 }
 
@@ -1327,6 +1409,7 @@ export function getDefaultTextElements(
   const isStory = format === 'story';
   const showPriceDefault = [
     'auto-descuento',
+    'auto-destacado-semana',
     'auto-nuevo-ingreso',
     'auto-ficha-carrusel',
     'auto-electricos-0km',
@@ -1336,6 +1419,7 @@ export function getDefaultTextElements(
 
   const defaultStampMap: Record<string, string> = {
     'auto-vendido': 'VENDIDO',
+    'auto-destacado-semana': 'DESTACADO DE LA SEMANA',
     'auto-reservado': 'RESERVADO',
     'auto-descuento': 'OPORTUNIDAD',
     'auto-nuevo-ingreso': 'NUEVO INGRESO',
@@ -1352,11 +1436,23 @@ export function getDefaultTextElements(
     ? '#EAB308'
     : templateId === 'auto-electricos-0km'
     ? '#22C55E'
+    : templateId === 'auto-vendido'
+    ? '#FFFFFF' // Variante A: Blanco sobre foto con subrayado deportivo rojo
     : '#D7141A';
 
-  const stampRotation = templateId === 'auto-descuento' ? 14 : templateId === 'auto-reservado' ? -8 : -12;
-  const stampX = templateId === 'auto-descuento' ? 760 : 540;
-  const stampY = isStory ? (templateId === 'auto-descuento' ? 450 : 700) : (templateId === 'auto-descuento' ? 320 : 480);
+  const stampRotation = (templateId === 'auto-vendido' || templateId === 'auto-destacado-semana')
+    ? 0 // Variante A: Sello VENDIDO y cápsula DESTACADO a 0°
+    : templateId === 'auto-descuento' ? 14 : templateId === 'auto-reservado' ? -8 : -12;
+
+  const stampX = templateId === 'auto-vendido'
+    ? 60
+    : templateId === 'auto-destacado-semana'
+    ? (isStory ? 230 : 200)
+    : templateId === 'auto-descuento' ? 760 : 540;
+
+  const stampY = isStory
+    ? (templateId === 'auto-vendido' ? 1510 : templateId === 'auto-destacado-semana' ? 310 : templateId === 'auto-descuento' ? 450 : 700)
+    : (templateId === 'auto-vendido' ? 980 : templateId === 'auto-destacado-semana' ? 140 : templateId === 'auto-descuento' ? 320 : 480);
 
   const elements: CanvasTextElement[] = [
     {
@@ -1365,29 +1461,29 @@ export function getDefaultTextElements(
       text: data.stampText || defaultStampMap[templateId] || 'DESTACADO',
       visible: true,
       color: stampColor,
-      fontSize: isStory ? 64 : 52,
-      fontWeight: 'bold',
+      fontSize: templateId === 'auto-vendido' ? (isStory ? 105 : 85) : templateId === 'auto-destacado-semana' ? (isStory ? 20 : 16) : (isStory ? 64 : 52),
+      fontWeight: 'black',
       fontFamily: 'Archivo Narrow',
       rotation: stampRotation,
       x: stampX,
       y: stampY,
-      align: 'center',
-      bgType: 'box',
-      bgColor: '#000000',
-      bgOpacity: 0.88
+      align: templateId === 'auto-vendido' ? 'left' : 'center',
+      bgType: templateId === 'auto-vendido' ? 'none' : 'box',
+      bgColor: templateId === 'auto-destacado-semana' ? '#D7141A' : '#000000',
+      bgOpacity: templateId === 'auto-destacado-semana' ? 1 : 0.88
     },
     {
       id: 'modelo',
       label: 'Modelo del vehículo',
       text: data.carTitle || 'Vehículo Seleccionado',
-      visible: true, // Único elemento visible por defecto
+      visible: true,
       color: '#FFFFFF',
-      fontSize: isStory ? 52 : 44,
+      fontSize: isStory ? (templateId === 'auto-destacado-semana' ? 54 : 50) : (templateId === 'auto-destacado-semana' ? 44 : 42),
       fontWeight: 'bold',
       fontFamily: 'Archivo Narrow',
       rotation: 0,
       x: 60,
-      y: isStory ? 1600 : 1080,
+      y: isStory ? (templateId === 'auto-vendido' ? 1605 : templateId === 'auto-destacado-semana' ? 1540 : 1600) : (templateId === 'auto-vendido' ? 1055 : templateId === 'auto-destacado-semana' ? 1060 : 1080),
       align: 'left',
       bgType: 'none',
       bgColor: '#000000',
@@ -1395,16 +1491,16 @@ export function getDefaultTextElements(
     },
     {
       id: 'subtitulo',
-      label: 'Subtítulo / Versión / Año',
-      text: data.subtitle || '',
-      visible: false, // Oculto por defecto
-      color: '#8A8A8A',
-      fontSize: isStory ? 26 : 22,
+      label: 'Subtítulo / Agradecimiento',
+      text: data.subtitle || (templateId === 'auto-vendido' ? '¡Gracias por confiar en nosotros!' : ''),
+      visible: templateId === 'auto-vendido', // Variante A Vendido muestra el agradecimiento visible
+      color: '#D1D5DB',
+      fontSize: isStory ? 28 : 22,
       fontWeight: 'semibold',
-      fontFamily: 'Archivo Narrow',
+      fontFamily: 'Barlow Condensed',
       rotation: 0,
       x: 60,
-      y: isStory ? 1655 : 1130,
+      y: isStory ? (templateId === 'auto-vendido' ? 1660 : 1655) : (templateId === 'auto-vendido' ? 1100 : 1130),
       align: 'left',
       bgType: 'none',
       bgColor: '#000000',
@@ -1433,12 +1529,12 @@ export function getDefaultTextElements(
       text: data.price || '',
       visible: showPriceDefault,
       color: '#D7141A',
-      fontSize: isStory ? 64 : 52,
+      fontSize: isStory ? (templateId === 'auto-destacado-semana' ? 78 : 64) : (templateId === 'auto-destacado-semana' ? 64 : 52),
       fontWeight: 'black',
       fontFamily: 'Archivo Narrow',
       rotation: 0,
       x: 60,
-      y: isStory ? 1750 : 1220,
+      y: isStory ? (templateId === 'auto-destacado-semana' ? 1630 : 1750) : (templateId === 'auto-destacado-semana' ? 1130 : 1220),
       align: 'left',
       bgType: 'none',
       bgColor: '#000000',
@@ -1524,17 +1620,17 @@ export function getDefaultTextElements(
     {
       id: 'cta',
       label: 'Llamado a la acción (CTA)',
-      text: '📲 Consultá por WhatsApp',
-      visible: false,
+      text: templateId === 'auto-destacado-semana' ? '📲 Escribinos por WhatsApp al 099 267 964' : '📲 Consultá por WhatsApp',
+      visible: templateId === 'auto-destacado-semana', // Variante A Destacado muestra el CTA de WhatsApp
       color: '#FFFFFF',
-      fontSize: 22,
-      fontWeight: 'bold',
-      fontFamily: 'Archivo Narrow',
+      fontSize: isStory ? 28 : 22,
+      fontWeight: 'semibold',
+      fontFamily: 'Barlow Condensed',
       rotation: 0,
-      x: 540,
-      y: isStory ? 1835 : 1285,
-      align: 'center',
-      bgType: 'box',
+      x: templateId === 'auto-destacado-semana' ? 60 : 540,
+      y: isStory ? (templateId === 'auto-destacado-semana' ? 1685 : 1835) : (templateId === 'auto-destacado-semana' ? 1175 : 1285),
+      align: templateId === 'auto-destacado-semana' ? 'left' : 'center',
+      bgType: templateId === 'auto-destacado-semana' ? 'none' : 'box',
       bgColor: '#D7141A',
       bgOpacity: 0.95
     },

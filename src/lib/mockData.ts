@@ -1333,14 +1333,25 @@ export const INITIAL_SOCIAL_MEDIA_CONFIG: SocialMediaConfig = {
   templates: {
     'auto-vendido': {
       id: 'auto-vendido',
-      title: 'Auto Vendido',
+      title: 'Auto Vendido (Variante A)',
       category: 'automotora',
-      description: 'Foto del vehículo con sello VENDIDO en rojo y mención optativa al cliente',
+      description: 'Variante A: Sello VENDIDO grande en blanco con subrayado rojo deportivo, modelo y agradecimiento',
       stamp_text: 'VENDIDO',
-      headline_default: '¡VENDIDO!',
-      subtitle_default: 'Felicitaciones a su nuevo dueño y gracias por elegirnos',
+      headline_default: 'VENDIDO',
+      subtitle_default: '¡Gracias por confiar en nosotros!',
       logo_position: 'top-left',
       default_caption_template: '¡OTRO QUE SE VA! 🎉\n\nEste {modelo} ({anio}) ya tiene nuevo dueño. ¡Muchísimas gracias {cliente} por la confianza en CARVLAK Group!\n\n¿Buscás una unidad similar o querés vender tu auto sin complicaciones? Escribinos por WhatsApp al 099 267 964 o dejanos un mensaje directo.\n\n#carvlak #vendido #autosuruguay #montevideo #canelones #usadosgarantizados'
+    },
+    'auto-destacado-semana': {
+      id: 'auto-destacado-semana',
+      title: 'Destacado de la Semana (Variante A)',
+      category: 'automotora',
+      description: 'Variante A: Etiqueta cápsula roja superior, modelo grande, precio dominante en rojo y WhatsApp',
+      stamp_text: 'DESTACADO DE LA SEMANA',
+      headline_default: 'DESTACADO DE LA SEMANA',
+      subtitle_default: 'Disponible para entrega inmediata en nuestro showroom',
+      logo_position: 'top-left',
+      default_caption_template: '⭐ DESTACADO DE LA SEMANA EN CARVLAK ⭐\n\n{modelo} {version} ({anio})\n👉 PRECIO: USD {precio}\n\n• Kilometraje: {km} km\n• Combustible: {combustible} | Transmisión: {transmision}\n\nTomamos tu usado en permuta y financiamos hasta el 100%. Escribinos por WhatsApp al 099 267 964 para coordinar tu visita o prueba de manejo.\n\n#carvlak #destacado #autosuruguay #montevideo #canelones'
     },
     'auto-descuento': {
       id: 'auto-descuento',
