@@ -58,7 +58,7 @@ const DEFAULT_LAYOUT_STORY: FormatLayoutConfig = {
   showPrice: true,
   showOriginalPrice: false,
   priceColor: '#D7141A',
-  specsSelection: ['year', 'mileage', 'fuel', 'transmission'],
+  specsSelection: [],
   specsOrder: ['year', 'mileage', 'fuel', 'transmission', 'engine', 'range_km'],
   ctaText: 'CARVLAK Group',
   phoneText: '099 123 456'

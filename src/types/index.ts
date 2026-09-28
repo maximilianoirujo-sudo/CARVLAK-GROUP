@@ -593,6 +593,7 @@ export interface DealershipVehicle {
   is_featured?: boolean;
   features: string[];
   images: string[];
+  flyer_images?: string[]; // URLs de fotos marcadas como 'Flyer / con texto'
   cover_image?: string;
   catalog_description?: string;
   internal_notes?: string; // Notas internas confidenciales de taller o directiva
@@ -760,6 +761,28 @@ export type TemplateLogoVersion = 'blanco' | 'negro' | 'auto';
 export type TemplateFontFamily = 'Archivo Narrow' | 'Barlow Condensed' | 'system-ui';
 export type TemplateFontWeight = 'normal' | 'semibold' | 'bold' | 'black';
 
+export type TextBackgroundType = 'none' | 'box' | 'banner';
+
+export interface CanvasTextElement {
+  id: string; // e.g. 'sello', 'modelo', 'precio', 'precio_anterior', 'subtitulo', 'specs_km', etc.
+  label: string; // Friendly name: "Sello", "Modelo", "Precio", etc.
+  text: string;
+  visible: boolean;
+  color: string; // Brand color or hex
+  fontSize: number; // in px on 1080px base canvas
+  fontWeight: 'normal' | 'semibold' | 'bold' | 'black';
+  fontFamily: TemplateFontFamily;
+  rotation: number; // degrees (-45 to 45)
+  x: number; // center or left X
+  y: number; // baseline or center Y
+  align: 'left' | 'center' | 'right';
+  bgType: TextBackgroundType;
+  bgColor: string;
+  bgOpacity: number; // 0 to 1
+  isSpec?: boolean;
+  specKey?: string;
+}
+
 export interface FormatLayoutConfig {
   backgroundMode: TemplateBackgroundMode;
   backgroundColor?: string;
@@ -782,6 +805,7 @@ export interface FormatLayoutConfig {
   specsOrder: string[];
   ctaText?: string;
   phoneText?: string;
+  textElements?: CanvasTextElement[];
 }
 
 export interface SocialMediaTemplateConfig {

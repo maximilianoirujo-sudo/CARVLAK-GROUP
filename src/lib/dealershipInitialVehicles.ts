@@ -53,6 +53,9 @@ export const INITIAL_DEALERSHIP_VEHICLES: DealershipVehicle[] = [
       "https://dcdn-us.mitiendanube.com/stores/006/928/264/products/whatsapp-image-2026-04-28-at-11-06-30-am-f525ee231b2f14b37b17774703274551-1024-1024.webp"
     ],
     "cover_image": "https://dcdn-us.mitiendanube.com/stores/006/928/264/products/fiat-strada-freedom-2026-55badbb29245d998e717902776647946-1024-1024.webp",
+    "flyer_images": [
+      "https://dcdn-us.mitiendanube.com/stores/006/928/264/products/fiat-strada-freedom-2026-55badbb29245d998e717902776647946-1024-1024.webp"
+    ],
     "catalog_description": "Marca: FIAT\n\nModelo: Strada Freedom\n\nAno: 2026\n\nKms: 27.000",
     "incomplete_data": true,
     "purchase_date": "2026-09-21",

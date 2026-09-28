@@ -33,7 +33,8 @@ import {
   DealershipConfig,
   SocialMediaConfig,
   SocialMediaPostRecord,
-  SocialMediaTemplateConfig
+  SocialMediaTemplateConfig,
+  CanvasTextElement
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -192,6 +193,8 @@ interface DataContextType {
   toggleSocialTemplateActive: (templateId: string) => void;
   resetSocialTemplateToDefault: (templateId: string) => void;
   updateClientConsent: (clientId: string, consent: boolean) => void;
+  toggleVehicleFlyerImage: (vehicleId: string, imageUrl: string) => void;
+  applyStyleToAllTemplates: (sourceTemplateId: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -2243,6 +2246,80 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logActivity('cliente', clientId, 'update', { social_media_consent: consent });
   };
 
+  const toggleVehicleFlyerImage = (vehicleId: string, imageUrl: string) => {
+    setDealershipVehicles((prev) =>
+      prev.map((v) => {
+        if (v.id !== vehicleId) return v;
+        const currentFlyers = v.flyer_images || [];
+        const isFlyer = currentFlyers.includes(imageUrl);
+        const nextFlyers = isFlyer
+          ? currentFlyers.filter((img) => img !== imageUrl)
+          : [...currentFlyers, imageUrl];
+        return {
+          ...v,
+          flyer_images: nextFlyers,
+          updated_at: new Date().toISOString()
+        };
+      })
+    );
+  };
+
+  const applyStyleToAllTemplates = (sourceTemplateId: string) => {
+    setSocialMediaConfig((prev) => {
+      const source = prev.templates[sourceTemplateId];
+      if (!source) return prev;
+
+      const nextTemplates = { ...prev.templates };
+
+      const mergeElementsStyle = (sourceEls: CanvasTextElement[] | undefined, targetEls: CanvasTextElement[] | undefined) => {
+        if (!sourceEls || !targetEls) return targetEls;
+        return targetEls.map((targetEl) => {
+          const match = sourceEls.find((s) => s.id === targetEl.id);
+          if (!match) return targetEl;
+          return {
+            ...targetEl,
+            color: match.color,
+            fontSize: match.fontSize,
+            fontWeight: match.fontWeight,
+            fontFamily: match.fontFamily,
+            bgType: match.bgType,
+            bgColor: match.bgColor,
+            bgOpacity: match.bgOpacity
+          };
+        });
+      };
+
+      Object.keys(nextTemplates).forEach((key) => {
+        if (key === sourceTemplateId) return;
+        const current = nextTemplates[key];
+        nextTemplates[key] = {
+          ...current,
+          layout_story: current.layout_story && source.layout_story ? {
+            ...current.layout_story,
+            fontFamily: source.layout_story.fontFamily,
+            fontScale: source.layout_story.fontScale,
+            stampColor: source.layout_story.stampColor,
+            priceColor: source.layout_story.priceColor,
+            textElements: mergeElementsStyle(source.layout_story.textElements, current.layout_story.textElements)
+          } : current.layout_story,
+          layout_post: current.layout_post && source.layout_post ? {
+            ...current.layout_post,
+            fontFamily: source.layout_post.fontFamily,
+            fontScale: source.layout_post.fontScale,
+            stampColor: source.layout_post.stampColor,
+            priceColor: source.layout_post.priceColor,
+            textElements: mergeElementsStyle(source.layout_post.textElements, current.layout_post.textElements)
+          } : current.layout_post
+        };
+      });
+
+      return {
+        ...prev,
+        templates: nextTemplates
+      };
+    });
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -2337,7 +2414,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteSocialTemplate,
         toggleSocialTemplateActive,
         resetSocialTemplateToDefault,
-        updateClientConsent
+        updateClientConsent,
+        toggleVehicleFlyerImage,
+        applyStyleToAllTemplates
       }}
     >
       {children}
