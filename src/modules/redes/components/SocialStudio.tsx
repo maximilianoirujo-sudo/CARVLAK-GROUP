@@ -966,7 +966,9 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                   { id: 'specs_combustible', label: 'Combustible', desc: activeCar?.fuel || 'Nafta' },
                   { id: 'specs_transmision', label: 'Transmisión', desc: activeCar?.transmission || 'Manual' },
                   { id: 'specs_anio', label: 'Año', desc: `Año ${activeCar?.year || ''}` },
-                  { id: 'cta', label: 'Llamado a la acción', desc: 'Consultá por WhatsApp' }
+                  { id: 'cta', label: 'Llamado a la acción', desc: 'Consultá por WhatsApp' },
+                  { id: 'etiqueta_instagram', label: 'Etiqueta @car.vlak', desc: 'Arriba a la derecha' },
+                  { id: 'pie_marca', label: 'Pie CARVLAK Group', desc: 'CARVLAK Group • @car.vlak' }
                 ].map((item) => {
                   const el = textElements.find((t) => t.id === item.id);
                   const isVisible = el?.visible || false;

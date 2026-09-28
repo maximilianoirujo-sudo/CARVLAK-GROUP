@@ -1306,7 +1306,7 @@ export const INITIAL_SOCIAL_MEDIA_CONFIG: SocialMediaConfig = {
   allow_vendedor: true,
   vendedor_can_publish: false,
   instagram_handle: '@car.vlak',
-  location_name: 'Shangrilá, Canelones',
+  location_name: 'Ciudad de la Costa, Canelones',
   whatsapp_number: '099 267 964',
   meta_instagram: {
     enabled: false,

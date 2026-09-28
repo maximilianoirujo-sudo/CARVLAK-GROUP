@@ -277,8 +277,8 @@ export async function renderSocialCanvas(
     });
   }
 
-  // 8. Footer unificado con @car.vlak y llamado a la acción
-  drawFooterBar(ctx, width, height, instagramHandle, locationName, layoutConfig?.ctaText, layoutConfig?.phoneText);
+  // 8. Información base de pie (ubicación y hashtag sobre la foto sin franja negra)
+  drawBaseFooterInfo(ctx, width, height, locationName, layoutConfig?.phoneText);
 
   // 9. Guía visual de zonas seguras de Instagram (si está activada)
   if (options.showSafeZones) {
@@ -489,33 +489,6 @@ async function drawBrandHeader(
     ctx.fillStyle = isLightBackground ? '#6B6B6B' : '#A0A0A0';
     ctx.letterSpacing = '1.5px';
     ctx.fillText('GROUP', logoX + 175, logoY + 34);
-    ctx.restore();
-  }
-
-  // Cápsula superior derecha: @car.vlak (legible en celular, 24px)
-  if (logoPos !== 'top-right') {
-    const badgeW = 250;
-    const badgeH = 56;
-    const badgeX = w - pad - badgeW;
-    const badgeY = pad + 4;
-
-    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 28);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-    ctx.fill();
-    ctx.strokeStyle = '#333333';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Icono Instagram simulado / texto
-    ctx.save();
-    ctx.font = '700 24px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = '#D7141A';
-    ctx.fillText('@', badgeX + 22, badgeY + 36);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = '700 24px system-ui, -apple-system, sans-serif';
-    ctx.letterSpacing = '0.5px';
-    ctx.fillText(instagramHandle.replace('@', ''), badgeX + 48, badgeY + 36);
     ctx.restore();
   }
 }
@@ -1029,41 +1002,39 @@ function drawPriceTag(
 }
 
 /**
- * Dibuja la barra inferior de pie con datos de contacto y ubicación (legible en celular, 26px)
+ * Dibuja la información base de pie (ubicación y hashtag) directamente sobre la foto/degradado,
+ * sin franja negra opaca ni líneas que tapen la imagen del vehículo.
  */
-function drawFooterBar(
+function drawBaseFooterInfo(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  instagramHandle: string,
   locationName: string,
-  ctaText?: string,
   phoneText?: string
 ) {
-  const barH = 85;
-  const barY = h - barH;
+  const pad = 60;
+  const y = h - 45;
 
   ctx.save();
-  // Fondo de barra inferior
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-  ctx.fillRect(0, barY, w, barH);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
 
-  // Línea roja superior distintiva CARVLAK
-  ctx.fillStyle = '#D7141A';
-  ctx.fillRect(0, barY, w, 3);
-
-  // Textos del footer con alto contraste y tamaño mínimo legible en celular
-  ctx.font = '700 26px "Archivo Narrow", system-ui, sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textBaseline = 'middle';
-  const leftText = ctaText ? `${ctaText}  •  ${instagramHandle}` : `CARVLAK Group  •  ${instagramHandle}`;
-  ctx.fillText(leftText, 60, barY + barH / 2);
-
+  // Ubicación a la derecha
   ctx.textAlign = 'right';
-  ctx.font = '600 24px "Barlow Condensed", system-ui, sans-serif';
-  ctx.fillStyle = '#D1D5DB';
-  const rightText = phoneText ? `📞 ${phoneText}  •  📍 ${locationName}` : `📍 ${locationName}`;
-  ctx.fillText(rightText, w - 60, barY + barH / 2);
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 22px "Barlow Condensed", system-ui, sans-serif';
+  ctx.fillStyle = '#E5E5E3';
+  const loc = locationName || 'Ciudad de la Costa, Canelones';
+  const rightText = phoneText ? `📞 ${phoneText}  •  📍 ${loc}` : `📍 ${loc}`;
+  ctx.fillText(rightText, w - pad, y);
+
+  // Hashtag a la izquierda
+  ctx.textAlign = 'left';
+  ctx.font = '600 20px "Barlow Condensed", system-ui, sans-serif';
+  ctx.fillStyle = '#A0A0A0';
+  ctx.letterSpacing = '1px';
+  ctx.fillText('#carvlak', pad, y);
 
   ctx.restore();
 }
@@ -1210,6 +1181,10 @@ export function drawCanvasTextElement(
       ctx.strokeStyle = element.color;
       ctx.lineWidth = 5;
       ctx.stroke();
+    } else if (element.id === 'etiqueta_instagram') {
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -1222,11 +1197,27 @@ export function drawCanvasTextElement(
   }
 
   // Dibujo del texto
-  ctx.fillStyle = element.color;
-  ctx.textAlign = element.align;
-  ctx.textBaseline = 'middle';
-  ctx.letterSpacing = element.id === 'sello' ? '3px' : 'normal';
-  ctx.fillText(element.text, 0, 0);
+  if (element.id === 'etiqueta_instagram' && element.text.startsWith('@')) {
+    const atW = ctx.measureText('@').width;
+    const restText = element.text.slice(1);
+    const startX = element.align === 'center' ? -textWidth / 2 : element.align === 'right' ? -textWidth : 0;
+
+    ctx.save();
+    ctx.fillStyle = '#D7141A';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('@', startX, 0);
+
+    ctx.fillStyle = element.color || '#FFFFFF';
+    ctx.fillText(restText, startX + atW + 2, 0);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = element.color;
+    ctx.textAlign = element.align;
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = element.id === 'sello' ? '3px' : 'normal';
+    ctx.fillText(element.text, 0, 0);
+  }
 
   // Tachado especial si es precio anterior
   if (element.id === 'precio_anterior') {
@@ -1546,6 +1537,40 @@ export function getDefaultTextElements(
       bgType: 'box',
       bgColor: '#D7141A',
       bgOpacity: 0.95
+    },
+    {
+      id: 'etiqueta_instagram',
+      label: 'Etiqueta @car.vlak (arriba)',
+      text: '@car.vlak',
+      visible: false, // Apagado por defecto en todas las plantillas
+      color: '#FFFFFF',
+      fontSize: 22,
+      fontWeight: 'bold',
+      fontFamily: 'Archivo Narrow',
+      rotation: 0,
+      x: 935,
+      y: 92,
+      align: 'center',
+      bgType: 'box',
+      bgColor: '#000000',
+      bgOpacity: 0.85
+    },
+    {
+      id: 'pie_marca',
+      label: 'Pie CARVLAK Group',
+      text: 'CARVLAK Group  •  @car.vlak',
+      visible: false, // Apagado por defecto en todas las plantillas
+      color: '#FFFFFF',
+      fontSize: 24,
+      fontWeight: 'bold',
+      fontFamily: 'Archivo Narrow',
+      rotation: 0,
+      x: 60,
+      y: isStory ? 1830 : 1270,
+      align: 'left',
+      bgType: 'none',
+      bgColor: '#000000',
+      bgOpacity: 0.85
     }
   ];
 
