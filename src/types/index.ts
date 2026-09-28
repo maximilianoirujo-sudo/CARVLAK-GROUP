@@ -815,9 +815,11 @@ export interface SocialMediaTemplateConfig {
   description: string;
   is_active?: boolean;
   is_custom?: boolean;
-  stamp_text?: string; // ej: "VENDIDO", "RESERVADO", "RECIÉN LLEGADO"
+  badge_tag?: string; // ej: "ENTREGA CONFIRMADA", "DESTACADO DE LA SEMANA"
+  stamp_text?: string; // ej: "VENDIDO", "OPORTUNIDAD", "RESERVADO"
   headline_default?: string;
   subtitle_default?: string;
+  show_price?: boolean;
   logo_position: LogoPosition;
   default_caption_template: string;
   default_hashtags?: string;
@@ -853,8 +855,10 @@ export interface SocialMediaConfig {
   allow_vendedor: boolean; // ¿Los vendedores tienen permiso para crear y compartir piezas?
   vendedor_can_publish?: boolean; // ¿Los vendedores pueden publicar directamente o solo descargar/compartir?
   instagram_handle: string; // ej: "@car.vlak"
-  location_name: string; // ej: "Shangrilá, Canelones"
+  location_name: string; // ej: "Ciudad de la Costa, Canelones"
   whatsapp_number: string; // ej: "099 123 456"
+  default_hashtag?: string; // ej: "#TuPróximoAuto"
+  unified_version?: string; // Version stamp to migrate and reset old template layouts
   meta_instagram?: MetaInstagramConfig;
   auto_triggers?: SocialAutoTriggersConfig;
   templates: Record<string, SocialMediaTemplateConfig>;

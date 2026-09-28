@@ -60,6 +60,7 @@ export interface SocialCanvasPreviewProps {
   logoPosition: LogoPosition;
   instagramHandle: string;
   locationName: string;
+  hashtag?: string;
   badgeTag?: string;
   inspectionHighlights?: string[];
   detailingServices?: string[];
@@ -104,6 +105,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
   logoPosition,
   instagramHandle,
   locationName,
+  hashtag,
   badgeTag,
   inspectionHighlights,
   detailingServices,
@@ -190,7 +192,9 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
     return {
       ...base,
-      textElements: activeElements
+      textElements: (activeElements || []).filter(
+        (el) => el.id !== 'etiqueta_instagram' && el.id !== 'pie_marca'
+      )
     };
   }, [layoutConfig, activeElements]);
 
@@ -219,6 +223,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
       logoPosition,
       instagramHandle,
       locationName,
+      hashtag,
       badgeTag,
       inspectionHighlights,
       detailingServices,

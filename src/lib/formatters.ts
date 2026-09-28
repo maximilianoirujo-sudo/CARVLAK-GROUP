@@ -7,14 +7,14 @@ import { Currency, Business } from '../types';
 /**
  * Formatea montos en Pesos Uruguayos ($UYU) con separadores de miles estándar uruguayo
  * Ejemplo: 15000 -> "$U 15.000"
- * En USD: 24500 -> "USD $24.500"
+ * En USD: 24500 -> "USD 24.500"
  */
 export function formatCurrency(amount: number, currency: Currency = 'UYU'): string {
   const rounded = Math.round(amount || 0);
   const formatted = rounded.toLocaleString('es-UY');
 
   if (currency === 'USD') {
-    return `USD $${formatted}`;
+    return `USD ${formatted}`;
   }
   return `$U ${formatted}`;
 }

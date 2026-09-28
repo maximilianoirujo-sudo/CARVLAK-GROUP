@@ -17,6 +17,7 @@ export interface RenderCanvasOptions {
   logoPosition?: LogoPosition;
   instagramHandle?: string;
   locationName?: string;
+  hashtag?: string;
   badgeTag?: string;
   inspectionHighlights?: string[];
   detailingServices?: string[];
@@ -92,7 +93,8 @@ export async function renderSocialCanvas(
     imagePan = { x: 0, y: 0, zoom: 1 },
     logoPosition = 'top-left',
     instagramHandle = '@car.vlak',
-    locationName = 'Shangrilá, Canelones',
+    locationName = 'Ciudad de la Costa, Canelones',
+    hashtag = '',
     badgeTag = '',
     inspectionHighlights = [],
     detailingServices = [],
@@ -204,27 +206,32 @@ export async function renderSocialCanvas(
           loadImage(secondaryImageUrl)
         ]);
 
-        const halfHeight = height / 2;
+        const halfWidth = width / 2;
 
+        // Foto Antes (Izquierda)
         ctx.save();
         ctx.beginPath();
-        ctx.rect(0, 0, width, halfHeight);
+        ctx.rect(0, 0, halfWidth, height);
         ctx.clip();
-        drawImageCover(ctx, imgBefore, 0, 0, width, halfHeight, imagePan);
+        drawImageCover(ctx, imgBefore, 0, 0, halfWidth, height, imagePan);
         ctx.restore();
 
+        // Foto Después (Derecha)
         ctx.save();
         ctx.beginPath();
-        ctx.rect(0, halfHeight, width, halfHeight);
+        ctx.rect(halfWidth, 0, halfWidth, height);
         ctx.clip();
-        drawImageCover(ctx, imgAfter, 0, halfHeight, width, halfHeight, imagePan);
+        drawImageCover(ctx, imgAfter, halfWidth, 0, halfWidth, height, imagePan);
         ctx.restore();
 
+        // Línea divisoria central roja deportiva #D7141A
         ctx.fillStyle = '#D7141A';
-        ctx.fillRect(0, halfHeight - 3, width, 6);
+        ctx.fillRect(halfWidth - 3, 0, 6, height);
 
-        drawPill(ctx, 40, halfHeight - 65, 140, 42, '#000000', '#D7141A', 'ANTES');
-        drawPill(ctx, 40, halfHeight + 25, 160, 42, '#D7141A', '#FFFFFF', 'DESPUÉS');
+        // Píldoras indicadoras "ANTES" y "DESPUÉS"
+        const pillY = format === 'story' ? 270 : 150;
+        drawPill(ctx, 40, pillY, 140, 42, '#000000', '#D7141A', 'ANTES');
+        drawPill(ctx, halfWidth + 40, pillY, 160, 42, '#D7141A', '#FFFFFF', 'DESPUÉS');
       } catch {
         drawFallbackBackground(ctx, width, height);
       }
@@ -254,6 +261,8 @@ export async function renderSocialCanvas(
   await drawBrandHeader(ctx, width, height, effectiveLogoPosition, instagramHandle, locationName, isLightBg, effectiveLogoVersion);
 
   // 7. Contenido según la plantilla específica o elementos individuales configurados
+  const hasCustomFooter = layoutConfig?.textElements?.some((el) => (el.id === 'pie_ubicacion' || el.id === 'linea_divisoria') && el.visible);
+
   if (layoutConfig?.textElements && layoutConfig.textElements.length > 0) {
     layoutConfig.textElements.forEach((el) => {
       drawCanvasTextElement(ctx, el, width, height);
@@ -273,12 +282,25 @@ export async function renderSocialCanvas(
       badgeTag,
       inspectionHighlights,
       detailingServices,
-      layoutConfig
+      layoutConfig,
+      locationName,
+      hashtag: hashtag || (
+        templateId === 'detailing-antes-despues' || templateId === 'detailing-promo' || templateId === 'agenda-turnos-disponibles'
+          ? '#DetailVlak'
+          : '#TuPróximoAuto'
+      )
     });
   }
 
   // 8. Información base de pie (ubicación y hashtag sobre la foto sin franja negra)
-  drawBaseFooterInfo(ctx, width, height, locationName, layoutConfig?.phoneText);
+  if (!hasCustomFooter) {
+    const effectiveHashtag = hashtag || (
+      templateId === 'detailing-antes-despues' || templateId === 'detailing-promo' || templateId === 'agenda-turnos-disponibles'
+        ? '#DetailVlak'
+        : '#TuPróximoAuto'
+    );
+    drawBaseFooterInfo(ctx, width, height, format, locationName, effectiveHashtag);
+  }
 
   // 9. Guía visual de zonas seguras de Instagram (si está activada)
   if (options.showSafeZones) {
@@ -513,358 +535,206 @@ function renderTemplateContent(
     inspectionHighlights: string[];
     detailingServices: string[];
     layoutConfig?: FormatLayoutConfig;
+    locationName?: string;
+    hashtag?: string;
   }
 ) {
   const {
-    width,
-    height,
     format,
     templateId,
     headline,
     subtitle,
     price,
     originalPrice,
-    specs,
     stampText,
     badgeTag,
-    inspectionHighlights,
-    detailingServices,
     layoutConfig
   } = data;
 
   const pad = 60;
   const isStory = format === 'story';
 
-  // Configuración de estilo extraída de layoutConfig
-  const showStamp = layoutConfig?.showStamp !== undefined ? layoutConfig.showStamp : true;
-  const customStampText = layoutConfig?.stampText || stampText;
-  const customStampColor = layoutConfig?.stampColor;
-  const customStampRotation = layoutConfig?.stampRotation;
-  const fontFamily = layoutConfig?.fontFamily || 'Archivo Narrow';
-  const fontScale = layoutConfig?.fontScale || 'normal';
-  const showPrice = layoutConfig?.showPrice !== undefined ? layoutConfig.showPrice : true;
-  const showOriginalPrice = layoutConfig?.showOriginalPrice !== undefined ? layoutConfig.showOriginalPrice : true;
-  const priceColor = layoutConfig?.priceColor || '#D7141A';
+  // 1. Etiqueta por defecto según plantilla
+  const effectiveTag = (badgeTag || (
+    templateId === 'auto-vendido' ? 'ENTREGA CONFIRMADA' :
+    templateId === 'auto-destacado-semana' ? 'DESTACADO DE LA SEMANA' :
+    templateId === 'auto-descuento' ? 'REBAJA DE LA SEMANA' :
+    templateId === 'auto-nuevo-ingreso' ? 'RECIÉN LLEGADO' :
+    templateId === 'auto-reservado' ? 'SEÑA RECIBIDA' :
+    templateId === 'detailing-antes-despues' ? 'DETAILVLAK' :
+    templateId === 'auto-entrega' ? 'ENTREGA' :
+    templateId === 'detailing-promo' ? 'PROMO EXCLUSIVA' :
+    templateId === 'agenda-turnos-disponibles' ? 'AGENDA ABIERTA' :
+    templateId === 'inspeccion-precompra' ? 'PERITAJE MECÁNICO' :
+    'STOCK CARVLAK'
+  )).toUpperCase();
 
-  // 1. SELLOS DE ALTO IMPACTO (VENDIDO, RESERVADO, NUEVO INGRESO, ETC.)
-  if (showStamp) {
-    if (layoutConfig?.stampText) {
-      drawHighImpactStamp(
-        ctx,
-        540,
-        isStory ? 700 : 480,
-        layoutConfig.stampText,
-        customStampColor || '#D7141A',
-        customStampRotation ?? -12,
-        fontFamily,
-        width,
-        height
-      );
-    } else if (templateId === 'auto-vendido') {
-      // Variante A: El sello VENDIDO horizontal con subrayado rojo se dibuja en la parte inferior sobre la foto
-    } else if (templateId === 'auto-destacado-semana') {
-      // VARIANTE A (Oficial): Etiqueta superior cápsula "DESTACADO DE LA SEMANA" en rojo
-      const tagY = isStory ? 310 : 140;
-      const tagW = isStory ? 340 : 280;
-      const tagH = isStory ? 48 : 40;
+  // 2. Título principal
+  const effectiveTitle = (stampText || layoutConfig?.stampText || (
+    templateId === 'auto-vendido' ? 'VENDIDO' :
+    templateId === 'auto-destacado-semana' ? 'OPORTUNIDAD' :
+    templateId === 'auto-descuento' ? 'OPORTUNIDAD' :
+    templateId === 'auto-nuevo-ingreso' ? 'NUEVO INGRESO' :
+    templateId === 'auto-reservado' ? 'RESERVADO' :
+    templateId === 'detailing-antes-despues' ? 'ANTES / DESPUÉS' :
+    templateId === 'auto-entrega' ? '¡FELICITACIONES!' :
+    templateId === 'detailing-promo' ? 'BENEFICIO' :
+    templateId === 'agenda-turnos-disponibles' ? 'TURNOS DISPONIBLES' :
+    templateId === 'inspeccion-precompra' ? 'COMPRÁ SEGURO' :
+    'OPORTUNIDAD'
+  )).toUpperCase();
 
-      ctx.save();
-      roundRect(ctx, pad, tagY, tagW, tagH, tagH / 2);
-      ctx.fillStyle = '#D7141A';
-      ctx.fill();
+  // 3. Modelo del auto
+  const effectiveModel = (headline || 'VEHÍCULO').toUpperCase();
 
-      ctx.font = `900 ${isStory ? 20 : 16}px "Archivo Narrow", sans-serif`;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.letterSpacing = '2px';
-      ctx.textAlign = 'center';
+  // 4. Precios
+  const isPriceAllowed = [
+    'auto-destacado-semana',
+    'auto-descuento',
+    'auto-nuevo-ingreso',
+    'auto-ficha-carrusel',
+    'auto-electricos-0km',
+    'auto-catalogo-semana',
+    'auto-rango-precio',
+    'detailing-promo'
+  ].includes(templateId);
+
+  const shouldShowPrice = isPriceAllowed && (layoutConfig?.showPrice !== false) && !!price;
+  const isDiscount = templateId === 'auto-descuento' && !!originalPrice;
+
+  // 5. Mensaje por defecto
+  const effectiveMessage = subtitle || (
+    templateId === 'auto-vendido' ? '¡Gracias por confiar en nosotros! Entregado con garantía total CARVLAK.' :
+    templateId === 'auto-destacado-semana' ? 'Escribinos por WhatsApp y coordiná tu visita.' :
+    templateId === 'auto-descuento' ? 'Por tiempo limitado en nuestro showroom.' :
+    templateId === 'auto-nuevo-ingreso' ? 'Consultá antes de que se vaya.' :
+    templateId === 'auto-reservado' ? '¿Buscás algo parecido? Escribinos.' :
+    templateId === 'detailing-antes-despues' ? 'Corrección de barniz y sellado cerámico 9H.' :
+    templateId === 'auto-entrega' ? '¡Gracias por confiar en CARVLAK! Entregado con garantía total.' :
+    'Consultanos por WhatsApp para coordinar tu visita.'
+  );
+
+  // Posicionamiento vertical respetando zonas seguras
+  const tagY = isStory
+    ? (isDiscount ? 1110 : shouldShowPrice ? 1195 : 1260)
+    : (isDiscount ? 900 : shouldShowPrice ? 935 : 985);
+
+  const titleY = isStory
+    ? (isDiscount ? 1225 : shouldShowPrice ? 1295 : 1360)
+    : (isDiscount ? 975 : shouldShowPrice ? 1010 : 1060);
+
+  const barY = isStory
+    ? (isDiscount ? 1285 : shouldShowPrice ? 1345 : 1410)
+    : (isDiscount ? 1015 : shouldShowPrice ? 1050 : 1100);
+
+  const modelY = isStory
+    ? (isDiscount ? 1355 : shouldShowPrice ? 1405 : 1470)
+    : (isDiscount ? 1065 : shouldShowPrice ? 1100 : 1150);
+
+  const origPriceY = isStory ? 1425 : 1120;
+  const priceY = isStory ? 1485 : 1170;
+  const msgY = isStory ? 1555 : 1220;
+
+  // 1. Etiqueta: recuadro rojo #D7141A con texto blanco mayúsculas chico letter-spaced
+  ctx.save();
+  const tagFontSize = isStory ? 18 : 15;
+  ctx.font = `700 ${tagFontSize}px "Archivo Narrow", sans-serif`;
+  ctx.letterSpacing = '2px';
+  const tagTextMetrics = ctx.measureText(effectiveTag);
+  const tagPadX = 18;
+  const tagH = isStory ? 38 : 32;
+  const tagW = tagTextMetrics.width + tagPadX * 2;
+
+  roundRect(ctx, pad, tagY - tagH / 2, tagW, tagH, 6);
+  ctx.fillStyle = '#D7141A';
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(effectiveTag, pad + tagW / 2, tagY + 1);
+  ctx.restore();
+
+  // 2. Título principal: muy grande, blanco, Archivo Narrow 700 en mayúsculas
+  ctx.save();
+  const titleSize = isStory ? 96 : 76;
+  ctx.font = `900 ${titleSize}px "Archivo Narrow", sans-serif`;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.letterSpacing = '3px';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(effectiveTitle, pad, titleY);
+
+  // 3. Barra roja #D7141A debajo del título, corta y gruesa, alineada a la izquierda
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#D7141A';
+  const barW = isStory ? 220 : 180;
+  const barH = isStory ? 8 : 6;
+  ctx.fillRect(pad, barY, barW, barH);
+  ctx.restore();
+
+  // 4. Modelo del auto: blanco, grande, en mayúsculas
+  ctx.save();
+  const modelSize = isStory ? 48 : 38;
+  ctx.font = `700 ${modelSize}px "Archivo Narrow", sans-serif`;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.letterSpacing = '1px';
+  ctx.shadowColor = 'rgba(0,0,0,0.9)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(effectiveModel, pad, modelY);
+  ctx.restore();
+
+  // 5. Precio (solo cuando corresponda): blanco grande, formato "USD 16.900"
+  if (shouldShowPrice) {
+    ctx.save();
+    if (isDiscount) {
+      const origSize = isStory ? 30 : 24;
+      ctx.font = `700 ${origSize}px "Archivo Narrow", sans-serif`;
+      ctx.fillStyle = '#8A8A8A';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      const labelText = customStampText || 'DESTACADO DE LA SEMANA';
-      ctx.fillText(labelText, pad + tagW / 2, tagY + tagH / 2);
-      ctx.restore();
-    } else if (templateId === 'auto-reservado') {
-      drawHighImpactStamp(
-        ctx,
-        540,
-        isStory ? 700 : 480,
-        customStampText || 'RESERVADO',
-        customStampColor || '#eab308',
-        customStampRotation ?? -8,
-        fontFamily,
-        width,
-        height
-      );
-    } else if (templateId === 'auto-descuento') {
-      drawHighImpactStamp(
-        ctx,
-        840,
-        isStory ? 450 : 320,
-        customStampText || 'OPORTUNIDAD',
-        customStampColor || '#D7141A',
-        customStampRotation ?? 14,
-        fontFamily,
-        width,
-        height
-      );
-    } else if (templateId === 'auto-nuevo-ingreso') {
-      drawTagPill(ctx, pad, isStory ? 1220 : 800, customStampText || 'NUEVO INGRESO', customStampColor || '#D7141A', fontFamily);
-    } else if (templateId === 'auto-electricos-0km') {
-      drawTagPill(ctx, pad, isStory ? 1220 : 800, customStampText || '100% ELÉCTRICO • 0KM', customStampColor || '#22c55e', fontFamily);
-    } else if (templateId === 'auto-entrega') {
-      drawHighImpactStamp(
-        ctx,
-        540,
-        isStory ? 650 : 440,
-        customStampText || '¡NUEVO DUEÑO!',
-        customStampColor || '#D7141A',
-        customStampRotation ?? -6,
-        fontFamily,
-        width,
-        height
-      );
-    } else if (badgeTag) {
-      drawTagPill(ctx, pad, isStory ? 1220 : 800, badgeTag, '#D7141A', fontFamily);
-    }
-  }
+      const origMetrics = ctx.measureText(originalPrice);
+      ctx.fillText(originalPrice, pad, origPriceY);
 
-  // 2. Posición vertical de textos principales (anclados en la parte inferior)
-  const baseY = height - (isStory ? 240 : 180);
-
-  // 3. Render según la categoría o plantilla
-  if (templateId === 'auto-descuento') {
-    // Bloque de precios con tacha
-    let currentY = baseY;
-
-    if (price && showPrice) {
-      currentY -= 70;
-      ctx.save();
-      // Si hay precio anterior, tacharlo
-      if (originalPrice && showOriginalPrice) {
-        const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
-        ctx.font = `700 32px ${fontName}, sans-serif`;
-        ctx.fillStyle = '#8A8A8A';
-        const origW = ctx.measureText(originalPrice).width;
-        ctx.fillText(originalPrice, pad, currentY);
-        // Línea roja sobre el precio anterior
-        ctx.strokeStyle = '#D7141A';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(pad - 4, currentY - 10);
-        ctx.lineTo(pad + origW + 4, currentY - 10);
-        ctx.stroke();
-
-        currentY += 55;
-      }
-
-      // Precio nuevo destacado
-      const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
-      ctx.font = `900 68px ${fontName}, sans-serif`;
-      ctx.fillStyle = priceColor;
-      ctx.fillText(price, pad, currentY);
-      ctx.restore();
-    }
-
-    // Título y specs arriba del precio
-    const titleY = currentY - (price && showPrice ? 120 : 60);
-    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
-
-  } else if (templateId === 'agenda-turnos-disponibles') {
-    // Plantilla de Turnos Detailing
-    const boxY = isStory ? 800 : 540;
-    const boxW = width - pad * 2;
-    const boxH = isStory ? 750 : 520;
-
-    roundRect(ctx, pad, boxY, boxW, boxH, 24);
-    ctx.fillStyle = 'rgba(20, 20, 20, 0.92)';
-    ctx.fill();
-    ctx.strokeStyle = '#2A2A2A';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Encabezado
-    drawTagPill(ctx, pad + 30, boxY + 35, 'AGENDA ABIERTA', '#D7141A', fontFamily);
-
-    ctx.save();
-    const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
-    ctx.font = `900 42px ${fontName}, sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(headline || 'Turnos Disponibles Esta Semana', pad + 30, boxY + 120);
-
-    ctx.font = `500 22px ${fontName}, sans-serif`;
-    ctx.fillStyle = '#8A8A8A';
-    ctx.fillText(subtitle || 'DetailVlak Studio • Cupos limitados', pad + 30, boxY + 160);
-
-    // Lista de servicios disponibles
-    const services = detailingServices.length > 0
-      ? detailingServices
-      : [
-          'Tratamiento Cerámico 9H (Protección 3 años)',
-          'Corrección de barniz y pulido espejo',
-          'Limpieza y descontaminación de tapizados',
-          'Lavado de motor detallado y sellado de plásticos'
-        ];
-
-    let itemY = boxY + 225;
-    services.forEach((s) => {
-      // Checkmark rojo
-      ctx.fillStyle = '#D7141A';
+      // Línea roja deportiva sobre precio anterior
+      ctx.strokeStyle = '#D7141A';
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(pad + 45, itemY - 7, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = `600 24px ${fontName}, sans-serif`;
-      ctx.fillText(s, pad + 70, itemY);
-      itemY += 55;
-    });
-
-    // Llamado a agendar
-    ctx.fillStyle = '#D7141A';
-    ctx.font = `700 24px ${fontName}, sans-serif`;
-    ctx.fillText('📲 Agendá tu lugar por WhatsApp o mensaje directo', pad + 30, itemY + 25);
-    ctx.restore();
-
-  } else if (templateId === 'inspeccion-precompra') {
-    // Plantilla de Inspección Vehicular Precompra
-    const boxY = isStory ? 880 : 580;
-    const boxW = width - pad * 2;
-    const boxH = isStory ? 680 : 490;
-
-    roundRect(ctx, pad, boxY, boxW, boxH, 24);
-    ctx.fillStyle = 'rgba(15, 15, 15, 0.95)';
-    ctx.fill();
-    ctx.strokeStyle = '#2A2A2A';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    drawTagPill(ctx, pad + 30, boxY + 35, 'INSPECCIÓN PRECOMPRA APROBADA', '#D7141A', fontFamily);
-
-    ctx.save();
-    const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
-    ctx.font = `900 40px ${fontName}, sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(headline || 'Peritaje Técnico de 120+ Puntos', pad + 30, boxY + 120);
-
-    ctx.font = `500 22px ${fontName}, sans-serif`;
-    ctx.fillStyle = '#8A8A8A';
-    ctx.fillText(subtitle || 'Informe verificado por CARVLAK Inspecciones', pad + 30, boxY + 160);
-
-    const points = inspectionHighlights.length > 0
-      ? inspectionHighlights
-      : [
-          'Diagnóstico computarizado OBD-II sin fallas',
-          'Espesor de pintura verificado (sin choques estructurales)',
-          'Mecánica, frenos y tren rodante revisados',
-          'Documentación e historial sin antecedentes'
-        ];
-
-    let pointY = boxY + 220;
-    points.forEach((p) => {
-      // Badge circular verde de aprobación
-      ctx.fillStyle = '#22c55e';
-      ctx.beginPath();
-      ctx.arc(pad + 45, pointY - 7, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = `600 23px ${fontName}, sans-serif`;
-      ctx.fillText(p, pad + 70, pointY);
-      pointY += 52;
-    });
-
-    ctx.fillStyle = '#8A8A8A';
-    ctx.font = `500 18px ${fontName}, sans-serif`;
-    ctx.fillText('🛡️ Comprá tu próximo auto usado con total tranquilidad y respaldo.', pad + 30, pointY + 20);
-    ctx.restore();
-
-  } else if (templateId === 'auto-ficha-carrusel') {
-    // Ficha de carrusel: specs en tarjetas elegantes
-    const titleY = isStory ? 1050 : 680;
-    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
-
-    if (price && showPrice) {
-      drawPriceTag(ctx, pad, isStory ? 1420 : 960, price, priceColor, fontFamily);
+      ctx.moveTo(pad - 2, origPriceY);
+      ctx.lineTo(pad + origMetrics.width + 4, origPriceY);
+      ctx.stroke();
     }
 
-    // Indicador "Deslizá para más ➡️"
-    const swipeY = isStory ? 1560 : 1080;
-    ctx.save();
+    const priceSize = isStory ? 68 : 54;
+    ctx.font = `900 ${priceSize}px "Archivo Narrow", sans-serif`;
     ctx.fillStyle = '#FFFFFF';
-    const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
-    ctx.font = `700 22px ${fontName}, sans-serif`;
-    ctx.fillText('Deslizá para ver más fotos ➡️', pad, swipeY);
-    ctx.restore();
-
-  } else if (templateId === 'auto-vendido') {
-    // VARIANTE A (Oficial): VENDIDO grande en blanco con subrayado rojo, modelo y agradecimiento
-    const textY = isStory ? 1510 : 980;
-
-    ctx.save();
-    // 1. "VENDIDO" grande
-    ctx.font = `900 ${isStory ? 110 : 88}px "Archivo Narrow", sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.letterSpacing = '5px';
     ctx.shadowColor = 'rgba(0,0,0,0.95)';
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetY = 6;
-    ctx.fillText(customStampText || 'VENDIDO', pad, textY);
-
-    // 2. Subrayado deportivo rojo #D7141A
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#D7141A';
-    const underlineW = isStory ? 360 : 280;
-    const underlineH = isStory ? 10 : 8;
-    ctx.fillRect(pad, textY + (isStory ? 16 : 12), underlineW, underlineH);
-    ctx.restore();
-
-    // 3. Modelo del vehículo
-    const modelY = textY + (isStory ? 88 : 68);
-    ctx.save();
-    ctx.font = `700 ${isStory ? 50 : 42}px "Archivo Narrow", sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.letterSpacing = '1px';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 10;
-    ctx.fillText(headline || 'Vehículo', pad, modelY);
-
-    // 4. Frase de agradecimiento
-    ctx.font = `500 ${isStory ? 28 : 22}px "Barlow Condensed", sans-serif`;
-    ctx.fillStyle = '#D1D5DB';
-    ctx.fillText(subtitle || '¡Gracias por confiar en nosotros!', pad, modelY + (isStory ? 50 : 38));
-    ctx.restore();
-
-  } else if (templateId === 'auto-destacado-semana') {
-    // VARIANTE A (Oficial): Modelo blanco, precio gigante en rojo y CTA de WhatsApp
-    const contentY = baseY - (isStory ? 100 : 70);
-
-    ctx.save();
-    ctx.textAlign = 'left';
-    ctx.font = `700 ${isStory ? 54 : 44}px "Archivo Narrow", sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 12;
-    ctx.fillText(headline || 'Vehículo Destacado', pad, contentY);
-
-    if (price && showPrice) {
-      ctx.font = `900 ${isStory ? 78 : 64}px "Archivo Narrow", sans-serif`;
-      ctx.fillStyle = '#D7141A';
-      ctx.fillText(price, pad, contentY + (isStory ? 85 : 68));
-    }
-
-    const ctaY = contentY + (price && showPrice ? (isStory ? 140 : 112) : (isStory ? 55 : 44));
-    ctx.font = `600 ${isStory ? 28 : 22}px "Barlow Condensed", sans-serif`;
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText('📲 Escribinos por WhatsApp al 099 267 964', pad, ctaY);
+    ctx.shadowOffsetY = 4;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(price, pad, priceY);
     ctx.restore();
-
-  } else {
-    // Plantillas estándar (auto-nuevo-ingreso, auto-reservado, promo-detailing, etc.)
-    const titleY = baseY - (price && showPrice ? 110 : 40);
-    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
-
-    if (price && showPrice) {
-      drawPriceTag(ctx, pad, baseY, price, priceColor, fontFamily);
-    }
   }
+
+  // 6. Mensaje: 1 o 2 líneas en Barlow Condensed, blanco con ligera transparencia
+  ctx.save();
+  const msgSize = isStory ? 26 : 21;
+  ctx.font = `500 ${msgSize}px "Barlow Condensed", sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(effectiveMessage, pad, msgY);
+  ctx.restore();
 }
 
 /**
@@ -1073,39 +943,57 @@ function drawPriceTag(
 }
 
 /**
- * Dibuja la información base de pie (ubicación y hashtag) directamente sobre la foto/degradado,
- * sin franja negra opaca ni líneas que tapen la imagen del vehículo.
+ * Dibuja la información base de pie:
+ * 7. Línea divisoria fina gris de lado a lado
+ * 8. Pie: Izquierda ícono de ubicación rojo + "Ciudad de la Costa, Canelones" en blanco;
+ *         Derecha hashtag en gris. Sin franja negra ni fondo propio.
+ * Respeta la zona segura de Instagram Stories (< 1670px).
  */
 function drawBaseFooterInfo(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  locationName: string,
-  phoneText?: string
+  format: SocialMediaFormat = 'story',
+  locationName: string = 'Ciudad de la Costa, Canelones',
+  hashtag: string = '#TuPróximoAuto'
 ) {
   const pad = 60;
-  const y = h - 45;
+  const isStory = format === 'story';
+  const lineY = isStory ? 1605 : 1255;
+  const footerY = isStory ? 1640 : 1290;
 
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  // 7. Línea divisoria fina gris
+  ctx.strokeStyle = '#3A3A3A';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, lineY);
+  ctx.lineTo(w - pad, lineY);
+  ctx.stroke();
+
+  // 8. Pie
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 2;
 
-  // Ubicación a la derecha
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.font = '600 22px "Barlow Condensed", system-ui, sans-serif';
-  ctx.fillStyle = '#E5E5E3';
+  // Izquierda: pin de ubicación rojo + Ubicación en blanco
   const loc = locationName || 'Ciudad de la Costa, Canelones';
-  const rightText = phoneText ? `📞 ${phoneText}  •  📍 ${loc}` : `📍 ${loc}`;
-  ctx.fillText(rightText, w - pad, y);
-
-  // Hashtag a la izquierda
+  ctx.font = '600 22px "Barlow Condensed", system-ui, sans-serif';
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = '#D7141A';
+  ctx.fillText('📍', pad, footerY);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(loc, pad + 28, footerY);
+
+  // Derecha: hashtag en gris
+  ctx.textAlign = 'right';
   ctx.font = '600 20px "Barlow Condensed", system-ui, sans-serif';
-  ctx.fillStyle = '#A0A0A0';
-  ctx.letterSpacing = '1px';
-  ctx.fillText('#carvlak', pad, y);
+  ctx.fillStyle = '#8A8A8A';
+  ctx.letterSpacing = '0.5px';
+  ctx.fillText(hashtag || '#TuPróximoAuto', w - pad, footerY);
 
   ctx.restore();
 }
@@ -1184,6 +1072,11 @@ export function drawCanvasTextElement(
 ) {
   if (!element.visible || !element.text.trim()) return;
 
+  // Supresión total y garantizada de los dos textos solicitados por el usuario
+  if (element.id === 'etiqueta_instagram' || element.id === 'pie_marca') {
+    return;
+  }
+
   const fontName = element.fontFamily === 'Barlow Condensed'
     ? '"Barlow Condensed"'
     : element.fontFamily === 'Archivo Narrow'
@@ -1230,6 +1123,77 @@ export function drawCanvasTextElement(
   ctx.translate(clampedX, clampedY);
   if (element.rotation) {
     ctx.rotate(rad);
+  }
+
+  // Elementos especiales del formato base CARVLAK
+  if (element.id === 'barra_roja') {
+    const barW = canvasHeight > 1500 ? 220 : 180;
+    const barH = canvasHeight > 1500 ? 8 : 6;
+    ctx.save();
+    ctx.fillStyle = element.color || '#D7141A';
+    ctx.fillRect(0, -barH / 2, barW, barH);
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+
+  if (element.id === 'linea_divisoria') {
+    ctx.save();
+    ctx.strokeStyle = element.color || '#3A3A3A';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(canvasWidth - 120, 0);
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+
+  if (element.id === 'pie_ubicacion') {
+    ctx.save();
+    ctx.font = `600 ${element.fontSize}px "Barlow Condensed", sans-serif`;
+    ctx.fillStyle = '#D7141A';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('📍', 0, 0);
+    ctx.fillStyle = element.color || '#FFFFFF';
+    ctx.fillText(element.text, 28, 0);
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+
+  if (element.id === 'pie_hashtag') {
+    ctx.save();
+    ctx.font = `600 ${element.fontSize}px "Barlow Condensed", sans-serif`;
+    ctx.fillStyle = element.color || '#8A8A8A';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = '0.5px';
+    ctx.fillText(element.text, 0, 0);
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+
+  if (element.id === 'etiqueta') {
+    const padX = 18;
+    const tagH = canvasHeight > 1500 ? 38 : 32;
+    const tagW = textWidth + padX * 2;
+    ctx.save();
+    roundRect(ctx, 0, -tagH / 2, tagW, tagH, 6);
+    ctx.fillStyle = element.bgColor || '#D7141A';
+    ctx.fill();
+
+    ctx.fillStyle = element.color || '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = '2px';
+    ctx.fillText(element.text.toUpperCase(), tagW / 2, 1);
+    ctx.restore();
+    ctx.restore();
+    return;
   }
 
   // Fondo opcional: franja o recuadro
@@ -1394,6 +1358,17 @@ export function isLikelyFlyerImage(url: string, index?: number, hasMultiplePhoto
  * - Subtítulo y especificaciones ocultos por defecto (activables vía switch)
  * - Precio visible sólo en plantillas de venta / oferta
  */
+/**
+ * Genera la lista de elementos de texto independientes con el formato base oficial:
+ * 1. Etiqueta (recuadro rojo #D7141A con texto blanco mayúsculas chico letter-spaced)
+ * 2. Título principal (muy grande blanco Archivo Narrow 700 mayúsculas)
+ * 3. Barra roja deportiva (#D7141A corta y gruesa)
+ * 4. Modelo del auto (blanco grande mayúsculas)
+ * 5. Precio / Precio anterior (cuando corresponde)
+ * 6. Mensaje (Barlow Condensed con ligera transparencia)
+ * 7. Línea divisoria fina gris
+ * 8. Pie (Izquierda: pin rojo + Ubicación; Derecha: hashtag en gris)
+ */
 export function getDefaultTextElements(
   templateId: string,
   format: SocialMediaFormat,
@@ -1402,7 +1377,10 @@ export function getDefaultTextElements(
     price?: string;
     originalPrice?: string;
     stampText?: string;
+    badgeTag?: string;
     subtitle?: string;
+    locationName?: string;
+    hashtag?: string;
     specs?: { key: string; label: string; text: string }[];
   }
 ): CanvasTextElement[] {
@@ -1413,98 +1391,168 @@ export function getDefaultTextElements(
     'auto-nuevo-ingreso',
     'auto-ficha-carrusel',
     'auto-electricos-0km',
+    'auto-catalogo-semana',
     'auto-rango-precio',
     'detailing-promo'
   ].includes(templateId);
 
-  const defaultStampMap: Record<string, string> = {
-    'auto-vendido': 'VENDIDO',
+  const defaultBadgeMap: Record<string, string> = {
+    'auto-vendido': 'ENTREGA CONFIRMADA',
     'auto-destacado-semana': 'DESTACADO DE LA SEMANA',
-    'auto-reservado': 'RESERVADO',
-    'auto-descuento': 'OPORTUNIDAD',
-    'auto-nuevo-ingreso': 'NUEVO INGRESO',
-    'auto-electricos-0km': '100% ELÉCTRICO',
-    'auto-entrega': '¡NUEVO DUEÑO!',
-    'auto-ficha-carrusel': 'EN STOCK',
-    'detailing-antes-despues': 'TRANSFORMACIÓN',
+    'auto-descuento': 'REBAJA DE LA SEMANA',
+    'auto-nuevo-ingreso': 'RECIÉN LLEGADO',
+    'auto-reservado': 'SEÑA RECIBIDA',
+    'detailing-antes-despues': 'DETAILVLAK',
+    'auto-entrega': 'ENTREGA',
     'detailing-promo': 'PROMO EXCLUSIVA',
     'agenda-turnos-disponibles': 'AGENDA ABIERTA',
-    'inspeccion-precompra': 'COMPRÁ SEGURO'
+    'inspeccion-precompra': 'PERITAJE MECÁNICO',
+    'auto-ficha-carrusel': 'EN STOCK',
+    'auto-electricos-0km': '100% ELÉCTRICO',
+    'auto-catalogo-semana': 'STOCK DESTACADO',
+    'auto-rango-precio': 'ACCESIBLES'
   };
 
-  const stampColor = templateId === 'auto-reservado'
-    ? '#EAB308'
-    : templateId === 'auto-electricos-0km'
-    ? '#22C55E'
-    : templateId === 'auto-vendido'
-    ? '#FFFFFF' // Variante A: Blanco sobre foto con subrayado deportivo rojo
-    : '#D7141A';
+  const defaultStampMap: Record<string, string> = {
+    'auto-vendido': 'VENDIDO',
+    'auto-destacado-semana': 'OPORTUNIDAD',
+    'auto-descuento': 'OPORTUNIDAD',
+    'auto-nuevo-ingreso': 'NUEVO INGRESO',
+    'auto-reservado': 'RESERVADO',
+    'detailing-antes-despues': 'ANTES / DESPUÉS',
+    'auto-entrega': '¡FELICITACIONES!',
+    'detailing-promo': 'BENEFICIO',
+    'agenda-turnos-disponibles': 'TURNOS DISPONIBLES',
+    'inspeccion-precompra': 'COMPRÁ SEGURO',
+    'auto-ficha-carrusel': 'FICHA TÉCNICA',
+    'auto-electricos-0km': 'NUEVO INGRESO',
+    'auto-catalogo-semana': 'OPORTUNIDAD',
+    'auto-rango-precio': 'OPORTUNIDAD'
+  };
 
-  const stampRotation = (templateId === 'auto-vendido' || templateId === 'auto-destacado-semana')
-    ? 0 // Variante A: Sello VENDIDO y cápsula DESTACADO a 0°
-    : templateId === 'auto-descuento' ? 14 : templateId === 'auto-reservado' ? -8 : -12;
+  const defaultMessageMap: Record<string, string> = {
+    'auto-vendido': '¡Gracias por confiar en nosotros! Entregado con garantía total CARVLAK.',
+    'auto-destacado-semana': 'Escribinos por WhatsApp y coordiná tu visita.',
+    'auto-descuento': 'Por tiempo limitado en nuestro showroom.',
+    'auto-nuevo-ingreso': 'Consultá antes de que se vaya.',
+    'auto-reservado': '¿Buscás algo parecido? Escribinos.',
+    'detailing-antes-despues': 'Corrección de barniz y sellado cerámico 9H.',
+    'auto-entrega': '¡Gracias por confiar en CARVLAK! Entregado con garantía total.',
+    'detailing-promo': 'Protección profesional en nuestro taller. Cupos limitados.',
+    'agenda-turnos-disponibles': 'Cupos disponibles esta semana. Coordiná por WhatsApp.',
+    'inspeccion-precompra': 'Escaneo computarizado OBD-II, espesor de pintura y prueba de manejo.',
+    'auto-ficha-carrusel': 'Deslizá para conocer el equipamiento completo.',
+    'auto-electricos-0km': 'Autonomía, tecnología y el menor costo por kilómetro.',
+    'auto-catalogo-semana': 'Selección de vehículos verificados listos para entrega.',
+    'auto-rango-precio': 'Excelente relación precio-calidad con financiación.'
+  };
 
-  const stampX = templateId === 'auto-vendido'
-    ? 60
-    : templateId === 'auto-destacado-semana'
-    ? (isStory ? 230 : 200)
-    : templateId === 'auto-descuento' ? 760 : 540;
+  const defaultHashtagMap: Record<string, string> = {
+    'detailing-antes-despues': '#DetailVlak',
+    'detailing-promo': '#DetailVlak',
+    'agenda-turnos-disponibles': '#DetailVlak'
+  };
 
-  const stampY = isStory
-    ? (templateId === 'auto-vendido' ? 1510 : templateId === 'auto-destacado-semana' ? 310 : templateId === 'auto-descuento' ? 450 : 700)
-    : (templateId === 'auto-vendido' ? 980 : templateId === 'auto-destacado-semana' ? 140 : templateId === 'auto-descuento' ? 320 : 480);
+  const isDiscount = templateId === 'auto-descuento' && !!data.originalPrice;
+
+  const tagY = isStory
+    ? (isDiscount ? 1110 : showPriceDefault ? 1195 : 1260)
+    : (isDiscount ? 900 : showPriceDefault ? 935 : 985);
+
+  const titleY = isStory
+    ? (isDiscount ? 1225 : showPriceDefault ? 1295 : 1360)
+    : (isDiscount ? 975 : showPriceDefault ? 1010 : 1060);
+
+  const barY = isStory
+    ? (isDiscount ? 1285 : showPriceDefault ? 1345 : 1410)
+    : (isDiscount ? 1015 : showPriceDefault ? 1050 : 1100);
+
+  const modelY = isStory
+    ? (isDiscount ? 1355 : showPriceDefault ? 1405 : 1470)
+    : (isDiscount ? 1065 : showPriceDefault ? 1100 : 1150);
+
+  const origPriceY = isStory ? 1425 : 1120;
+  const priceY = isStory ? 1485 : 1170;
+
+  const msgY = isStory ? 1555 : 1220;
+
+  const lineY = isStory ? 1605 : 1255;
+  const footerY = isStory ? 1640 : 1290;
+
+  const badgeText = data.badgeTag || defaultBadgeMap[templateId] || 'STOCK CARVLAK';
+  const stampText = data.stampText || defaultStampMap[templateId] || 'OPORTUNIDAD';
+  const messageText = data.subtitle || defaultMessageMap[templateId] || '¡Gracias por confiar en nosotros!';
+  const hashtagText = data.hashtag || defaultHashtagMap[templateId] || '#TuPróximoAuto';
+  const locationText = data.locationName || 'Ciudad de la Costa, Canelones';
 
   const elements: CanvasTextElement[] = [
     {
-      id: 'sello',
-      label: 'Texto del sello',
-      text: data.stampText || defaultStampMap[templateId] || 'DESTACADO',
-      visible: true,
-      color: stampColor,
-      fontSize: templateId === 'auto-vendido' ? (isStory ? 105 : 85) : templateId === 'auto-destacado-semana' ? (isStory ? 20 : 16) : (isStory ? 64 : 52),
-      fontWeight: 'black',
-      fontFamily: 'Archivo Narrow',
-      rotation: stampRotation,
-      x: stampX,
-      y: stampY,
-      align: templateId === 'auto-vendido' ? 'left' : 'center',
-      bgType: templateId === 'auto-vendido' ? 'none' : 'box',
-      bgColor: templateId === 'auto-destacado-semana' ? '#D7141A' : '#000000',
-      bgOpacity: templateId === 'auto-destacado-semana' ? 1 : 0.88
-    },
-    {
-      id: 'modelo',
-      label: 'Modelo del vehículo',
-      text: data.carTitle || 'Vehículo Seleccionado',
+      id: 'etiqueta',
+      label: 'Etiqueta superior',
+      text: badgeText,
       visible: true,
       color: '#FFFFFF',
-      fontSize: isStory ? (templateId === 'auto-destacado-semana' ? 54 : 50) : (templateId === 'auto-destacado-semana' ? 44 : 42),
+      fontSize: isStory ? 18 : 15,
       fontWeight: 'bold',
       fontFamily: 'Archivo Narrow',
       rotation: 0,
       x: 60,
-      y: isStory ? (templateId === 'auto-vendido' ? 1605 : templateId === 'auto-destacado-semana' ? 1540 : 1600) : (templateId === 'auto-vendido' ? 1055 : templateId === 'auto-destacado-semana' ? 1060 : 1080),
+      y: tagY,
       align: 'left',
-      bgType: 'none',
-      bgColor: '#000000',
-      bgOpacity: 0.5
+      bgType: 'box',
+      bgColor: '#D7141A',
+      bgOpacity: 1
     },
     {
-      id: 'subtitulo',
-      label: 'Subtítulo / Agradecimiento',
-      text: data.subtitle || (templateId === 'auto-vendido' ? '¡Gracias por confiar en nosotros!' : ''),
-      visible: templateId === 'auto-vendido', // Variante A Vendido muestra el agradecimiento visible
-      color: '#D1D5DB',
-      fontSize: isStory ? 28 : 22,
-      fontWeight: 'semibold',
-      fontFamily: 'Barlow Condensed',
+      id: 'sello',
+      label: 'Título principal',
+      text: stampText.toUpperCase(),
+      visible: true,
+      color: '#FFFFFF',
+      fontSize: isStory ? 96 : 76,
+      fontWeight: 'black',
+      fontFamily: 'Archivo Narrow',
       rotation: 0,
       x: 60,
-      y: isStory ? (templateId === 'auto-vendido' ? 1660 : 1655) : (templateId === 'auto-vendido' ? 1100 : 1130),
+      y: titleY,
       align: 'left',
       bgType: 'none',
       bgColor: '#000000',
-      bgOpacity: 0.5
+      bgOpacity: 0
+    },
+    {
+      id: 'barra_roja',
+      label: 'Barra roja deportiva',
+      text: '━',
+      visible: true,
+      color: '#D7141A',
+      fontSize: 16,
+      fontWeight: 'bold',
+      fontFamily: 'Archivo Narrow',
+      rotation: 0,
+      x: 60,
+      y: barY,
+      align: 'left',
+      bgType: 'none',
+      bgColor: '#D7141A',
+      bgOpacity: 1
+    },
+    {
+      id: 'modelo',
+      label: 'Modelo del vehículo',
+      text: (data.carTitle || 'Vehículo').toUpperCase(),
+      visible: true,
+      color: '#FFFFFF',
+      fontSize: isStory ? 48 : 38,
+      fontWeight: 'bold',
+      fontFamily: 'Archivo Narrow',
+      rotation: 0,
+      x: 60,
+      y: modelY,
+      align: 'left',
+      bgType: 'none',
+      bgColor: '#000000',
+      bgOpacity: 0
     },
     {
       id: 'precio_anterior',
@@ -1517,30 +1565,98 @@ export function getDefaultTextElements(
       fontFamily: 'Archivo Narrow',
       rotation: 0,
       x: 60,
-      y: isStory ? 1690 : 1160,
+      y: origPriceY,
       align: 'left',
       bgType: 'none',
       bgColor: '#000000',
-      bgOpacity: 0.5
+      bgOpacity: 0
     },
     {
       id: 'precio',
-      label: 'Precio visible',
+      label: 'Precio',
       text: data.price || '',
       visible: showPriceDefault,
-      color: '#D7141A',
-      fontSize: isStory ? (templateId === 'auto-destacado-semana' ? 78 : 64) : (templateId === 'auto-destacado-semana' ? 64 : 52),
+      color: '#FFFFFF',
+      fontSize: isStory ? 68 : 54,
       fontWeight: 'black',
       fontFamily: 'Archivo Narrow',
       rotation: 0,
       x: 60,
-      y: isStory ? (templateId === 'auto-destacado-semana' ? 1630 : 1750) : (templateId === 'auto-destacado-semana' ? 1130 : 1220),
+      y: priceY,
       align: 'left',
       bgType: 'none',
       bgColor: '#000000',
-      bgOpacity: 0.5
+      bgOpacity: 0
     },
-    // Fichas técnicas ocultas por defecto (activables en el panel)
+    {
+      id: 'subtitulo',
+      label: 'Mensaje',
+      text: messageText,
+      visible: true,
+      color: 'rgba(255, 255, 255, 0.88)',
+      fontSize: isStory ? 26 : 21,
+      fontWeight: 'semibold',
+      fontFamily: 'Barlow Condensed',
+      rotation: 0,
+      x: 60,
+      y: msgY,
+      align: 'left',
+      bgType: 'none',
+      bgColor: '#000000',
+      bgOpacity: 0
+    },
+    {
+      id: 'linea_divisoria',
+      label: 'Línea divisoria',
+      text: '─',
+      visible: true,
+      color: '#3A3A3A',
+      fontSize: 14,
+      fontWeight: 'normal',
+      fontFamily: 'Archivo Narrow',
+      rotation: 0,
+      x: 60,
+      y: lineY,
+      align: 'left',
+      bgType: 'none',
+      bgColor: '#3A3A3A',
+      bgOpacity: 1
+    },
+    {
+      id: 'pie_ubicacion',
+      label: 'Ubicación (pie)',
+      text: locationText,
+      visible: true,
+      color: '#FFFFFF',
+      fontSize: isStory ? 22 : 18,
+      fontWeight: 'semibold',
+      fontFamily: 'Barlow Condensed',
+      rotation: 0,
+      x: 60,
+      y: footerY,
+      align: 'left',
+      bgType: 'none',
+      bgColor: '#000000',
+      bgOpacity: 0
+    },
+    {
+      id: 'pie_hashtag',
+      label: 'Hashtag (pie)',
+      text: hashtagText,
+      visible: true,
+      color: '#8A8A8A',
+      fontSize: isStory ? 20 : 16,
+      fontWeight: 'semibold',
+      fontFamily: 'Barlow Condensed',
+      rotation: 0,
+      x: 1080 - 60,
+      y: footerY,
+      align: 'right',
+      bgType: 'none',
+      bgColor: '#000000',
+      bgOpacity: 0
+    },
+    // Ficha técnica adicional (oculta por defecto)
     {
       id: 'specs_km',
       label: 'Kilometraje',
@@ -1615,57 +1731,6 @@ export function getDefaultTextElements(
       align: 'left',
       bgType: 'box',
       bgColor: '#141414',
-      bgOpacity: 0.85
-    },
-    {
-      id: 'cta',
-      label: 'Llamado a la acción (CTA)',
-      text: templateId === 'auto-destacado-semana' ? '📲 Escribinos por WhatsApp al 099 267 964' : '📲 Consultá por WhatsApp',
-      visible: templateId === 'auto-destacado-semana', // Variante A Destacado muestra el CTA de WhatsApp
-      color: '#FFFFFF',
-      fontSize: isStory ? 28 : 22,
-      fontWeight: 'semibold',
-      fontFamily: 'Barlow Condensed',
-      rotation: 0,
-      x: templateId === 'auto-destacado-semana' ? 60 : 540,
-      y: isStory ? (templateId === 'auto-destacado-semana' ? 1685 : 1835) : (templateId === 'auto-destacado-semana' ? 1175 : 1285),
-      align: templateId === 'auto-destacado-semana' ? 'left' : 'center',
-      bgType: templateId === 'auto-destacado-semana' ? 'none' : 'box',
-      bgColor: '#D7141A',
-      bgOpacity: 0.95
-    },
-    {
-      id: 'etiqueta_instagram',
-      label: 'Etiqueta @car.vlak (arriba)',
-      text: '@car.vlak',
-      visible: false, // Apagado por defecto en todas las plantillas
-      color: '#FFFFFF',
-      fontSize: 22,
-      fontWeight: 'bold',
-      fontFamily: 'Archivo Narrow',
-      rotation: 0,
-      x: 935,
-      y: 92,
-      align: 'center',
-      bgType: 'box',
-      bgColor: '#000000',
-      bgOpacity: 0.85
-    },
-    {
-      id: 'pie_marca',
-      label: 'Pie CARVLAK Group',
-      text: 'CARVLAK Group  •  @car.vlak',
-      visible: false, // Apagado por defecto en todas las plantillas
-      color: '#FFFFFF',
-      fontSize: 24,
-      fontWeight: 'bold',
-      fontFamily: 'Archivo Narrow',
-      rotation: 0,
-      x: 60,
-      y: isStory ? 1830 : 1270,
-      align: 'left',
-      bgType: 'none',
-      bgColor: '#000000',
       bgOpacity: 0.85
     }
   ];

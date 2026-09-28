@@ -321,13 +321,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (s) {
       try {
         const parsed = JSON.parse(s);
-        return {
-          ...INITIAL_SOCIAL_MEDIA_CONFIG,
-          ...parsed,
-          templates: { ...INITIAL_SOCIAL_MEDIA_CONFIG.templates, ...(parsed.templates || {}) }
-        };
+        // Si ya está migrado a la versión unificada v2, limpiar elementos viejos de cualquier plantilla guardada
+        if (parsed.unified_version === '2026_unified_v2') {
+          const cleanTemplates = { ...INITIAL_SOCIAL_MEDIA_CONFIG.templates };
+          if (parsed.templates) {
+            Object.keys(parsed.templates).forEach((key) => {
+              const tmpl = parsed.templates[key];
+              if (tmpl) {
+                const cleanTmpl = { ...tmpl };
+                (['layout_story', 'layout_post'] as const).forEach((lk) => {
+                  const layout = cleanTmpl[lk];
+                  if (layout?.textElements) {
+                    layout.textElements = layout.textElements.filter(
+                      (el: any) => el.id !== 'etiqueta_instagram' && el.id !== 'pie_marca'
+                    );
+                  }
+                });
+                cleanTemplates[key] = cleanTmpl;
+              }
+            });
+          }
+          return {
+            ...INITIAL_SOCIAL_MEDIA_CONFIG,
+            ...parsed,
+            templates: cleanTemplates
+          };
+        }
       } catch (e) {}
     }
+    // Si no está en v2, reiniciar completamente para eliminar elementos obsoletos
+    try {
+      localStorage.removeItem('carvlak_social_media_config');
+    } catch (e) {}
     return INITIAL_SOCIAL_MEDIA_CONFIG;
   });
 

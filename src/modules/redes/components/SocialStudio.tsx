@@ -167,17 +167,30 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     if (selectedCategory === 'automotora' && activeCar) {
       // Regla oficial: Por defecto SOLO el modelo ({marca} {modelo})
       const carTitle = `${activeCar.brand} ${activeCar.model}`.trim();
-      const carSubtitle = `${activeCar.year} • ${activeCar.category} • ${activeCar.transmission || 'Manual'}`;
       setHeadline(carTitle);
-      setSubtitle(carSubtitle);
 
-      const priceFormatted = activeCar.sale_price
-        ? formatCurrency(activeCar.sale_price, activeCar.sale_currency || 'USD')
-        : 'Consultar precio';
+      const isPriceTemplate = templateConfig?.show_price ?? true;
+      const isDiscountTemplate = selectedTemplateId === 'auto-descuento';
+
+      let priceFormatted = '';
+      let origPriceFormatted = '';
+      let subtitleDefault = templateConfig?.subtitle_default || '¡Gracias por confiar en nosotros!';
+
+      if (isPriceTemplate && activeCar.sale_price) {
+        priceFormatted = formatCurrency(activeCar.sale_price, activeCar.sale_currency || 'USD');
+      }
+
+      if (isDiscountTemplate && activeCar.sale_price) {
+        const origNum = Math.round((activeCar.sale_price * 1.1) / 100) * 100;
+        const rebajaNum = origNum - activeCar.sale_price;
+        origPriceFormatted = formatCurrency(origNum, activeCar.sale_currency || 'USD');
+        subtitleDefault = `Ahorrás USD ${rebajaNum.toLocaleString('es-UY')}. Por tiempo limitado.`;
+      }
+
       setPrice(priceFormatted);
-
-      setOriginalPrice('');
-      setBadgeTag('Stock CARVLAK');
+      setOriginalPrice(origPriceFormatted);
+      setSubtitle(subtitleDefault);
+      setBadgeTag(templateConfig?.badge_tag || 'STOCK CARVLAK');
 
       const carSpecs = [
         activeCar.fuel || 'Nafta',
@@ -204,13 +217,16 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
         setCarouselPhotos([]);
       }
 
-      // Inicialización de CanvasTextElements según la regla de sólo el modelo visible por defecto
+      // Inicialización de CanvasTextElements según el formato base oficial
       const defaultElements = getDefaultTextElements(selectedTemplateId, format, {
         carTitle,
         price: priceFormatted,
-        originalPrice: '',
+        originalPrice: origPriceFormatted,
         stampText: templateConfig?.stamp_text,
-        subtitle: carSubtitle,
+        badgeTag: templateConfig?.badge_tag,
+        subtitle: subtitleDefault,
+        locationName: socialMediaConfig.location_name,
+        hashtag: templateConfig?.default_hashtags || socialMediaConfig.default_hashtag,
         specs: [
           {
             key: 'mileage',
@@ -226,29 +242,33 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       // Si la plantilla ya tiene configurados textElements en su layout, fusionar los estilos
       const savedLayout =
         format === 'story' ? templateConfig?.layout_story : templateConfig?.layout_post;
-      if (savedLayout?.textElements && savedLayout.textElements.length > 0) {
-        const merged = defaultElements.map((defEl) => {
-          const match = savedLayout.textElements?.find((s) => s.id === defEl.id);
-          if (!match) return defEl;
-          return {
-            ...defEl,
-            color: match.color,
-            fontSize: match.fontSize,
-            fontWeight: match.fontWeight,
-            fontFamily: match.fontFamily,
-            rotation: match.rotation,
-            x: match.x,
-            y: match.y,
-            align: match.align,
-            bgType: match.bgType,
-            bgColor: match.bgColor,
-            bgOpacity: match.bgOpacity,
-            visible: match.visible !== undefined ? match.visible : defEl.visible
-          };
-        });
+      // Comprobar si el layout guardado pertenece al formato base unificado oficial (contiene 'barra_roja' o 'etiqueta')
+      const isUnifiedLayout = savedLayout?.textElements?.some((el) => el.id === 'barra_roja' || el.id === 'etiqueta');
+      if (isUnifiedLayout && savedLayout?.textElements && savedLayout.textElements.length > 0) {
+        const merged = defaultElements
+          .filter((defEl) => defEl.id !== 'etiqueta_instagram' && defEl.id !== 'pie_marca')
+          .map((defEl) => {
+            const match = savedLayout.textElements?.find((s) => s.id === defEl.id);
+            if (!match) return defEl;
+            return {
+              ...defEl,
+              color: match.color,
+              fontSize: match.fontSize,
+              fontWeight: match.fontWeight,
+              fontFamily: match.fontFamily,
+              rotation: match.rotation,
+              x: match.x,
+              y: match.y,
+              align: match.align,
+              bgType: match.bgType,
+              bgColor: match.bgColor,
+              bgOpacity: match.bgOpacity,
+              visible: match.visible !== undefined ? match.visible : defEl.visible
+            };
+          });
         setTextElements(merged);
       } else {
-        setTextElements(defaultElements);
+        setTextElements(defaultElements.filter((el) => el.id !== 'etiqueta_instagram' && el.id !== 'pie_marca'));
       }
 
       // Generar copy sugerido para Instagram
@@ -365,6 +385,18 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     setTextElements((prev) =>
       prev.map((el) => (el.id === 'precio' ? { ...el, text: val } : el))
     );
+    if (selectedTemplateId === 'auto-descuento') {
+      const pNum = parseFloat(val.replace(/[^0-9]/g, ''));
+      const origNum = parseFloat(originalPrice.replace(/[^0-9]/g, ''));
+      if (!isNaN(pNum) && !isNaN(origNum) && origNum > pNum) {
+        const diff = origNum - pNum;
+        const newMsg = `Ahorrás USD ${diff.toLocaleString('es-UY')}. Por tiempo limitado.`;
+        setSubtitle(newMsg);
+        setTextElements((prev) =>
+          prev.map((el) => (el.id === 'subtitulo' ? { ...el, text: newMsg } : el))
+        );
+      }
+    }
   };
 
   const handleOriginalPriceChange = (val: string) => {
@@ -372,12 +404,31 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     setTextElements((prev) =>
       prev.map((el) => (el.id === 'precio_anterior' ? { ...el, text: val } : el))
     );
+    if (selectedTemplateId === 'auto-descuento') {
+      const pNum = parseFloat(price.replace(/[^0-9]/g, ''));
+      const origNum = parseFloat(val.replace(/[^0-9]/g, ''));
+      if (!isNaN(pNum) && !isNaN(origNum) && origNum > pNum) {
+        const diff = origNum - pNum;
+        const newMsg = `Ahorrás USD ${diff.toLocaleString('es-UY')}. Por tiempo limitado.`;
+        setSubtitle(newMsg);
+        setTextElements((prev) =>
+          prev.map((el) => (el.id === 'subtitulo' ? { ...el, text: newMsg } : el))
+        );
+      }
+    }
   };
 
   const handleStampTextChange = (val: string) => {
     setStampText(val);
     setTextElements((prev) =>
       prev.map((el) => (el.id === 'sello' ? { ...el, text: val } : el))
+    );
+  };
+
+  const handleBadgeTagChange = (val: string) => {
+    setBadgeTag(val);
+    setTextElements((prev) =>
+      prev.map((el) => (el.id === 'etiqueta' ? { ...el, text: val } : el))
     );
   };
 
@@ -442,7 +493,10 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       price,
       originalPrice,
       stampText: currentTemplateConfig?.stamp_text,
-      subtitle
+      badgeTag: currentTemplateConfig?.badge_tag,
+      subtitle,
+      locationName: socialMediaConfig.location_name,
+      hashtag: currentTemplateConfig?.default_hashtags || socialMediaConfig.default_hashtag
     });
     setTextElements(defaultElements);
     showToast('Plantilla restablecida a su diseño original de fábrica', 'info');
@@ -865,7 +919,33 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
-                  Titular / Modelo
+                  1. Etiqueta superior (roja)
+                </label>
+                <input
+                  type="text"
+                  value={badgeTag}
+                  onChange={(e) => handleBadgeTagChange(e.target.value)}
+                  placeholder="Ej: ENTREGA CONFIRMADA, DESTACADO DE LA SEMANA"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#D7141A] uppercase font-bold focus:bg-white focus:border-[#161616] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  2. Título principal (sello)
+                </label>
+                <input
+                  type="text"
+                  value={stampText}
+                  onChange={(e) => handleStampTextChange(e.target.value)}
+                  placeholder="Ej: VENDIDO, OPORTUNIDAD, NUEVO INGRESO"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] uppercase font-bold focus:bg-white focus:border-[#161616] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  3. Modelo del vehículo
                 </label>
                 <input
                   type="text"
@@ -876,22 +956,9 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
               </div>
 
               <div>
-                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
-                  Texto del sello
-                </label>
-                <input
-                  type="text"
-                  value={stampText}
-                  onChange={(e) => handleStampTextChange(e.target.value)}
-                  placeholder="Ej: OPORTUNIDAD, VENDIDO, RESERVADO"
-                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] uppercase font-bold focus:bg-white focus:border-[#161616] focus:outline-none"
-                />
-              </div>
-
-              <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[11px] text-[#6B6B6B] font-semibold">
-                    Precio visible
+                    4. Precio visible
                   </label>
                   {selectedCategory === 'automotora' && (
                     <label className="text-[10px] text-[#6B6B6B] hover:text-[#161616] flex items-center gap-1 cursor-pointer">
@@ -930,6 +997,19 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                 </div>
               )}
 
+              <div className={selectedTemplateId === 'auto-descuento' ? '' : 'sm:col-span-2'}>
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  5. Mensaje / Bajada
+                </label>
+                <input
+                  type="text"
+                  value={subtitle}
+                  onChange={(e) => handleSubtitleChange(e.target.value)}
+                  placeholder="Ej: ¡Gracias por confiar en nosotros! Entregado con garantía total CARVLAK."
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] focus:outline-none"
+                />
+              </div>
+
               <div>
                 <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
                   Posición del logo CARVLAK
@@ -966,9 +1046,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                   { id: 'specs_combustible', label: 'Combustible', desc: activeCar?.fuel || 'Nafta' },
                   { id: 'specs_transmision', label: 'Transmisión', desc: activeCar?.transmission || 'Manual' },
                   { id: 'specs_anio', label: 'Año', desc: `Año ${activeCar?.year || ''}` },
-                  { id: 'cta', label: 'Llamado a la acción', desc: 'Consultá por WhatsApp' },
-                  { id: 'etiqueta_instagram', label: 'Etiqueta @car.vlak', desc: 'Arriba a la derecha' },
-                  { id: 'pie_marca', label: 'Pie CARVLAK Group', desc: 'CARVLAK Group • @car.vlak' }
+                  { id: 'cta', label: 'Llamado a la acción', desc: 'Consultá por WhatsApp' }
                 ].map((item) => {
                   const el = textElements.find((t) => t.id === item.id);
                   const isVisible = el?.visible || false;
@@ -1088,6 +1166,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
             logoPosition={logoPosition}
             instagramHandle={socialMediaConfig.instagram_handle}
             locationName={socialMediaConfig.location_name}
+            hashtag={currentTemplateConfig?.default_hashtags || socialMediaConfig.default_hashtag || '#TuPróximoAuto'}
             badgeTag={badgeTag}
             layoutConfig={
               format === 'story'

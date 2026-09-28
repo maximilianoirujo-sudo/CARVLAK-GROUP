@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   Key,
   Download,
-  Globe
+  Globe,
+  Hash
 } from 'lucide-react';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
@@ -38,6 +39,7 @@ export const SocialConfigSection: React.FC = () => {
   const [instagramHandle, setInstagramHandle] = useState(socialMediaConfig.instagram_handle);
   const [locationName, setLocationName] = useState(socialMediaConfig.location_name);
   const [whatsappNumber, setWhatsappNumber] = useState(socialMediaConfig.whatsapp_number);
+  const [defaultHashtag, setDefaultHashtag] = useState(socialMediaConfig.default_hashtag || '#TuPróximoAuto');
 
   // Acción por defecto al generar pieza
   const [defaultAction, setDefaultAction] = useState<'download' | 'share' | 'instagram_direct'>(
@@ -77,6 +79,7 @@ export const SocialConfigSection: React.FC = () => {
       instagram_handle: instagramHandle.trim(),
       location_name: locationName.trim(),
       whatsapp_number: whatsappNumber.trim(),
+      default_hashtag: defaultHashtag.trim(),
       meta_instagram: {
         ...metaConfig,
         defaultPublishAction: defaultAction
@@ -92,6 +95,7 @@ export const SocialConfigSection: React.FC = () => {
     setInstagramHandle(INITIAL_SOCIAL_MEDIA_CONFIG.instagram_handle);
     setLocationName(INITIAL_SOCIAL_MEDIA_CONFIG.location_name);
     setWhatsappNumber(INITIAL_SOCIAL_MEDIA_CONFIG.whatsapp_number);
+    setDefaultHashtag(INITIAL_SOCIAL_MEDIA_CONFIG.default_hashtag || '#TuPróximoAuto');
     setDefaultAction('share');
     if (INITIAL_SOCIAL_MEDIA_CONFIG.meta_instagram) {
       setMetaConfig(INITIAL_SOCIAL_MEDIA_CONFIG.meta_instagram);
@@ -140,8 +144,8 @@ export const SocialConfigSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Datos Oficiales de Contacto */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        {/* Datos Oficiales de Contacto y Marca */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div>
             <label className="text-[11px] font-semibold text-[#6B6B6B] block mb-1.5 flex items-center gap-1.5">
               <Instagram className="w-3.5 h-3.5 text-[#D7141A]" />
@@ -179,8 +183,22 @@ export const SocialConfigSection: React.FC = () => {
               type="text"
               value={locationName}
               onChange={(e) => setLocationName(e.target.value)}
-              placeholder="Shangrilá, Canelones"
+              placeholder="Ciudad de la Costa, Canelones"
               className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-[#161616] text-xs focus:bg-white focus:border-[#161616] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-semibold text-[#6B6B6B] block mb-1.5 flex items-center gap-1.5">
+              <Hash className="w-3.5 h-3.5 text-[#D7141A]" />
+              Hashtag institucional (pie)
+            </label>
+            <input
+              type="text"
+              value={defaultHashtag}
+              onChange={(e) => setDefaultHashtag(e.target.value)}
+              placeholder="#TuPróximoAuto"
+              className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-[#161616] font-mono text-xs focus:bg-white focus:border-[#161616] focus:outline-none"
             />
           </div>
         </div>
