@@ -60,6 +60,17 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   const isAdmin = profile?.roles.includes('admin');
   const canEdit = canEditDealershipStock(profile?.roles);
 
+  // Escuchar tecla Escape para cerrar drawer
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const [activeTab, setActiveTab] = useState<'detalle' | 'historial'>('detalle');
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [targetStatusPending, setTargetStatusPending] = useState<DealershipVehicleStatus | null>(null);
@@ -224,7 +235,12 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="w-full max-w-2xl h-full bg-white border-l border-[#E5E5E3] flex flex-col shadow-2xl overflow-hidden">
         {/* Cabecera */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">

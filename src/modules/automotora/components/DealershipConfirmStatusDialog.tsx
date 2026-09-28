@@ -54,6 +54,17 @@ export const DealershipConfirmStatusDialog: React.FC<DealershipConfirmStatusDial
   onCancel,
   isSubmitting = false
 }) => {
+  // Escuchar tecla Escape para cancelar/cerrar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCancel]);
+
   if (!isOpen || !vehicle || !targetStatus) return null;
 
   const currentInfo = STATUS_DETAILS[vehicle.status] || {
@@ -67,7 +78,12 @@ export const DealershipConfirmStatusDialog: React.FC<DealershipConfirmStatusDial
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
       <div className="bg-white border border-[#E5E5E3] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#E5E5E3] flex items-center justify-between bg-white">

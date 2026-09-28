@@ -24,11 +24,57 @@ import { RedesSocialesModule } from '../../modules/redes/RedesSocialesModule';
 import { Vehicle, Client, Appointment, SocialMediaTemplateId } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { LoginPage } from '../auth/LoginPage';
+import { Lock } from 'lucide-react';
+import { isEncargado } from '../../lib/permissions';
+import { Button } from '../ui/Button';
 
 export const AppLayout: React.FC = () => {
   const { profile } = useAuth();
-  const [currentTab, setCurrentTab] = useState('inicio');
+
+  // Sincronización inicial con la URL actual (?tab=...)
+  const [currentTab, setCurrentTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (tab) return tab;
+    }
+    return 'inicio';
+  });
+
   const [redesParams, setRedesParams] = useState<{ vehicleId?: string; templateId?: SocialMediaTemplateId } | null>(null);
+
+  // Escuchar navegación con botones Atrás/Adelante del navegador
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') || 'inicio';
+      if (tabParam !== currentTab) {
+        setCurrentTab(tabParam);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentTab]);
+
+  // Manejador centralizado de cambio de pantalla con reseteo de scroll y URL
+  const handleNavigateTab = (tab: string, extraParams?: Record<string, string>) => {
+    setCurrentTab(tab);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      if (extraParams) {
+        Object.entries(extraParams).forEach(([k, v]) => {
+          if (v) url.searchParams.set(k, v);
+          else url.searchParams.delete(k);
+        });
+      } else {
+        url.searchParams.delete('sub');
+        url.searchParams.delete('section');
+      }
+      window.history.pushState({}, '', url.toString());
+    }
+  };
 
   // Vista Pública de Presupuestos (sin login / accesible por URL o toggle)
   const [isPublicFormView, setIsPublicFormView] = useState(() => {
@@ -84,7 +130,10 @@ export const AppLayout: React.FC = () => {
   // Manejo de apertura de Redes Sociales con plantilla y vehículo preseleccionados
   const handleOpenRedesWithItem = (vehicleId?: string, templateId?: SocialMediaTemplateId) => {
     setRedesParams({ vehicleId, templateId });
-    setCurrentTab('redes-sociales');
+    handleNavigateTab('redes-sociales', {
+      ...(vehicleId ? { vehicleId } : {}),
+      ...(templateId ? { templateId } : {})
+    });
   };
 
   // Si se accede con token de informe público (?informe=...)
@@ -114,13 +163,13 @@ export const AppLayout: React.FC = () => {
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         {/* Sidebar */}
-        <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} />
+        <Sidebar currentTab={currentTab} onSelectTab={handleNavigateTab} />
 
         {/* Main Content Area */}
         <main className="flex-1 p-3 sm:p-6 overflow-x-hidden">
           {currentTab === 'inicio' && (
             <HomeDashboard
-              onNavigate={setCurrentTab}
+              onNavigate={handleNavigateTab}
               onNewAppointment={() => setIsAppointmentModalOpen(true)}
               onNewVehicle={() => {
                 setVehicleDefaultClientId(undefined);
@@ -128,7 +177,7 @@ export const AppLayout: React.FC = () => {
               }}
               onNewClient={() => setIsClientFormOpen(true)}
               onNewTask={() => setIsTaskModalOpen(true)}
-              onSelectAppointment={() => setCurrentTab('agenda')}
+              onSelectAppointment={() => handleNavigateTab('agenda')}
               onOpenRedesWithItem={handleOpenRedesWithItem}
             />
           )}
@@ -149,16 +198,36 @@ export const AppLayout: React.FC = () => {
 
           {currentTab === 'tareas' && <TaskList />}
 
-          {currentTab === 'empleados' && <EmployeeList />}
+          {currentTab === 'empleados' && (
+            isEncargado(profile) ? (
+              <EmployeeList />
+            ) : (
+              <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-2xl border border-[#E5E5E3] text-center space-y-4 shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-[#FDF2F2] border border-[#FACDCD] flex items-center justify-center mx-auto text-[#D7141A]">
+                  <Lock className="w-7 h-7" />
+                </div>
+                <h2 className="text-lg font-title font-bold text-[#161616]">Acceso restringido al equipo</h2>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  Solo los Encargados y Administradores pueden gestionar el personal y permisos del equipo.
+                </p>
+                <Button variant="secondary" onClick={() => handleNavigateTab('inicio')}>
+                  Volver al inicio
+                </Button>
+              </div>
+            )
+          )}
 
           {currentTab === 'mod-automotora' && (
-            <AutomotoraModule onOpenPublicCatalog={() => setIsPublicCatalogView(true)} />
+            <AutomotoraModule
+              onOpenPublicCatalog={() => setIsPublicCatalogView(true)}
+              initialSubTab={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sub') || undefined : undefined}
+            />
           )}
           {currentTab === 'mod-detailing' && (
             <DetailingModule onOpenPublicForm={() => setIsPublicFormView(true)} />
           )}
           {currentTab === 'mod-inspeccion' && (
-            <InspeccionModule onNavigateToDetailing={() => setCurrentTab('mod-detailing')} />
+            <InspeccionModule onNavigateToDetailing={() => handleNavigateTab('mod-detailing')} />
           )}
 
           {currentTab === 'redes-sociales' && (
@@ -171,7 +240,7 @@ export const AppLayout: React.FC = () => {
       </div>
 
       {/* BottomNav */}
-      <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} />
+      <BottomNav currentTab={currentTab} onSelectTab={handleNavigateTab} />
 
       {/* Quick Search Modal */}
       {isQuickSearchOpen && (

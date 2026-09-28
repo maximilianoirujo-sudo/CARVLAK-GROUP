@@ -24,6 +24,18 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
 
   const { dealershipVehicles, importTiendanubeCatalog } = useData();
   const { showToast } = useToast();
+
+  // Escuchar tecla Escape para cerrar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const [isImporting, setIsImporting] = useState(false);
   const [result, setResult] = useState<{ importedCount: number; duplicatesCount: number } | null>(null);
 
@@ -57,7 +69,12 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Cabecera */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">

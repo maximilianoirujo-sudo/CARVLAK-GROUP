@@ -39,7 +39,7 @@ import { Button } from '../../../components/ui/Button';
 
 interface SocialStudioProps {
   initialVehicleId?: string;
-  initialTemplateId?: SocialMediaTemplateId;
+  initialTemplateId?: string;
 }
 
 export const SocialStudio: React.FC<SocialStudioProps> = ({
@@ -62,7 +62,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
 
   // 1. Estados de Categoría y Plantilla
   const [selectedCategory, setSelectedCategory] = useState<SocialMediaCategory>('automotora');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<SocialMediaTemplateId>(
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
     initialTemplateId || 'auto-vendido'
   );
   const [format, setFormat] = useState<SocialMediaFormat>('story');
@@ -401,7 +401,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
         {/* Grilla de Plantillas disponibles */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 pt-2">
           {Object.values(socialMediaConfig.templates)
-            .filter((t) => t.category === selectedCategory)
+            .filter((t) => t.category === selectedCategory && t.is_active !== false)
             .map((template) => {
               const isSelected = selectedTemplateId === template.id;
               return (
@@ -793,6 +793,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
             instagramHandle={socialMediaConfig.instagram_handle}
             locationName={socialMediaConfig.location_name}
             badgeTag={badgeTag}
+            layoutConfig={format === 'story' ? currentTemplateConfig?.layout_story : currentTemplateConfig?.layout_post}
             onSaveToHistory={handleSaveToHistory}
             suggestedFileName={headline.toLowerCase().replace(/[^a-z0-9]/g, '-')}
           />

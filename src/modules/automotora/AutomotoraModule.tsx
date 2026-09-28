@@ -30,16 +30,50 @@ import { DetailingCommissionsSection } from '../detailing/components/DetailingCo
 
 interface AutomotoraModuleProps {
   onOpenPublicCatalog?: () => void;
+  initialSubTab?: string;
 }
 
-export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublicCatalog }) => {
+export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublicCatalog, initialSubTab }) => {
   const { profile } = useAuth();
   const { dealershipVehicles } = useData();
 
   const isAdmin = profile?.roles.includes('admin');
 
-  // Pestaña activa
-  const [activeTab, setActiveTab] = useState<'stock' | 'crm' | 'gastos' | 'comisiones' | 'dashboard' | 'config'>('stock');
+  // Pestaña activa con soporte para query params
+  const [activeTab, setActiveTab] = useState<'stock' | 'crm' | 'gastos' | 'comisiones' | 'dashboard' | 'config'>(() => {
+    if (initialSubTab && ['stock', 'crm', 'gastos', 'comisiones', 'dashboard', 'config'].includes(initialSubTab)) {
+      return initialSubTab as any;
+    }
+    if (typeof window !== 'undefined') {
+      const sub = new URLSearchParams(window.location.search).get('sub');
+      if (sub && ['stock', 'crm', 'gastos', 'comisiones', 'dashboard', 'config'].includes(sub)) {
+        return sub as any;
+      }
+    }
+    return 'stock';
+  });
+
+  // Asegurar que al cambiar de pestaña la pantalla vuelva arriba y se sincronice la URL
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('sub') !== activeTab) {
+        url.searchParams.set('sub', activeTab);
+        if (activeTab !== 'config') {
+          url.searchParams.delete('section');
+        }
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [activeTab]);
+
+  // Si no es admin y está en pestaña restringida, volver a stock
+  React.useEffect(() => {
+    if (!isAdmin && (activeTab === 'config' || activeTab === 'dashboard')) {
+      setActiveTab('stock');
+    }
+  }, [isAdmin, activeTab]);
 
   // Modales
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);

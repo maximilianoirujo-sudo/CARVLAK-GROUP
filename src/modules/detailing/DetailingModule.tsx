@@ -47,6 +47,10 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
   // Pestañas principales
   const [activeTab, setActiveTab] = useState<'quotes' | 'stock' | 'expenses' | 'commissions' | 'dashboard'>('quotes');
 
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
   // Filtros de Cotizaciones
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');

@@ -1,8 +1,8 @@
-import { DealershipVehicle, DetailingQuote, VehicleInspection, SocialMediaTemplateId, SocialMediaConfig } from '../../../types';
+import { DealershipVehicle, DetailingQuote, VehicleInspection, SocialMediaConfig } from '../../../types';
 import { formatCurrency } from '../../../lib/formatters';
 
 interface GenerateCopyParams {
-  templateId: SocialMediaTemplateId;
+  templateId: string;
   car?: DealershipVehicle | null;
   quote?: DetailingQuote | null;
   inspection?: VehicleInspection | null;

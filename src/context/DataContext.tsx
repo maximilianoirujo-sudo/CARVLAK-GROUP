@@ -32,7 +32,8 @@ import {
   DealershipInquiryStatus,
   DealershipConfig,
   SocialMediaConfig,
-  SocialMediaPostRecord
+  SocialMediaPostRecord,
+  SocialMediaTemplateConfig
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -185,6 +186,11 @@ interface DataContextType {
   updateSocialMediaPost: (id: string, data: Partial<SocialMediaPostRecord>) => void;
   deleteSocialMediaPost: (id: string) => void;
   updateSocialMediaConfig: (config: Partial<SocialMediaConfig>) => void;
+  saveSocialTemplate: (template: SocialMediaTemplateConfig) => void;
+  duplicateSocialTemplate: (templateId: string) => SocialMediaTemplateConfig | null;
+  deleteSocialTemplate: (templateId: string) => boolean;
+  toggleSocialTemplateActive: (templateId: string) => void;
+  resetSocialTemplateToDefault: (templateId: string) => void;
   updateClientConsent: (clientId: string, consent: boolean) => void;
 }
 
@@ -2169,6 +2175,66 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }));
   };
+  const saveSocialTemplate = (template: SocialMediaTemplateConfig) => {
+    setSocialMediaConfig((prev) => ({
+      ...prev,
+      templates: {
+        ...prev.templates,
+        [template.id]: template
+      }
+    }));
+  };
+
+  const duplicateSocialTemplate = (templateId: string): SocialMediaTemplateConfig | null => {
+    const existing = socialMediaConfig.templates[templateId];
+    if (!existing) return null;
+    const newId = `plantilla-custom-${Date.now()}`;
+    const duplicated: SocialMediaTemplateConfig = {
+      ...existing,
+      id: newId,
+      title: `${existing.title} (Copia)`,
+      is_custom: true,
+      is_active: true
+    };
+    saveSocialTemplate(duplicated);
+    return duplicated;
+  };
+
+  const deleteSocialTemplate = (templateId: string): boolean => {
+    setSocialMediaConfig((prev) => {
+      const nextTemplates = { ...prev.templates };
+      delete nextTemplates[templateId];
+      return {
+        ...prev,
+        templates: nextTemplates
+      };
+    });
+    return true;
+  };
+
+  const toggleSocialTemplateActive = (templateId: string) => {
+    setSocialMediaConfig((prev) => {
+      const target = prev.templates[templateId];
+      if (!target) return prev;
+      return {
+        ...prev,
+        templates: {
+          ...prev.templates,
+          [templateId]: {
+            ...target,
+            is_active: target.is_active === false ? true : false
+          }
+        }
+      };
+    });
+  };
+
+  const resetSocialTemplateToDefault = (templateId: string) => {
+    const defaultTemplate = INITIAL_SOCIAL_MEDIA_CONFIG.templates[templateId];
+    if (defaultTemplate) {
+      saveSocialTemplate(defaultTemplate);
+    }
+  };
 
   const updateClientConsent = (clientId: string, consent: boolean) => {
     setClients((prev) =>
@@ -2266,6 +2332,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateSocialMediaPost,
         deleteSocialMediaPost,
         updateSocialMediaConfig,
+        saveSocialTemplate,
+        duplicateSocialTemplate,
+        deleteSocialTemplate,
+        toggleSocialTemplateActive,
+        resetSocialTemplateToDefault,
         updateClientConsent
       }}
     >

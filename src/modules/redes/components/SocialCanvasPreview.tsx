@@ -10,7 +10,7 @@ import {
   Shield,
   Move
 } from 'lucide-react';
-import { SocialMediaFormat, SocialMediaTemplateId, LogoPosition } from '../../../types';
+import { SocialMediaFormat, LogoPosition, FormatLayoutConfig } from '../../../types';
 import {
   renderSocialCanvas,
   exportCanvasToBlob,
@@ -24,7 +24,7 @@ import { Button } from '../../../components/ui/Button';
 interface SocialCanvasPreviewProps {
   format: SocialMediaFormat;
   onFormatChange: (f: SocialMediaFormat) => void;
-  templateId: SocialMediaTemplateId;
+  templateId: string;
   imageUrl?: string;
   secondaryImageUrl?: string;
   headline?: string;
@@ -33,6 +33,7 @@ interface SocialCanvasPreviewProps {
   originalPrice?: string;
   specs?: string[];
   stampText?: string;
+  layoutConfig?: FormatLayoutConfig;
   coverPlate: boolean;
   onCoverPlateChange: (val: boolean) => void;
   platePosition: { x: number; y: number; scale: number };
@@ -61,6 +62,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
   originalPrice,
   specs,
   stampText,
+  layoutConfig,
   coverPlate,
   onCoverPlateChange,
   platePosition,
@@ -109,7 +111,8 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
       locationName,
       badgeTag,
       inspectionHighlights,
-      detailingServices
+      detailingServices,
+      layoutConfig
     };
 
     renderSocialCanvas(canvas, options)
@@ -143,7 +146,8 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
     locationName,
     badgeTag,
     inspectionHighlights,
-    detailingServices
+    detailingServices,
+    layoutConfig
   ]);
 
   // Manejador de descarga PNG
@@ -435,7 +439,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
           className="w-full h-11 justify-center shadow-md text-xs font-title font-bold uppercase tracking-wider"
         >
           <Share2 className="w-4 h-4 mr-1" />
-          <span>Compartir en Instagram {format === 'story' ? 'Stories (9:16)' : 'Feed (1:1)'}</span>
+          <span>Compartir en Instagram {format === 'story' ? 'Stories (9:16)' : 'Feed (4:5)'}</span>
         </Button>
 
         <div className="grid grid-cols-2 gap-2">

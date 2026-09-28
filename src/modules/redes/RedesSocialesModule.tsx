@@ -6,7 +6,8 @@ import {
   Lock,
   Share2,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Palette
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -14,6 +15,7 @@ import { SocialMediaTemplateId } from '../../types';
 import { SocialStudio } from './components/SocialStudio';
 import { SocialHistorySection } from './components/SocialHistorySection';
 import { SocialConfigSection } from './components/SocialConfigSection';
+import { SocialTemplateEditor } from './components/SocialTemplateEditor';
 
 interface RedesSocialesModuleProps {
   initialVehicleId?: string;
@@ -27,7 +29,7 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
   const { profile } = useAuth();
   const { socialMediaConfig, socialMediaPosts } = useData();
 
-  const [activeTab, setActiveTab] = useState<'studio' | 'history' | 'config'>('studio');
+  const [activeTab, setActiveTab] = useState<'studio' | 'templates' | 'history' | 'config'>('studio');
 
   const roles = profile?.roles || ['admin'];
   const isAdmin = roles.includes('admin');
@@ -90,6 +92,21 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
             <span>Estudio creativo</span>
           </button>
 
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('templates')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'templates'
+                  ? 'bg-white text-[#161616] shadow-sm'
+                  : 'text-[#6B6B6B] hover:text-[#161616]'
+              }`}
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>Plantillas</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setActiveTab('history')}
@@ -127,6 +144,8 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
           initialTemplateId={initialTemplateId}
         />
       )}
+
+      {activeTab === 'templates' && isAdmin && <SocialTemplateEditor />}
 
       {activeTab === 'history' && <SocialHistorySection />}
 

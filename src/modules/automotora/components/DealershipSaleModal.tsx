@@ -35,6 +35,17 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
   const { profile, availableProfiles } = useAuth();
   const { showToast } = useToast();
 
+  // Escuchar tecla Escape para cerrar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const isAdmin = profile?.roles.includes('admin');
   const activeProfiles = (availableProfiles || []).filter((p) => p.is_active);
 
@@ -163,7 +174,12 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         {/* Cabecera */}
         <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-white">

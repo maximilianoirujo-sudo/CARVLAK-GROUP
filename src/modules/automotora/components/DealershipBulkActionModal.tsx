@@ -30,6 +30,17 @@ export const DealershipBulkActionModal: React.FC<DealershipBulkActionModalProps>
 }) => {
   const [activeTab, setActiveTab] = useState<'status' | 'price'>('status');
 
+  // Escuchar tecla Escape para cerrar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Estado masivo
   const [targetStatus, setTargetStatus] = useState<DealershipVehicleStatus>('publicado');
 
@@ -75,7 +86,12 @@ export const DealershipBulkActionModal: React.FC<DealershipBulkActionModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white border border-[#E5E5E3] rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#E5E5E3] flex items-center justify-between bg-white">
@@ -274,7 +290,7 @@ export const DealershipBulkActionModal: React.FC<DealershipBulkActionModalProps>
                 <label className="block text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider mb-2">
                   Vista previa de precios resultantes:
                 </label>
-                <div className="max-h-56 overflow-y-auto border border-[#E5E5E3] rounded-xl bg-white shadow-sm">
+                <div className="max-h-56 overflow-y-auto overflow-x-auto border border-[#E5E5E3] rounded-xl bg-white shadow-sm">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-[#F5F5F4] sticky top-0 border-b border-[#E5E5E3] text-[#6B6B6B]">
                       <tr>

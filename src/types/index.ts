@@ -738,7 +738,7 @@ export type SocialMediaTemplateId =
 
 export interface SocialMediaPostRecord {
   id: string;
-  template_id: SocialMediaTemplateId;
+  template_id: string;
   template_title: string;
   category: SocialMediaCategory;
   format: SocialMediaFormat;
@@ -755,23 +755,84 @@ export interface SocialMediaPostRecord {
 
 export type LogoPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
 
+export type TemplateBackgroundMode = 'full_photo' | 'photo_with_band' | 'flat_color';
+export type TemplateLogoVersion = 'blanco' | 'negro' | 'auto';
+export type TemplateFontFamily = 'Archivo Narrow' | 'Barlow Condensed' | 'system-ui';
+export type TemplateFontWeight = 'normal' | 'semibold' | 'bold' | 'black';
+
+export interface FormatLayoutConfig {
+  backgroundMode: TemplateBackgroundMode;
+  backgroundColor?: string;
+  vignetteOpacity: number; // 0 to 1
+  logoVersion: TemplateLogoVersion;
+  logoPosition: LogoPosition;
+  coverPlateDefault: boolean;
+  showStamp: boolean;
+  stampText?: string;
+  stampColor?: string; // Brand palette: #D7141A, #EAB308, #22C55E, #FFFFFF, #000000
+  stampRotation?: number; // e.g. -12, 0, 14
+  headlineTemplate?: string;
+  subtitleTemplate?: string;
+  fontFamily?: TemplateFontFamily;
+  fontScale?: 'normal' | 'large' | 'xlarge';
+  showPrice: boolean;
+  showOriginalPrice: boolean;
+  priceColor?: string;
+  specsSelection: string[]; // e.g. ['year', 'mileage', 'fuel', 'transmission', 'engine', 'autonomy']
+  specsOrder: string[];
+  ctaText?: string;
+  phoneText?: string;
+}
+
 export interface SocialMediaTemplateConfig {
-  id: SocialMediaTemplateId;
+  id: string; // SocialMediaTemplateId or custom string ID
   title: string;
   category: SocialMediaCategory;
   description: string;
+  is_active?: boolean;
+  is_custom?: boolean;
   stamp_text?: string; // ej: "VENDIDO", "RESERVADO", "RECIÉN LLEGADO"
   headline_default?: string;
   subtitle_default?: string;
   logo_position: LogoPosition;
   default_caption_template: string;
+  default_hashtags?: string;
+  layout_story?: FormatLayoutConfig;
+  layout_post?: FormatLayoutConfig;
+}
+
+export interface MetaInstagramConfig {
+  enabled: boolean;
+  businessAccountId: string;
+  appId: string;
+  defaultPublishAction: 'download' | 'share' | 'instagram_direct';
+  hasBackendProxy: boolean;
+  backendEndpoint?: string;
+  autoSchedule: boolean;
+}
+
+export interface SocialAutoTriggersConfig {
+  onVehicleSold: boolean;
+  onVehicleSoldTemplateId: string;
+  onVehicleNewEntry: boolean;
+  onVehicleNewEntryTemplateId: string;
+  onVehicleStaleStock: boolean;
+  onVehicleStaleStockDays: number;
+  onVehicleStaleStockTemplateId: string;
+  onDetailingDone: boolean;
+  onDetailingDoneTemplateId: string;
+  onMondayCatalog: boolean;
+  onMondayCatalogTemplateId: string;
 }
 
 export interface SocialMediaConfig {
   allow_vendedor: boolean; // ¿Los vendedores tienen permiso para crear y compartir piezas?
+  vendedor_can_publish?: boolean; // ¿Los vendedores pueden publicar directamente o solo descargar/compartir?
   instagram_handle: string; // ej: "@car.vlak"
   location_name: string; // ej: "Shangrilá, Canelones"
   whatsapp_number: string; // ej: "099 123 456"
-  templates: Record<SocialMediaTemplateId, SocialMediaTemplateConfig>;
+  meta_instagram?: MetaInstagramConfig;
+  auto_triggers?: SocialAutoTriggersConfig;
+  templates: Record<string, SocialMediaTemplateConfig>;
 }
 

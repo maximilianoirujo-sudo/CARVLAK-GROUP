@@ -82,6 +82,17 @@ export const INITIAL_PROFILES: Profile[] = [
     is_active: true,
     commissions: { automotora: 0, detailing: 0, inspeccion: 15 },
     created_at: new Date().toISOString()
+  },
+  {
+    id: 'user-santiago',
+    email: 'santiago@carvlak.com',
+    full_name: 'Santiago Vendedor',
+    phone: '099 333 444',
+    roles: ['vendedor'],
+    businesses: ['automotora'],
+    is_active: true,
+    commissions: { automotora: 10, detailing: 0, inspeccion: 0 },
+    created_at: new Date().toISOString()
   }
 ];
 
@@ -1293,9 +1304,32 @@ export const APPAUTO_OFFICIAL_CATALOG: Partial<DealershipVehicle>[] = [
 
 export const INITIAL_SOCIAL_MEDIA_CONFIG: SocialMediaConfig = {
   allow_vendedor: true,
+  vendedor_can_publish: false,
   instagram_handle: '@car.vlak',
   location_name: 'Shangrilá, Canelones',
   whatsapp_number: '099 267 964',
+  meta_instagram: {
+    enabled: false,
+    businessAccountId: '',
+    appId: '',
+    defaultPublishAction: 'download',
+    hasBackendProxy: false,
+    backendEndpoint: '',
+    autoSchedule: false
+  },
+  auto_triggers: {
+    onVehicleSold: true,
+    onVehicleSoldTemplateId: 'auto-vendido',
+    onVehicleNewEntry: true,
+    onVehicleNewEntryTemplateId: 'auto-nuevo-ingreso',
+    onVehicleStaleStock: true,
+    onVehicleStaleStockDays: 60,
+    onVehicleStaleStockTemplateId: 'auto-descuento',
+    onDetailingDone: true,
+    onDetailingDoneTemplateId: 'detailing-antes-despues',
+    onMondayCatalog: true,
+    onMondayCatalogTemplateId: 'auto-catalogo-semana'
+  },
   templates: {
     'auto-vendido': {
       id: 'auto-vendido',

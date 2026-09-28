@@ -32,6 +32,17 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
   const { profile } = useAuth();
   const { showToast } = useToast();
 
+  // Escuchar tecla Escape para cerrar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const [activeKey, setActiveKey] = useState<WhatsAppTemplateKey>('formal');
   const [compiledMessage, setCompiledMessage] = useState('');
   const [copied, setCopied] = useState(false);
@@ -107,7 +118,12 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Cabecera */}

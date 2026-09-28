@@ -1,8 +1,8 @@
-import { SocialMediaFormat, SocialMediaTemplateId, LogoPosition } from '../../../types';
+import { SocialMediaFormat, SocialMediaTemplateId, LogoPosition, FormatLayoutConfig } from '../../../types';
 
 export interface RenderCanvasOptions {
   format: SocialMediaFormat;
-  templateId: SocialMediaTemplateId;
+  templateId: string;
   imageUrl?: string;
   secondaryImageUrl?: string; // Para antes y después
   headline?: string;
@@ -20,6 +20,7 @@ export interface RenderCanvasOptions {
   badgeTag?: string;
   inspectionHighlights?: string[];
   detailingServices?: string[];
+  layoutConfig?: FormatLayoutConfig;
 }
 
 const loadedImageCache = new Map<string, HTMLImageElement>();
@@ -93,7 +94,8 @@ export async function renderSocialCanvas(
     locationName = 'Shangrilá, Canelones',
     badgeTag = '',
     inspectionHighlights = [],
-    detailingServices = []
+    detailingServices = [],
+    layoutConfig
   } = options;
 
   // 1. Dimensiones exactas
@@ -106,59 +108,135 @@ export async function renderSocialCanvas(
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // 2. Fondo inicial oscuro premium
-  ctx.fillStyle = '#0a0a0a';
-  ctx.fillRect(0, 0, width, height);
+  const bgMode = layoutConfig?.backgroundMode || 'full_photo';
+  const bgColor = layoutConfig?.backgroundColor || '#0a0a0a';
+  const vignetteOpacity = layoutConfig?.vignetteOpacity !== undefined ? layoutConfig.vignetteOpacity : 0.85;
+  const effectiveLogoPosition = layoutConfig?.logoPosition || logoPosition;
+  const effectiveLogoVersion = layoutConfig?.logoVersion || 'auto';
 
-  // 3. Renderizar imagen de fondo o split
-  if (templateId === 'detailing-antes-despues' && imageUrl && secondaryImageUrl) {
-    // Dibujo comparativo 50/50
-    try {
-      const [imgBefore, imgAfter] = await Promise.all([
-        loadImage(imageUrl),
-        loadImage(secondaryImageUrl)
-      ]);
+  // Determinar si el fondo es claro
+  const isLightBg = bgColor.toUpperCase() === '#FFFFFF' || bgColor.toUpperCase() === '#F5F5F4';
 
-      const halfHeight = height / 2;
+  // 2. Renderizar Fondo según el modo seleccionado
+  if (bgMode === 'flat_color') {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
 
-      // Mitad superior: Antes
-      ctx.save();
+    // Trama sutil de líneas
+    ctx.strokeStyle = isLightBg ? '#E5E5E3' : '#1F1F1F';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < width; i += 90) {
       ctx.beginPath();
-      ctx.rect(0, 0, width, halfHeight);
-      ctx.clip();
-      drawImageCover(ctx, imgBefore, 0, 0, width, halfHeight, imagePan);
-      ctx.restore();
-
-      // Mitad inferior: Después
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, halfHeight, width, halfHeight);
-      ctx.clip();
-      drawImageCover(ctx, imgAfter, 0, halfHeight, width, halfHeight, imagePan);
-      ctx.restore();
-
-      // Línea divisoria roja
-      ctx.fillStyle = '#D7141A';
-      ctx.fillRect(0, halfHeight - 3, width, 6);
-
-      // Pill "ANTES"
-      drawPill(ctx, 40, halfHeight - 65, 140, 42, '#000000', '#D7141A', 'ANTES');
-
-      // Pill "DESPUÉS"
-      drawPill(ctx, 40, halfHeight + 25, 160, 42, '#D7141A', '#FFFFFF', 'DESPUÉS');
-    } catch {
-      drawFallbackBackground(ctx, width, height);
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, height);
+      ctx.stroke();
     }
-  } else if (imageUrl) {
-    // Imagen principal estándar con pan & zoom
-    try {
-      const img = await loadImage(imageUrl);
-      drawImageCover(ctx, img, 0, 0, width, height, imagePan);
-    } catch {
-      drawFallbackBackground(ctx, width, height);
+
+    // Tarjeta flotante con la imagen del vehículo
+    if (imageUrl) {
+      try {
+        const img = await loadImage(imageUrl);
+        const cardX = 60;
+        const cardY = format === 'story' ? 220 : 160;
+        const cardW = width - 120;
+        const cardH = format === 'story' ? 840 : 600;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 24;
+        ctx.shadowOffsetY = 10;
+        roundRect(ctx, cardX, cardY, cardW, cardH, 24);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        roundRect(ctx, cardX, cardY, cardW, cardH, 24);
+        ctx.clip();
+        drawImageCover(ctx, img, cardX, cardY, cardW, cardH, imagePan);
+        ctx.restore();
+
+        ctx.save();
+        roundRect(ctx, cardX, cardY, cardW, cardH, 24);
+        ctx.strokeStyle = '#D7141A';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      } catch {
+        // Fallback
+      }
     }
+  } else if (bgMode === 'photo_with_band') {
+    ctx.fillStyle = bgColor || '#111111';
+    ctx.fillRect(0, 0, width, height);
+
+    const bandH = format === 'story' ? Math.round(height * 0.62) : Math.round(height * 0.58);
+
+    if (imageUrl) {
+      try {
+        const img = await loadImage(imageUrl);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, width, bandH);
+        ctx.clip();
+        drawImageCover(ctx, img, 0, 0, width, bandH, imagePan);
+        ctx.restore();
+      } catch {
+        drawFallbackBackground(ctx, width, bandH);
+      }
+    } else {
+      drawFallbackBackground(ctx, width, bandH);
+    }
+
+    // Línea divisoria roja deportiva CARVLAK
+    ctx.fillStyle = '#D7141A';
+    ctx.fillRect(0, bandH - 3, width, 6);
   } else {
-    drawFallbackBackground(ctx, width, height);
+    // bgMode === 'full_photo' (predeterminado)
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, width, height);
+
+    if (templateId === 'detailing-antes-despues' && imageUrl && secondaryImageUrl) {
+      try {
+        const [imgBefore, imgAfter] = await Promise.all([
+          loadImage(imageUrl),
+          loadImage(secondaryImageUrl)
+        ]);
+
+        const halfHeight = height / 2;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, width, halfHeight);
+        ctx.clip();
+        drawImageCover(ctx, imgBefore, 0, 0, width, halfHeight, imagePan);
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, halfHeight, width, halfHeight);
+        ctx.clip();
+        drawImageCover(ctx, imgAfter, 0, halfHeight, width, halfHeight, imagePan);
+        ctx.restore();
+
+        ctx.fillStyle = '#D7141A';
+        ctx.fillRect(0, halfHeight - 3, width, 6);
+
+        drawPill(ctx, 40, halfHeight - 65, 140, 42, '#000000', '#D7141A', 'ANTES');
+        drawPill(ctx, 40, halfHeight + 25, 160, 42, '#D7141A', '#FFFFFF', 'DESPUÉS');
+      } catch {
+        drawFallbackBackground(ctx, width, height);
+      }
+    } else if (imageUrl) {
+      try {
+        const img = await loadImage(imageUrl);
+        drawImageCover(ctx, img, 0, 0, width, height, imagePan);
+      } catch {
+        drawFallbackBackground(ctx, width, height);
+      }
+    } else {
+      drawFallbackBackground(ctx, width, height);
+    }
   }
 
   // 4. Parche "Tapar Matrícula" si está habilitado
@@ -166,11 +244,13 @@ export async function renderSocialCanvas(
     drawPlateCoverBadge(ctx, platePosition.x, platePosition.y, platePosition.scale || 1);
   }
 
-  // 5. Degradado cinematográfico para legibilidad de textos
-  drawVignetteGradient(ctx, width, height, format);
+  // 5. Degradado cinematográfico para legibilidad de textos (en fotos)
+  if (bgMode !== 'flat_color') {
+    drawVignetteGradient(ctx, width, height, format, vignetteOpacity);
+  }
 
   // 6. Header con Logo y Marca
-  await drawBrandHeader(ctx, width, height, logoPosition, instagramHandle, locationName);
+  await drawBrandHeader(ctx, width, height, effectiveLogoPosition, instagramHandle, locationName, isLightBg, effectiveLogoVersion);
 
   // 7. Contenido según la plantilla específica
   renderTemplateContent(ctx, {
@@ -186,11 +266,12 @@ export async function renderSocialCanvas(
     stampText,
     badgeTag,
     inspectionHighlights,
-    detailingServices
+    detailingServices,
+    layoutConfig
   });
 
   // 8. Footer unificado con @car.vlak y llamado a la acción
-  drawFooterBar(ctx, width, height, instagramHandle, locationName);
+  drawFooterBar(ctx, width, height, instagramHandle, locationName, layoutConfig?.ctaText, layoutConfig?.phoneText);
 }
 
 /**
@@ -255,12 +336,14 @@ function drawVignetteGradient(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  format: SocialMediaFormat
+  format: SocialMediaFormat,
+  opacity: number = 0.85
 ) {
+  if (opacity <= 0.01) return;
   // Degradado superior (para el logo)
   const topGrad = ctx.createLinearGradient(0, 0, 0, format === 'story' ? 450 : 320);
-  topGrad.addColorStop(0, 'rgba(0, 0, 0, 0.88)');
-  topGrad.addColorStop(0.6, 'rgba(0, 0, 0, 0.45)');
+  topGrad.addColorStop(0, `rgba(0, 0, 0, ${(0.88 * opacity).toFixed(3)})`);
+  topGrad.addColorStop(0.6, `rgba(0, 0, 0, ${(0.45 * opacity).toFixed(3)})`);
   topGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = topGrad;
   ctx.fillRect(0, 0, w, format === 'story' ? 450 : 320);
@@ -269,9 +352,9 @@ function drawVignetteGradient(
   const botHeight = format === 'story' ? 850 : 620;
   const botGrad = ctx.createLinearGradient(0, h - botHeight, 0, h);
   botGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  botGrad.addColorStop(0.3, 'rgba(0, 0, 0, 0.65)');
-  botGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0.94)');
-  botGrad.addColorStop(1, 'rgba(0, 0, 0, 0.98)');
+  botGrad.addColorStop(0.3, `rgba(0, 0, 0, ${(0.65 * opacity).toFixed(3)})`);
+  botGrad.addColorStop(0.7, `rgba(0, 0, 0, ${(0.94 * opacity).toFixed(3)})`);
+  botGrad.addColorStop(1, `rgba(0, 0, 0, ${(0.98 * opacity).toFixed(3)})`);
   ctx.fillStyle = botGrad;
   ctx.fillRect(0, h - botHeight, w, botHeight);
 }
@@ -341,7 +424,8 @@ async function drawBrandHeader(
   logoPos: LogoPosition,
   instagramHandle: string,
   locationName: string,
-  isLightBackground: boolean = false
+  isLightBackground: boolean = false,
+  logoVersion: 'blanco' | 'negro' | 'auto' = 'auto'
 ) {
   const pad = 60;
   let logoX = pad;
@@ -364,7 +448,14 @@ async function drawBrandHeader(
   // Intentar cargar logo oficial (blanco sobre oscuro/foto, negro sobre claro)
   let loaded = false;
   try {
-    const logoSrc = isLightBackground ? '/carvlak-logo-negro.png' : '/carvlak-logo-blanco.png';
+    let logoSrc = '/carvlak-logo-blanco.png';
+    if (logoVersion === 'negro') {
+      logoSrc = '/carvlak-logo-negro.png';
+    } else if (logoVersion === 'blanco') {
+      logoSrc = '/carvlak-logo-blanco.png';
+    } else {
+      logoSrc = isLightBackground ? '/carvlak-logo-negro.png' : '/carvlak-logo-blanco.png';
+    }
     const logoImg = await loadImage(logoSrc);
     const targetW = 280;
     const aspect = logoImg.width / logoImg.height;
@@ -426,7 +517,7 @@ function renderTemplateContent(
     width: number;
     height: number;
     format: SocialMediaFormat;
-    templateId: SocialMediaTemplateId;
+    templateId: string;
     headline: string;
     subtitle: string;
     price: string;
@@ -436,6 +527,7 @@ function renderTemplateContent(
     badgeTag: string;
     inspectionHighlights: string[];
     detailingServices: string[];
+    layoutConfig?: FormatLayoutConfig;
   }
 ) {
   const {
@@ -451,27 +543,83 @@ function renderTemplateContent(
     stampText,
     badgeTag,
     inspectionHighlights,
-    detailingServices
+    detailingServices,
+    layoutConfig
   } = data;
 
   const pad = 60;
   const isStory = format === 'story';
 
+  // Configuración de estilo extraída de layoutConfig
+  const showStamp = layoutConfig?.showStamp !== undefined ? layoutConfig.showStamp : true;
+  const customStampText = layoutConfig?.stampText || stampText;
+  const customStampColor = layoutConfig?.stampColor;
+  const customStampRotation = layoutConfig?.stampRotation;
+  const fontFamily = layoutConfig?.fontFamily || 'Archivo Narrow';
+  const fontScale = layoutConfig?.fontScale || 'normal';
+  const showPrice = layoutConfig?.showPrice !== undefined ? layoutConfig.showPrice : true;
+  const showOriginalPrice = layoutConfig?.showOriginalPrice !== undefined ? layoutConfig.showOriginalPrice : true;
+  const priceColor = layoutConfig?.priceColor || '#D7141A';
+
   // 1. SELLOS DE ALTO IMPACTO (VENDIDO, RESERVADO, NUEVO INGRESO, ETC.)
-  if (templateId === 'auto-vendido') {
-    drawHighImpactStamp(ctx, 540, isStory ? 700 : 480, stampText || 'VENDIDO', '#D7141A', -12);
-  } else if (templateId === 'auto-reservado') {
-    drawHighImpactStamp(ctx, 540, isStory ? 700 : 480, stampText || 'RESERVADO', '#eab308', -8);
-  } else if (templateId === 'auto-descuento') {
-    drawHighImpactStamp(ctx, 840, isStory ? 450 : 320, stampText || 'OFERTA', '#D7141A', 14);
-  } else if (templateId === 'auto-nuevo-ingreso') {
-    drawTagPill(ctx, pad, isStory ? 1220 : 800, stampText || 'NUEVO INGRESO', '#D7141A');
-  } else if (templateId === 'auto-electricos-0km') {
-    drawTagPill(ctx, pad, isStory ? 1220 : 800, stampText || '100% ELÉCTRICO • 0KM', '#22c55e');
-  } else if (templateId === 'auto-entrega') {
-    drawHighImpactStamp(ctx, 540, isStory ? 650 : 440, stampText || '¡NUEVO DUEÑO!', '#D7141A', -6);
-  } else if (badgeTag) {
-    drawTagPill(ctx, pad, isStory ? 1220 : 800, badgeTag, '#D7141A');
+  if (showStamp) {
+    if (layoutConfig?.stampText) {
+      drawHighImpactStamp(
+        ctx,
+        540,
+        isStory ? 700 : 480,
+        layoutConfig.stampText,
+        customStampColor || '#D7141A',
+        customStampRotation ?? -12,
+        fontFamily
+      );
+    } else if (templateId === 'auto-vendido') {
+      drawHighImpactStamp(
+        ctx,
+        540,
+        isStory ? 700 : 480,
+        customStampText || 'VENDIDO',
+        customStampColor || '#D7141A',
+        customStampRotation ?? -12,
+        fontFamily
+      );
+    } else if (templateId === 'auto-reservado') {
+      drawHighImpactStamp(
+        ctx,
+        540,
+        isStory ? 700 : 480,
+        customStampText || 'RESERVADO',
+        customStampColor || '#eab308',
+        customStampRotation ?? -8,
+        fontFamily
+      );
+    } else if (templateId === 'auto-descuento') {
+      drawHighImpactStamp(
+        ctx,
+        840,
+        isStory ? 450 : 320,
+        customStampText || 'OFERTA',
+        customStampColor || '#D7141A',
+        customStampRotation ?? 14,
+        fontFamily
+      );
+    } else if (templateId === 'auto-nuevo-ingreso') {
+      drawTagPill(ctx, pad, isStory ? 1220 : 800, customStampText || 'NUEVO INGRESO', customStampColor || '#D7141A', fontFamily);
+    } else if (templateId === 'auto-electricos-0km') {
+      drawTagPill(ctx, pad, isStory ? 1220 : 800, customStampText || '100% ELÉCTRICO • 0KM', customStampColor || '#22c55e', fontFamily);
+    } else if (templateId === 'auto-entrega') {
+      drawHighImpactStamp(
+        ctx,
+        540,
+        isStory ? 650 : 440,
+        customStampText || '¡NUEVO DUEÑO!',
+        customStampColor || '#D7141A',
+        customStampRotation ?? -6,
+        fontFamily
+      );
+    } else if (badgeTag) {
+      drawTagPill(ctx, pad, isStory ? 1220 : 800, badgeTag, '#D7141A', fontFamily);
+    }
   }
 
   // 2. Posición vertical de textos principales (anclados en la parte inferior)
@@ -482,12 +630,13 @@ function renderTemplateContent(
     // Bloque de precios con tacha
     let currentY = baseY;
 
-    if (price) {
+    if (price && showPrice) {
       currentY -= 70;
       ctx.save();
       // Si hay precio anterior, tacharlo
-      if (originalPrice) {
-        ctx.font = '700 32px system-ui, -apple-system, sans-serif';
+      if (originalPrice && showOriginalPrice) {
+        const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+        ctx.font = `700 32px ${fontName}, sans-serif`;
         ctx.fillStyle = '#8A8A8A';
         const origW = ctx.measureText(originalPrice).width;
         ctx.fillText(originalPrice, pad, currentY);
@@ -502,16 +651,17 @@ function renderTemplateContent(
         currentY += 55;
       }
 
-      // Precio nuevo gigante
-      ctx.font = '900 68px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#D7141A';
+      // Precio nuevo destacado
+      const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+      ctx.font = `900 68px ${fontName}, sans-serif`;
+      ctx.fillStyle = priceColor;
       ctx.fillText(price, pad, currentY);
       ctx.restore();
     }
 
     // Título y specs arriba del precio
-    const titleY = currentY - (price ? 120 : 60);
-    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs);
+    const titleY = currentY - (price && showPrice ? 120 : 60);
+    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
 
   } else if (templateId === 'agenda-turnos-disponibles') {
     // Plantilla de Turnos Detailing
@@ -527,14 +677,15 @@ function renderTemplateContent(
     ctx.stroke();
 
     // Encabezado
-    drawTagPill(ctx, pad + 30, boxY + 35, 'AGENDA ABIERTA', '#D7141A');
+    drawTagPill(ctx, pad + 30, boxY + 35, 'AGENDA ABIERTA', '#D7141A', fontFamily);
 
     ctx.save();
-    ctx.font = '900 42px system-ui, -apple-system, sans-serif';
+    const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+    ctx.font = `900 42px ${fontName}, sans-serif`;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillText(headline || 'Turnos Disponibles Esta Semana', pad + 30, boxY + 120);
 
-    ctx.font = '500 22px system-ui, -apple-system, sans-serif';
+    ctx.font = `500 22px ${fontName}, sans-serif`;
     ctx.fillStyle = '#8A8A8A';
     ctx.fillText(subtitle || 'DetailVlak Studio • Cupos limitados', pad + 30, boxY + 160);
 
@@ -557,14 +708,14 @@ function renderTemplateContent(
       ctx.fill();
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '600 24px system-ui, -apple-system, sans-serif';
+      ctx.font = `600 24px ${fontName}, sans-serif`;
       ctx.fillText(s, pad + 70, itemY);
       itemY += 55;
     });
 
     // Llamado a agendar
     ctx.fillStyle = '#D7141A';
-    ctx.font = '700 24px system-ui, -apple-system, sans-serif';
+    ctx.font = `700 24px ${fontName}, sans-serif`;
     ctx.fillText('📲 Agendá tu lugar por WhatsApp o mensaje directo', pad + 30, itemY + 25);
     ctx.restore();
 
@@ -581,14 +732,15 @@ function renderTemplateContent(
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    drawTagPill(ctx, pad + 30, boxY + 35, 'INSPECCIÓN PRECOMPRA APROBADA', '#D7141A');
+    drawTagPill(ctx, pad + 30, boxY + 35, 'INSPECCIÓN PRECOMPRA APROBADA', '#D7141A', fontFamily);
 
     ctx.save();
-    ctx.font = '900 40px system-ui, -apple-system, sans-serif';
+    const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+    ctx.font = `900 40px ${fontName}, sans-serif`;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillText(headline || 'Peritaje Técnico de 120+ Puntos', pad + 30, boxY + 120);
 
-    ctx.font = '500 22px system-ui, -apple-system, sans-serif';
+    ctx.font = `500 22px ${fontName}, sans-serif`;
     ctx.fillStyle = '#8A8A8A';
     ctx.fillText(subtitle || 'Informe verificado por CARVLAK Inspecciones', pad + 30, boxY + 160);
 
@@ -610,40 +762,41 @@ function renderTemplateContent(
       ctx.fill();
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '600 23px system-ui, -apple-system, sans-serif';
+      ctx.font = `600 23px ${fontName}, sans-serif`;
       ctx.fillText(p, pad + 70, pointY);
       pointY += 52;
     });
 
     ctx.fillStyle = '#8A8A8A';
-    ctx.font = '500 18px system-ui, -apple-system, sans-serif';
+    ctx.font = `500 18px ${fontName}, sans-serif`;
     ctx.fillText('🛡️ Comprá tu próximo auto usado con total tranquilidad y respaldo.', pad + 30, pointY + 20);
     ctx.restore();
 
   } else if (templateId === 'auto-ficha-carrusel') {
     // Ficha de carrusel: specs en tarjetas elegantes
     const titleY = isStory ? 1050 : 680;
-    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs);
+    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
 
-    if (price) {
-      drawPriceTag(ctx, pad, isStory ? 1420 : 960, price);
+    if (price && showPrice) {
+      drawPriceTag(ctx, pad, isStory ? 1420 : 960, price, priceColor, fontFamily);
     }
 
     // Indicador "Deslizá para más ➡️"
     const swipeY = isStory ? 1560 : 1080;
     ctx.save();
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '700 22px system-ui, -apple-system, sans-serif';
+    const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+    ctx.font = `700 22px ${fontName}, sans-serif`;
     ctx.fillText('Deslizá para ver más fotos ➡️', pad, swipeY);
     ctx.restore();
 
   } else {
     // Plantillas estándar (auto-vendido, auto-nuevo-ingreso, auto-reservado, promo-detailing, etc.)
-    const titleY = baseY - (price ? 110 : 40);
-    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs);
+    const titleY = baseY - (price && showPrice ? 110 : 40);
+    drawTitleAndSpecs(ctx, pad, titleY, headline, subtitle, specs, fontFamily, fontScale);
 
-    if (price) {
-      drawPriceTag(ctx, pad, baseY, price);
+    if (price && showPrice) {
+      drawPriceTag(ctx, pad, baseY, price, priceColor, fontFamily);
     }
   }
 }
@@ -657,13 +810,15 @@ function drawHighImpactStamp(
   cy: number,
   text: string,
   color: string,
-  angleDeg: number
+  angleDeg: number,
+  fontFamily: string = 'Archivo Narrow'
 ) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate((angleDeg * Math.PI) / 180);
 
-  ctx.font = '900 66px system-ui, -apple-system, sans-serif';
+  const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+  ctx.font = `900 66px ${fontName}, sans-serif`;
   const textMetrics = ctx.measureText(text);
   const padX = 40;
   const padY = 20;
@@ -703,10 +858,12 @@ function drawTagPill(
   x: number,
   y: number,
   text: string,
-  bgColor: string
+  bgColor: string,
+  fontFamily: string = 'Archivo Narrow'
 ) {
   ctx.save();
-  ctx.font = '900 20px system-ui, -apple-system, sans-serif';
+  const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+  ctx.font = `900 20px ${fontName}, sans-serif`;
   ctx.letterSpacing = '1.5px';
   const w = ctx.measureText(text).width + 36;
   const h = 44;
@@ -760,12 +917,19 @@ function drawTitleAndSpecs(
   y: number,
   title: string,
   subtitle: string,
-  specs: string[]
+  specs: string[],
+  fontFamily: string = 'Archivo Narrow',
+  fontScale: 'normal' | 'large' | 'xlarge' = 'normal'
 ) {
   ctx.save();
 
+  const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+  const titleSize = fontScale === 'xlarge' ? 62 : fontScale === 'large' ? 56 : 52;
+  const subSize = fontScale === 'xlarge' ? 30 : fontScale === 'large' ? 28 : 26;
+  const chipSize = fontScale === 'xlarge' ? 20 : fontScale === 'large' ? 19 : 18;
+
   // Título principal (Modelo y Marca)
-  ctx.font = '900 52px system-ui, -apple-system, sans-serif';
+  ctx.font = `900 ${titleSize}px ${fontName}, sans-serif`;
   ctx.fillStyle = '#FFFFFF';
   ctx.shadowColor = 'rgba(0,0,0,0.8)';
   ctx.shadowBlur = 10;
@@ -774,17 +938,17 @@ function drawTitleAndSpecs(
 
   // Subtítulo
   if (subtitle) {
-    ctx.font = '600 26px system-ui, -apple-system, sans-serif';
+    ctx.font = `600 ${subSize}px ${fontName}, sans-serif`;
     ctx.fillStyle = '#8A8A8A';
-    ctx.fillText(subtitle, x, y + 42);
+    ctx.fillText(subtitle, x, y + Math.round(titleSize * 0.8));
   }
 
   // Chips de especificaciones
   if (specs && specs.length > 0) {
     let chipX = x;
-    const chipY = y + (subtitle ? 78 : 36);
+    const chipY = y + (subtitle ? Math.round(titleSize * 0.8) + 36 : 36);
 
-    ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+    ctx.font = `700 ${chipSize}px ${fontName}, sans-serif`;
     specs.forEach((sp) => {
       const chipW = ctx.measureText(sp).width + 28;
       const chipH = 38;
@@ -815,11 +979,14 @@ function drawPriceTag(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  price: string
+  price: string,
+  color: string = '#D7141A',
+  fontFamily: string = 'Archivo Narrow'
 ) {
   ctx.save();
-  ctx.font = '900 62px system-ui, -apple-system, sans-serif';
-  ctx.fillStyle = '#D7141A';
+  const fontName = fontFamily === 'Barlow Condensed' ? '"Barlow Condensed"' : fontFamily === 'Archivo Narrow' ? '"Archivo Narrow"' : 'system-ui';
+  ctx.font = `900 64px ${fontName}, sans-serif`;
+  ctx.fillStyle = color;
   ctx.shadowColor = 'rgba(0,0,0,0.9)';
   ctx.shadowBlur = 12;
   ctx.shadowOffsetY = 4;
@@ -835,7 +1002,9 @@ function drawFooterBar(
   w: number,
   h: number,
   instagramHandle: string,
-  locationName: string
+  locationName: string,
+  ctaText?: string,
+  phoneText?: string
 ) {
   const barH = 75;
   const barY = h - barH;
@@ -850,15 +1019,17 @@ function drawFooterBar(
   ctx.fillRect(0, barY, w, 2);
 
   // Textos del footer
-  ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+  ctx.font = '700 18px "Archivo Narrow", system-ui, sans-serif';
   ctx.fillStyle = '#FFFFFF';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`CARVLAK Group  •  ${instagramHandle}`, 60, barY + barH / 2);
+  const leftText = ctaText ? `${ctaText}  •  ${instagramHandle}` : `CARVLAK Group  •  ${instagramHandle}`;
+  ctx.fillText(leftText, 60, barY + barH / 2);
 
   ctx.textAlign = 'right';
-  ctx.font = '500 17px system-ui, -apple-system, sans-serif';
+  ctx.font = '500 17px "Barlow Condensed", system-ui, sans-serif';
   ctx.fillStyle = '#8A8A8A';
-  ctx.fillText(`📍 ${locationName}`, w - 60, barY + barH / 2);
+  const rightText = phoneText ? `📞 ${phoneText}  •  📍 ${locationName}` : `📍 ${locationName}`;
+  ctx.fillText(rightText, w - 60, barY + barH / 2);
 
   ctx.restore();
 }

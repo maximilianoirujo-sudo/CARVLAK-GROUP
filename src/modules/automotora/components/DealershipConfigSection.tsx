@@ -19,12 +19,33 @@ import { DealershipConfig, DealershipCustomFieldDef } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../../components/ui/Button';
+import { Modal } from '../../../components/common/Modal';
 
 export const DealershipConfigSection: React.FC = () => {
   const { dealershipConfig, updateDealershipConfig } = useData();
   const { showToast } = useToast();
 
-  const [activeSubTab, setActiveSubTab] = useState<'lists' | 'models' | 'custom_fields' | 'general'>('lists');
+  const [activeSubTab, setActiveSubTab] = useState<'lists' | 'models' | 'custom_fields' | 'general'>(() => {
+    if (typeof window !== 'undefined') {
+      const section = new URLSearchParams(window.location.search).get('section');
+      if (section && ['lists', 'models', 'custom_fields', 'general'].includes(section)) {
+        return section as any;
+      }
+    }
+    return 'lists';
+  });
+
+  // Asegurar que al cambiar de subpestaña o entrar a configuración la vista se posicione arriba
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('section') !== activeSubTab) {
+        url.searchParams.set('section', activeSubTab);
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [activeSubTab]);
 
   // Inputs para agregar nuevos elementos
   const [newBrandInput, setNewBrandInput] = useState('');
@@ -827,95 +848,95 @@ export const DealershipConfigSection: React.FC = () => {
       )}
 
       {/* MODAL NUEVO CAMPO PERSONALIZADO */}
-      {newFieldModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border border-[#E5E5E3] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-[#161616]">Nuevo campo personalizado</h3>
-
-            <form onSubmit={handleCreateCustomField} className="space-y-4">
-              <div>
-                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Nombre del campo:</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Ubicación física, Garantía meses, Consignación..."
-                  value={newFieldName}
-                  onChange={(e) => setNewFieldName(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Tipo de dato:</label>
-                <select
-                  value={newFieldType}
-                  onChange={(e) => setNewFieldType(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
-                >
-                  <option value="text">Texto simple</option>
-                  <option value="number">Número</option>
-                  <option value="boolean">Sí / No (Booleano)</option>
-                  <option value="select">Lista de opciones (Desplegable)</option>
-                </select>
-              </div>
-
-              {newFieldType === 'select' && (
-                <div>
-                  <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">
-                    Opciones (separadas por comas):
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Salón principal, Depósito, Taller..."
-                    value={newFieldOptionsStr}
-                    onChange={(e) => setNewFieldOptionsStr(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B6B]">
-                  <input
-                    type="checkbox"
-                    checked={newFieldShowInCatalog}
-                    onChange={(e) => setNewFieldShowInCatalog(e.target.checked)}
-                    className="rounded bg-[#F5F5F4] border-[#E5E5E3] text-[#D7141A] focus:ring-0"
-                  />
-                  <span>Mostrar en catálogo web / Tiendanube (público)</span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B6B]">
-                  <input
-                    type="checkbox"
-                    checked={newFieldRequired}
-                    onChange={(e) => setNewFieldRequired(e.target.checked)}
-                    className="rounded bg-[#F5F5F4] border-[#E5E5E3] text-[#D7141A] focus:ring-0"
-                  />
-                  <span>Campo obligatorio al crear vehículo</span>
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#E5E5E3]">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setNewFieldModalOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                >
-                  Guardar campo
-                </Button>
-              </div>
-            </form>
+      <Modal
+        isOpen={newFieldModalOpen}
+        onClose={() => setNewFieldModalOpen(false)}
+        title="Nuevo campo personalizado"
+        subtitle="Definí un atributo adicional para los vehículos de stock"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleCreateCustomField} className="space-y-4">
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Nombre del campo:</label>
+            <input
+              type="text"
+              required
+              placeholder="Ej: Ubicación física, Garantía meses, Consignación..."
+              value={newFieldName}
+              onChange={(e) => setNewFieldName(e.target.value)}
+              className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Tipo de dato:</label>
+            <select
+              value={newFieldType}
+              onChange={(e) => setNewFieldType(e.target.value as any)}
+              className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
+            >
+              <option value="text">Texto simple</option>
+              <option value="number">Número</option>
+              <option value="boolean">Sí / No (Booleano)</option>
+              <option value="select">Lista de opciones (Desplegable)</option>
+            </select>
+          </div>
+
+          {newFieldType === 'select' && (
+            <div>
+              <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">
+                Opciones (separadas por comas):
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Salón principal, Depósito, Taller..."
+                value={newFieldOptionsStr}
+                onChange={(e) => setNewFieldOptionsStr(e.target.value)}
+                className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2 pt-2">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B6B]">
+              <input
+                type="checkbox"
+                checked={newFieldShowInCatalog}
+                onChange={(e) => setNewFieldShowInCatalog(e.target.checked)}
+                className="rounded bg-[#F5F5F4] border-[#E5E5E3] text-[#D7141A] focus:ring-0"
+              />
+              <span>Mostrar en catálogo web / Tiendanube (público)</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-[#6B6B6B]">
+              <input
+                type="checkbox"
+                checked={newFieldRequired}
+                onChange={(e) => setNewFieldRequired(e.target.checked)}
+                className="rounded bg-[#F5F5F4] border-[#E5E5E3] text-[#D7141A] focus:ring-0"
+              />
+              <span>Campo obligatorio al crear vehículo</span>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-[#E5E5E3]">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setNewFieldModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+            >
+              Guardar campo
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

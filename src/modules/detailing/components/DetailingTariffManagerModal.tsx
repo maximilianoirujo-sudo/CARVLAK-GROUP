@@ -40,6 +40,17 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
     moto: 1500
   });
 
+  // Escuchar tecla Escape para cerrar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const startEditing = (tariff: DetailingTariff) => {
@@ -77,7 +88,12 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         
         {/* Cabecera */}

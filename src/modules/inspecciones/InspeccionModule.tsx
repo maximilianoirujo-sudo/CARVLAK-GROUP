@@ -57,6 +57,10 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
     'list' | 'peritaje_live' | 'report_view' | 'expenses' | 'commissions' | 'dashboard'
   >('list');
 
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
   // Filtros
   const [typeFilter, setTypeFilter] = useState<'all' | InspectionType>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');

@@ -39,10 +39,26 @@ export const InspectionTariffModal: React.FC<InspectionTariffModalProps> = ({
     onClose();
   };
 
+  // Escuchar tecla Escape para cerrar
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-fade-in"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="w-full max-w-md rounded-xl bg-white border border-[#E5E5E3] shadow-2xl p-5 sm:p-6 space-y-5">
         <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
           <div className="flex items-center gap-2.5">
