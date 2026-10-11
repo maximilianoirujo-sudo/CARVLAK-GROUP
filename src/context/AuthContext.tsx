@@ -3,7 +3,7 @@ import { Profile, Role } from '../types';
 import { INITIAL_PROFILES } from '../lib/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-interface AuthContextType {
+export interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isDemoMode: boolean;
@@ -11,35 +11,112 @@ interface AuthContextType {
   logout: () => Promise<void>;
   switchProfile: (profileId: string) => void;
   availableProfiles: Profile[];
-  updateProfileCommissions: (profileId: string, commissions: { automotora: number; detailing: number; inspeccion: number }) => void;
+  updateProfileCommissions: (profileId: string, commissions: { automotora: number; detailing: number; inspeccion: number }) => Promise<void> | void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // En producción sin Supabase configurado, bloquear ingreso totalmente
+  if (!import.meta.env.DEV && !isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F4] flex flex-col justify-center items-center p-4">
+        <div className="w-full max-w-md bg-white border border-[#E5E5E3] rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm text-center">
+          <div className="flex items-center justify-center gap-2">
+            <img
+              src="/carvlak-logo-negro.png"
+              alt="CARVLAK"
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
+            <span className="text-sm font-sans font-medium text-[#6B6B6B] tracking-wide">
+              Group
+            </span>
+          </div>
+          <h1 className="text-lg font-title font-bold text-[#161616]">
+            Configuración incompleta
+          </h1>
+          <p className="text-xs text-[#6B6B6B] leading-relaxed">
+            Las credenciales de Supabase no están configuradas en las variables de entorno de este despliegue.
+            Por políticas de seguridad, el ingreso al sistema se encuentra deshabilitado.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // En producción, los perfiles no se leen de localStorage
   const [profiles, setProfiles] = useState<Profile[]>(() => {
-    const saved = localStorage.getItem('carvlak_profiles');
-    return saved ? JSON.parse(saved) : INITIAL_PROFILES;
+    if (import.meta.env.DEV) {
+      const saved = localStorage.getItem('carvlak_profiles');
+      return saved ? JSON.parse(saved) : INITIAL_PROFILES;
+    }
+    return [];
   });
 
   const [profile, setProfile] = useState<Profile | null>(() => {
-    const savedId = localStorage.getItem('carvlak_active_user_id');
-    const found = profiles.find((p) => p.id === savedId);
-    return found || profiles[0]; // Maximiliano Admin por defecto
+    if (import.meta.env.DEV) {
+      const savedId = localStorage.getItem('carvlak_active_user_id');
+      const found = profiles.find((p) => p.id === savedId);
+      return found || profiles[0] || null;
+    }
+    return null;
   });
 
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(Boolean(isSupabaseConfigured && !import.meta.env.DEV));
   const isDemoMode = !isSupabaseConfigured;
 
+  // Persistir en localStorage solo en desarrollo
   useEffect(() => {
-    localStorage.setItem('carvlak_profiles', JSON.stringify(profiles));
+    if (import.meta.env.DEV) {
+      localStorage.setItem('carvlak_profiles', JSON.stringify(profiles));
+    }
   }, [profiles]);
 
   useEffect(() => {
-    if (profile) {
-      localStorage.setItem('carvlak_active_user_id', profile.id);
+    if (import.meta.env.DEV) {
+      if (profile) {
+        localStorage.setItem('carvlak_active_user_id', profile.id);
+      } else {
+        localStorage.removeItem('carvlak_active_user_id');
+      }
     }
   }, [profile]);
+
+  const fetchProfiles = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name', { ascending: true });
+
+      if (data && !error) {
+        setProfiles(data as Profile[]);
+      }
+    } catch (e) {
+      console.error('Error al cargar perfiles desde Supabase:', e);
+    }
+  };
+
+  const fetchSupabaseProfile = async (userId: string) => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (data && !error) {
+        setProfile(data as Profile);
+        await fetchProfiles();
+      }
+    } catch (e) {
+      console.error('Error fetching profile from Supabase:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Si Supabase está configurado, sincronizar sesión
   useEffect(() => {
@@ -58,6 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fetchSupabaseProfile(session.user.id);
         } else {
           setProfile(null);
+          if (!import.meta.env.DEV) {
+            setProfiles([]);
+          }
           setLoading(false);
         }
       });
@@ -66,33 +146,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const fetchSupabaseProfile = async (userId: string) => {
-    if (!supabase) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (data && !error) {
-        setProfile(data as Profile);
-      }
-    } catch (e) {
-      console.error('Error fetching profile from Supabase:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = async (email: string, password?: string): Promise<{ error?: string }> => {
+    // Fuera de DEV, la contraseña es estrictamente obligatoria
+    if (!import.meta.env.DEV && !password) {
+      return { error: 'Debe ingresar una contraseña.' };
+    }
+
     if (isSupabaseConfigured && supabase && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       return {};
     }
 
-    // Modo Demo / Fallback
+    // Login sin contraseña solo permitido en entorno DEV
+    if (!import.meta.env.DEV) {
+      return { error: 'Autenticación con Supabase requerida en este entorno.' };
+    }
+
+    // Modo Demo / Fallback local para desarrollo
     const found = profiles.find((p) => p.email?.toLowerCase() === email.toLowerCase());
     if (found) {
       if (!found.is_active) {
@@ -110,21 +181,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     }
     setProfile(null);
+    if (!import.meta.env.DEV) {
+      setProfiles([]);
+    }
   };
 
   const switchProfile = (profileId: string) => {
+    if (!import.meta.env.DEV) {
+      console.warn('El cambio directo de perfil está deshabilitado en producción.');
+      return;
+    }
     const found = profiles.find((p) => p.id === profileId);
     if (found) {
       setProfile(found);
     }
   };
 
-  const updateProfileCommissions = (profileId: string, commissions: { automotora: number; detailing: number; inspeccion: number }) => {
+  const updateProfileCommissions = async (
+    profileId: string,
+    commissions: { automotora: number; detailing: number; inspeccion: number }
+  ) => {
     setProfiles((prev) =>
       prev.map((p) => (p.id === profileId ? { ...p, commissions } : p))
     );
     if (profile?.id === profileId) {
       setProfile((prev) => (prev ? { ...prev, commissions } : null));
+    }
+
+    // Guardar en Supabase si está disponible
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ commissions, updated_at: new Date().toISOString() })
+          .eq('id', profileId);
+
+        if (error) {
+          console.error('Error al persistir comisiones de perfil en Supabase:', error.message);
+        }
+      } catch (err) {
+        console.error('Fallo en updateProfileCommissions:', err);
+      }
     }
   };
 

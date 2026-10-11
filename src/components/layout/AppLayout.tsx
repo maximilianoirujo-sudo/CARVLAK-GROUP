@@ -14,15 +14,29 @@ import { TaskList } from '../tasks/TaskList';
 import { TaskFormModal } from '../tasks/TaskFormModal';
 import { AppointmentModal } from '../agenda/AppointmentModal';
 import { EmployeeList } from '../employees/EmployeeList';
-import { AutomotoraModule } from '../../modules/automotora/AutomotoraModule';
-import { DetailingModule } from '../../modules/detailing/DetailingModule';
-import { InspeccionModule } from '../../modules/inspecciones/InspeccionModule';
 import { PublicQuoteRequestPage } from '../public/PublicQuoteRequestPage';
 import { InspectionPublicReportPage } from '../../modules/inspecciones/components/InspectionPublicReportPage';
 import { DealershipPublicCatalogPage } from '../../modules/automotora/components/DealershipPublicCatalogPage';
-import { RedesSocialesModule } from '../../modules/redes/RedesSocialesModule';
+import { FloatingQuickActions } from './FloatingQuickActions';
+import { DealershipVehicleModal } from '../../modules/automotora/components/DealershipVehicleModal';
+import { DetailingQuoterModal } from '../../modules/detailing/components/DetailingQuoterModal';
+
+// Carga perezosa (lazy) de los 4 módulos de negocio
+const AutomotoraModule = React.lazy(() =>
+  import('../../modules/automotora/AutomotoraModule').then((m) => ({ default: m.AutomotoraModule }))
+);
+const DetailingModule = React.lazy(() =>
+  import('../../modules/detailing/DetailingModule').then((m) => ({ default: m.DetailingModule }))
+);
+const InspeccionModule = React.lazy(() =>
+  import('../../modules/inspecciones/InspeccionModule').then((m) => ({ default: m.InspeccionModule }))
+);
+const RedesSocialesModule = React.lazy(() =>
+  import('../../modules/redes/RedesSocialesModule').then((m) => ({ default: m.RedesSocialesModule }))
+);
 import { Vehicle, Client, Appointment, SocialMediaTemplateId } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { LoginPage } from '../auth/LoginPage';
 import { Lock } from 'lucide-react';
 import { isEncargado } from '../../lib/permissions';
@@ -30,6 +44,7 @@ import { Button } from '../ui/Button';
 
 export const AppLayout: React.FC = () => {
   const { profile } = useAuth();
+  const { clients, vehicles } = useData();
 
   // Sincronización inicial con la URL actual (?tab=...)
   const [currentTab, setCurrentTab] = useState(() => {
@@ -100,29 +115,53 @@ export const AppLayout: React.FC = () => {
   // Modales Globales
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
   const [inspectVehicle, setInspectVehicle] = useState<Vehicle | null>(null);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [isVehicleFormOpen, setIsVehicleFormOpen] = useState(false);
   const [vehicleDefaultClientId, setVehicleDefaultClientId] = useState<string | undefined>(undefined);
 
   const [isClientFormOpen, setIsClientFormOpen] = useState(false);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentDefaultVehicle, setAppointmentDefaultVehicle] = useState<Vehicle | null>(null);
   const [appointmentDefaultClient, setAppointmentDefaultClient] = useState<Client | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
+  // Modales para acciones rápidas
+  const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
+  const [isDealershipVehicleModalOpen, setIsDealershipVehicleModalOpen] = useState(false);
+
   // Manejo de Agendado directo desde un vehículo
   const handleScheduleForVehicle = (v: Vehicle) => {
+    setAppointmentToEdit(null);
     setAppointmentDefaultVehicle(v);
+    const linkedClient = clients.find((c) => c.id === v.client_id) || null;
+    setAppointmentDefaultClient(linkedClient);
     setIsAppointmentModalOpen(true);
   };
 
   // Manejo de Agendado directo desde un cliente
   const handleScheduleForClient = (c: Client) => {
+    setAppointmentToEdit(null);
     setAppointmentDefaultClient(c);
+    const linkedVeh = vehicles.find((v) => v.client_id === c.id) || null;
+    setAppointmentDefaultVehicle(linkedVeh);
     setIsAppointmentModalOpen(true);
+  };
+
+  // Manejo de acción rápida Nuevo Auto
+  const handleQuickNewVehicle = () => {
+    if (currentTab === 'mod-automotora') {
+      setIsDealershipVehicleModalOpen(true);
+    } else {
+      setEditingVehicle(null);
+      setVehicleDefaultClientId(undefined);
+      setIsVehicleFormOpen(true);
+    }
   };
 
   // Manejo de Asignar auto para un cliente
   const handleAddVehicleForClient = (c: Client) => {
+    setEditingVehicle(null);
     setVehicleDefaultClientId(c.id);
     setIsVehicleFormOpen(true);
   };
@@ -159,7 +198,10 @@ export const AppLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F5F4] text-[#161616]">
       {/* TopBar */}
-      <TopBar onOpenQuickSearch={() => setIsQuickSearchOpen(true)} />
+      <TopBar
+        onOpenQuickSearch={() => setIsQuickSearchOpen(true)}
+        onSelectTab={handleNavigateTab}
+      />
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         {/* Sidebar */}
@@ -170,14 +212,23 @@ export const AppLayout: React.FC = () => {
           {currentTab === 'inicio' && (
             <HomeDashboard
               onNavigate={handleNavigateTab}
-              onNewAppointment={() => setIsAppointmentModalOpen(true)}
+              onNewAppointment={() => {
+                setAppointmentToEdit(null);
+                setAppointmentDefaultVehicle(null);
+                setAppointmentDefaultClient(null);
+                setIsAppointmentModalOpen(true);
+              }}
               onNewVehicle={() => {
+                setEditingVehicle(null);
                 setVehicleDefaultClientId(undefined);
                 setIsVehicleFormOpen(true);
               }}
               onNewClient={() => setIsClientFormOpen(true)}
               onNewTask={() => setIsTaskModalOpen(true)}
-              onSelectAppointment={() => handleNavigateTab('agenda')}
+              onSelectAppointment={(appt) => {
+                setAppointmentToEdit(appt);
+                setIsAppointmentModalOpen(true);
+              }}
               onOpenRedesWithItem={handleOpenRedesWithItem}
             />
           )}
@@ -218,29 +269,51 @@ export const AppLayout: React.FC = () => {
           )}
 
           {currentTab === 'mod-automotora' && (
-            <AutomotoraModule
-              onOpenPublicCatalog={() => setIsPublicCatalogView(true)}
-              initialSubTab={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sub') || undefined : undefined}
-            />
+            <React.Suspense fallback={<div className="flex items-center justify-center p-12 text-xs text-[#6B6B6B] animate-pulse">Cargando Automotora...</div>}>
+              <AutomotoraModule
+                onOpenPublicCatalog={() => setIsPublicCatalogView(true)}
+                initialSubTab={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sub') || undefined : undefined}
+              />
+            </React.Suspense>
           )}
           {currentTab === 'mod-detailing' && (
-            <DetailingModule onOpenPublicForm={() => setIsPublicFormView(true)} />
+            <React.Suspense fallback={<div className="flex items-center justify-center p-12 text-xs text-[#6B6B6B] animate-pulse">Cargando Detailing...</div>}>
+              <DetailingModule onOpenPublicForm={() => setIsPublicFormView(true)} />
+            </React.Suspense>
           )}
           {currentTab === 'mod-inspeccion' && (
-            <InspeccionModule onNavigateToDetailing={() => handleNavigateTab('mod-detailing')} />
+            <React.Suspense fallback={<div className="flex items-center justify-center p-12 text-xs text-[#6B6B6B] animate-pulse">Cargando Carbusters...</div>}>
+              <InspeccionModule onNavigateToDetailing={() => handleNavigateTab('mod-detailing')} />
+            </React.Suspense>
           )}
 
           {currentTab === 'redes-sociales' && (
-            <RedesSocialesModule
-              initialVehicleId={redesParams?.vehicleId}
-              initialTemplateId={redesParams?.templateId}
-            />
+            <React.Suspense fallback={<div className="flex items-center justify-center p-12 text-xs text-[#6B6B6B] animate-pulse">Cargando Redes Sociales...</div>}>
+              <RedesSocialesModule
+                initialVehicleId={redesParams?.vehicleId}
+                initialTemplateId={redesParams?.templateId}
+              />
+            </React.Suspense>
           )}
         </main>
       </div>
 
       {/* BottomNav */}
       <BottomNav currentTab={currentTab} onSelectTab={handleNavigateTab} />
+
+      {/* Botón flotante con acciones rápidas para celular */}
+      <FloatingQuickActions
+        onNewAppointment={() => {
+          setAppointmentToEdit(null);
+          setAppointmentDefaultVehicle(null);
+          setAppointmentDefaultClient(null);
+          setIsAppointmentModalOpen(true);
+        }}
+        onNewVehicle={handleQuickNewVehicle}
+        onNewClient={() => setIsClientFormOpen(true)}
+        onNewQuote={() => setIsQuoterModalOpen(true)}
+        onCreateSocialPost={() => handleNavigateTab('redes-sociales')}
+      />
 
       {/* Quick Search Modal */}
       {isQuickSearchOpen && (
@@ -257,7 +330,11 @@ export const AppLayout: React.FC = () => {
           isOpen={Boolean(inspectVehicle)}
           onClose={() => setInspectVehicle(null)}
           vehicle={inspectVehicle}
-          onEdit={() => {}}
+          onEdit={(veh) => {
+            setEditingVehicle(veh);
+            setIsVehicleFormOpen(true);
+            setInspectVehicle(null);
+          }}
           onScheduleAppointment={handleScheduleForVehicle}
         />
       )}
@@ -269,7 +346,9 @@ export const AppLayout: React.FC = () => {
           onClose={() => {
             setIsVehicleFormOpen(false);
             setVehicleDefaultClientId(undefined);
+            setEditingVehicle(null);
           }}
+          vehicleToEdit={editingVehicle}
           defaultClientId={vehicleDefaultClientId}
         />
       )}
@@ -290,7 +369,11 @@ export const AppLayout: React.FC = () => {
             setIsAppointmentModalOpen(false);
             setAppointmentDefaultVehicle(null);
             setAppointmentDefaultClient(null);
+            setAppointmentToEdit(null);
           }}
+          appointmentToEdit={appointmentToEdit}
+          defaultVehicleId={appointmentDefaultVehicle?.id}
+          defaultClientId={appointmentDefaultClient?.id || appointmentDefaultVehicle?.client_id}
         />
       )}
 
@@ -299,6 +382,22 @@ export const AppLayout: React.FC = () => {
         <TaskFormModal
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
+        />
+      )}
+
+      {/* Dealership Vehicle Modal (Acción rápida nuevo auto de stock) */}
+      {isDealershipVehicleModalOpen && (
+        <DealershipVehicleModal
+          isOpen={isDealershipVehicleModalOpen}
+          onClose={() => setIsDealershipVehicleModalOpen(false)}
+        />
+      )}
+
+      {/* Detailing Quoter Modal (Acción rápida nueva cotización) */}
+      {isQuoterModalOpen && (
+        <DetailingQuoterModal
+          isOpen={isQuoterModalOpen}
+          onClose={() => setIsQuoterModalOpen(false)}
         />
       )}
     </div>

@@ -4,7 +4,7 @@
 
 export type Business = 'automotora' | 'detailing' | 'inspeccion';
 
-export type Role = 'admin' | 'encargado' | 'detailer' | 'inspector' | 'vendedor';
+export type Role = 'admin' | 'encargado' | 'detailer' | 'inspector' | 'vendedor' | 'encargado_detailing';
 
 export type Currency = 'UYU' | 'USD';
 
@@ -14,7 +14,7 @@ export type VehicleOwnership = 'client' | 'dealership';
 
 export type ClientOrigin = 'Presencial' | 'WhatsApp' | 'Instagram' | 'Referido' | 'Google Form';
 
-export type AppointmentStatus = 'Pendiente' | 'Confirmado' | 'En curso' | 'Finalizado' | 'Cancelado';
+export type AppointmentStatus = 'Pendiente' | 'Confirmado' | 'En curso' | 'Finalizado' | 'Cancelado' | 'confirmed' | 'completed' | 'cancelled';
 
 export type TaskStatus = 'Pendiente' | 'En curso' | 'Hecha';
 
@@ -60,6 +60,9 @@ export interface Vehicle {
   year?: number;
   color?: string;
   mileage?: number;
+  vin?: string;
+  fuel?: string;
+  transmission?: string;
   category: VehicleCategory;
   ownership: VehicleOwnership;
   client_id?: string;
@@ -98,6 +101,16 @@ export interface Appointment {
   notes?: string;
   price_amount: number;
   price_currency: Currency;
+  work_bay_id?: string; // Puesto de trabajo (Box 1, Box 2...)
+  quote_id?: string; // Cotización de detailing asociada
+  stage?: string; // Estado en el flujo de taller (ej. 'Agendado', 'Recibido', 'En proceso', etc.)
+  is_blocked?: boolean; // Bloqueo de tiempo (almuerzo, mantenimiento, día libre)
+  block_reason?: string;
+  whatsapp_sent_log?: { template_key: string; sent_at: string; phone: string }[];
+  history?: { timestamp: string; from_status?: string; to_status: string; user_id?: string; user_name?: string; note?: string }[];
+  voided_at?: string;
+  voided_by?: string;
+  void_reason?: string;
   is_archived?: boolean;
   created_by?: string;
   created_at: string;
@@ -122,7 +135,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'marketing';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'marketing' | 'configuracion';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -151,19 +164,65 @@ export interface DetailingTariff {
   isActive?: boolean;
 }
 
-export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed';
+export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed' | string;
 
 export type DetailingQuoteStatus = 
   | 'Por Cotizar' 
   | 'Presupuesto Enviado' 
   | 'Turno Confirmado' 
+  | 'Agendado'
+  | 'Confirmado'
+  | 'Recibido'
+  | 'En proceso'
+  | 'Control de calidad'
+  | 'Listo para retirar'
+  | 'Entregado y cobrado'
   | 'Trabajo Completado' 
-  | 'Cancelado';
+  | 'Cancelado'
+  | 'No vino';
 
 export interface DetailingQuoteServiceItem {
   serviceId: string;
   serviceName: string;
   price: number;
+}
+
+export interface DetailingPayment {
+  id: string;
+  date: string; // YYYY-MM-DD
+  amount: number;
+  payment_method: string;
+  type: 'seña' | 'saldo' | 'total';
+  notes?: string;
+  registered_by?: string;
+  is_voided?: boolean;
+}
+
+export interface DetailingCheckinData {
+  mileage?: number;
+  fuel_level?: 'Reserva' | '1/4' | '1/2' | '3/4' | 'Lleno';
+  valuables?: string;
+  pre_existing_damages?: string;
+  photos?: string[];
+  client_agreed?: boolean;
+  checkin_at?: string;
+  checkin_by?: string;
+}
+
+export interface DetailingQualityControlData {
+  checklist?: { id: string; label: string; passed: boolean; notes?: string }[];
+  photos_after?: string[];
+  completed_at?: string;
+  completed_by?: string;
+}
+
+export interface DetailingMaterialsConsumed {
+  stock_item_id: string;
+  item_name: string;
+  quantity: number;
+  unit: string;
+  unit_cost: number;
+  total_cost: number;
 }
 
 export interface DetailingQuote {
@@ -184,20 +243,47 @@ export interface DetailingQuote {
   extreme_dirt_surcharge: number;
   total_amount: number;
   estimated_time?: string;
-  assigned_to?: string; // ID del empleado (atendido por)
+  assigned_to?: string; // ID del empleado (detailer)
   assignee?: Profile;
   origin: ClientOrigin | 'Llamada' | 'Form Web';
   notes?: string;
   priority_zones?: string;
   status: DetailingQuoteStatus;
-  appointment_id?: string; // Id del turno creado en la Agenda Unificada
+  appointment_id?: string; // Id del turno creado en la Agenda
   appointment_date?: string; // ISO string de cuando se agendó
+  work_bay_id?: string; // Box o puesto de trabajo asignado
+  payments?: DetailingPayment[];
+  checkin_data?: DetailingCheckinData;
+  quality_control_data?: DetailingQualityControlData;
+  materials_cost?: number;
+  materials_consumed?: DetailingMaterialsConsumed[];
+  whatsapp_sent_log?: { template_key: string; sent_at: string; phone: string }[];
+  history?: { timestamp: string; from_status?: string; to_status: string; user_id?: string; user_name?: string; note?: string }[];
+  voided_at?: string;
+  voided_by?: string;
+  void_reason?: string;
   photos_before?: string[];
   photos_after?: string[];
   is_archived?: boolean;
   created_by?: string;
   created_at: string;
   updated_at: string;
+}
+
+// Cierre de caja diario
+export interface DetailingCashClosure {
+  id: string;
+  date: string; // YYYY-MM-DD
+  closed_at: string;
+  closed_by: string;
+  closed_by_name?: string;
+  total_income: number;
+  total_expenses: number;
+  net_balance: number;
+  breakdown_income_by_method: Record<string, number>;
+  breakdown_expense_by_method: Record<string, number>;
+  notes?: string;
+  created_at?: string;
 }
 
 // ==============================================================================
@@ -255,10 +341,23 @@ export interface Expense {
   date: string; // YYYY-MM-DD
   amount: number; // en $UYU
   currency: Currency;
-  category: ExpenseCategory;
-  payment_method: PaymentMethod;
+  category: ExpenseCategory | string;
+  payment_method: PaymentMethod | string;
   description: string;
+  supplier?: string;
   invoice_number?: string;
+  receipt_url?: string; // Comprobante o factura (foto / PDF) en Supabase Storage
+  is_recurring?: boolean; // Es gasto fijo recurrente
+  recurring_rule?: {
+    frequency: 'mensual';
+    due_day: number;
+    recurring_expense_id?: string;
+  };
+  status?: 'Pendiente' | 'Pagado';
+  payment_date?: string;
+  voided_at?: string;
+  voided_by?: string;
+  void_reason?: string;
   created_by?: string;
   is_archived?: boolean;
   created_at: string;
@@ -274,7 +373,8 @@ export interface CommissionRecord {
   vehicle_description: string;
   amount_charged: number; // Monto total cobrado al cliente
   commission_rate: number; // Porcentaje (ej: 30 para Maximiliano)
-  commission_amount: number; // Monto a pagar en $UYU
+  commission_amount: number; // Monto a pagar (UYU o USD según negocio)
+  currency?: Currency; // Moneda explícita: 'USD' para automotora, 'UYU' para detailing/inspección
   status: 'Pendiente' | 'Pagada';
   created_at: string;
   paid_at?: string;
@@ -528,7 +628,7 @@ export interface DealershipSaleRecord {
 }
 
 export type DealershipVehicleCondition = 'usado' | '0km';
-export type DealershipVehicleType = 'auto' | 'moto' | 'todoterreno';
+export type DealershipVehicleType = 'Hatchback' | 'Sedán' | 'SUV' | 'Pick-up' | 'Coupé' | 'Utilitario' | 'Moto' | 'Auto' | 'Todoterreno' | string;
 
 export interface DealershipDeliveryChecklistItem {
   id: string;
@@ -574,6 +674,8 @@ export interface DealershipVehicle {
   autonomy_km?: number; // Autonomía en km para eléctricos
   tiendanube_id?: string; // ID de producto en Tiendanube
   tiendanube_synced_at?: string; // Última sincronización con Tiendanube
+  tiendanube_sync_status?: 'synced' | 'pending' | 'error';
+  tiendanube_sync_error?: string;
   incomplete_data?: boolean; // Flag para completar datos faltantes desde el celular
   brand: string;
   model: string;
@@ -620,6 +722,7 @@ export interface DealershipVehicle {
   // Datos de venta
   sale_price: number; // Precio de lista en USD o UYU
   sale_currency: Currency;
+  currency?: Currency; // Alias opcional para compatibilidad
   min_acceptable_price: number; // Solo Admin
   financing_available?: boolean;
   min_down_payment_usd?: number;
@@ -746,6 +849,8 @@ export interface SocialMediaPostRecord {
   item_id?: string; // ID del auto, cotización o cliente
   item_title: string; // ej: "Volkswagen Golf 1.4 TSI 2018"
   thumbnail_data?: string; // Data URL miniatura para vista previa rápida
+  image_url?: string; // URL pública en Supabase Storage (bucket media/social)
+  editor_state?: any; // Estado guardado para re-editar en Estudio
   suggested_caption: string;
   is_published: boolean;
   published_at?: string;
@@ -801,8 +906,8 @@ export interface FormatLayoutConfig {
   showPrice: boolean;
   showOriginalPrice: boolean;
   priceColor?: string;
-  specsSelection: string[]; // e.g. ['year', 'mileage', 'fuel', 'transmission', 'engine', 'autonomy']
-  specsOrder: string[];
+  specsSelection?: string[]; // e.g. ['year', 'mileage', 'fuel', 'transmission', 'engine', 'autonomy']
+  specsOrder?: string[];
   ctaText?: string;
   phoneText?: string;
   textElements?: CanvasTextElement[];
@@ -823,6 +928,7 @@ export interface SocialMediaTemplateConfig {
   logo_position: LogoPosition;
   default_caption_template: string;
   default_hashtags?: string;
+  location_name?: string;
   layout_story?: FormatLayoutConfig;
   layout_post?: FormatLayoutConfig;
 }
@@ -863,4 +969,135 @@ export interface SocialMediaConfig {
   auto_triggers?: SocialAutoTriggersConfig;
   templates: Record<string, SocialMediaTemplateConfig>;
 }
+
+// ==============================================================================
+// CONFIGURACIÓN GENERAL DEL HUB CARVLAK
+// ==============================================================================
+export interface GeneralConfig {
+  company_name: string;
+  company_phone: string; // ej: "59899267964"
+  company_phone_formatted: string; // ej: "099 267 964"
+  jonathan_phone: string; // ej: "59899267964"
+  address: string; // ej: "Av. Giannattasio & Calcagno, Shangrilá, Canelones"
+  instagram_handle: string; // ej: "@car.vlak"
+  catalog_url?: string;
+  is_demo_mode: boolean; // Modo demostración (muestra datos de ejemplo o datos reales)
+}
+
+// ==============================================================================
+// CONFIGURACIÓN AVANZADA DETAILVLAK (TALLER SHANGRILÁ)
+// ==============================================================================
+
+export interface DetailingWorkBay {
+  id: string;
+  name: string;
+  color?: string;
+  supported_services?: string[];
+  is_active: boolean;
+}
+
+export interface DetailingFlowStatus {
+  id: string;
+  name: string;
+  label?: string;
+  color: string;
+  order: number;
+  is_active: boolean;
+}
+
+export interface DetailingAlertThresholds {
+  unconfirmed_hours_before: number; // Turno de mañana sin confirmar (hs antes)
+  late_checkin_minutes: number; // Turno que ya empezó y no fue recibido (minutos después)
+  delayed_work_hours: number; // Trabajo atrasado (hs después de hora de fin)
+  ready_not_notified_hours: number; // Auto listo sin avisar al cliente (hs)
+  delivered_unpaid_hours: number; // Auto entregado sin cobro (hs)
+  quote_followup_days: number; // Cotización sin respuesta (días)
+  past_unclosed_hours: number; // Turno pasado sin cerrar (hs)
+  stock_lead_days: number; // Insumo por debajo de lo necesario (días de anticipación)
+}
+
+export interface DetailingScheduleDay {
+  open: string; // HH:mm
+  close: string; // HH:mm
+  open_time?: string;
+  close_time?: string;
+  is_open: boolean;
+}
+
+export interface DetailingSchedule {
+  monday: DetailingScheduleDay;
+  tuesday: DetailingScheduleDay;
+  wednesday: DetailingScheduleDay;
+  thursday: DetailingScheduleDay;
+  friday: DetailingScheduleDay;
+  saturday: DetailingScheduleDay;
+  sunday: DetailingScheduleDay;
+}
+
+export interface DetailingHoliday {
+  date: string; // YYYY-MM-DD
+  reason: string;
+  name?: string;
+  is_closed?: boolean;
+}
+
+export interface DetailingChecklistItem {
+  id: string;
+  label: string;
+  is_required?: boolean;
+}
+
+export interface DetailingRecipeItem {
+  stock_item_id: string;
+  quantity: number;
+}
+
+export type DetailingServiceRecipe = Record<string, DetailingRecipeItem[]>;
+
+export interface DetailingRecurringExpense {
+  id: string;
+  name: string;
+  amount: number;
+  category: string;
+  due_day: number; // 1..31
+  frequency: 'mensual';
+  payment_method?: string;
+  notes?: string;
+}
+
+export interface DetailingDiscountConfig {
+  id: string;
+  label: string;
+  percentage: number;
+}
+
+export interface DetailingConfig {
+  empresa_id: string;
+  work_bays: DetailingWorkBay[];
+  schedule: DetailingSchedule;
+  buffer_between_appointments_min: number;
+  holidays: DetailingHoliday[];
+  flow_statuses: DetailingFlowStatus[];
+  alert_thresholds: DetailingAlertThresholds;
+  whatsapp_templates: {
+    confirm_appointment: string;
+    day_before_reminder: string;
+    car_ready: string;
+    quote_followup: string;
+  };
+  reception_checklist: DetailingChecklistItem[];
+  quality_checklists_by_service: Record<string, DetailingChecklistItem[]>;
+  quality_checklists?: Record<string, DetailingChecklistItem[]>;
+  recipes_by_service: Record<string, DetailingServiceRecipe>;
+  recurring_expenses: DetailingRecurringExpense[];
+  monthly_budgets: Record<string, number>; // categoría -> monto UYU
+  discounts_available: DetailingDiscountConfig[];
+  extreme_dirt_surcharge_amount: number;
+  expense_categories: string[];
+  payment_methods: string[];
+  suppliers: string[];
+  stock_units: string[];
+  void_reasons: string[];
+}
+
 

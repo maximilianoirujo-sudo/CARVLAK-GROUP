@@ -29,8 +29,6 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
   isOpen,
   onClose
 }) => {
-  if (!isOpen) return null;
-
   const { updateDealershipVehicleStatus, dealershipConfig } = useData();
   const { profile, availableProfiles } = useAuth();
   const { showToast } = useToast();
@@ -51,27 +49,27 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
 
   // Tipo de operación
   const [operationType, setOperationType] = useState<'venta' | 'reserva'>(
-    vehicle.status === 'reservado' ? 'venta' : 'venta'
+    vehicle?.status === 'reservado' ? 'venta' : 'venta'
   );
 
   // Datos del Comprador
-  const [buyerName, setBuyerName] = useState(vehicle.reservation?.client_name || vehicle.reservation?.buyer_name || '');
-  const [buyerPhone, setBuyerPhone] = useState(vehicle.reservation?.client_phone || vehicle.reservation?.buyer_phone || '');
+  const [buyerName, setBuyerName] = useState(vehicle?.reservation?.client_name || vehicle?.reservation?.buyer_name || '');
+  const [buyerPhone, setBuyerPhone] = useState(vehicle?.reservation?.client_phone || vehicle?.reservation?.buyer_phone || '');
   const [buyerDocument, setBuyerDocument] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
 
   // Datos de Reserva (si aplica)
   const [depositAmount, setDepositAmount] = useState<number>(
-    vehicle.reservation?.deposit_amount || vehicle.reservation?.amount || 500
+    vehicle?.reservation?.deposit_amount || vehicle?.reservation?.amount || 500
   );
   const [reservationExpiresAt, setReservationExpiresAt] = useState<string>(
-    vehicle.reservation?.expires_at ||
-      vehicle.reservation?.expiration_date ||
+    vehicle?.reservation?.expires_at ||
+      vehicle?.reservation?.expiration_date ||
       new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
 
   // Datos de Venta Definitiva
-  const [salePrice, setSalePrice] = useState<number>(vehicle.sale_price || 0);
+  const [salePrice, setSalePrice] = useState<number>(vehicle?.sale_price || 0);
   const [paymentMethod, setPaymentMethod] = useState<DealershipPaymentMethod>('contado');
   const [bankFinancingEntity, setBankFinancingEntity] = useState('Santander');
   const [bankFinancingAmount, setBankFinancingAmount] = useState<number>(0);
@@ -95,8 +93,19 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
   // Notas
   const [saleNotes, setSaleNotes] = useState('');
 
+  // Sincronizar estado cuando el vehículo cambia o se abre el modal
+  React.useEffect(() => {
+    if (vehicle && isOpen) {
+      setOperationType(vehicle.status === 'reservado' ? 'venta' : 'venta');
+      setBuyerName(vehicle.reservation?.client_name || vehicle.reservation?.buyer_name || '');
+      setBuyerPhone(vehicle.reservation?.client_phone || vehicle.reservation?.buyer_phone || '');
+      setDepositAmount(vehicle.reservation?.deposit_amount || vehicle.reservation?.amount || 500);
+      setSalePrice(vehicle.sale_price || 0);
+    }
+  }, [vehicle?.id, vehicle?.status, vehicle?.sale_price, isOpen]);
+
   // Cálculos automáticos de ganancia y comisión
-  const costUsd = vehicle.total_real_cost_usd || vehicle.purchase_price || 0;
+  const costUsd = vehicle?.total_real_cost_usd || vehicle?.purchase_price || 0;
   const grossProfitUsd = Math.max(0, salePrice - costUsd);
   const calculatedCommission = Math.round((grossProfitUsd * commissionRate) / 100);
 
@@ -140,7 +149,9 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
           model: tradeInModel.trim(),
           year: Number(tradeInYear),
           plate: tradeInPlate.trim().toUpperCase(),
+          valuation: Number(tradeInValuation),
           valuation_usd: Number(tradeInValuation),
+          trade_in_valuation_usd: Number(tradeInValuation),
           mileage: Number(tradeInMileage)
         }
       : undefined;
@@ -148,12 +159,16 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
     const saleRecord: DealershipSaleRecord = {
       sale_date: new Date().toISOString(),
       sale_price: Number(salePrice),
+      final_price: Number(salePrice),
+      currency: 'USD',
+      sale_currency: 'USD',
       buyer_name: buyerName.trim(),
       buyer_phone: buyerPhone.trim(),
       buyer_document: buyerDocument.trim() || undefined,
       buyer_email: buyerEmail.trim() || undefined,
       payment_method: paymentMethod,
       seller_id: sellerId,
+      seller_employee_id: sellerId,
       commission_amount: calculatedCommission,
       seller_commission_amount: calculatedCommission,
       gross_profit_usd: grossProfitUsd,
@@ -163,8 +178,11 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
 
     updateDealershipVehicleStatus(vehicle.id, 'vendido', {
       saleRecord,
+      sale_price: Number(salePrice),
+      final_price: Number(salePrice),
       tradeIn: tradeInPayload,
       seller_id: sellerId,
+      seller_employee_id: sellerId,
       commissionAmount: calculatedCommission,
       offerPosventa
     });
@@ -172,6 +190,8 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
     showToast(`¡Venta de ${vehicle.brand} ${vehicle.model} completada con éxito!`, 'success');
     onClose();
   };
+
+  if (!isOpen || !vehicle) return null;
 
   return (
     <div
@@ -199,7 +219,8 @@ export const DealershipSaleModal: React.FC<DealershipSaleModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
+            aria-label="Cerrar modal"
+            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

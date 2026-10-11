@@ -147,7 +147,7 @@ export const EmployeeList: React.FC = () => {
                             <div className="font-bold text-[#161616] mt-0.5">{emp.commissions?.detailing || 0}%</div>
                           </div>
                           <div className="p-2 rounded-xl bg-white border border-[#E5E5E3] shadow-xs">
-                            <div className="text-[11px] text-[#6B6B6B]">Inspección</div>
+                            <div className="text-[11px] text-[#6B6B6B]">Carbusters</div>
                             <div className="font-bold text-[#161616] mt-0.5">{emp.commissions?.inspeccion || 0}%</div>
                           </div>
                           <div className="p-2 rounded-xl bg-white border border-[#E5E5E3] shadow-xs">

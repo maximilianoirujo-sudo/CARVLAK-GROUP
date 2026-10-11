@@ -11,11 +11,12 @@ import {
   ClipboardCheck,
   AlertTriangle,
   Share2,
-  Sparkles
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { BUSINESS_CONFIG, formatCurrency } from '../../lib/formatters';
+import { BUSINESS_CONFIG, formatCurrency, getLocalDateString, formatLocalTime } from '../../lib/formatters';
 import { isEncargado } from '../../lib/permissions';
 import { Appointment, SocialMediaTemplateId } from '../../types';
 import { UruguayanPlate } from '../ui';
@@ -71,7 +72,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   }, [dealershipVehicles, dealershipConfig]);
 
   // Filtrar turnos de hoy
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = getLocalDateString();
 
   const todayAppointments = useMemo(() => {
     return appointments
@@ -177,7 +178,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </h1>
             <p className="text-xs text-[#6B6B6B] mt-0.5 max-w-xl">
               {isBoss
-                ? 'Panel central unificado: Automotora, Detailing Shangrilá e Inspecciones vehiculares.'
+                ? 'Panel central unificado: Automotora, Detailing Shangrilá y Carbusters.'
                 : 'Tus turnos y tareas asignadas para la jornada.'}
             </p>
           </div>
@@ -431,7 +432,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               const bConfig = BUSINESS_CONFIG[appt.business];
               const client = clients.find((c) => c.id === appt.client_id);
               const vehicle = vehicles.find((v) => v.id === appt.vehicle_id);
-              const timeStr = appt.start_time.slice(11, 16);
+              const timeStr = formatLocalTime(appt.start_time) || appt.start_time.slice(11, 16);
 
               return (
                 <div
@@ -523,7 +524,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                       : 'border-[#D0D0CD] bg-white text-transparent hover:border-[#161616]'
                   }`}
                 >
-                  ✓
+                  {t.status === 'En curso' && <Check className="w-3.5 h-3.5" />}
                 </button>
                 <div className="min-w-0">
                   <h4 className="text-xs sm:text-sm font-semibold text-[#161616] truncate">{t.title}</h4>

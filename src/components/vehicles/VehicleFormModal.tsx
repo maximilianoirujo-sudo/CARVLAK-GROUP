@@ -3,7 +3,7 @@ import { Modal } from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { Vehicle, VehicleCategory, VehicleOwnership } from '../../types';
-import { normalizePlate } from '../../lib/formatters';
+import { normalizePlate, validateUruguayanPlate } from '../../lib/formatters';
 
 interface VehicleFormModalProps {
   isOpen: boolean;
@@ -55,10 +55,17 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
     }
   }, [vehicleToEdit, defaultClientId, isOpen]);
 
+  const plateValidation = plate.trim() ? validateUruguayanPlate(plate) : { isValid: true };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!plate.trim() || !brand.trim() || !model.trim()) {
       showToast('Matrícula, marca y modelo son obligatorios', 'warning');
+      return;
+    }
+
+    if (!plateValidation.isValid) {
+      showToast(plateValidation.error || 'Formato de matrícula inválido', 'warning');
       return;
     }
 
@@ -120,9 +127,19 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
             onChange={(e) => setPlate(e.target.value.toUpperCase())}
             placeholder="Ej: SBX 1234"
             required
-            className="w-full bg-white border border-[#E5E5E3] rounded-xl p-3 text-base font-black text-[#161616] uppercase tracking-widest font-mono focus:outline-none focus:border-[#D7141A] transition-colors"
+            className={`w-full bg-white border rounded-xl p-3 text-base font-bold text-[#161616] uppercase tracking-widest font-mono focus:outline-none transition-colors ${
+              plate.trim().length >= 3 && !plateValidation.isValid
+                ? 'border-[#D7141A] ring-1 ring-[#D7141A]'
+                : 'border-[#E5E5E3] focus:border-[#D7141A]'
+            }`}
           />
-          <p className="text-[11px] text-[#6B6B6B] mt-1">Se normaliza automáticamente en mayúsculas.</p>
+          {plate.trim().length >= 3 && !plateValidation.isValid ? (
+            <p className="text-[11px] text-[#D7141A] font-medium mt-1">
+              {plateValidation.error}
+            </p>
+          ) : (
+            <p className="text-[11px] text-[#6B6B6B] mt-1">Se normaliza automáticamente en mayúsculas (ej: SBX 1234).</p>
+          )}
         </div>
 
         {/* Marca y Modelo */}

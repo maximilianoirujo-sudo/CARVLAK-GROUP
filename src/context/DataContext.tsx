@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import {
   Client,
   Vehicle,
@@ -28,13 +28,20 @@ import {
   DealershipVehicle,
   DealershipVehicleStatus,
   DealershipVehicleHistoryEntry,
+  DealershipSaleRecord,
   DealershipInquiry,
   DealershipInquiryStatus,
   DealershipConfig,
   SocialMediaConfig,
   SocialMediaPostRecord,
   SocialMediaTemplateConfig,
-  CanvasTextElement
+  CanvasTextElement,
+  GeneralConfig,
+  DetailingConfig,
+  DetailingPayment,
+  DetailingCheckinData,
+  DetailingQualityControlData,
+  DetailingCashClosure
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -55,17 +62,18 @@ import {
   DEFAULT_CHECKLIST_TEMPLATE,
   DEFAULT_CAR_PANELS,
   INITIAL_DEALERSHIP_CONFIG,
-  INITIAL_DEALERSHIP_VEHICLES,
   INITIAL_DEALERSHIP_INQUIRIES,
-  APPAUTO_OFFICIAL_CATALOG,
+  INITIAL_GENERAL_CONFIG,
   INITIAL_SOCIAL_MEDIA_CONFIG,
-  INITIAL_SOCIAL_MEDIA_POSTS
+  INITIAL_SOCIAL_MEDIA_POSTS,
+  INITIAL_DETAILING_CONFIG
 } from '../lib/mockData';
-import { normalizePlate, sanitizePhoneForWhatsApp } from '../lib/formatters';
+import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
 
-interface DataContextType {
+export interface DataContextType {
   clients: Client[];
   vehicles: Vehicle[];
   appointments: Appointment[];
@@ -105,10 +113,23 @@ interface DataContextType {
   addDetailingTariff: (tariff: Omit<DetailingTariff, 'id'>) => DetailingTariff;
 
   detailingQuotes: DetailingQuote[];
+  allDetailingQuotes: DetailingQuote[];
+  detailingConfig: DetailingConfig;
+  updateDetailingConfig: (config: Partial<DetailingConfig>) => void;
   addDetailingQuote: (quoteData: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'>) => DetailingQuote;
   updateDetailingQuote: (id: string, data: Partial<DetailingQuote>) => void;
-  updateDetailingQuoteStatus: (id: string, newStatus: DetailingQuoteStatus, appointmentDetails?: { date: string; assigned_to?: string }) => void;
+  updateDetailingQuoteStatus: (id: string, newStatus: DetailingQuoteStatus, appointmentDetails?: { date: string; assigned_to?: string; work_bay_id?: string }) => void;
   archiveDetailingQuote: (id: string) => void;
+  voidDetailingQuote: (id: string, reason: string) => void;
+  restoreDetailingQuote: (id: string) => void;
+  deleteDetailingQuotePermanent: (id: string) => void;
+  bulkVoidDetailingQuotes: (ids: string[], reason: string) => void;
+  bulkDeleteDetailingQuotes: (ids: string[]) => void;
+  recordDetailingPayment: (quoteId: string, payment: Omit<DetailingPayment, 'id'>) => void;
+  recordDetailingCheckin: (quoteId: string, checkin: DetailingCheckinData) => void;
+  recordDetailingQualityControl: (quoteId: string, qc: DetailingQualityControlData) => void;
+  logDetailingWhatsAppSent: (targetId: string, templateKey: string, phone: string) => void;
+  voidAppointment: (id: string, reason: string) => void;
 
   stockItems: StockItem[];
   addStockItem: (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>) => StockItem;
@@ -117,9 +138,15 @@ interface DataContextType {
   recordStockMovement: (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense?: boolean) => void;
 
   expenses: Expense[];
+  allExpenses: Expense[];
   addExpense: (expenseData: Omit<Expense, 'id' | 'created_at'>) => Expense;
   updateExpense: (id: string, data: Partial<Expense>) => void;
   deleteExpense: (id: string) => void;
+  voidExpense: (id: string, reason: string) => void;
+  restoreExpense: (id: string) => void;
+  deleteExpensePermanent: (id: string) => void;
+  detailingCashClosures: DetailingCashClosure[];
+  saveDetailingCashClosure: (closure: Omit<DetailingCashClosure, 'id' | 'created_at'>) => DetailingCashClosure;
 
   commissions: CommissionRecord[];
   markCommissionPaid: (id: string) => void;
@@ -152,7 +179,7 @@ interface DataContextType {
       panels?: CarPanelInspection[];
     }
   ) => VehicleInspection;
-  updateInspection: (id: string, data: Partial<VehicleInspection>) => void;
+  updateInspection: (id: string, data: Partial<VehicleInspection>, skipAudit?: boolean) => void;
   updateInspectionStatus: (id: string, newStatus: InspectionStatus, appointmentDetails?: { date: string; assigned_to?: string }) => void;
   archiveInspection: (id: string) => void;
   updateInspectionTariffs: (tariffs: Partial<InspectionTariffConfig>) => void;
@@ -176,9 +203,13 @@ interface DataContextType {
   updateDealershipInquiryStatus: (id: string, newStatus: DealershipInquiryStatus, appointmentDetails?: { date: string; assigned_to?: string; title?: string }) => void;
   archiveDealershipInquiry: (id: string) => void;
   updateDealershipConfig: (config: Partial<DealershipConfig>) => void;
-  importAppAutoCatalog: () => { importedCount: number; duplicatesCount: number };
-  importTiendanubeCatalog: () => { importedCount: number; duplicatesCount: number };
+  importTiendanubeCatalog: () => Promise<{ importedCount: number; duplicatesCount: number }>;
   createPosventaDetailingQuote: (dealershipVehicleId: string, buyerName?: string, buyerPhone?: string) => string | null;
+  syncVehicleWithTiendanube: (vehicle: DealershipVehicle, action: 'publish' | 'update_price' | 'reserve' | 'sell' | 'sync') => Promise<void>;
+
+  // CONFIGURACIÓN GENERAL DEL HUB
+  generalConfig: GeneralConfig;
+  updateGeneralConfig: (config: Partial<GeneralConfig>) => void;
 
   // FASE 5: REDES SOCIALES & MARKETING STUDIO
   socialMediaPosts: SocialMediaPostRecord[];
@@ -197,40 +228,78 @@ interface DataContextType {
   applyStyleToAllTemplates: (sourceTemplateId: string) => void;
 }
 
-const DataContext = createContext<DataContextType | undefined>(undefined);
+export const DataContext = createContext<DataContextType | undefined>(undefined);
+
+// Hook para persistencia diferida en localStorage (500 ms de demora para evitar bloqueos del hilo principal)
+const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) => {
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        console.warn(`Error al guardar ${key} en localStorage:`, err);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [key, value, delay]);
+};
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { profile } = useAuth();
+  const { profile, availableProfiles } = useAuth();
 
-  // Estados con carga inicial desde localStorage o seed
+  // Estados con carga inicial desde localStorage o seed (solo en DEV)
   const [clients, setClients] = useState<Client[]>(() => {
-    const s = localStorage.getItem('carvlak_clients');
-    return s ? JSON.parse(s) : INITIAL_CLIENTS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_clients');
+      return s ? JSON.parse(s) : INITIAL_CLIENTS;
+    }
+    return [];
   });
 
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
-    const s = localStorage.getItem('carvlak_vehicles');
-    return s ? JSON.parse(s) : INITIAL_VEHICLES;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_vehicles');
+      return s ? JSON.parse(s) : INITIAL_VEHICLES;
+    }
+    return [];
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    const s = localStorage.getItem('carvlak_appointments');
-    return s ? JSON.parse(s) : INITIAL_APPOINTMENTS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_appointments');
+      return s ? JSON.parse(s) : INITIAL_APPOINTMENTS;
+    }
+    return [];
   });
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    const s = localStorage.getItem('carvlak_tasks');
-    return s ? JSON.parse(s) : INITIAL_TASKS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_tasks');
+      return s ? JSON.parse(s) : INITIAL_TASKS;
+    }
+    return [];
   });
 
   const [vehicleHistory, setVehicleHistory] = useState<VehicleHistoryEvent[]>(() => {
-    const s = localStorage.getItem('carvlak_vehicle_history');
-    return s ? JSON.parse(s) : INITIAL_VEHICLE_HISTORY;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_vehicle_history');
+      return s ? JSON.parse(s) : INITIAL_VEHICLE_HISTORY;
+    }
+    return [];
   });
 
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
-    const s = localStorage.getItem('carvlak_activity_logs');
-    return s ? JSON.parse(s) : INITIAL_ACTIVITY_LOGS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_activity_logs');
+      return s ? JSON.parse(s) : INITIAL_ACTIVITY_LOGS;
+    }
+    return [];
   });
 
   // FASE 2: Estados Detailing, Stock, Gastos, Comisiones y WhatsApp
@@ -240,23 +309,35 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [detailingQuotes, setDetailingQuotes] = useState<DetailingQuote[]>(() => {
-    const s = localStorage.getItem('carvlak_detailing_quotes');
-    return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_detailing_quotes');
+      return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
+    }
+    return [];
   });
 
   const [stockItems, setStockItems] = useState<StockItem[]>(() => {
-    const s = localStorage.getItem('carvlak_stock_items');
-    return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_stock_items');
+      return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
+    }
+    return [];
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const s = localStorage.getItem('carvlak_expenses');
-    return s ? JSON.parse(s) : INITIAL_EXPENSES;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_expenses');
+      return s ? JSON.parse(s) : INITIAL_EXPENSES;
+    }
+    return [];
   });
 
   const [commissions, setCommissions] = useState<CommissionRecord[]>(() => {
-    const s = localStorage.getItem('carvlak_commissions');
-    return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_commissions');
+      return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
+    }
+    return [];
   });
 
   const [whatsappTemplates, setWhatsappTemplates] = useState<WhatsAppTemplate[]>(() => {
@@ -264,10 +345,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return s ? JSON.parse(s) : INITIAL_WHATSAPP_TEMPLATES;
   });
 
-  // FASE 3: Estados Inspecciones Vehiculares (Peritaje)
+  // FASE DETAILVLAK: Configuración del Taller y Cierres de Caja
+  const [detailingConfig, setDetailingConfig] = useState<DetailingConfig>(() => {
+    const s = localStorage.getItem('carvlak_detailing_config');
+    if (s) {
+      try {
+        const parsed = JSON.parse(s);
+        return { ...INITIAL_DETAILING_CONFIG, ...parsed };
+      } catch {
+        return INITIAL_DETAILING_CONFIG;
+      }
+    }
+    return INITIAL_DETAILING_CONFIG;
+  });
+
+  const [detailingCashClosures, setDetailingCashClosures] = useState<DetailingCashClosure[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_cash_closures');
+    if (s) {
+      try {
+        return JSON.parse(s);
+      } catch {}
+    }
+    return [];
+  });
+
+  useDebouncedLocalStorage('carvlak_detailing_config', detailingConfig, 500);
+  useDebouncedLocalStorage('carvlak_detailing_cash_closures', detailingCashClosures, 500);
+
+  // FASE 3: Estados Inspecciones Vehiculares (Peritaje Carbusters)
   const [inspections, setInspections] = useState<VehicleInspection[]>(() => {
-    const s = localStorage.getItem('carvlak_inspections');
-    return s ? JSON.parse(s) : INITIAL_INSPECTIONS;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_inspections');
+      const raw: VehicleInspection[] = s ? JSON.parse(s) : INITIAL_INSPECTIONS;
+      // Las inspecciones internas que ya existen no se borran: marcarlas como archivadas y guardarlas para migrarlas después
+      return raw.map((i) => (i.type === 'interna' && !i.is_archived ? { ...i, is_archived: true } : i));
+    }
+    return [];
   });
 
   const [inspectionTariffs, setInspectionTariffs] = useState<InspectionTariffConfig>(() => {
@@ -281,15 +394,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (s) {
       try {
         const parsed = JSON.parse(s);
-        if (Array.isArray(parsed) && parsed.length >= 40) return parsed;
+        if (Array.isArray(parsed) && parsed.length >= 40) {
+          // Migración: detectar IDs duplicados en datos guardados y asignarles un nuevo UUID único
+          const seenIds = new Set<string>();
+          let hasDuplicates = false;
+          const migrated = parsed.map((veh: DealershipVehicle) => {
+            if (!veh.id || seenIds.has(veh.id)) {
+              hasDuplicates = true;
+              return { ...veh, id: crypto.randomUUID() };
+            }
+            seenIds.add(veh.id);
+            return veh;
+          });
+          if (hasDuplicates) {
+            localStorage.setItem('carvlak_dealership_vehicles_v3', JSON.stringify(migrated));
+          }
+          return migrated;
+        }
       } catch (e) {}
     }
-    return INITIAL_DEALERSHIP_VEHICLES;
+    return [];
   });
 
+  // Carga diferida del catálogo inicial de autos (import dinámico para aligerar bundle principal)
+  useEffect(() => {
+    const s = localStorage.getItem('carvlak_dealership_vehicles_v3');
+    if (!s || dealershipVehicles.length === 0) {
+      import('../lib/dealershipInitialVehicles').then(({ INITIAL_DEALERSHIP_VEHICLES }) => {
+        setDealershipVehicles((current) => {
+          if (current.length === 0) {
+            try {
+              localStorage.setItem('carvlak_dealership_vehicles_v3', JSON.stringify(INITIAL_DEALERSHIP_VEHICLES));
+            } catch (e) {}
+            return INITIAL_DEALERSHIP_VEHICLES;
+          }
+          return current;
+        });
+      });
+    }
+  }, []);
+
   const [dealershipInquiries, setDealershipInquiries] = useState<DealershipInquiry[]>(() => {
-    const s = localStorage.getItem('carvlak_dealership_inquiries');
-    return s ? JSON.parse(s) : INITIAL_DEALERSHIP_INQUIRIES;
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_dealership_inquiries');
+      return s ? JSON.parse(s) : INITIAL_DEALERSHIP_INQUIRIES;
+    }
+    return [];
   });
 
   const [dealershipConfig, setDealershipConfig] = useState<DealershipConfig>(() => {
@@ -307,13 +457,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // FASE 5: Estados Redes Sociales & Marketing Studio
   const [socialMediaPosts, setSocialMediaPosts] = useState<SocialMediaPostRecord[]>(() => {
-    const s = localStorage.getItem('carvlak_social_media_posts');
-    if (s) {
-      try {
-        return JSON.parse(s);
-      } catch (e) {}
+    if (import.meta.env.DEV) {
+      const s = localStorage.getItem('carvlak_social_media_posts');
+      if (s) {
+        try {
+          return JSON.parse(s);
+        } catch (e) {}
+      }
+      return INITIAL_SOCIAL_MEDIA_POSTS;
     }
-    return INITIAL_SOCIAL_MEDIA_POSTS;
+    return [];
   });
 
   const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaConfig>(() => {
@@ -332,9 +485,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 (['layout_story', 'layout_post'] as const).forEach((lk) => {
                   const layout = cleanTmpl[lk];
                   if (layout?.textElements) {
-                    layout.textElements = layout.textElements.filter(
-                      (el: any) => el.id !== 'etiqueta_instagram' && el.id !== 'pie_marca'
-                    );
+                    // Mantener todos los elementos incluyendo los ocultos
                   }
                 });
                 cleanTemplates[key] = cleanTmpl;
@@ -356,107 +507,178 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return INITIAL_SOCIAL_MEDIA_CONFIG;
   });
 
-  // Guardar en localStorage
-  useEffect(() => {
-    localStorage.setItem('carvlak_clients', JSON.stringify(clients));
-  }, [clients]);
+  // CONFIGURACIÓN GENERAL DEL HUB
+  const [generalConfig, setGeneralConfig] = useState<GeneralConfig>(() => {
+    const s = localStorage.getItem('carvlak_general_config');
+    if (s) {
+      try {
+        return { ...INITIAL_GENERAL_CONFIG, ...JSON.parse(s) };
+      } catch (e) {}
+    }
+    return INITIAL_GENERAL_CONFIG;
+  });
 
-  useEffect(() => {
-    localStorage.setItem('carvlak_vehicles', JSON.stringify(vehicles));
-  }, [vehicles]);
+  useDebouncedLocalStorage('carvlak_general_config', generalConfig, 500);
 
-  useEffect(() => {
-    localStorage.setItem('carvlak_appointments', JSON.stringify(appointments));
-  }, [appointments]);
+  const updateGeneralConfig = (config: Partial<GeneralConfig>) => {
+    setGeneralConfig((prev) => {
+      const updated = { ...prev, ...config };
+      syncSupabase('general_configs', 'upsert', { id: 'default', ...updated });
+      return updated;
+    });
+    logActivity('configuracion', 'general_config', 'update', config);
+  };
 
-  useEffect(() => {
-    localStorage.setItem('carvlak_tasks', JSON.stringify(tasks));
-  }, [tasks]);
+  // Helper centralizado para sincronizar con Supabase y encolar ante fallos de red (Offline queue)
+  const syncSupabase = async (
+    table: string,
+    action: 'insert' | 'update' | 'upsert' | 'delete',
+    payload: any,
+    matchField?: string,
+    matchValue?: any
+  ) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      let error: any = null;
+      if (action === 'insert') {
+        const res = await supabase.from(table).insert(payload);
+        error = res.error;
+      } else if (action === 'update') {
+        const field = matchField || 'id';
+        const val = matchValue ?? payload?.[field];
+        const res = await supabase.from(table).update(payload).eq(field, val);
+        error = res.error;
+      } else if (action === 'upsert') {
+        const res = await supabase.from(table).upsert(payload);
+        error = res.error;
+      } else if (action === 'delete') {
+        const field = matchField || 'id';
+        const val = matchValue;
+        const res = await supabase.from(table).delete().eq(field, val);
+        error = res.error;
+      }
 
-  useEffect(() => {
-    localStorage.setItem('carvlak_vehicle_history', JSON.stringify(vehicleHistory));
-  }, [vehicleHistory]);
+      if (error) {
+        console.warn(`Supabase sync warning (${table}.${action}):`, error.message);
+        enqueueSync({ table, action, payload, matchField, matchValue });
+      }
+    } catch (err) {
+      console.warn(`Excepción de red en Supabase sync (${table}.${action}):`, err);
+      enqueueSync({ table, action, payload, matchField, matchValue });
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('carvlak_activity_logs', JSON.stringify(activityLogs));
-  }, [activityLogs]);
+  // Persistencia en localStorage con 500 ms de demora (debounce) para alto rendimiento
+  useDebouncedLocalStorage('carvlak_clients', clients, 500);
+  useDebouncedLocalStorage('carvlak_vehicles', vehicles, 500);
+  useDebouncedLocalStorage('carvlak_appointments', appointments, 500);
+  useDebouncedLocalStorage('carvlak_tasks', tasks, 500);
+  useDebouncedLocalStorage('carvlak_vehicle_history', vehicleHistory, 500);
+  useDebouncedLocalStorage('carvlak_activity_logs', activityLogs, 500);
+  useDebouncedLocalStorage('carvlak_detailing_tariffs', detailingTariffs, 500);
+  useDebouncedLocalStorage('carvlak_detailing_quotes', detailingQuotes, 500);
+  useDebouncedLocalStorage('carvlak_stock_items', stockItems, 500);
+  useDebouncedLocalStorage('carvlak_expenses', expenses, 500);
+  useDebouncedLocalStorage('carvlak_commissions', commissions, 500);
+  useDebouncedLocalStorage('carvlak_whatsapp_templates', whatsappTemplates, 500);
+  useDebouncedLocalStorage('carvlak_inspections', inspections, 500);
+  useDebouncedLocalStorage('carvlak_inspection_tariffs', inspectionTariffs, 500);
+  useDebouncedLocalStorage('carvlak_dealership_vehicles_v3', dealershipVehicles, 500);
+  useDebouncedLocalStorage('carvlak_dealership_inquiries', dealershipInquiries, 500);
+  useDebouncedLocalStorage('carvlak_dealership_config', dealershipConfig, 500);
+  useDebouncedLocalStorage('carvlak_social_media_posts', socialMediaPosts, 500);
+  useDebouncedLocalStorage('carvlak_social_media_config', socialMediaConfig, 500);
 
+  // Limpiar clave obsoleta duplicada de localStorage
   useEffect(() => {
-    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(detailingTariffs));
-  }, [detailingTariffs]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(detailingQuotes));
-  }, [detailingQuotes]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_stock_items', JSON.stringify(stockItems));
-  }, [stockItems]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_commissions', JSON.stringify(commissions));
-  }, [commissions]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_whatsapp_templates', JSON.stringify(whatsappTemplates));
-  }, [whatsappTemplates]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_inspections', JSON.stringify(inspections));
-  }, [inspections]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_inspection_tariffs', JSON.stringify(inspectionTariffs));
-  }, [inspectionTariffs]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_dealership_vehicles_v3', JSON.stringify(dealershipVehicles));
-    localStorage.setItem('carvlak_dealership_vehicles', JSON.stringify(dealershipVehicles));
-  }, [dealershipVehicles]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_dealership_inquiries', JSON.stringify(dealershipInquiries));
-  }, [dealershipInquiries]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_dealership_config', JSON.stringify(dealershipConfig));
-  }, [dealershipConfig]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_social_media_posts', JSON.stringify(socialMediaPosts));
-  }, [socialMediaPosts]);
-
-  useEffect(() => {
-    localStorage.setItem('carvlak_social_media_config', JSON.stringify(socialMediaConfig));
-  }, [socialMediaConfig]);
+    try {
+      localStorage.removeItem('carvlak_dealership_vehicles');
+    } catch (e) {}
+  }, []);
 
   // Si Supabase está configurado, sincronizar con la nube
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
       loadSupabaseData();
+      processSyncQueue();
     }
   }, []);
 
   const loadSupabaseData = async () => {
-    if (!supabase) return;
+    if (!supabase || !isSupabaseConfigured) return;
     try {
-      const [resClients, resVehicles, resAppts, resTasks] = await Promise.all([
+      const isAdmin = profile?.roles?.includes('admin');
+      const vehicleTable = isAdmin ? 'dealership_vehicles' : 'dealership_vehicles_staff';
+
+      const [
+        resGeneralConfig,
+        resClients,
+        resVehicles,
+        resAppts,
+        resTasks,
+        resVehicleHistory,
+        resDealershipVehicles,
+        resDealershipInquiries,
+        resDealershipConfig,
+        resDetailingTariffs,
+        resDetailingQuotes,
+        resStockItems,
+        resExpenses,
+        resCommissions,
+        resWhatsappTemplates,
+        resInspections,
+        resInspectionTariffs,
+        resSocialPosts,
+        resSocialConfig,
+        resDetailingConfig,
+        resDetailingCashClosures
+      ] = await Promise.all([
+        supabase.from('general_configs').select('*').limit(1).maybeSingle(),
         supabase.from('clients').select('*').eq('is_archived', false),
         supabase.from('vehicles').select('*').eq('is_archived', false),
         supabase.from('appointments').select('*').eq('is_archived', false),
-        supabase.from('tasks').select('*')
+        supabase.from('tasks').select('*'),
+        supabase.from('vehicle_history').select('*'),
+        supabase.from(vehicleTable).select('*').eq('is_archived', false),
+        supabase.from('dealership_inquiries').select('*').eq('is_archived', false),
+        supabase.from('dealership_configs').select('*').limit(1).maybeSingle(),
+        supabase.from('detailing_tariffs').select('*'),
+        supabase.from('detailing_quotes').select('*'),
+        supabase.from('stock_items').select('*'),
+        supabase.from('expenses').select('*'),
+        supabase.from('commissions').select('*'),
+        supabase.from('whatsapp_templates').select('*'),
+        supabase.from('vehicle_inspections').select('*'),
+        supabase.from('inspection_tariffs').select('*').limit(1).maybeSingle(),
+        supabase.from('social_post_records').select('*'),
+        supabase.from('social_media_configs').select('*').limit(1).maybeSingle(),
+        supabase.from('detailing_configs').select('*').limit(1).maybeSingle(),
+        supabase.from('detailing_cash_closures').select('*')
       ]);
 
-      if (resClients.data && resClients.data.length > 0) setClients(resClients.data as Client[]);
-      if (resVehicles.data && resVehicles.data.length > 0) setVehicles(resVehicles.data as Vehicle[]);
-      if (resAppts.data && resAppts.data.length > 0) setAppointments(resAppts.data as Appointment[]);
-      if (resTasks.data && resTasks.data.length > 0) setTasks(resTasks.data as Task[]);
+      if (resGeneralConfig.data) setGeneralConfig((prev) => ({ ...prev, ...resGeneralConfig.data }));
+      if (resClients.data) setClients(resClients.data as Client[]);
+      if (resVehicles.data) setVehicles(resVehicles.data as Vehicle[]);
+      if (resAppts.data) setAppointments(resAppts.data as Appointment[]);
+      if (resTasks.data) setTasks(resTasks.data as Task[]);
+      if (resVehicleHistory.data) setVehicleHistory(resVehicleHistory.data as VehicleHistoryEvent[]);
+      if (resDealershipVehicles.data) setDealershipVehicles(resDealershipVehicles.data as DealershipVehicle[]);
+      if (resDealershipInquiries.data) setDealershipInquiries(resDealershipInquiries.data as DealershipInquiry[]);
+      if (resDealershipConfig.data) setDealershipConfig((prev) => ({ ...prev, ...resDealershipConfig.data }));
+      if (resDetailingTariffs.data) setDetailingTariffs(resDetailingTariffs.data as DetailingTariff[]);
+      if (resDetailingQuotes.data) setDetailingQuotes(resDetailingQuotes.data as DetailingQuote[]);
+      if (resStockItems.data) setStockItems(resStockItems.data as StockItem[]);
+      if (resExpenses.data) setExpenses(resExpenses.data as Expense[]);
+      if (resCommissions.data) setCommissions(resCommissions.data as CommissionRecord[]);
+      if (resWhatsappTemplates.data) setWhatsappTemplates(resWhatsappTemplates.data as WhatsAppTemplate[]);
+      if (resInspections.data) setInspections(resInspections.data as VehicleInspection[]);
+      if (resInspectionTariffs.data) setInspectionTariffs((prev) => ({ ...prev, ...resInspectionTariffs.data }));
+      if (resSocialPosts.data) setSocialMediaPosts(resSocialPosts.data as SocialMediaPostRecord[]);
+      if (resSocialConfig.data) setSocialMediaConfig((prev) => ({ ...prev, ...resSocialConfig.data }));
+      if (resDetailingConfig.data) setDetailingConfig((prev) => ({ ...prev, ...resDetailingConfig.data }));
+      if (resDetailingCashClosures.data) setDetailingCashClosures(resDetailingCashClosures.data as DetailingCashClosure[]);
     } catch (err) {
-      console.warn('Conexión con Supabase en curso...', err);
+      console.warn('Conexión con Supabase en curso o tablas aún vacías:', err);
     }
   };
 
@@ -475,13 +697,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActivityLogs((prev) => [newLog, ...prev]);
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('activity_logs').insert({
+      syncSupabase('activity_logs', 'insert', {
+        id: newLog.id,
         user_id: profile?.id,
         entity_type: entityType,
         entity_id: entityId,
         action,
-        details
-      }).then();
+        details,
+        created_at: newLog.created_at
+      });
     }
   };
 
@@ -499,7 +723,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const dup = checkPhoneDuplicate(data.phone);
     const newClient: Client = {
       ...data,
-      id: `cli-${Date.now()}`,
+      id: `cli-${crypto.randomUUID()}`,
       is_archived: false,
       created_by: profile?.id,
       created_at: new Date().toISOString(),
@@ -508,10 +732,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setClients((prev) => [newClient, ...prev]);
     logActivity('cliente', newClient.id, 'create', { name: newClient.full_name, phone: newClient.phone });
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('clients').insert(newClient).then();
-    }
+    syncSupabase('clients', 'insert', newClient);
 
     return {
       client: newClient,
@@ -524,19 +745,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((c) => (c.id === id ? { ...c, ...data, updated_at: new Date().toISOString() } : c))
     );
     logActivity('cliente', id, 'update', data);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('clients').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id).then();
-    }
+    syncSupabase('clients', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const archiveClient = (id: string) => {
     setClients((prev) => prev.map((c) => (c.id === id ? { ...c, is_archived: true } : c)));
     logActivity('cliente', id, 'archive');
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('clients').update({ is_archived: true }).eq('id', id).then();
-    }
+    syncSupabase('clients', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   // VEHÍCULOS
@@ -555,7 +770,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newVehicle: Vehicle = {
       ...data,
       plate: normalizedPlate,
-      id: `veh-${Date.now()}`,
+      id: `veh-${crypto.randomUUID()}`,
       is_archived: false,
       created_by: profile?.id,
       created_at: new Date().toISOString(),
@@ -567,10 +782,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Registro inicial en historial
     addVehicleHistory(newVehicle.id, 'automotora', 'Registro Inicial', `Vehículo ${newVehicle.brand} ${newVehicle.model} registrado en CARVLAK Group.`);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('vehicles').insert(newVehicle).then();
-    }
+    syncSupabase('vehicles', 'insert', newVehicle);
 
     return { vehicle: newVehicle };
   };
@@ -580,24 +792,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((v) => (v.id === id ? { ...v, ...data, updated_at: new Date().toISOString() } : v))
     );
     logActivity('vehiculo', id, 'update', data);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('vehicles').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id).then();
-    }
+    syncSupabase('vehicles', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const archiveVehicle = (id: string) => {
     setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, is_archived: true } : v)));
     logActivity('vehiculo', id, 'archive');
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('vehicles').update({ is_archived: true }).eq('id', id).then();
-    }
+    syncSupabase('vehicles', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const addVehicleHistory = (vehicleId: string, business: 'automotora' | 'detailing' | 'inspeccion', eventType: string, description: string) => {
     const newEvent: VehicleHistoryEvent = {
-      id: `vh-${Date.now()}`,
+      id: `vh-${crypto.randomUUID()}`,
       vehicle_id: vehicleId,
       business,
       event_type: eventType,
@@ -606,17 +812,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: new Date().toISOString()
     };
     setVehicleHistory((prev) => [newEvent, ...prev]);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('vehicle_history').insert(newEvent).then();
-    }
+    syncSupabase('vehicle_history', 'insert', newEvent);
   };
 
   // AGENDA & TURNOS
   const addAppointment = (data: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>): Appointment => {
     const newAppt: Appointment = {
       ...data,
-      id: `app-${Date.now()}`,
+      id: `app-${crypto.randomUUID()}`,
       created_by: profile?.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -635,10 +838,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     }
 
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('appointments').insert(newAppt).then();
-    }
-
+    syncSupabase('appointments', 'insert', newAppt);
     return newAppt;
   };
 
@@ -647,10 +847,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((a) => (a.id === id ? { ...a, ...data, updated_at: new Date().toISOString() } : a))
     );
     logActivity('turno', id, 'update', data);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('appointments').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id).then();
-    }
+    syncSupabase('appointments', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const updateAppointmentStatus = (id: string, status: AppointmentStatus) => {
@@ -661,7 +858,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addTask = (data: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Task => {
     const newTask: Task = {
       ...data,
-      id: `task-${Date.now()}`,
+      id: `task-${crypto.randomUUID()}`,
       created_by: profile?.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -669,11 +866,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setTasks((prev) => [newTask, ...prev]);
     logActivity('tarea', newTask.id, 'create', { title: newTask.title, business: newTask.business });
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('tasks').insert(newTask).then();
-    }
-
+    syncSupabase('tasks', 'insert', newTask);
     return newTask;
   };
 
@@ -682,10 +875,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((t) => (t.id === id ? { ...t, ...data, updated_at: new Date().toISOString() } : t))
     );
     logActivity('tarea', id, 'update', data);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('tasks').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id).then();
-    }
+    syncSupabase('tasks', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const updateTaskStatus = (id: string, status: TaskStatus) => {
@@ -701,15 +891,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDetailingTariffs((prev) =>
       prev.map((t) => (t.id === id ? { ...t, prices, isActive: isActive !== undefined ? isActive : t.isActive } : t))
     );
+    const updated = detailingTariffs.find((t) => t.id === id);
+    if (updated) {
+      syncSupabase('detailing_tariffs', 'upsert', { ...updated, prices, isActive: isActive !== undefined ? isActive : updated.isActive });
+    }
     logActivity('cotizacion_detailing', id, 'update', { action: 'Actualización de tarifario' });
   };
 
   const addDetailingTariff = (tariffData: Omit<DetailingTariff, 'id'>): DetailingTariff => {
     const newTariff: DetailingTariff = {
       ...tariffData,
-      id: `tariff-${Date.now()}`
+      id: `tariff-${crypto.randomUUID()}`
     };
     setDetailingTariffs((prev) => [...prev, newTariff]);
+    syncSupabase('detailing_tariffs', 'insert', newTariff);
     return newTariff;
   };
 
@@ -717,7 +912,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addDetailingQuote = (quoteData: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'>): DetailingQuote => {
     const newQuote: DetailingQuote = {
       ...quoteData,
-      id: `quote-${Date.now()}`,
+      id: `quote-${crypto.randomUUID()}`,
       created_by: profile?.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -728,6 +923,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       total: newQuote.total_amount,
       status: newQuote.status
     });
+    syncSupabase('detailing_quotes', 'insert', newQuote);
     return newQuote;
   };
 
@@ -736,6 +932,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((q) => (q.id === id ? { ...q, ...data, updated_at: new Date().toISOString() } : q))
     );
     logActivity('cotizacion_detailing', id, 'update', data);
+    syncSupabase('detailing_quotes', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const archiveDetailingQuote = (id: string) => {
@@ -743,67 +940,168 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((q) => (q.id === id ? { ...q, is_archived: true, updated_at: new Date().toISOString() } : q))
     );
     logActivity('cotizacion_detailing', id, 'archive', { is_archived: true });
+    syncSupabase('detailing_quotes', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
+  };
+
+  // FASE DETAILVLAK: Configuración
+  const updateDetailingConfig = (config: Partial<DetailingConfig>) => {
+    setDetailingConfig((prev) => {
+      const updated = { ...prev, ...config };
+      syncSupabase('detailing_configs', 'upsert', { empresa_id: 'carvlak', ...updated });
+      return updated;
+    });
+    logActivity('configuracion', 'detailing_config', 'update', config);
   };
 
   const updateDetailingQuoteStatus = (
     id: string,
     newStatus: DetailingQuoteStatus,
-    appointmentDetails?: { date: string; assigned_to?: string }
+    appointmentDetails?: { date: string; assigned_to?: string; work_bay_id?: string }
   ) => {
     const currentQuote = detailingQuotes.find((q) => q.id === id);
     if (!currentQuote) return;
 
-    const updatedFields: Partial<DetailingQuote> = {
-      status: newStatus,
-      updated_at: new Date().toISOString()
+    const nowIso = new Date().toISOString();
+    const historyEntry = {
+      timestamp: nowIso,
+      from_status: currentQuote.status,
+      to_status: newStatus,
+      user_id: profile?.id,
+      user_name: profile?.full_name || 'Operador',
+      note: ''
     };
 
-    // 1. Al pasar a "Turno Confirmado" -> Crear turno en Agenda Unificada
-    if (newStatus === 'Turno Confirmado') {
-      const apptDate = appointmentDetails?.date || currentQuote.appointment_date || new Date().toISOString();
-      const assignedEmployeeId = appointmentDetails?.assigned_to || currentQuote.assigned_to || profile?.id;
-      
-      const newAppt = addAppointment({
-        business: 'detailing',
-        client_id: currentQuote.client_id,
-        vehicle_id: currentQuote.vehicle_id,
-        assigned_to: assignedEmployeeId,
-        start_time: apptDate,
-        duration_minutes: 180,
-        status: 'Confirmado',
-        title: `Detailing: ${currentQuote.selected_services.map((s) => s.serviceName).join(' + ') || 'Servicios Varios'}`,
-        notes: `Origen: ${currentQuote.origin}. Zonas a priorizar: ${currentQuote.priority_zones || 'Estándar'}. ${currentQuote.notes || ''}`,
-        price_amount: currentQuote.total_amount,
-        price_currency: 'UYU'
-      });
+    const updatedFields: Partial<DetailingQuote> = {
+      status: newStatus,
+      history: [...(currentQuote.history || []), historyEntry],
+      updated_at: nowIso
+    };
 
-      updatedFields.appointment_id = newAppt.id;
-      updatedFields.appointment_date = apptDate;
-      if (assignedEmployeeId) updatedFields.assigned_to = assignedEmployeeId;
+    if (appointmentDetails?.work_bay_id) {
+      updatedFields.work_bay_id = appointmentDetails.work_bay_id;
     }
 
-    // 2. Al pasar a "Trabajo Completado" -> Historial y Liquidación de Comisión
-    if (newStatus === 'Trabajo Completado') {
+    // 1. Al pasar a "Turno Confirmado" o "Agendado" -> Crear o actualizar turno en la Agenda
+    if (newStatus === 'Turno Confirmado' || newStatus === 'Agendado') {
+      const apptDate = appointmentDetails?.date || currentQuote.appointment_date || nowIso;
+      const assignedEmployeeId = appointmentDetails?.assigned_to || currentQuote.assigned_to || profile?.id;
+      const bayId = appointmentDetails?.work_bay_id || currentQuote.work_bay_id || 'box-1';
+
+      // Calcular duración sumando durationHours de los servicios
+      let totalDurationMin = 0;
+      currentQuote.selected_services.forEach((s) => {
+        const tariff = detailingTariffs.find((t) => t.id === s.serviceId);
+        if (tariff?.durationHours) {
+          totalDurationMin += Math.round(tariff.durationHours * 60);
+        }
+      });
+      if (totalDurationMin <= 0) totalDurationMin = 180;
+
+      if (!currentQuote.appointment_id) {
+        const newAppt = addAppointment({
+          business: 'detailing',
+          client_id: currentQuote.client_id,
+          vehicle_id: currentQuote.vehicle_id,
+          assigned_to: assignedEmployeeId,
+          start_time: apptDate,
+          duration_minutes: totalDurationMin,
+          status: 'Confirmado',
+          stage: newStatus,
+          work_bay_id: bayId,
+          quote_id: currentQuote.id,
+          title: `Detailing: ${currentQuote.selected_services.map((s) => s.serviceName).join(' + ') || 'Servicios Varios'}`,
+          notes: `Origen: ${currentQuote.origin}. Zonas a priorizar: ${currentQuote.priority_zones || 'Estándar'}. ${currentQuote.notes || ''}`,
+          price_amount: currentQuote.total_amount,
+          price_currency: 'UYU'
+        });
+
+        updatedFields.appointment_id = newAppt.id;
+        updatedFields.appointment_date = apptDate;
+        if (assignedEmployeeId) updatedFields.assigned_to = assignedEmployeeId;
+      } else {
+        updateAppointment(currentQuote.appointment_id, {
+          start_time: apptDate,
+          assigned_to: assignedEmployeeId,
+          stage: newStatus,
+          work_bay_id: bayId,
+          status: 'Confirmado'
+        });
+        updatedFields.appointment_date = apptDate;
+      }
+    } else if (currentQuote.appointment_id) {
+      // Sincronizar stage en el turno existente
+      const apptStatus = newStatus === 'Cancelado' || newStatus === 'No vino' ? 'Cancelado' : 'Confirmado';
+      updateAppointment(currentQuote.appointment_id, {
+        stage: newStatus,
+        status: apptStatus
+      });
+    }
+
+    // 2. Al pasar a "Entregado y cobrado" (o "Trabajo Completado"):
+    if (newStatus === 'Entregado y cobrado' || newStatus === 'Trabajo Completado') {
       // Historial en Vehículo
       if (currentQuote.vehicle_id) {
         addVehicleHistory(
           currentQuote.vehicle_id,
           'detailing',
-          'Trabajo de Detailing Completado',
-          `Servicios realizados: ${currentQuote.selected_services.map((s) => s.serviceName).join(', ')}. Monto cobrado: $U ${currentQuote.total_amount.toLocaleString('es-UY')}`
+          'Trabajo de Detailing Completado & Entregado',
+          `Servicios: ${currentQuote.selected_services.map((s) => s.serviceName).join(', ')}. Monto: $U ${currentQuote.total_amount.toLocaleString('es-UY')}`
         );
       }
 
-      // Generar comisión para el empleado asignado (usando la tasa configurada en Fase 1)
+      // Consumo de insumos por receta (si aún no se descontaron)
+      if (!currentQuote.materials_consumed || currentQuote.materials_consumed.length === 0) {
+        const recipes = detailingConfig.recipes_by_service || {};
+        const cat = currentQuote.vehicle_category || 'Mediano';
+        const consumedList: any[] = [];
+        let calculatedCost = 0;
+
+        currentQuote.selected_services.forEach((srv) => {
+          const srvRecipe = recipes[srv.serviceId];
+          if (srvRecipe && srvRecipe[cat]) {
+            srvRecipe[cat].forEach((recipeItem) => {
+              const item = stockItems.find((s) => s.id === recipeItem.stock_item_id);
+              if (item) {
+                const itemCost = Math.round((item.unit_cost || 0) * recipeItem.quantity);
+                calculatedCost += itemCost;
+                consumedList.push({
+                  stock_item_id: item.id,
+                  item_name: item.name,
+                  quantity: recipeItem.quantity,
+                  unit: item.unit,
+                  unit_cost: item.unit_cost || 0,
+                  total_cost: itemCost
+                });
+
+                // Descontar de stock
+                const newQty = Math.max(0, item.quantity - recipeItem.quantity);
+                setStockItems((prev) =>
+                  prev.map((s) => (s.id === item.id ? { ...s, quantity: newQty } : s))
+                );
+                syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', item.id);
+              }
+            });
+          }
+        });
+
+        if (consumedList.length > 0) {
+          updatedFields.materials_cost = calculatedCost;
+          updatedFields.materials_consumed = consumedList;
+        }
+      }
+
+      // Generar comisión para el empleado asignado (RECIÉN AL ENTREGAR Y COBRAR)
       const employeeId = currentQuote.assigned_to || profile?.id;
-      const employee = INITIAL_PROFILES.find((p) => p.id === employeeId) || profile;
+      const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
+      const employee = allProfiles.find((p) => p.id === employeeId) || profile;
       const rate = employee?.commissions?.detailing ?? (employeeId === 'user-maxi' ? 30 : 0);
 
       if (rate > 0) {
         const commAmount = Math.round(currentQuote.total_amount * (rate / 100));
         const newComm: CommissionRecord = {
-          id: `comm-${Date.now()}`,
+          id: `comm-${crypto.randomUUID()}`,
           business: 'detailing',
+          currency: 'UYU',
           employee_id: employeeId || 'user-maxi',
           employee_name: employee?.full_name || 'Maximiliano Irujo',
           quote_id: currentQuote.id,
@@ -813,31 +1111,320 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           commission_rate: rate,
           commission_amount: commAmount,
           status: 'Pendiente',
-          created_at: new Date().toISOString()
+          created_at: nowIso
         };
         setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), newComm]);
+        syncSupabase('commissions', 'insert', newComm);
       }
-    } else if (currentQuote.status === 'Trabajo Completado') {
-      // Si el trabajo vuelve atrás o se cancela, se elimina la comisión generada
+    } else if (currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
+      // Reversión: si el trabajo vuelve atrás o se cancela, se elimina la comisión generada
       setCommissions((prev) => prev.filter((c) => c.quote_id !== currentQuote.id));
+      syncSupabase('commissions', 'delete', undefined, 'quote_id', currentQuote.id);
     }
 
     setDetailingQuotes((prev) =>
       prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q))
     );
     logActivity('cotizacion_detailing', id, 'status_change', { from: currentQuote.status, to: newStatus });
+    syncSupabase('detailing_quotes', 'update', updatedFields, 'id', id);
+  };
+
+  // PARTE F: ANULAR TRABAJOS EN CASCADA
+  const voidDetailingQuote = (id: string, reason: string) => {
+    const currentQuote = detailingQuotes.find((q) => q.id === id);
+    if (!currentQuote) return;
+
+    const nowIso = new Date().toISOString();
+    const historyEntry = {
+      timestamp: nowIso,
+      from_status: currentQuote.status,
+      to_status: 'Anulado',
+      user_id: profile?.id,
+      user_name: profile?.full_name || 'Operador',
+      note: `Anulación: ${reason}`
+    };
+
+    // 1. Revertir insumos consumidos al stock
+    if (currentQuote.materials_consumed && currentQuote.materials_consumed.length > 0) {
+      currentQuote.materials_consumed.forEach((c) => {
+        setStockItems((prev) =>
+          prev.map((s) => (s.id === c.stock_item_id ? { ...s, quantity: s.quantity + c.quantity } : s))
+        );
+        const target = stockItems.find((s) => s.id === c.stock_item_id);
+        if (target) {
+          syncSupabase('stock_items', 'update', { quantity: target.quantity + c.quantity, updated_at: nowIso }, 'id', target.id);
+        }
+      });
+    }
+
+    // 2. Eliminar comisión
+    setCommissions((prev) => prev.filter((c) => c.quote_id !== id));
+    syncSupabase('commissions', 'delete', undefined, 'quote_id', id);
+
+    // 3. Liberar y anular turno en calendario
+    if (currentQuote.appointment_id) {
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === currentQuote.appointment_id
+            ? { ...a, voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Cancelado' }
+            : a
+        )
+      );
+      syncSupabase('appointments', 'update', { voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Cancelado' }, 'id', currentQuote.appointment_id);
+    }
+
+    // 4. Anular cobros asociados
+    const voidedPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: true }));
+
+    const updatedFields: Partial<DetailingQuote> = {
+      voided_at: nowIso,
+      voided_by: profile?.id,
+      void_reason: reason,
+      payments: voidedPayments,
+      history: [...(currentQuote.history || []), historyEntry],
+      updated_at: nowIso
+    };
+
+    setDetailingQuotes((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q))
+    );
+    logActivity('cotizacion_detailing', id, 'status_change', { action: 'void', reason });
+    syncSupabase('detailing_quotes', 'update', updatedFields, 'id', id);
+  };
+
+  // RESTAURAR TRABAJO ANULADO
+  const restoreDetailingQuote = (id: string) => {
+    const currentQuote = detailingQuotes.find((q) => q.id === id);
+    if (!currentQuote) return;
+
+    const nowIso = new Date().toISOString();
+    const historyEntry = {
+      timestamp: nowIso,
+      from_status: 'Anulado',
+      to_status: currentQuote.status,
+      user_id: profile?.id,
+      user_name: profile?.full_name || 'Operador',
+      note: 'Trabajo restaurado'
+    };
+
+    const restoredPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: false }));
+
+    if (currentQuote.appointment_id) {
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === currentQuote.appointment_id
+            ? { ...a, voided_at: undefined, voided_by: undefined, void_reason: undefined, status: 'Confirmado' }
+            : a
+        )
+      );
+      syncSupabase('appointments', 'update', { voided_at: null, voided_by: null, void_reason: null, status: 'Confirmado' }, 'id', currentQuote.appointment_id);
+    }
+
+    // Si estaba entregado y cobrado, re-descontar stock y re-crear comisión
+    if (currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
+      if (currentQuote.materials_consumed && currentQuote.materials_consumed.length > 0) {
+        currentQuote.materials_consumed.forEach((c) => {
+          setStockItems((prev) =>
+            prev.map((s) => (s.id === c.stock_item_id ? { ...s, quantity: Math.max(0, s.quantity - c.quantity) } : s))
+          );
+          const target = stockItems.find((s) => s.id === c.stock_item_id);
+          if (target) {
+            syncSupabase('stock_items', 'update', { quantity: Math.max(0, target.quantity - c.quantity), updated_at: nowIso }, 'id', target.id);
+          }
+        });
+      }
+
+      const employeeId = currentQuote.assigned_to || profile?.id;
+      const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
+      const employee = allProfiles.find((p) => p.id === employeeId) || profile;
+      const rate = employee?.commissions?.detailing ?? (employeeId === 'user-maxi' ? 30 : 0);
+      if (rate > 0) {
+        const commAmount = Math.round(currentQuote.total_amount * (rate / 100));
+        const newComm: CommissionRecord = {
+          id: `comm-${crypto.randomUUID()}`,
+          business: 'detailing',
+          currency: 'UYU',
+          employee_id: employeeId || 'user-maxi',
+          employee_name: employee?.full_name || 'Maximiliano Irujo',
+          quote_id: currentQuote.id,
+          client_name: currentQuote.client_name,
+          vehicle_description: `${currentQuote.vehicle_info}${currentQuote.vehicle_plate ? ` (${currentQuote.vehicle_plate})` : ''}`,
+          amount_charged: currentQuote.total_amount,
+          commission_rate: rate,
+          commission_amount: commAmount,
+          status: 'Pendiente',
+          created_at: nowIso
+        };
+        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), newComm]);
+        syncSupabase('commissions', 'insert', newComm);
+      }
+    }
+
+    const updatedFields: Partial<DetailingQuote> = {
+      voided_at: undefined,
+      voided_by: undefined,
+      void_reason: undefined,
+      payments: restoredPayments,
+      history: [...(currentQuote.history || []), historyEntry],
+      updated_at: nowIso
+    };
+
+    setDetailingQuotes((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q))
+    );
+    logActivity('cotizacion_detailing', id, 'update', { action: 'restore' });
+    syncSupabase('detailing_quotes', 'update', { ...updatedFields, voided_at: null, voided_by: null, void_reason: null }, 'id', id);
+  };
+
+  // BORRADO DEFINITIVO (SOLO ADMIN)
+  const deleteDetailingQuotePermanent = (id: string) => {
+    if (!profile?.roles?.includes('admin')) {
+      console.warn('Solo los administradores pueden borrar definitivamente');
+      return;
+    }
+    const q = detailingQuotes.find((item) => item.id === id);
+    setDetailingQuotes((prev) => prev.filter((item) => item.id !== id));
+    if (q?.appointment_id) {
+      setAppointments((prev) => prev.filter((a) => a.id !== q.appointment_id));
+      syncSupabase('appointments', 'delete', undefined, 'id', q.appointment_id);
+    }
+    setCommissions((prev) => prev.filter((c) => c.quote_id !== id));
+    syncSupabase('commissions', 'delete', undefined, 'quote_id', id);
+    syncSupabase('detailing_quotes', 'delete', undefined, 'id', id);
+    logActivity('cotizacion_detailing', id, 'archive', { permanent_deleted: true });
+  };
+
+  const bulkVoidDetailingQuotes = (ids: string[], reason: string) => {
+    ids.forEach((id) => voidDetailingQuote(id, reason));
+  };
+
+  const bulkDeleteDetailingQuotes = (ids: string[]) => {
+    if (!profile?.roles?.includes('admin')) return;
+    ids.forEach((id) => deleteDetailingQuotePermanent(id));
+  };
+
+  // REGISTRO DE COBROS, CHECK-IN, CONTROL DE CALIDAD Y WHATSAPP LOG
+  const recordDetailingPayment = (quoteId: string, paymentData: Omit<DetailingPayment, 'id'>) => {
+    const q = detailingQuotes.find((item) => item.id === quoteId);
+    if (!q) return;
+    const newPayment: DetailingPayment = {
+      ...paymentData,
+      id: `pay-${crypto.randomUUID()}`
+    };
+    const updatedPayments = [...(q.payments || []), newPayment];
+    updateDetailingQuote(quoteId, { payments: updatedPayments });
+  };
+
+  const recordDetailingCheckin = (quoteId: string, checkin: DetailingCheckinData) => {
+    const checkinPayload: DetailingCheckinData = {
+      ...checkin,
+      checkin_at: new Date().toISOString(),
+      checkin_by: profile?.id
+    };
+    updateDetailingQuoteStatus(quoteId, 'Recibido');
+    updateDetailingQuote(quoteId, { checkin_data: checkinPayload });
+  };
+
+  const recordDetailingQualityControl = (quoteId: string, qc: DetailingQualityControlData) => {
+    const qcPayload: DetailingQualityControlData = {
+      ...qc,
+      completed_at: new Date().toISOString(),
+      completed_by: profile?.id
+    };
+    updateDetailingQuote(quoteId, { quality_control_data: qcPayload });
+    updateDetailingQuoteStatus(quoteId, 'Listo para retirar');
+  };
+
+  const logDetailingWhatsAppSent = (targetId: string, templateKey: string, phone: string) => {
+    const nowIso = new Date().toISOString();
+    const entry = { template_key: templateKey, sent_at: nowIso, phone };
+
+    setDetailingQuotes((prev) =>
+      prev.map((q) => {
+        if (q.id === targetId || q.appointment_id === targetId) {
+          const nextLogs = [...(q.whatsapp_sent_log || []), entry];
+          syncSupabase('detailing_quotes', 'update', { whatsapp_sent_log: nextLogs, updated_at: nowIso }, 'id', q.id);
+          return { ...q, whatsapp_sent_log: nextLogs, updated_at: nowIso };
+        }
+        return q;
+      })
+    );
+
+    setAppointments((prev) =>
+      prev.map((a) => {
+        if (a.id === targetId || a.quote_id === targetId) {
+          const nextLogs = [...(a.whatsapp_sent_log || []), entry];
+          syncSupabase('appointments', 'update', { whatsapp_sent_log: nextLogs, updated_at: nowIso }, 'id', a.id);
+          return { ...a, whatsapp_sent_log: nextLogs, updated_at: nowIso };
+        }
+        return a;
+      })
+    );
+  };
+
+  const voidAppointment = (id: string, reason: string) => {
+    const nowIso = new Date().toISOString();
+    const appt = appointments.find((a) => a.id === id);
+    if (!appt) return;
+
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === id ? { ...a, voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Cancelado' } : a
+      )
+    );
+    syncSupabase('appointments', 'update', { voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Cancelado' }, 'id', id);
+
+    if (appt.quote_id) {
+      voidDetailingQuote(appt.quote_id, reason);
+    }
+  };
+
+  const voidExpense = (id: string, reason: string) => {
+    const nowIso = new Date().toISOString();
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, voided_at: nowIso, voided_by: profile?.id, void_reason: reason } : e))
+    );
+    syncSupabase('expenses', 'update', { voided_at: nowIso, voided_by: profile?.id, void_reason: reason }, 'id', id);
+    logActivity('gasto', id, 'status_change', { action: 'void', reason });
+  };
+
+  const restoreExpense = (id: string) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, voided_at: undefined, voided_by: undefined, void_reason: undefined } : e))
+    );
+    syncSupabase('expenses', 'update', { voided_at: null, voided_by: null, void_reason: null }, 'id', id);
+    logActivity('gasto', id, 'update', { action: 'restore' });
+  };
+
+  const deleteExpensePermanent = (id: string) => {
+    if (!profile?.roles?.includes('admin')) return;
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    syncSupabase('expenses', 'delete', undefined, 'id', id);
+    logActivity('gasto', id, 'archive', { permanent_deleted: true });
+  };
+
+  const saveDetailingCashClosure = (closureData: Omit<DetailingCashClosure, 'id' | 'created_at'>): DetailingCashClosure => {
+    const newClosure: DetailingCashClosure = {
+      ...closureData,
+      id: `closure-${crypto.randomUUID()}`,
+      created_at: new Date().toISOString()
+    };
+    setDetailingCashClosures((prev) => [newClosure, ...prev]);
+    syncSupabase('detailing_cash_closures', 'insert', newClosure);
+    return newClosure;
   };
 
   // Stock Genérico
   const addStockItem = (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>): StockItem => {
     const newItem: StockItem = {
       ...itemData,
-      id: `stk-${Date.now()}`,
+      id: `stk-${crypto.randomUUID()}`,
       movements: [],
       updated_at: new Date().toISOString()
     };
     setStockItems((prev) => [newItem, ...prev]);
     logActivity('stock', newItem.id, 'create', { name: newItem.name, qty: newItem.quantity });
+    syncSupabase('stock_items', 'insert', newItem);
     return newItem;
   };
 
@@ -846,6 +1433,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((s) => (s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s))
     );
     logActivity('stock', id, 'update', data);
+    syncSupabase('stock_items', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const archiveStockItem = (id: string) => {
@@ -853,12 +1441,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((s) => (s.id === id ? { ...s, is_archived: true, updated_at: new Date().toISOString() } : s))
     );
     logActivity('stock', id, 'archive', { is_archived: true });
+    syncSupabase('stock_items', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const recordStockMovement = (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense = false) => {
     const newMovement: StockMovement = {
       ...movement,
-      id: `mov-${Date.now()}`,
+      id: `mov-${crypto.randomUUID()}`,
       created_at: new Date().toISOString()
     };
 
@@ -876,13 +1465,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
 
+    syncSupabase('stock_movements', 'insert', newMovement);
+
+    // Actualizar cantidad en stock_items en Supabase
+    const targetItem = stockItems.find((s) => s.id === movement.stock_item_id);
+    if (targetItem) {
+      const delta = movement.type === 'Entrada' ? movement.quantity : -movement.quantity;
+      const newQty = Math.max(0, targetItem.quantity + delta);
+      syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: new Date().toISOString() }, 'id', targetItem.id);
+    }
+
     // Registro opcional como gasto al reponer stock
     if (createExpense && movement.type === 'Entrada' && movement.unit_cost && movement.unit_cost > 0) {
       const item = stockItems.find((s) => s.id === movement.stock_item_id);
       const totalCost = Math.round(movement.unit_cost * movement.quantity);
       addExpense({
         business: item?.business || 'detailing',
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalDateString(),
         amount: totalCost,
         currency: 'UYU',
         category: 'Insumos',
@@ -902,12 +1501,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>): Expense => {
     const newExpense: Expense = {
       ...expenseData,
-      id: `exp-${Date.now()}`,
+      id: `exp-${crypto.randomUUID()}`,
       created_by: profile?.id,
       created_at: new Date().toISOString()
     };
     setExpenses((prev) => [newExpense, ...prev]);
     logActivity('gasto', newExpense.id, 'create', { amount: newExpense.amount, category: newExpense.category });
+    syncSupabase('expenses', 'insert', newExpense);
     return newExpense;
   };
 
@@ -916,11 +1516,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((e) => (e.id === id ? { ...e, ...data } : e))
     );
     logActivity('gasto', id, 'update', data);
+    syncSupabase('expenses', 'update', data, 'id', id);
   };
 
   const deleteExpense = (id: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
     logActivity('gasto', id, 'archive', { deleted: true });
+    syncSupabase('expenses', 'update', { is_archived: true }, 'id', id);
   };
 
   // Comisiones
@@ -928,6 +1530,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCommissions((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status: 'Pagada', paid_at: new Date().toISOString() } : c))
     );
+    syncSupabase('commissions', 'update', { status: 'Pagada', paid_at: new Date().toISOString() }, 'id', id);
   };
 
   // Plantillas WhatsApp
@@ -935,6 +1538,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setWhatsappTemplates((prev) =>
       prev.map((t) => (t.key === key ? { ...t, template: templateText } : t))
     );
+    syncSupabase('whatsapp_templates', 'upsert', { key, template: templateText }, 'key', key);
   };
 
   // Migración desde DetailVlak
@@ -1003,7 +1607,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           l.status === 'COTIZADO' ? 'Presupuesto Enviado' : 'Por Cotizar';
 
         const newQuote: DetailingQuote = {
-          id: `quote-mig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          id: `quote-mig-${crypto.randomUUID()}`,
           client_id: clientId || 'cli-anon',
           client_name: l.name || 'Cliente Importado',
           client_phone: l.phone || '',
@@ -1028,6 +1632,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         setDetailingQuotes((prev) => [newQuote, ...prev]);
+        syncSupabase('detailing_quotes', 'insert', newQuote);
         importedQuotesCount++;
       });
     }
@@ -1061,7 +1666,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!e.amount) return;
         addExpense({
           business: 'detailing',
-          date: e.date || new Date().toISOString().slice(0, 10),
+          date: e.date || getLocalDateString(),
           amount: Number(e.amount) || 0,
           currency: 'UYU',
           category: (e.category || 'Varios') as any,
@@ -1127,7 +1732,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       panels?: CarPanelInspection[];
     }
   ): VehicleInspection => {
-    const generatedToken = data.token || `tk_${Math.random().toString(36).substring(2, 9)}_${Date.now().toString(36)}`;
+    const generatedToken = data.token || `tk_${crypto.randomUUID().replace(/-/g, '')}`;
     const initialChecklist = data.checklist && data.checklist.length > 0
       ? data.checklist
       : JSON.parse(JSON.stringify(DEFAULT_CHECKLIST_TEMPLATE));
@@ -1139,7 +1744,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const newInsp: VehicleInspection = {
       ...data,
-      id: `insp-${Date.now()}`,
+      id: `insp-${crypto.randomUUID()}`,
       token: generatedToken,
       checklist: initialChecklist,
       panels: initialPanels,
@@ -1157,10 +1762,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: newInsp.status,
       total_price: newInsp.total_price
     });
+    syncSupabase('vehicle_inspections', 'insert', newInsp);
     return newInsp;
   };
 
-  const updateInspection = (id: string, data: Partial<VehicleInspection>) => {
+  const updateInspection = (id: string, data: Partial<VehicleInspection>, skipAudit: boolean = false) => {
     setInspections((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
@@ -1175,7 +1781,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return updated;
       })
     );
-    logActivity('inspeccion', id, 'update', { updatedKeys: Object.keys(data) });
+    if (!skipAudit) {
+      logActivity('inspeccion', id, 'update', { updatedKeys: Object.keys(data) });
+    }
+    syncSupabase('vehicle_inspections', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const updateInspectionStatus = (
@@ -1229,14 +1838,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (current.type === 'precompra' && current.total_price > 0) {
         const inspectorId = current.assigned_to || profile?.id;
-        const inspectorProfile = INITIAL_PROFILES.find((p) => p.id === inspectorId) || profile;
+        const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
+        const inspectorProfile = allProfiles.find((p) => p.id === inspectorId) || profile;
         const rate = inspectorProfile?.commissions?.inspeccion ?? (inspectorId === 'user-diego' ? 15 : 0);
 
         if (rate > 0) {
           const commAmount = Math.round(current.total_price * (rate / 100));
           const newComm: CommissionRecord = {
-            id: `comm-insp-${Date.now()}`,
+            id: `comm-insp-${crypto.randomUUID()}`,
             business: 'inspeccion',
+            currency: 'UYU',
             employee_id: inspectorId || 'user-diego',
             employee_name: inspectorProfile?.full_name || 'Inspector Peritaje',
             quote_id: current.id,
@@ -1249,16 +1860,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             created_at: new Date().toISOString()
           };
           setCommissions((prev) => [...prev.filter((c) => c.quote_id !== current.id), newComm]);
+          syncSupabase('commissions', 'insert', newComm);
         }
       }
     } else if (current.status === 'Completada') {
       setCommissions((prev) => prev.filter((c) => c.quote_id !== current.id));
+      syncSupabase('commissions', 'delete', undefined, 'quote_id', current.id);
     }
 
     setInspections((prev) =>
       prev.map((i) => (i.id === id ? { ...i, ...updatedFields } : i))
     );
     logActivity('inspeccion', id, 'status_change', { from: current.status, to: newStatus });
+    syncSupabase('vehicle_inspections', 'update', updatedFields, 'id', id);
   };
 
   const archiveInspection = (id: string) => {
@@ -1266,17 +1880,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((i) => (i.id === id ? { ...i, is_archived: true, updated_at: new Date().toISOString() } : i))
     );
     logActivity('inspeccion', id, 'archive', { is_archived: true });
+    syncSupabase('vehicle_inspections', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const updateInspectionTariffs = (newTariffs: Partial<InspectionTariffConfig>) => {
-    setInspectionTariffs((prev) => ({
-      ...prev,
-      ...newTariffs,
-      prices: {
-        ...prev.prices,
-        ...(newTariffs.prices || {})
-      }
-    }));
+    setInspectionTariffs((prev) => {
+      const merged = {
+        ...prev,
+        ...newTariffs,
+        prices: {
+          ...prev.prices,
+          ...(newTariffs.prices || {})
+        }
+      };
+      syncSupabase('inspection_tariffs', 'upsert', { id: 'current', ...merged });
+      return merged;
+    });
     logActivity('inspeccion', 'tariffs', 'update', newTariffs);
   };
 
@@ -1387,21 +2006,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     v: Partial<DealershipVehicle>,
     cfg: DealershipConfig = dealershipConfig
   ) => {
-    const rate = v.exchange_rate || cfg.default_exchange_rate || 43.50;
+    const rate = v.exchange_rate || cfg?.default_exchange_rate || 43.50;
 
     const purchaseUsd = v.purchase_currency === 'USD'
       ? (v.purchase_price || 0)
       : Math.round(((v.purchase_price || 0) / rate) * 100) / 100;
 
-    const internalCostsUyu =
-      (v.inspection_cost || 0) +
-      (v.detailing_cost || 0) +
+    // Peritaje y Detailing internos son costos de servicios CARVLAK en $UYU
+    const internalCostsUyu = (v.inspection_cost || 0) + (v.detailing_cost || 0);
+    const internalCostsUsd = Math.round((internalCostsUyu / rate) * 100) / 100;
+
+    // Reparaciones taller, trámites de escribanía y otros gastos se ingresan y gestionan en USD
+    const workshopCostsUsd =
       (v.repairs_cost || 0) +
       (v.paperwork_cost || 0) +
       (v.other_expenses_cost || 0);
 
-    const internalCostsUsd = Math.round((internalCostsUyu / rate) * 100) / 100;
-    const totalRealCostUsd = Math.round((purchaseUsd + internalCostsUsd) * 100) / 100;
+    const totalRealCostUsd = Math.round((purchaseUsd + internalCostsUsd + workshopCostsUsd) * 100) / 100;
 
     const saleUsd = v.sale_currency === 'USD'
       ? (v.sale_price || 0)
@@ -1415,14 +2036,96 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { totalRealCostUsd, estimatedMarginUsd, estimatedMarginPercent };
   };
 
+  // Sincronización oficial con Tiendanube mediante Edge Function (Deno)
+  const syncVehicleWithTiendanube = async (
+    vehicle: DealershipVehicle,
+    action: 'publish' | 'update_price' | 'reserve' | 'sell' | 'sync'
+  ) => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-tiendanube', {
+        body: {
+          action,
+          vehicle: {
+            id: vehicle.id,
+            tiendanube_id: vehicle.tiendanube_id,
+            brand: vehicle.brand,
+            model: vehicle.model,
+            version: vehicle.version,
+            year: vehicle.year,
+            mileage: vehicle.mileage,
+            sale_price: vehicle.sale_price,
+            sale_currency: vehicle.sale_currency,
+            status: vehicle.status,
+            catalog_description: vehicle.catalog_description,
+            images: vehicle.images,
+            cover_image: vehicle.cover_image
+          }
+        }
+      });
+
+      if (!error && data) {
+        setDealershipVehicles((prev) =>
+          prev.map((v) =>
+            v.id === vehicle.id
+              ? {
+                  ...v,
+                  tiendanube_id: data.tiendanube_id || v.tiendanube_id,
+                  tiendanube_sync_status: data.status || (data.success ? 'synced' : 'error'),
+                  tiendanube_sync_error: data.error || undefined,
+                  tiendanube_synced_at: new Date().toISOString()
+                }
+              : v
+          )
+        );
+      }
+    } catch (err) {
+      console.warn('Error invocando sync-tiendanube edge function:', err);
+    }
+  };
+
   const addDealershipVehicle = (
     data: Omit<DealershipVehicle, 'id' | 'created_at' | 'updated_at' | 'total_real_cost_usd' | 'estimated_margin_usd' | 'estimated_margin_percent'>
   ): DealershipVehicle => {
     const financials = calculateVehicleFinancials(data);
 
+    // Vincular ficha única por matrícula (Punto 5)
+    let linkedVehicleId = data.vehicle_id;
+    if (data.plate) {
+      const cleanPlate = normalizePlate(data.plate);
+      const existingVehicle = vehicles.find((v) => normalizePlate(v.plate) === cleanPlate);
+      if (existingVehicle) {
+        linkedVehicleId = existingVehicle.id;
+      } else {
+        const newVehId = `veh-${crypto.randomUUID()}`;
+        const newVehRecord: Vehicle = {
+          id: newVehId,
+          plate: cleanPlate,
+          brand: data.brand || 'Vehículo',
+          model: data.model || '',
+          year: data.year || new Date().getFullYear(),
+          color: data.color_exterior || 'Blanco',
+          vin: data.chassis_vin || '',
+          category: data.category || 'Mediano',
+          fuel: data.fuel || 'Nafta',
+          transmission: data.transmission || 'Manual',
+          mileage: data.mileage || 0,
+          ownership: 'dealership',
+          photos: data.images || [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_archived: false
+        };
+        setVehicles((prev) => [newVehRecord, ...prev]);
+        syncSupabase('vehicles', 'insert', newVehRecord);
+        linkedVehicleId = newVehId;
+      }
+    }
+
     const newVehicle: DealershipVehicle = {
       ...data,
-      id: `dveh-${Date.now()}`,
+      vehicle_id: linkedVehicleId,
+      id: `dveh-${crypto.randomUUID()}`,
       empresa_id: data.empresa_id || 'carvlak',
       status: data.status || 'evaluacion',
       total_real_cost_usd: financials.totalRealCostUsd,
@@ -1448,6 +2151,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       model: newVehicle.model,
       status: newVehicle.status
     });
+
+    syncSupabase('dealership_vehicles', 'insert', newVehicle);
+
+    if (newVehicle.status === 'publicado') {
+      syncVehicleWithTiendanube(newVehicle, 'publish');
+    }
+
     return newVehicle;
   };
 
@@ -1513,7 +2223,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const oldVal = (v as any)[key];
           if (newVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
             newHistoryEntries.push({
-              id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              id: `hist-${crypto.randomUUID()}`,
               timestamp: new Date().toISOString(),
               user_id: profile?.id,
               user_name: profile?.full_name || 'Usuario',
@@ -1557,6 +2267,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
     logActivity('automotora', id, 'update', data);
+
+    const currentVehicle = dealershipVehicles.find((v) => v.id === id);
+    if (currentVehicle) {
+      const mergedForSync = { ...currentVehicle, ...data, updated_at: new Date().toISOString() };
+      syncSupabase('dealership_vehicles', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
+
+      if (data.status || data.sale_price !== undefined) {
+        const action = data.status === 'publicado' ? 'publish' :
+                       data.status === 'reservado' ? 'reserve' :
+                       data.status === 'vendido' ? 'sell' : 'update_price';
+        syncVehicleWithTiendanube(mergedForSync, action);
+      }
+    }
   };
 
   const duplicateDealershipVehicle = (id: string): DealershipVehicle | null => {
@@ -1621,7 +2344,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       internal_notes: `Duplicado a partir de ${original.brand} ${original.model} (${original.plate || 'sin matrícula'}).`,
       history: [
         {
-          id: `hist-${Date.now()}`,
+          id: `hist-${crypto.randomUUID()}`,
           timestamp: new Date().toISOString(),
           user_id: profile?.id,
           user_name: profile?.full_name || 'Usuario',
@@ -1647,7 +2370,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const oldVal = (v as any)[key];
           if (newVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
             newHistoryEntries.push({
-              id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              id: `hist-${crypto.randomUUID()}`,
               timestamp: new Date().toISOString(),
               user_id: profile?.id,
               user_name: profile?.full_name || 'Usuario',
@@ -1667,12 +2390,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updated_at: new Date().toISOString()
         };
         const financials = calculateVehicleFinancials(merged);
-        return {
+        const finalVeh = {
           ...merged,
           total_real_cost_usd: financials.totalRealCostUsd,
           estimated_margin_usd: financials.estimatedMarginUsd,
           estimated_margin_percent: financials.estimatedMarginPercent
         };
+        syncSupabase('dealership_vehicles', 'update', finalVeh, 'id', v.id);
+        return finalVeh;
       })
     );
     ids.forEach((id) => {
@@ -1697,7 +2422,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const historyEntry: DealershipVehicleHistoryEntry = {
-          id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: `hist-${crypto.randomUUID()}`,
           timestamp: new Date().toISOString(),
           user_id: profile?.id,
           user_name: profile?.full_name || 'Usuario',
@@ -1719,12 +2444,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updated_at: new Date().toISOString()
         };
         const financials = calculateVehicleFinancials(merged);
-        return {
+        const finalVeh = {
           ...merged,
           total_real_cost_usd: financials.totalRealCostUsd,
           estimated_margin_usd: financials.estimatedMarginUsd,
           estimated_margin_percent: financials.estimatedMarginPercent
         };
+        syncSupabase('dealership_vehicles', 'update', finalVeh, 'id', v.id);
+        return finalVeh;
       })
     );
     ids.forEach((id) => {
@@ -1745,31 +2472,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updated_at: new Date().toISOString()
     };
 
-    // 1. Al pasar a 'evaluacion' -> Ofrecer peritaje interno de Fase 3
+    // 1. Al pasar a 'evaluacion': Preparada para la app de evaluación de compra que se integrará después
     if (newStatus === 'evaluacion') {
-      if (extraData?.triggerInspection && !current.inspection_id) {
-        const newInsp = addInspection({
-          type: 'interna',
-          status: 'Solicitada',
-          vehicle_plate: current.plate,
-          vehicle_info: `${current.brand} ${current.model} (${current.year})`,
-          vehicle_category: current.category,
-          price_amount: dealershipConfig.default_internal_inspection_cost,
-          price_currency: 'UYU',
-          home_visit_surcharge: 0,
-          total_price: dealershipConfig.default_internal_inspection_cost,
-          buyer_name: 'Automotora CARVLAK',
-          assigned_to: extraData.inspector_id || 'user-diego',
-          is_home_visit: false,
-          score: 0,
-          traffic_light: 'Recomendable',
-          inspector_conclusion: 'Pendiente de inspección técnica interna',
-          estimated_repair_cost: 0,
-          obd_codes: []
-        });
-        updatedFields.inspection_id = newInsp.id;
-        updatedFields.inspection_cost = dealershipConfig.default_internal_inspection_cost;
-      }
+      // Sin creación automática de inspección interna en Carbusters
     }
 
     // 2. Al pasar a 'comprado' -> Crear orden de detailing interna a costo interno y tareas de alistamiento
@@ -1804,18 +2509,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Tareas de preparación para el equipo
       addTask({
-        title: `Alistamiento mecánico & revisión de fluidos: ${current.brand} ${current.model} (${current.plate})`,
+        title: `Alistamiento mecánico & revisión de fluidos: ${current.brand} ${current.model} (${current.plate || 'sin matrícula'})`,
         business: 'automotora',
         assigned_to: 'user-maxi',
-        due_date: new Date(Date.now() + 172800000).toISOString().slice(0, 10),
+        due_date: getLocalDateString(new Date(Date.now() + 172800000)),
         status: 'Pendiente'
       });
 
       addTask({
-        title: `Sesión de fotos HD para catálogo web: ${current.brand} ${current.model} (${current.plate})`,
+        title: `Sesión de fotos HD para catálogo web: ${current.brand} ${current.model} (${current.plate || 'sin matrícula'})`,
         business: 'automotora',
         assigned_to: 'user-matias',
-        due_date: new Date(Date.now() + 259200000).toISOString().slice(0, 10),
+        due_date: getLocalDateString(new Date(Date.now() + 259200000)),
         status: 'Pendiente'
       });
     }
@@ -1825,15 +2530,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updatedFields.reservation = extraData.reservation;
     }
 
-    // 4. Al pasar a 'vendido' -> Liquidar comisión, historial y auto en permuta si corresponde
+    // 4. Al pasar a 'vendido' -> Liquidar comisión, historial, auto en permuta y posventa si corresponde
     if (newStatus === 'vendido') {
       if (extraData?.saleRecord) {
-        updatedFields.sale_record = extraData.saleRecord;
-
-        // Generar comisión del vendedor
-        const sellerId = extraData.saleRecord.seller_employee_id || profile?.id || 'user-diego';
-        const sellerProfile = INITIAL_PROFILES.find((p) => p.id === sellerId) || profile;
+        const saleFinalPrice = Number(extraData.saleRecord.sale_price ?? extraData.saleRecord.final_price ?? extraData.sale_price ?? current.sale_price ?? 0);
+        const sellerId = extraData.saleRecord.seller_employee_id || extraData.saleRecord.seller_id || extraData.seller_id || profile?.id || 'user-diego';
+        const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
+        const sellerProfile = allProfiles.find((p) => p.id === sellerId) || profile;
         const commRate = sellerProfile?.commissions?.automotora || dealershipConfig.default_commission_rate || 15;
+
+        // Normalizar saleRecord con nombres de campos unificados
+        const normalizedSaleRecord: DealershipSaleRecord = {
+          ...extraData.saleRecord,
+          final_price: saleFinalPrice,
+          sale_price: saleFinalPrice,
+          seller_id: sellerId,
+          seller_employee_id: sellerId,
+          seller_employee_name: sellerProfile?.full_name || 'Vendedor Automotora',
+          currency: 'USD',
+          sale_currency: 'USD'
+        };
+        updatedFields.sale_record = normalizedSaleRecord;
 
         // Comisión sobre margen o sobre venta
         let commAmount = 0;
@@ -1841,44 +2558,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const marginUsd = current.estimated_margin_usd || 1000;
           commAmount = Math.round(marginUsd * (commRate / 100));
         } else {
-          const saleUsd = extraData.saleRecord.final_price || current.sale_price || 0;
-          commAmount = Math.round(saleUsd * (commRate / 100));
+          commAmount = Math.round(saleFinalPrice * (commRate / 100));
         }
 
         const newComm: CommissionRecord = {
-          id: `comm-auto-${Date.now()}`,
+          id: `comm-auto-${crypto.randomUUID()}`,
           business: 'automotora',
+          currency: 'USD',
           employee_id: sellerId,
           employee_name: sellerProfile?.full_name || 'Vendedor Automotora',
           quote_id: current.id,
           client_name: extraData.saleRecord.buyer_name,
-          vehicle_description: `${current.brand} ${current.model} (${current.plate})`,
-          amount_charged: extraData.saleRecord.final_price,
+          vehicle_description: `${current.brand} ${current.model} (${current.plate || 'Sin matrícula'})`,
+          amount_charged: saleFinalPrice,
           commission_rate: commRate,
           commission_amount: commAmount,
           status: 'Pendiente',
           created_at: new Date().toISOString()
         };
         setCommissions((prev) => [...prev.filter((c) => c.quote_id !== current.id), newComm]);
+        syncSupabase('commissions', 'insert', newComm);
 
-        // Si se recibió un auto en parte de pago (permuta), crear automáticamente en stock como 'evaluacion'
-        if (extraData.tradeIn && extraData.tradeIn.plate) {
+        // Si se recibió un auto en parte de pago (permuta), crear automáticamente en stock como 'evaluacion' con su tasación real
+        const tradeInData = extraData.tradeIn || extraData.saleRecord.trade_in;
+        if (tradeInData && tradeInData.plate) {
+          const tradeInValuation = Number(tradeInData.valuation ?? tradeInData.valuation_usd ?? tradeInData.trade_in_valuation_usd ?? 0);
           addDealershipVehicle({
             empresa_id: current.empresa_id || 'carvlak',
             condition: 'usado',
-            plate: extraData.tradeIn.plate.toUpperCase(),
-            brand: extraData.tradeIn.brand || 'Vehículo',
-            model: extraData.tradeIn.model || 'Parte de pago',
-            year: extraData.tradeIn.year || new Date().getFullYear(),
-            mileage: extraData.tradeIn.mileage || 0,
-            category: extraData.tradeIn.category || 'Mediano',
+            plate: tradeInData.plate.toUpperCase(),
+            brand: tradeInData.brand || 'Vehículo',
+            model: tradeInData.model || 'Parte de pago',
+            year: tradeInData.year || new Date().getFullYear(),
+            mileage: tradeInData.mileage || 0,
+            category: tradeInData.category || 'Mediano',
             status: 'evaluacion',
             features: [],
-            images: extraData.tradeIn.photos || [],
+            images: tradeInData.photos || [],
             purchase_origin: 'parte_de_pago',
             supplier_name: extraData.saleRecord.buyer_name,
             supplier_phone: extraData.saleRecord.buyer_phone,
-            purchase_price: extraData.tradeIn.valuation || 0,
+            purchase_price: tradeInValuation,
             purchase_currency: 'USD',
             exchange_rate: current.exchange_rate || 43.50,
             docs_received: {
@@ -1889,9 +2609,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               multas_al_dia: true,
               llave_duplicado: false
             },
-            sale_price: Math.round((extraData.tradeIn.valuation || 0) * 1.22),
+            sale_price: Math.round(tradeInValuation * 1.22),
             sale_currency: 'USD',
-            min_acceptable_price: extraData.tradeIn.valuation || 0,
+            min_acceptable_price: tradeInValuation,
             inspection_cost: 0,
             detailing_cost: 0,
             repairs_cost: 0,
@@ -1909,32 +2629,81 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
 
+        // Si se marcó "offerPosventa", generar la cotización de detailing post-venta vinculada al cliente con el 20% OFF
+        if (extraData?.offerPosventa) {
+          const t = detailingTariffs.find((tar) => tar.id === 'ceramico') || detailingTariffs[0];
+          const cat = current.category || 'Mediano';
+          const basePrice = t ? (t.prices[cat] || 8500) : 8500;
+          const discount = Math.round(basePrice * 0.2); // 20% OFF posventa
+
+          addDetailingQuote({
+            client_id: 'client-carvlak-automotora',
+            client_name: extraData.saleRecord.buyer_name || 'Comprador CARVLAK',
+            client_phone: extraData.saleRecord.buyer_phone || '',
+            vehicle_info: `${current.brand} ${current.model} (${current.year})`,
+            vehicle_plate: current.plate,
+            vehicle_category: current.category,
+            selected_services: [
+              {
+                serviceId: t ? t.id : 'ceramico',
+                serviceName: t ? t.name : 'Sellado Cerámico Posventa (20% OFF)',
+                price: basePrice
+              }
+            ],
+            subtotal: basePrice,
+            discount_type: 'special_15',
+            discount_amount: discount,
+            extreme_dirt_surcharge: 0,
+            total_amount: basePrice - discount,
+            estimated_time: '1 a 2 días',
+            assigned_to: profile?.id || 'user-maxi',
+            origin: 'Presencial',
+            notes: `Beneficio fidelización posventa 20% OFF por compra de unidad ${current.brand} ${current.model} (${current.plate || 'sin matrícula'}) en Automotora CARVLAK.`,
+            priority_zones: 'Todo el exterior y protección de pintura',
+            status: 'Por Cotizar'
+          });
+        }
+
         // Historial en Vehículo y Cliente
         addVehicleHistory(
           current.vehicle_id || current.plate,
           'automotora',
           'Venta de Vehículo Concretada',
-          `Vendido a ${extraData.saleRecord.buyer_name} por USD ${extraData.saleRecord.final_price?.toLocaleString('es-UY')}. Vendedor: ${sellerProfile?.full_name}. Trámite: ${extraData.saleRecord.paperwork_status}.`
+          `Vendido a ${extraData.saleRecord.buyer_name} por USD ${saleFinalPrice.toLocaleString('es-UY')}. Vendedor: ${sellerProfile?.full_name}. Trámite: ${extraData.saleRecord.paperwork_status || 'En trámite'}.`
         );
       }
     } else if (current.status === 'vendido') {
-      // Reversión de venta: eliminar comisión generada
+      // Reversión de venta: eliminar comisión generada de estado y Supabase
       setCommissions((prev) => prev.filter((c) => c.quote_id !== current.id));
+      syncSupabase('commissions', 'delete', undefined, 'quote_id', current.id);
     }
 
+    const finalVehicle = (() => {
+      const merged = { ...current, ...updatedFields };
+      const financials = calculateVehicleFinancials(merged);
+      return {
+        ...merged,
+        total_real_cost_usd: financials.totalRealCostUsd,
+        estimated_margin_usd: financials.estimatedMarginUsd,
+        estimated_margin_percent: financials.estimatedMarginPercent
+      };
+    })();
+
     setDealershipVehicles((prev) =>
-      prev.map((v) => {
-        if (v.id !== id) return v;
-        const merged = { ...v, ...updatedFields };
-        const financials = calculateVehicleFinancials(merged);
-        return {
-          ...merged,
-          total_real_cost_usd: financials.totalRealCostUsd,
-          estimated_margin_usd: financials.estimatedMarginUsd,
-          estimated_margin_percent: financials.estimatedMarginPercent
-        };
-      })
+      prev.map((v) => (v.id === id ? finalVehicle : v))
     );
+
+    // Sincronizar en Supabase el objeto final calculado
+    syncSupabase('dealership_vehicles', 'update', finalVehicle, 'id', id);
+
+    // Sincronizar con Tiendanube si pasa a publicado, reservado o vendido
+    if (newStatus === 'publicado') {
+      syncVehicleWithTiendanube(finalVehicle, 'publish');
+    } else if (newStatus === 'reservado') {
+      syncVehicleWithTiendanube(finalVehicle, 'reserve');
+    } else if (newStatus === 'vendido') {
+      syncVehicleWithTiendanube(finalVehicle, 'sell');
+    }
 
     logActivity('automotora', id, 'status_change', { from: current.status, to: newStatus });
   };
@@ -1944,6 +2713,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((v) => (v.id === id ? { ...v, is_archived: true, updated_at: new Date().toISOString() } : v))
     );
     logActivity('automotora', id, 'archive', { is_archived: true });
+    syncSupabase('dealership_vehicles', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   // CRM Interesados
@@ -1952,7 +2722,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ): DealershipInquiry => {
     const newInq: DealershipInquiry = {
       ...data,
-      id: `inq-${Date.now()}`,
+      id: `inq-${crypto.randomUUID()}`,
       empresa_id: data.empresa_id || 'carvlak',
       status: data.status || 'Nuevo',
       is_archived: false,
@@ -1965,6 +2735,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       vehicle: newInq.vehicle_info,
       origin: newInq.origin
     });
+    syncSupabase('dealership_inquiries', 'insert', newInq);
     return newInq;
   };
 
@@ -1973,6 +2744,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((inq) => (inq.id === id ? { ...inq, ...data, updated_at: new Date().toISOString() } : inq))
     );
     logActivity('consulta_automotora', id, 'update', data);
+    syncSupabase('dealership_inquiries', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const updateDealershipInquiryStatus = (
@@ -2011,6 +2783,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((inq) => (inq.id === id ? { ...inq, ...updatedFields } : inq))
     );
     logActivity('consulta_automotora', id, 'status_change', { from: current.status, to: newStatus });
+    syncSupabase('dealership_inquiries', 'update', updatedFields, 'id', id);
   };
 
   const archiveDealershipInquiry = (id: string) => {
@@ -2018,81 +2791,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((inq) => (inq.id === id ? { ...inq, is_archived: true, updated_at: new Date().toISOString() } : inq))
     );
     logActivity('consulta_automotora', id, 'archive', { is_archived: true });
+    syncSupabase('dealership_inquiries', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const updateDealershipConfig = (config: Partial<DealershipConfig>) => {
-    setDealershipConfig((prev) => ({ ...prev, ...config }));
+    setDealershipConfig((prev) => {
+      const updated = { ...prev, ...config };
+      syncSupabase('dealership_configs', 'upsert', { empresa_id: 'carvlak', ...updated });
+      return updated;
+    });
     logActivity('automotora', 'config', 'update', config);
   };
 
-  // Importar catálogo oficial de AppAuto (44 autos)
-  const importAppAutoCatalog = (): { importedCount: number; duplicatesCount: number } => {
-    let importedCount = 0;
-    let duplicatesCount = 0;
 
-    APPAUTO_OFFICIAL_CATALOG.forEach((car, index) => {
-      const plate = (car.plate || `CAR-${100 + index}`).toUpperCase();
-      const exists = dealershipVehicles.some((v) => v.plate.toUpperCase() === plate);
-
-      if (exists) {
-        duplicatesCount++;
-      } else {
-        const purchasePrice = Math.round((car.sale_price || 8000) * 0.78);
-        addDealershipVehicle({
-          empresa_id: 'carvlak',
-          condition: 'usado',
-          plate,
-          brand: car.brand || 'Vehículo',
-          model: car.model || '',
-          version: car.version || '',
-          year: car.year || 2017,
-          mileage: car.mileage || 100000,
-          category: car.category || 'Mediano',
-          body_type: car.body_type || 'Hatchback',
-          transmission: car.transmission || 'Manual',
-          fuel: car.fuel || 'Nafta',
-          color_exterior: car.color_exterior || 'Blanco',
-          status: 'publicado',
-          is_featured: index < 4,
-          features: car.features || [],
-          images: car.images || [],
-          cover_image: car.images && car.images[0] ? car.images[0] : undefined,
-          catalog_description: `${car.brand} ${car.model} ${car.version || ''} (${car.year}). Excelente oportunidad en CARVLAK. Garantía técnica y documentación en regla.`,
-          purchase_price: purchasePrice,
-          purchase_currency: 'USD',
-          exchange_rate: 43.50,
-          purchase_origin: 'particular',
-          docs_received: {
-            titulo: true,
-            libreta: true,
-            cedula: true,
-            sucive_al_dia: true,
-            multas_al_dia: true,
-            llave_duplicado: true
-          },
-          sale_price: car.sale_price || 8000,
-          sale_currency: 'USD',
-          min_acceptable_price: Math.round((car.sale_price || 8000) * 0.95),
-          inspection_cost: 1500,
-          detailing_cost: 2500,
-          repairs_cost: 0,
-          paperwork_cost: 1500,
-          other_expenses_cost: 0,
-          prep_checklist: {
-            inspection_done: true,
-            repairs_done: true,
-            detailing_done: true,
-            photos_done: true,
-            docs_done: true
-          },
-          is_archived: false
-        });
-        importedCount++;
-      }
-    });
-
-    return { importedCount, duplicatesCount };
-  };
 
   // Posventa: Crear cotización de detailing con descuento (20% OFF)
   const createPosventaDetailingQuote = (
@@ -2138,11 +2849,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newQuote.id;
   };
 
-  const importTiendanubeCatalog = (): { importedCount: number; duplicatesCount: number } => {
+  const importTiendanubeCatalog = async (): Promise<{ importedCount: number; duplicatesCount: number }> => {
+    const { INITIAL_DEALERSHIP_VEHICLES } = await import('../lib/dealershipInitialVehicles');
     let importedCount = 0;
     let duplicatesCount = 0;
 
-    const toAdd = [];
+    const toAdd: DealershipVehicle[] = [];
     INITIAL_DEALERSHIP_VEHICLES.forEach((catalogCar) => {
       const exists = dealershipVehicles.some(
         (v) =>
@@ -2160,6 +2872,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (toAdd.length > 0) {
       setDealershipVehicles((prev) => [...toAdd, ...prev]);
+      toAdd.forEach((c) => {
+        syncSupabase('dealership_vehicles', 'insert', c);
+      });
     }
 
     return { importedCount, duplicatesCount };
@@ -2169,7 +2884,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addSocialMediaPost = (data: Omit<SocialMediaPostRecord, 'id' | 'created_at' | 'created_by'>): SocialMediaPostRecord => {
     const newPost: SocialMediaPostRecord = {
       ...data,
-      id: `post-${Date.now()}`,
+      id: `post-${crypto.randomUUID()}`,
       created_by: profile?.id || 'admin',
       created_by_name: profile?.full_name || data.created_by_name || 'Admin',
       created_at: new Date().toISOString()
@@ -2180,6 +2895,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       template_id: newPost.template_id,
       format: newPost.format
     });
+    syncSupabase('social_post_records', 'insert', newPost);
     return newPost;
   };
 
@@ -2187,36 +2903,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSocialMediaPosts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
+    syncSupabase('social_post_records', 'update', { ...updates, updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const deleteSocialMediaPost = (id: string) => {
     setSocialMediaPosts((prev) => prev.filter((p) => p.id !== id));
+    syncSupabase('social_post_records', 'delete', null, 'id', id);
   };
 
   const updateSocialMediaConfig = (updates: Partial<SocialMediaConfig>) => {
-    setSocialMediaConfig((prev) => ({
-      ...prev,
-      ...updates,
-      templates: {
-        ...prev.templates,
-        ...(updates.templates || {})
-      }
-    }));
+    setSocialMediaConfig((prev) => {
+      const merged = {
+        ...prev,
+        ...updates,
+        templates: {
+          ...prev.templates,
+          ...(updates.templates || {})
+        }
+      };
+      syncSupabase('social_media_configs', 'upsert', { id: 'default', ...merged });
+      return merged;
+    });
   };
+
   const saveSocialTemplate = (template: SocialMediaTemplateConfig) => {
-    setSocialMediaConfig((prev) => ({
-      ...prev,
-      templates: {
-        ...prev.templates,
-        [template.id]: template
-      }
-    }));
+    setSocialMediaConfig((prev) => {
+      const merged = {
+        ...prev,
+        templates: {
+          ...prev.templates,
+          [template.id]: template
+        }
+      };
+      syncSupabase('social_media_configs', 'upsert', { id: 'default', ...merged });
+      return merged;
+    });
   };
 
   const duplicateSocialTemplate = (templateId: string): SocialMediaTemplateConfig | null => {
     const existing = socialMediaConfig.templates[templateId];
     if (!existing) return null;
-    const newId = `plantilla-custom-${Date.now()}`;
+    const newId = `plantilla-custom-${crypto.randomUUID()}`;
     const duplicated: SocialMediaTemplateConfig = {
       ...existing,
       id: newId,
@@ -2232,10 +2959,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSocialMediaConfig((prev) => {
       const nextTemplates = { ...prev.templates };
       delete nextTemplates[templateId];
-      return {
+      const merged = {
         ...prev,
         templates: nextTemplates
       };
+      syncSupabase('social_media_configs', 'upsert', { id: 'default', ...merged });
+      return merged;
     });
     return true;
   };
@@ -2244,7 +2973,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSocialMediaConfig((prev) => {
       const target = prev.templates[templateId];
       if (!target) return prev;
-      return {
+      const merged = {
         ...prev,
         templates: {
           ...prev.templates,
@@ -2254,6 +2983,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       };
+      syncSupabase('social_media_configs', 'upsert', { id: 'default', ...merged });
+      return merged;
     });
   };
 
@@ -2269,6 +3000,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((c) => (c.id === clientId ? { ...c, social_media_consent: consent, updated_at: new Date().toISOString() } : c))
     );
     logActivity('cliente', clientId, 'update', { social_media_consent: consent });
+    syncSupabase('clients', 'update', { social_media_consent: consent, updated_at: new Date().toISOString() }, 'id', clientId);
   };
 
   const toggleVehicleFlyerImage = (vehicleId: string, imageUrl: string) => {
@@ -2280,11 +3012,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const nextFlyers = isFlyer
           ? currentFlyers.filter((img) => img !== imageUrl)
           : [...currentFlyers, imageUrl];
-        return {
+        const updated = {
           ...v,
           flyer_images: nextFlyers,
           updated_at: new Date().toISOString()
         };
+        syncSupabase('dealership_vehicles', 'update', { flyer_images: nextFlyers, updated_at: updated.updated_at }, 'id', vehicleId);
+        return updated;
       })
     );
   };
@@ -2338,112 +3072,257 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       });
 
-      return {
+      const merged = {
         ...prev,
         templates: nextTemplates
       };
+      syncSupabase('social_media_configs', 'upsert', { id: 'default', ...merged });
+      return merged;
     });
   };
 
+  // Listas filtradas memoizadas para evitar re-cálculos en cada render
+  const activeClients = useMemo(() => clients.filter((c) => !c.is_archived), [clients]);
+  const activeVehicles = useMemo(() => vehicles.filter((v) => !v.is_archived), [vehicles]);
+  const activeAppointments = useMemo(() => appointments.filter((a) => !a.is_archived && !a.voided_at), [appointments]);
+  const activeDetailingQuotes = useMemo(() => detailingQuotes.filter((q) => isActiveJob(q)), [detailingQuotes]);
+  const activeStockItems = useMemo(() => stockItems.filter((s) => !s.is_archived), [stockItems]);
+  const activeExpenses = useMemo(() => expenses.filter((e) => isActiveExpense(e)), [expenses]);
+  const activeInspections = useMemo(() => inspections.filter((i) => !i.is_archived && i.type !== 'interna'), [inspections]);
+  const activeDealershipVehicles = useMemo(() => dealershipVehicles.filter((v) => !v.is_archived), [dealershipVehicles]);
+  const activeDealershipInquiries = useMemo(() => dealershipInquiries.filter((inq) => !inq.is_archived), [dealershipInquiries]);
+
+  // Context value memoizado para no invalidar el árbol de React en cada cambio interno
+  const contextValue = useMemo<DataContextType>(() => ({
+    clients: activeClients,
+    vehicles: activeVehicles,
+    appointments: activeAppointments,
+    tasks,
+    vehicleHistory,
+    activityLogs,
+    addClient,
+    updateClient,
+    archiveClient,
+    checkPhoneDuplicate,
+    addVehicle,
+    updateVehicle,
+    archiveVehicle,
+    getVehicleByPlate,
+    addVehicleHistory,
+    addAppointment,
+    updateAppointment,
+    updateAppointmentStatus,
+    addTask,
+    updateTask,
+    updateTaskStatus,
+    logActivity,
+
+    // Detailing
+    detailingConfig,
+    updateDetailingConfig,
+    detailingTariffs,
+    updateDetailingTariff,
+    addDetailingTariff,
+    detailingQuotes: activeDetailingQuotes,
+    allDetailingQuotes: detailingQuotes,
+    addDetailingQuote,
+    updateDetailingQuote,
+    updateDetailingQuoteStatus,
+    archiveDetailingQuote,
+    voidDetailingQuote,
+    restoreDetailingQuote,
+    deleteDetailingQuotePermanent,
+    bulkVoidDetailingQuotes,
+    bulkDeleteDetailingQuotes,
+    recordDetailingPayment,
+    recordDetailingCheckin,
+    recordDetailingQualityControl,
+    logDetailingWhatsAppSent,
+    voidAppointment,
+    stockItems: activeStockItems,
+    addStockItem,
+    updateStockItem,
+    archiveStockItem,
+    recordStockMovement,
+    expenses: activeExpenses,
+    allExpenses: expenses,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    voidExpense,
+    restoreExpense,
+    deleteExpensePermanent,
+    detailingCashClosures,
+    saveDetailingCashClosure,
+    commissions,
+    markCommissionPaid,
+    whatsappTemplates,
+    updateWhatsAppTemplate,
+    importDetailVlakData,
+
+    // FASE 3: Inspecciones
+    inspections: activeInspections,
+    inspectionTariffs,
+    addInspection,
+    updateInspection,
+    updateInspectionStatus,
+    archiveInspection,
+    updateInspectionTariffs,
+    getInspectionByToken,
+    createDetailingQuoteFromInspection,
+
+    // FASE 4: Automotora
+    dealershipVehicles: activeDealershipVehicles,
+    dealershipInquiries: activeDealershipInquiries,
+    dealershipConfig,
+    canEditDealershipStock,
+    addDealershipVehicle,
+    updateDealershipVehicle,
+    duplicateDealershipVehicle,
+    bulkUpdateDealershipVehicles,
+    bulkAdjustVehiclePrices,
+    updateDealershipVehicleStatus,
+    archiveDealershipVehicle,
+    addDealershipInquiry,
+    updateDealershipInquiry,
+    updateDealershipInquiryStatus,
+    archiveDealershipInquiry,
+    updateDealershipConfig,
+    importTiendanubeCatalog,
+    createPosventaDetailingQuote,
+    syncVehicleWithTiendanube,
+
+    // CONFIGURACIÓN GENERAL DEL HUB
+    generalConfig,
+    updateGeneralConfig,
+
+    // FASE 5: Redes Sociales & Marketing Studio
+    socialMediaPosts,
+    socialMediaConfig,
+    addSocialMediaPost,
+    updateSocialMediaPost,
+    deleteSocialMediaPost,
+    updateSocialMediaConfig,
+    saveSocialTemplate,
+    duplicateSocialTemplate,
+    deleteSocialTemplate,
+    toggleSocialTemplateActive,
+    resetSocialTemplateToDefault,
+    updateClientConsent,
+    toggleVehicleFlyerImage,
+    applyStyleToAllTemplates
+  }), [
+    activeClients,
+    activeVehicles,
+    activeAppointments,
+    tasks,
+    vehicleHistory,
+    activityLogs,
+    detailingConfig,
+    detailingTariffs,
+    activeDetailingQuotes,
+    detailingQuotes,
+    activeStockItems,
+    activeExpenses,
+    expenses,
+    detailingCashClosures,
+    commissions,
+    whatsappTemplates,
+    activeInspections,
+    inspectionTariffs,
+    activeDealershipVehicles,
+    activeDealershipInquiries,
+    dealershipConfig,
+    canEditDealershipStock,
+    generalConfig,
+    socialMediaPosts,
+    socialMediaConfig,
+    addClient,
+    updateClient,
+    archiveClient,
+    checkPhoneDuplicate,
+    addVehicle,
+    updateVehicle,
+    archiveVehicle,
+    getVehicleByPlate,
+    addVehicleHistory,
+    addAppointment,
+    updateAppointment,
+    updateAppointmentStatus,
+    addTask,
+    updateTask,
+    updateTaskStatus,
+    logActivity,
+    updateDetailingConfig,
+    updateDetailingTariff,
+    addDetailingTariff,
+    addDetailingQuote,
+    updateDetailingQuote,
+    updateDetailingQuoteStatus,
+    archiveDetailingQuote,
+    voidDetailingQuote,
+    restoreDetailingQuote,
+    deleteDetailingQuotePermanent,
+    bulkVoidDetailingQuotes,
+    bulkDeleteDetailingQuotes,
+    recordDetailingPayment,
+    recordDetailingCheckin,
+    recordDetailingQualityControl,
+    logDetailingWhatsAppSent,
+    voidAppointment,
+    addStockItem,
+    updateStockItem,
+    archiveStockItem,
+    recordStockMovement,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    voidExpense,
+    restoreExpense,
+    deleteExpensePermanent,
+    saveDetailingCashClosure,
+    markCommissionPaid,
+    updateWhatsAppTemplate,
+    importDetailVlakData,
+    addInspection,
+    updateInspection,
+    updateInspectionStatus,
+    archiveInspection,
+    updateInspectionTariffs,
+    getInspectionByToken,
+    createDetailingQuoteFromInspection,
+    addDealershipVehicle,
+    updateDealershipVehicle,
+    duplicateDealershipVehicle,
+    bulkUpdateDealershipVehicles,
+    bulkAdjustVehiclePrices,
+    updateDealershipVehicleStatus,
+    archiveDealershipVehicle,
+    addDealershipInquiry,
+    updateDealershipInquiry,
+    updateDealershipInquiryStatus,
+    archiveDealershipInquiry,
+    updateDealershipConfig,
+    importTiendanubeCatalog,
+    createPosventaDetailingQuote,
+    syncVehicleWithTiendanube,
+    updateGeneralConfig,
+    addSocialMediaPost,
+    updateSocialMediaPost,
+    deleteSocialMediaPost,
+    updateSocialMediaConfig,
+    saveSocialTemplate,
+    duplicateSocialTemplate,
+    deleteSocialTemplate,
+    toggleSocialTemplateActive,
+    resetSocialTemplateToDefault,
+    updateClientConsent,
+    toggleVehicleFlyerImage,
+    applyStyleToAllTemplates
+  ]);
+
   return (
-    <DataContext.Provider
-      value={{
-        clients: clients.filter((c) => !c.is_archived),
-        vehicles: vehicles.filter((v) => !v.is_archived),
-        appointments: appointments.filter((a) => !a.is_archived),
-        tasks,
-        vehicleHistory,
-        activityLogs,
-        addClient,
-        updateClient,
-        archiveClient,
-        checkPhoneDuplicate,
-        addVehicle,
-        updateVehicle,
-        archiveVehicle,
-        getVehicleByPlate,
-        addVehicleHistory,
-        addAppointment,
-        updateAppointment,
-        updateAppointmentStatus,
-        addTask,
-        updateTask,
-        updateTaskStatus,
-        logActivity,
-
-        // Detailing
-        detailingTariffs,
-        updateDetailingTariff,
-        addDetailingTariff,
-        detailingQuotes: detailingQuotes.filter((q) => !q.is_archived),
-        addDetailingQuote,
-        updateDetailingQuote,
-        updateDetailingQuoteStatus,
-        archiveDetailingQuote,
-        stockItems: stockItems.filter((s) => !s.is_archived),
-        addStockItem,
-        updateStockItem,
-        archiveStockItem,
-        recordStockMovement,
-        expenses: expenses.filter((e) => !e.is_archived),
-        addExpense,
-        updateExpense,
-        deleteExpense,
-        commissions,
-        markCommissionPaid,
-        whatsappTemplates,
-        updateWhatsAppTemplate,
-        importDetailVlakData,
-
-        // FASE 3: Inspecciones
-        inspections: inspections.filter((i) => !i.is_archived),
-        inspectionTariffs,
-        addInspection,
-        updateInspection,
-        updateInspectionStatus,
-        archiveInspection,
-        updateInspectionTariffs,
-        getInspectionByToken,
-        createDetailingQuoteFromInspection,
-
-        // FASE 4: Automotora
-        dealershipVehicles: dealershipVehicles.filter((v) => !v.is_archived),
-        dealershipInquiries: dealershipInquiries.filter((inq) => !inq.is_archived),
-        dealershipConfig,
-        canEditDealershipStock,
-        addDealershipVehicle,
-        updateDealershipVehicle,
-        duplicateDealershipVehicle,
-        bulkUpdateDealershipVehicles,
-        bulkAdjustVehiclePrices,
-        updateDealershipVehicleStatus,
-        archiveDealershipVehicle,
-        addDealershipInquiry,
-        updateDealershipInquiry,
-        updateDealershipInquiryStatus,
-        archiveDealershipInquiry,
-        updateDealershipConfig,
-        importAppAutoCatalog,
-        importTiendanubeCatalog,
-        createPosventaDetailingQuote,
-
-        // FASE 5: Redes Sociales & Marketing Studio
-        socialMediaPosts,
-        socialMediaConfig,
-        addSocialMediaPost,
-        updateSocialMediaPost,
-        deleteSocialMediaPost,
-        updateSocialMediaConfig,
-        saveSocialTemplate,
-        duplicateSocialTemplate,
-        deleteSocialTemplate,
-        toggleSocialTemplateActive,
-        resetSocialTemplateToDefault,
-        updateClientConsent,
-        toggleVehicleFlyerImage,
-        applyStyleToAllTemplates
-      }}
-    >
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );

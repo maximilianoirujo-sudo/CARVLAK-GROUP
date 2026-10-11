@@ -13,7 +13,15 @@ import {
   ArrowRight,
   History,
   Globe,
-  Copy
+  Copy,
+  RefreshCw,
+  Search,
+  Inbox,
+  Settings,
+  Lock,
+  Handshake,
+  Zap,
+  Check
 } from 'lucide-react';
 import {
   DealershipVehicle,
@@ -23,6 +31,7 @@ import {
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { formatCurrency } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 import { DealershipConfirmStatusDialog } from './DealershipConfirmStatusDialog';
 
@@ -40,10 +49,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   isOpen,
   onClose,
   onEdit,
-  onOpenSaleModal
+  onOpenSaleModal,
+  onOpenPublicCatalog
 }) => {
-  if (!isOpen || !vehicle) return null;
-
   const {
     updateDealershipVehicle,
     updateDealershipVehicleStatus,
@@ -52,10 +60,13 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
     inspections,
     detailingQuotes,
     createPosventaDetailingQuote,
-    dealershipConfig
+    dealershipConfig,
+    syncVehicleWithTiendanube
   } = useData();
   const { profile } = useAuth();
   const { showToast } = useToast();
+
+  const [isSyncingTiendanube, setIsSyncingTiendanube] = useState(false);
 
   const isAdmin = profile?.roles.includes('admin');
   const canEdit = canEditDealershipStock(profile?.roles);
@@ -106,31 +117,61 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
     }
   };
 
+  const handleSyncTiendanube = async () => {
+    if (!vehicle) return;
+    setIsSyncingTiendanube(true);
+    try {
+      await syncVehicleWithTiendanube(vehicle, 'sync');
+      showToast('Sincronización con Tiendanube iniciada', 'info');
+    } catch (e: any) {
+      showToast(e?.message || 'Error al sincronizar con Tiendanube', 'error');
+    } finally {
+      setIsSyncingTiendanube(false);
+    }
+  };
+
   // Estado activo de imagen
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
 
   // Formulario de costos reales adicionales (Admin Only)
-  const [repairsCost, setRepairsCost] = useState<number>(vehicle.repairs_cost || 0);
-  const [paperworkCost, setPaperworkCost] = useState<number>(vehicle.paperwork_cost || 0);
-  const [otherExpensesCost, setOtherExpensesCost] = useState<number>(vehicle.other_expenses_cost || 0);
+  const [repairsCost, setRepairsCost] = useState<number>(vehicle?.repairs_cost || 0);
+  const [paperworkCost, setPaperworkCost] = useState<number>(vehicle?.paperwork_cost || 0);
+  const [otherExpensesCost, setOtherExpensesCost] = useState<number>(vehicle?.other_expenses_cost || 0);
+
+  // Sincronizar estado cuando el vehículo cambia (Point 5)
+  React.useEffect(() => {
+    if (vehicle) {
+      setRepairsCost(vehicle.repairs_cost || 0);
+      setPaperworkCost(vehicle.paperwork_cost || 0);
+      setOtherExpensesCost(vehicle.other_expenses_cost || 0);
+      setSelectedImageIndex(0);
+      setActiveTab('detalle');
+    }
+  }, [vehicle?.id, vehicle?.repairs_cost, vehicle?.paperwork_cost, vehicle?.other_expenses_cost]);
 
   // Inspección asociada de Fase 3
-  const linkedInspection = vehicle.inspection_id
-    ? inspections.find((i) => i.id === vehicle.inspection_id)
-    : inspections.find((i) => i.vehicle_plate.toUpperCase() === vehicle.plate.toUpperCase());
+  const linkedInspection = vehicle
+    ? (vehicle.inspection_id
+        ? inspections.find((i) => i.id === vehicle.inspection_id)
+        : inspections.find((i) => vehicle.plate && i.vehicle_plate.toUpperCase() === vehicle.plate.toUpperCase()))
+    : undefined;
 
   // Detailing asociado de Fase 2
-  const linkedDetailing = vehicle.detailing_quote_id
-    ? detailingQuotes.find((q) => q.id === vehicle.detailing_quote_id)
-    : detailingQuotes.find((q) => q.vehicle_plate?.toUpperCase() === vehicle.plate.toUpperCase());
+  const linkedDetailing = vehicle
+    ? (vehicle.detailing_quote_id
+        ? detailingQuotes.find((q) => q.id === vehicle.detailing_quote_id)
+        : detailingQuotes.find((q) => vehicle.plate && q.vehicle_plate?.toUpperCase() === vehicle.plate.toUpperCase()))
+    : undefined;
 
-  const daysInStock = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(vehicle.purchase_date || vehicle.created_at).getTime()) / (1000 * 60 * 60 * 24))
-  );
+  const daysInStock = vehicle
+    ? Math.max(
+        0,
+        Math.floor((Date.now() - new Date(vehicle.purchase_date || vehicle.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      )
+    : 0;
 
-  const imagesList = vehicle.images && vehicle.images.length > 0 ? vehicle.images : [];
-  const currentImage = imagesList[selectedImageIndex] || vehicle.cover_image;
+  const imagesList = vehicle?.images && vehicle.images.length > 0 ? vehicle.images : [];
+  const currentImage = imagesList[selectedImageIndex] || vehicle?.cover_image;
 
   // Toggle de Checklist de Alistamiento
   const handleToggleChecklist = (key: keyof DealershipPrepChecklist) => {
@@ -179,10 +220,12 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
   // Compartir ficha por WhatsApp
   const handleShareWhatsApp = () => {
+    const priceFormatted = formatCurrency(vehicle.sale_price, vehicle.sale_currency || 'USD');
+    const kmFormatted = `${vehicle.mileage.toLocaleString('es-UY')} km`;
     const text = encodeURIComponent(
       `🚗 *${vehicle.brand} ${vehicle.model} ${vehicle.version || ''} (${vehicle.year})*\n` +
-      `📌 *Precio:* ${vehicle.sale_currency} ${vehicle.sale_price.toLocaleString()}\n` +
-      `⏱️ *Kilometraje:* ${vehicle.mileage.toLocaleString()} km\n` +
+      `📌 *Precio:* ${priceFormatted}\n` +
+      `⏱️ *Kilometraje:* ${kmFormatted}\n` +
       `⛽ *Combustible:* ${vehicle.fuel} | 🕹️ *Caja:* ${vehicle.transmission}\n` +
       `🌐 Mirá las fotos y ficha en: https://carvlak-group.vercel.app/?catalogo=autos#${vehicle.plate}\n` +
       `📱 Consultá directamente con CARVLAK Automotora.`
@@ -190,7 +233,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
-  const prep = vehicle.prep_checklist || {
+  const prep = vehicle?.prep_checklist || {
     inspection_done: false,
     repairs_done: false,
     detailing_done: false,
@@ -206,7 +249,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
     prep.docs_done
   ].filter(Boolean).length;
 
-  const deliveryChecklist = vehicle.delivery_checklist || {
+  const deliveryChecklist = vehicle?.delivery_checklist || {
     completed: false,
     items: [
       { id: 'del-1', label: 'Inspección visual de arribo y estado de carrocería', done: true },
@@ -221,6 +264,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
   const deliveryScore = deliveryChecklist.items.filter((i) => i.done).length;
 
   const handleToggleDeliveryItem = (itemId: string) => {
+    if (!vehicle) return;
     const updatedItems = deliveryChecklist.items.map((it) =>
       it.id === itemId ? { ...it, done: !it.done } : it
     );
@@ -233,6 +277,21 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
     });
     showToast('Checklist de entrega 0km actualizado', 'success');
   };
+
+  // Detectar qué datos faltan específicamente (Point 3)
+  const missingDataFields = React.useMemo(() => {
+    if (!vehicle) return [];
+    const missing: string[] = [];
+    if (!vehicle.plate && vehicle.condition === 'usado') missing.push('Matrícula');
+    if (!vehicle.chassis_vin) missing.push('Padrón / VIN');
+    if (!vehicle.purchase_price || vehicle.purchase_price === 0) missing.push('Precio de compra');
+    if (!vehicle.supplier_name) missing.push('Proveedor u origen');
+    if (!vehicle.color_exterior) missing.push('Color');
+    if (!vehicle.transmission) missing.push('Transmisión');
+    return missing;
+  }, [vehicle]);
+
+  if (!isOpen || !vehicle) return null;
 
   return (
     <div
@@ -260,11 +319,14 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               <div className="text-[11px] text-[#6B6B6B] flex items-center gap-2 flex-wrap">
                 <span>Año {vehicle.year}</span>
                 <span>•</span>
-                <span>{vehicle.mileage.toLocaleString()} km</span>
+                <span>{vehicle.mileage.toLocaleString('es-UY')} km</span>
                 {vehicle.autonomy_km ? (
                   <>
                     <span>•</span>
-                    <span className="text-[#161616] font-bold">🔋 {vehicle.autonomy_km} km</span>
+                    <span className="text-[#161616] font-semibold flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5 text-[#161616]" />
+                      <span>{vehicle.autonomy_km.toLocaleString('es-UY')} km</span>
+                    </span>
                   </>
                 ) : null}
                 <span>•</span>
@@ -277,8 +339,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             {canEdit && (
               <button
                 onClick={() => onEdit(vehicle)}
-                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
+                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
                 title="Editar Ficha"
+                aria-label="Editar ficha"
               >
                 <Edit className="w-4 h-4" />
               </button>
@@ -286,8 +349,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             {canEdit && (
               <button
                 onClick={handleDuplicate}
-                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
+                className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
                 title="Duplicar Vehículo"
+                aria-label="Duplicar vehículo"
               >
                 <Copy className="w-4 h-4" />
               </button>
@@ -298,12 +362,13 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               onClick={handleShareWhatsApp}
               title="Compartir Ficha por WhatsApp"
             >
-              <Share2 className="w-3.5 h-3.5 text-white" />
+              <Share2 className="w-3.5 h-3.5 text-[#161616]" />
               <span className="hidden sm:inline">Compartir</span>
             </Button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
+              aria-label="Cerrar ficha de vehículo"
+              className="p-2 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -341,13 +406,17 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
             <>
               {/* Banner de Datos Incompletos */}
               {vehicle.incomplete_data && (
-                <div className="p-4 rounded-xl bg-[#FEF7EC] border border-[#F59E0B] flex items-center justify-between gap-3 text-[#161616]">
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-[#945B0E] shrink-0" />
+                <div className="p-4 rounded-xl bg-[#FEF7EC] border border-[#F59E0B] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#161616]">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-[#945B0E] shrink-0 mt-0.5 sm:mt-0" />
                     <div>
                       <div className="text-xs font-bold text-[#945B0E]">Ficha con datos internos pendientes</div>
-                      <div className="text-[11px] text-[#6B6B6B]">
-                        Completá precio de compra, proveedor y documentación para cerrar la rentabilidad de esta unidad.
+                      <div className="text-[11px] text-[#6B6B6B] mt-0.5">
+                        {missingDataFields.length > 0 ? (
+                          <span>Faltan completar: <strong className="text-[#161616]">{missingDataFields.join(', ')}</strong>.</span>
+                        ) : (
+                          'Completá precio de compra, proveedor y documentación para cerrar la rentabilidad de esta unidad.'
+                        )}
                       </div>
                     </div>
                   </div>
@@ -355,6 +424,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     variant="primary"
                     size="sm"
                     onClick={() => onEdit(vehicle)}
+                    className="shrink-0 self-end sm:self-auto"
                   >
                     Completar ficha
                   </Button>
@@ -379,7 +449,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
                   {/* Badges Flotantes */}
                   <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3]">
+                    <span className="px-2.5 py-1 rounded text-xs font-semibold bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3]">
                       {vehicle.status}
                     </span>
                   </div>
@@ -393,7 +463,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
                   <div className="absolute bottom-3 right-3">
                     <span className="text-lg font-title font-bold px-3.5 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3] shadow-md font-mono">
-                      USD {vehicle.sale_price.toLocaleString()}
+                      {formatCurrency(vehicle.sale_price, vehicle.sale_currency || 'USD')}
                     </span>
                   </div>
                 </div>
@@ -405,7 +475,8 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                       <button
                         key={idx}
                         onClick={() => setSelectedImageIndex(idx)}
-                        className={`relative w-16 h-12 rounded-lg overflow-hidden shrink-0 border transition-all ${
+                        aria-label={`Ver foto ${idx + 1}`}
+                        className={`relative w-16 h-12 rounded-lg overflow-hidden shrink-0 border transition-all cursor-pointer ${
                           selectedImageIndex === idx
                             ? 'border-[#D7141A] ring-2 ring-[#D7141A]/30'
                             : 'border-[#E5E5E3] opacity-60 hover:opacity-100'
@@ -420,31 +491,32 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
               {/* Stepper de Estados */}
               <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3">
-                <div className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                <div className="text-[11px] font-semibold text-[#6B6B6B]">
                   Flujo de vida del vehículo
                 </div>
 
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center">
                   {[
-                    { id: 'evaluacion', label: '1. Evaluación', icon: '🔍' },
-                    { id: 'comprado', label: '2. Comprado', icon: '📥' },
-                    { id: 'preparacion', label: '3. Preparación', icon: '⚙️' },
-                    { id: 'publicado', label: '4. Publicado', icon: '🌐' },
-                    { id: 'reservado', label: '5. Reservado', icon: '🔒' },
-                    { id: 'vendido', label: '6. Vendido', icon: '🤝' }
+                    { id: 'evaluacion', label: '1. Evaluación', icon: Search },
+                    { id: 'comprado', label: '2. Comprado', icon: Inbox },
+                    { id: 'preparacion', label: '3. Preparación', icon: Settings },
+                    { id: 'publicado', label: '4. Publicado', icon: Globe },
+                    { id: 'reservado', label: '5. Reservado', icon: Lock },
+                    { id: 'vendido', label: '6. Vendido', icon: Handshake }
                   ].map((st) => {
                     const isCurrent = vehicle.status === st.id;
+                    const Icon = st.icon;
                     return (
                       <button
                         key={st.id}
                         onClick={() => handleRequestStatusChange(st.id as DealershipVehicleStatus)}
-                        className={`p-2 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1 transition-all ${
+                        className={`p-2 rounded-lg text-[10px] font-semibold flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
                           isCurrent
                             ? 'bg-[#161616] text-white shadow-sm ring-1 ring-[#161616]'
                             : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3]'
                         }`}
                       >
-                        <span>{st.icon}</span>
+                        <Icon className={`w-3.5 h-3.5 ${isCurrent ? 'text-white' : 'text-[#6B6B6B]'}`} />
                         <span className="truncate w-full">{st.label}</span>
                       </button>
                     );
@@ -545,10 +617,8 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     {[
                       {
                         key: 'inspection_done',
-                        label: '1. Peritaje técnico realizado y aprobado',
-                        desc: linkedInspection
-                          ? `Peritaje ${linkedInspection.traffic_light} (Puntaje: ${linkedInspection.score}/100)`
-                          : 'Aún no se ha realizado peritaje de Fase 3'
+                        label: '1. Peritaje técnico / Evaluación de compra realizada',
+                        desc: 'Revisión mecánica, estructural y valuación de ingreso'
                       },
                       {
                         key: 'detailing_done',
@@ -593,58 +663,34 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                 </div>
               )}
 
-              {/* Conexión con Módulos: Peritaje & Detailing */}
+              {/* Evaluación de compra & Detailing alistamiento */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Tarjeta Peritaje */}
-                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2">
+                {/* Sección Evaluación de compra (preparada para integración futura) */}
+                <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#161616] flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-[#161616] flex items-center gap-1.5">
                       <ClipboardCheck className="w-3.5 h-3.5 text-[#D7141A]" />
-                      <span>Peritaje técnico</span>
+                      <span>Evaluación de compra</span>
                     </span>
-                    {linkedInspection && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
-                        {linkedInspection.traffic_light}
-                      </span>
-                    )}
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B]">
+                      Pendiente de integración
+                    </span>
                   </div>
 
-                  {linkedInspection ? (
-                    <div>
-                      <div className="text-xs font-bold text-[#161616]">
-                        Puntaje: {linkedInspection.score}/100
-                      </div>
-                      <p className="text-[11px] text-[#6B6B6B] mt-1 line-clamp-2">
-                        {linkedInspection.inspector_conclusion}
-                      </p>
-                      <div className="mt-2 text-[10px] text-[#6B6B6B]">
-                        Inspector: {linkedInspection.assignee?.full_name || 'Diego Benítez'}
-                      </div>
+                  <div className="p-4 rounded-lg bg-[#F5F5F4] border border-dashed border-[#E5E5E3] text-center space-y-1">
+                    <div className="text-xs font-semibold text-[#6B6B6B]">
+                      Pendiente de integración
                     </div>
-                  ) : (
-                    <div>
-                      <p className="text-xs text-[#6B6B6B]">
-                        No tiene peritaje registrado. Podés solicitar la revisión interna con costo cargado al vehículo.
-                      </p>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="mt-2 w-full"
-                        onClick={() => {
-                          updateDealershipVehicleStatus(vehicle.id, 'evaluacion', { triggerInspection: true });
-                          showToast('Peritaje técnico interno solicitado en Fase 3', 'success');
-                        }}
-                      >
-                        + Solicitar peritaje interno ($U 1.500)
-                      </Button>
-                    </div>
-                  )}
+                    <p className="text-[11px] text-[#9A9A9A] leading-relaxed">
+                      Etapa reservada para la app de evaluación de compra y peritaje de stock.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Tarjeta Detailing */}
                 <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#161616] flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-[#161616] flex items-center gap-1">
                       <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
                       <span>Detailing alistamiento</span>
                     </span>
@@ -661,7 +707,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         {linkedDetailing.selected_services.map((s) => s.serviceName).join(', ')}
                       </div>
                       <div className="text-[11px] text-[#6B6B6B] mt-1">
-                        Costo interno taller: $U {linkedDetailing.total_amount.toLocaleString()}
+                        Costo interno taller: {formatCurrency(linkedDetailing.total_amount, 'UYU')}
                       </div>
                     </div>
                   ) : (
@@ -678,7 +724,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                           showToast('Orden interna de detailing enviada a DetailVlak', 'success');
                         }}
                       >
-                        + Crear detailing interno ($U 2.500)
+                        + Crear detailing interno ({formatCurrency(2500, 'UYU')})
                       </Button>
                     </div>
                   )}
@@ -691,7 +737,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-[#D7141A]" />
-                      <span className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                      <span className="text-xs font-bold text-[#161616]">
                         Desglose financiero y margen real
                       </span>
                     </div>
@@ -702,17 +748,17 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Precio compra</div>
+                      <div className="text-[10px] text-[#6B6B6B] font-bold">Precio compra</div>
                       <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
-                        USD {vehicle.purchase_price.toLocaleString()}
+                        {formatCurrency(vehicle.purchase_price, 'USD')}
                       </div>
                       <div className="text-[9px] text-[#6B6B6B]">T/C: {vehicle.exchange_rate || 43.5}</div>
                     </div>
 
                     <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Peritaje interno</div>
+                      <div className="text-[10px] text-[#6B6B6B] font-bold">Peritaje interno</div>
                       <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
-                        $U {(vehicle.inspection_cost || 1500).toLocaleString()}
+                        {formatCurrency(vehicle.inspection_cost || 1500, 'UYU')}
                       </div>
                       <div className="text-[9px] text-[#6B6B6B]">
                         ~USD {Math.round((vehicle.inspection_cost || 1500) / (vehicle.exchange_rate || 43.5))}
@@ -720,9 +766,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     </div>
 
                     <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Detailing interno</div>
+                      <div className="text-[10px] text-[#6B6B6B] font-bold">Detailing interno</div>
                       <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
-                        $U {(vehicle.detailing_cost || 2500).toLocaleString()}
+                        {formatCurrency(vehicle.detailing_cost || 2500, 'UYU')}
                       </div>
                       <div className="text-[9px] text-[#6B6B6B]">
                         ~USD {Math.round((vehicle.detailing_cost || 2500) / (vehicle.exchange_rate || 43.5))}
@@ -730,9 +776,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                     </div>
 
                     <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                      <div className="text-[10px] text-[#6B6B6B] uppercase font-bold">Piso negociación</div>
+                      <div className="text-[10px] text-[#6B6B6B] font-bold">Piso negociación</div>
                       <div className="text-sm font-bold text-[#161616] mt-0.5 font-mono">
-                        USD {(vehicle.min_acceptable_price || Math.round(vehicle.sale_price * 0.95)).toLocaleString()}
+                        {formatCurrency(vehicle.min_acceptable_price || Math.round(vehicle.sale_price * 0.95), vehicle.sale_currency || 'USD')}
                       </div>
                       <div className="text-[9px] text-[#6B6B6B]">Mínimo aceptable</div>
                     </div>
@@ -750,6 +796,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         onChange={(e) => setRepairsCost(Number(e.target.value))}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616] focus:border-[#D7141A] outline-none font-mono"
                       />
+                      <span className="text-[10px] text-[#8A8A8A] mt-0.5 block">
+                        ~$U {Math.round(repairsCost * (vehicle.exchange_rate || 43.5)).toLocaleString('es-UY')}
+                      </span>
                     </div>
 
                     <div>
@@ -762,6 +811,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         onChange={(e) => setPaperworkCost(Number(e.target.value))}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616] focus:border-[#D7141A] outline-none font-mono"
                       />
+                      <span className="text-[10px] text-[#8A8A8A] mt-0.5 block">
+                        ~$U {Math.round(paperworkCost * (vehicle.exchange_rate || 43.5)).toLocaleString('es-UY')}
+                      </span>
                     </div>
 
                     <div>
@@ -774,6 +826,9 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         onChange={(e) => setOtherExpensesCost(Number(e.target.value))}
                         className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616] focus:border-[#D7141A] outline-none font-mono"
                       />
+                      <span className="text-[10px] text-[#8A8A8A] mt-0.5 block">
+                        ~$U {Math.round(otherExpensesCost * (vehicle.exchange_rate || 43.5)).toLocaleString('es-UY')}
+                      </span>
                     </div>
                   </div>
 
@@ -791,10 +846,10 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   {vehicle.supplier_payable && (
                     <div className="p-3.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between text-xs">
                       <div>
-                        <div className="text-[10px] text-[#6B6B6B] font-bold uppercase tracking-wider">
+                        <div className="text-[10px] text-[#6B6B6B] font-semibold">
                           Cuenta por pagar al proveedor
                         </div>
-                        <div className="font-bold text-[#161616] text-sm mt-0.5">
+                        <div className="font-semibold text-[#161616] text-sm mt-0.5">
                           {vehicle.supplier_payable.supplier_name}
                         </div>
                         <div className="text-[11px] text-[#6B6B6B]">
@@ -802,15 +857,15 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-[#161616] font-mono">
-                          USD {vehicle.supplier_payable.amount.toLocaleString()}
+                        <div className="text-sm font-semibold text-[#161616] font-mono">
+                          {formatCurrency(vehicle.supplier_payable.amount, 'USD')}
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
                           vehicle.supplier_payable.is_paid
                             ? 'bg-[#EEF7F2] text-[#1E6B43] border border-[#22C55E]/30'
                             : 'bg-[#FDF2F2] text-[#B80E14] border border-[#D7141A]/30'
                         }`}>
-                          {vehicle.supplier_payable.is_paid ? 'PAGADO' : 'PENDIENTE'}
+                          {vehicle.supplier_payable.is_paid ? 'Pagado' : 'Pendiente'}
                         </span>
                       </div>
                     </div>
@@ -819,28 +874,29 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
                   {/* Totales y Margen Final */}
                   <div className="p-3.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
                     <div>
-                      <div className="text-[10px] font-bold text-[#6B6B6B] uppercase">Costo real invertido</div>
-                      <div className="text-base font-bold text-[#161616] font-mono">
-                        USD {Math.round(vehicle.total_real_cost_usd || 0).toLocaleString()}
+                      <div className="text-[10px] font-semibold text-[#6B6B6B]">Costo real invertido</div>
+                      <div className="text-base font-semibold text-[#161616] font-mono">
+                        {formatCurrency(Math.round(vehicle.total_real_cost_usd || 0), 'USD')}
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-[10px] font-bold text-[#6B6B6B] uppercase">Margen bruto estimado</div>
+                      <div className="text-[10px] font-semibold text-[#6B6B6B]">Margen bruto estimado</div>
                       <div
-                        className={`text-base font-bold font-mono ${
+                        className={`text-base font-semibold font-mono ${
                           (vehicle.estimated_margin_usd || 0) >= 0 ? 'text-[#1E6B43]' : 'text-[#B80E14]'
                         }`}
                       >
-                        +USD {Math.round(vehicle.estimated_margin_usd || 0).toLocaleString()} (
+                        +{formatCurrency(Math.round(vehicle.estimated_margin_usd || 0), 'USD')} (
                         {vehicle.estimated_margin_percent?.toFixed(1) || '0.0'}%)
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-center text-xs text-[#6B6B6B]">
-                  🔒 Los costos internos y márgenes están restringidos al rol Administrador.
+                <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-center text-xs text-[#6B6B6B] flex items-center justify-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-[#9A9A9A]" />
+                  <span>Los costos internos y márgenes están restringidos al rol Administrador.</span>
                 </div>
               )}
 
@@ -848,7 +904,7 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               {vehicle.status === 'vendido' && (
                 <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-[#D7141A]" />
                       <span>Beneficio posventa CARVLAK</span>
                     </span>
@@ -873,16 +929,17 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               {/* Equipamiento Detallado */}
               {vehicle.features && vehicle.features.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                  <div className="text-xs font-semibold text-[#161616]">
                     Equipamiento y accesorios
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {vehicle.features.map((feat, idx) => (
                       <span
                         key={idx}
-                        className="px-2.5 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-medium"
+                        className="px-2.5 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-medium inline-flex items-center gap-1.5"
                       >
-                        ✓ {feat}
+                        <Check className="w-3 h-3 text-[#1E6B43]" />
+                        <span>{feat}</span>
                       </span>
                     ))}
                   </div>
@@ -890,23 +947,66 @@ export const DealershipVehicleDetailDrawer: React.FC<DealershipVehicleDetailDraw
               )}
 
               {/* Sincronización Tiendanube */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-white border border-[#E5E5E3] text-xs">
-                <div className="flex items-center gap-2.5">
-                  <Globe className="w-4 h-4 text-[#6B6B6B]" />
-                  <div>
-                    <span className="font-bold text-[#161616] block">Catálogo web y Tiendanube</span>
-                    <span className="text-[11px] text-[#6B6B6B]">
-                      {vehicle.status === 'publicado' ? 'Visible en catálogo público' : 'No publicado (oculto)'}
-                    </span>
+              <div className="p-3.5 rounded-xl bg-white border border-[#E5E5E3] text-xs space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <Globe className="w-4 h-4 text-[#6B6B6B]" />
+                    <div>
+                      <span className="font-bold text-[#161616] block">Catálogo web y Tiendanube</span>
+                      <span className="text-[11px] text-[#6B6B6B]">
+                        {vehicle.status === 'publicado' ? 'Visible en catálogo público' : 'No publicado (oculto)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Badge de Estado Tiendanube */}
+                    {vehicle.tiendanube_sync_status === 'synced' && (
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9] flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Sincronizado {vehicle.tiendanube_synced_at ? new Date(vehicle.tiendanube_synced_at).toLocaleDateString('es-UY') : ''}</span>
+                      </span>
+                    )}
+                    {vehicle.tiendanube_sync_status === 'pending' && (
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[#FEF7EC] text-[#945B0E] border border-[#FADBA8] flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>Pendiente</span>
+                      </span>
+                    )}
+                    {vehicle.tiendanube_sync_status === 'error' && (
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD] flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>Error</span>
+                      </span>
+                    )}
+                    {!vehicle.tiendanube_sync_status && (
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
+                        {vehicle.tiendanube_synced_at
+                          ? `Sincronizado ${new Date(vehicle.tiendanube_synced_at).toLocaleDateString('es-UY')}`
+                          : 'Listo para sincronizar'}
+                      </span>
+                    )}
+
+                    {canEdit && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleSyncTiendanube}
+                        disabled={isSyncingTiendanube}
+                        className="inline-flex items-center gap-1.5 text-[11px] py-1 px-2.5"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncingTiendanube ? 'animate-spin' : ''}`} />
+                        <span>{isSyncingTiendanube ? 'Sincronizando...' : 'Sincronizar'}</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="inline-block px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
-                    {vehicle.tiendanube_synced_at
-                      ? `Sincronizado ${new Date(vehicle.tiendanube_synced_at).toLocaleDateString('es-UY')}`
-                      : 'Listo para sincronizar'}
-                  </span>
-                </div>
+
+                {vehicle.tiendanube_sync_error && (
+                  <p className="text-[11px] text-[#B80E14] bg-[#FDF2F2] p-2 rounded-lg border border-[#FACDCD]">
+                    Error Tiendanube: {vehicle.tiendanube_sync_error}
+                  </p>
+                )}
               </div>
 
               {/* Campos Personalizados */}

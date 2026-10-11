@@ -10,6 +10,7 @@ import {
 import { INITIAL_PROFILES } from '../../../lib/mockData';
 import { X, Search, Plus, MapPin, DollarSign, Calendar, User, Car, ShieldCheck } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+import { combineLocalDateAndTime, getLocalDateString } from '../../../lib/formatters';
 
 interface InspectionModalProps {
   isOpen: boolean;
@@ -55,9 +56,10 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
 
   // Inspector & Agenda
   const [assignedTo, setAssignedTo] = useState<string>('user-diego');
-  const [scheduledDate, setScheduledDate] = useState<string>(
-    new Date(Date.now() + 86400000).toISOString().slice(0, 16)
-  );
+  const [scheduledDate, setScheduledDate] = useState<string>(() => {
+    const tomorrow = new Date(Date.now() + 86400000);
+    return `${getLocalDateString(tomorrow)}T10:00`;
+  });
 
   // Ubicación & Traslado
   const [isHomeVisit, setIsHomeVisit] = useState<boolean>(false);
@@ -192,6 +194,9 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
       finalVehicleId = newV.vehicle.id;
     }
 
+    const [sDate, sTime] = scheduledDate.split('T');
+    const finalScheduledAt = sDate && sTime ? combineLocalDateAndTime(sDate, sTime) : scheduledDate;
+
     if (inspectionToEdit) {
       updateInspection(inspectionToEdit.id, {
         type,
@@ -206,7 +211,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         vehicle_info: vehicleInfo,
         vehicle_category: vehicleCategory,
         assigned_to: assignedTo,
-        scheduled_at: new Date(scheduledDate).toISOString(),
+        scheduled_at: finalScheduledAt,
         is_home_visit: isHomeVisit,
         home_address: homeAddress,
         price_amount: priceAmount,
@@ -228,7 +233,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         vehicle_info: vehicleInfo || 'Vehículo sin especificar',
         vehicle_category: vehicleCategory,
         assigned_to: assignedTo,
-        scheduled_at: new Date(scheduledDate).toISOString(),
+        scheduled_at: finalScheduledAt,
         is_home_visit: isHomeVisit,
         home_address: homeAddress,
         price_amount: priceAmount,
@@ -270,72 +275,43 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
         {/* Cabecera */}
         <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A] flex items-center justify-center text-xl">
-              🔍
+            <div className="w-10 h-10 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A] flex items-center justify-center">
+              <Search className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
-                Fase 3 • Peritaje vehicular
+              <span className="text-[10px] font-title font-bold text-[#6B6B6B]">
+                Carbusters • Peritaje vehicular
               </span>
               <h2 className="text-lg sm:text-xl font-title font-bold text-[#161616]">
-                {inspectionToEdit ? 'Editar inspección' : 'Nueva inspección'}
+                {inspectionToEdit ? 'Editar peritaje Carbusters' : 'Nuevo peritaje Carbusters'}
               </h2>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] transition-colors"
+            aria-label="Cerrar modal"
+            className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* 1. TIPO DE INSPECCIÓN & ESTADO */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#6B6B6B]">Tipo de inspección</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setType('precompra')}
-                  className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all text-center ${
-                    type === 'precompra'
-                      ? 'bg-[#161616] text-white border-[#161616]'
-                      : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
-                  }`}
-                >
-                  Precompra (Cliente)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('interna')}
-                  className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all text-center ${
-                    type === 'interna'
-                      ? 'bg-[#161616] text-white border-[#161616]'
-                      : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
-                  }`}
-                >
-                  Interna automotora
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#6B6B6B]">Estado inicial</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as InspectionStatus)}
-                className="w-full px-3 py-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-semibold focus:bg-white focus:border-[#161616] outline-none"
-              >
-                <option value="Solicitada">Solicitada (A coordinar)</option>
-                <option value="Agendada">Agendada (Crea turno en agenda)</option>
-                <option value="En curso">En curso (En revisión)</option>
-                <option value="Completada">Completada (Finalizada)</option>
-                <option value="Cancelada">Cancelada</option>
-              </select>
-            </div>
+          {/* 1. ESTADO DE LA INSPECCIÓN */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-[#6B6B6B]">Estado inicial</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as InspectionStatus)}
+              className="w-full px-3 py-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-semibold focus:bg-white focus:border-[#161616] outline-none"
+            >
+              <option value="Solicitada">Solicitada (A coordinar)</option>
+              <option value="Agendada">Agendada (Crea turno en agenda)</option>
+              <option value="En curso">En curso (En revisión)</option>
+              <option value="Completada">Completada (Finalizada)</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
           </div>
 
           {/* 2. CLIENTE / COMPRADOR & VENDEDOR */}
@@ -343,58 +319,48 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold text-[#161616]">
                 <User className="w-4 h-4 text-[#6B6B6B]" />
-                <span>
-                  {type === 'precompra' ? 'Comprador / Solicitante' : 'Entidad solicitante'}
-                </span>
+                <span>Comprador / Solicitante</span>
               </div>
-              {type === 'precompra' && (
-                <button
-                  type="button"
-                  onClick={() => setIsNewClient(!isNewClient)}
-                  className="text-[11px] text-[#161616] hover:underline font-bold"
-                >
-                  {isNewClient ? 'Seleccionar existente' : '+ Crear nuevo'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setIsNewClient(!isNewClient)}
+                className="text-[11px] text-[#161616] hover:underline font-bold"
+              >
+                {isNewClient ? 'Seleccionar existente' : '+ Crear nuevo'}
+              </button>
             </div>
 
-            {type === 'precompra' ? (
-              !isNewClient ? (
-                <select
-                  value={clientId}
-                  onChange={(e) => handleSelectClient(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs focus:border-[#161616] outline-none"
-                >
-                  <option value="">-- Seleccionar cliente existente --</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name} ({c.phone})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Nombre completo del comprador"
-                    value={buyerName}
-                    onChange={(e) => setBuyerName(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:border-[#161616] outline-none"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Celular / WhatsApp (099...)"
-                    value={buyerPhone}
-                    onChange={(e) => setBuyerPhone(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:border-[#161616] outline-none"
-                  />
-                </div>
-              )
+            {!isNewClient ? (
+              <select
+                value={clientId}
+                onChange={(e) => handleSelectClient(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs focus:border-[#161616] outline-none"
+              >
+                <option value="">-- Seleccionar cliente existente --</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.full_name} ({c.phone})
+                  </option>
+                ))}
+              </select>
             ) : (
-              <div className="p-2.5 rounded-lg bg-white border border-[#E5E5E3] text-xs text-[#6B6B6B]">
-                <strong className="text-[#161616]">Automotora CARVLAK</strong> • Evaluación para stock o toma en permuta (Jonathan Kaitazoff / Patio).
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Nombre completo del comprador"
+                  value={buyerName}
+                  onChange={(e) => setBuyerName(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:border-[#161616] outline-none"
+                />
+                <input
+                  type="tel"
+                  placeholder="Celular / WhatsApp (099...)"
+                  value={buyerPhone}
+                  onChange={(e) => setBuyerPhone(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:border-[#161616] outline-none"
+                />
               </div>
             )}
 
@@ -565,14 +531,12 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
           <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
             <div>
               <span className="text-[11px] font-title font-bold text-[#6B6B6B] uppercase tracking-wider">
-                {type === 'precompra' ? 'Total a cobrar al cliente' : 'Costo interno registrado'}
+                Total a cobrar al cliente
               </span>
               <p className="text-xs text-[#6B6B6B]">
-                {type === 'precompra'
-                  ? `Tarifa ${vehicleCategory} ($U ${priceAmount.toLocaleString('es-UY')}) ${
-                      isHomeVisit ? `+ Traslado ($U ${surcharge.toLocaleString('es-UY')})` : ''
-                    }`
-                  : 'Tarifa fija interna de peritaje CARVLAK'}
+                Tarifa {vehicleCategory} ($U {priceAmount.toLocaleString('es-UY')}) {
+                  isHomeVisit ? `+ Traslado ($U ${surcharge.toLocaleString('es-UY')})` : ''
+                }
               </p>
             </div>
             <div className="text-right font-mono">
@@ -595,7 +559,7 @@ export const InspectionModal: React.FC<InspectionModalProps> = ({
               type="submit"
               variant="primary"
             >
-              {inspectionToEdit ? 'Guardar cambios' : 'Crear inspección'}
+              {inspectionToEdit ? 'Guardar cambios' : 'Crear peritaje Carbusters'}
             </Button>
           </div>
         </form>

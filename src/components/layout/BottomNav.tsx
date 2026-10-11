@@ -9,10 +9,10 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
   const tabs = [
     { id: 'inicio', label: 'Inicio', icon: Home },
-    { id: 'agenda', label: 'Agenda', icon: Calendar },
-    { id: 'mod-automotora', label: 'Automotora', icon: Car },
+    { id: 'mod-automotora', label: 'Stock', icon: Car },
     { id: 'mod-detailing', label: 'Detailing', icon: Droplets },
-    { id: 'mod-inspeccion', label: 'Inspección', icon: ClipboardCheck }
+    { id: 'mod-inspeccion', label: 'Carbusters', icon: ClipboardCheck },
+    { id: 'agenda', label: 'Agenda', icon: Calendar }
   ];
 
   return (

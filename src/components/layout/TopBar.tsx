@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, LogOut, Shield } from 'lucide-react';
+import {
+  Search,
+  ChevronDown,
+  LogOut,
+  Shield,
+  Users,
+  Car,
+  CheckSquare,
+  UserCog,
+  Share2
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { isEncargado } from '../../lib/permissions';
 
 interface TopBarProps {
   onOpenQuickSearch: () => void;
+  onSelectTab?: (tab: string) => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch, onSelectTab }) => {
   const { profile, availableProfiles, switchProfile, logout, isDemoMode } = useAuth();
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
 
@@ -60,49 +72,124 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch }) => {
           {/* Menú de Roles & Cerrar Sesión */}
           {showRoleSwitcher && (
             <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-[#E5E5E3] shadow-lg p-2 z-50 animate-fade-in">
-              <div className="px-3 py-1.5 border-b border-[#E5E5E3] text-[11px] font-semibold text-[#6B6B6B] tracking-wider">
-                Simular empleado / rol
-              </div>
-              <div className="py-1 space-y-1">
-                {availableProfiles.map((p) => {
-                  const isSelected = p.id === profile?.id;
-                  return (
+              {import.meta.env.DEV && (
+                <>
+                  <div className="px-3 py-1.5 border-b border-[#E5E5E3] text-[11px] font-semibold text-[#6B6B6B] tracking-wider">
+                    Simular empleado / rol (Solo Dev)
+                  </div>
+                  <div className="py-1 space-y-1">
+                    {availableProfiles.map((p) => {
+                      const isSelected = p.id === profile?.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            switchProfile(p.id);
+                            setShowRoleSwitcher(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between transition-colors ${
+                            isSelected
+                              ? 'bg-[#F5F5F4] text-[#161616] font-bold border border-[#E5E5E3]'
+                              : 'text-[#161616] hover:bg-[#FAFAF9]'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-semibold text-[#161616]">{p.full_name}</div>
+                            <div className="text-[10px] text-[#6B6B6B]">
+                              {p.roles.join(' • ')}
+                            </div>
+                          </div>
+                          {p.roles.includes('admin') && (
+                            <span className="text-[9px] bg-[#161616] text-white font-title font-bold px-1.5 py-0.5 rounded">
+                              ADMIN
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Más secciones (especialmente para celular donde el sidebar no está visible) */}
+              {onSelectTab && (
+                <div className="pt-2 border-t border-[#E5E5E3] mt-1 space-y-0.5">
+                  <div className="px-3 py-1 text-[11px] font-semibold text-[#6B6B6B] tracking-wider">
+                    Más secciones
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('clientes');
+                      setShowRoleSwitcher(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#161616] hover:bg-[#F5F5F4] flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Users className="w-4 h-4 text-[#6B6B6B]" />
+                    <span>Clientes</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('vehiculos');
+                      setShowRoleSwitcher(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#161616] hover:bg-[#F5F5F4] flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Car className="w-4 h-4 text-[#6B6B6B]" />
+                    <span>Vehículos</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('tareas');
+                      setShowRoleSwitcher(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#161616] hover:bg-[#F5F5F4] flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <CheckSquare className="w-4 h-4 text-[#6B6B6B]" />
+                    <span>Tareas</span>
+                  </button>
+
+                  {isEncargado(profile) && (
                     <button
-                      key={p.id}
+                      type="button"
                       onClick={() => {
-                        switchProfile(p.id);
+                        onSelectTab('empleados');
                         setShowRoleSwitcher(false);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between transition-colors ${
-                        isSelected
-                          ? 'bg-[#F5F5F4] text-[#161616] font-bold border border-[#E5E5E3]'
-                          : 'text-[#161616] hover:bg-[#FAFAF9]'
-                      }`}
+                      className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#161616] hover:bg-[#F5F5F4] flex items-center gap-2.5 transition-colors cursor-pointer"
                     >
-                      <div>
-                        <div className="font-semibold text-[#161616]">{p.full_name}</div>
-                        <div className="text-[10px] text-[#6B6B6B]">
-                          {p.roles.join(' • ')}
-                        </div>
-                      </div>
-                      {p.roles.includes('admin') && (
-                        <span className="text-[9px] bg-[#161616] text-white font-title font-bold px-1.5 py-0.5 rounded">
-                          ADMIN
-                        </span>
-                      )}
+                      <UserCog className="w-4 h-4 text-[#6B6B6B]" />
+                      <span>Equipo</span>
                     </button>
-                  );
-                })}
-              </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectTab('redes-sociales');
+                      setShowRoleSwitcher(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#161616] hover:bg-[#F5F5F4] flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <Share2 className="w-4 h-4 text-[#D7141A]" />
+                    <span>Redes sociales</span>
+                  </button>
+                </div>
+              )}
 
               {/* Botón Cerrar Sesión */}
               <div className="pt-2 border-t border-[#E5E5E3] mt-1">
                 <button
+                  type="button"
                   onClick={() => {
                     setShowRoleSwitcher(false);
                     logout();
                   }}
-                  className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#D7141A] hover:bg-[#D7141A]/10 flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-[#D7141A] hover:bg-[#D7141A]/10 flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Cerrar sesión</span>

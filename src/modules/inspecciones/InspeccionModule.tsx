@@ -62,7 +62,6 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
   }, [activeTab]);
 
   // Filtros
-  const [typeFilter, setTypeFilter] = useState<'all' | InspectionType>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -87,7 +86,6 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         return false;
       }
 
-      const matchType = typeFilter === 'all' || i.type === typeFilter;
       const matchStatus = statusFilter === 'all' || i.status === statusFilter;
       const term = searchTerm.toLowerCase();
       const matchSearch =
@@ -96,9 +94,9 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
         (i.buyer_name && i.buyer_name.toLowerCase().includes(term)) ||
         (i.seller_name && i.seller_name.toLowerCase().includes(term));
 
-      return matchType && matchStatus && matchSearch;
+      return matchStatus && matchSearch;
     });
-  }, [inspections, typeFilter, statusFilter, searchTerm, isEncargado, profile]);
+  }, [inspections, statusFilter, searchTerm, isEncargado, profile]);
 
   // Contadores por estado
   const statusCounts = useMemo(() => {
@@ -142,17 +140,17 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
-                Módulo peritajes • Taller central
+                Carbusters • Peritajes precompra
               </span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                 15 Paneles • OBD-II • SUCIVE
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-title font-bold text-[#161616]">
-              Inspección técnica
+              Carbusters
             </h1>
             <p className="text-xs text-[#6B6B6B] max-w-2xl leading-relaxed">
-              Peritaje técnico precompra para clientes e inspección interna para adquisición de stock automotora. Checklist táctil mobile-first y reporte con semáforo pericial.
+              Servicio profesional de peritaje técnico precompra para compradores y clientes particulares. Checklist táctil mobile-first y reporte con semáforo pericial.
             </p>
           </div>
 
@@ -179,7 +177,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
               }}
             >
               <Plus className="w-4 h-4" />
-              <span>Nueva inspección</span>
+              <span>Nuevo peritaje</span>
             </Button>
           </div>
         </div>
@@ -197,7 +195,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
           }`}
         >
           <ClipboardCheck className="w-4 h-4" />
-          <span>Inspecciones</span>
+          <span>Peritajes</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] font-bold border border-[#E5E5E3]">
             {inspections.length}
           </span>
@@ -233,7 +231,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
           }`}
         >
           <Receipt className="w-4 h-4" />
-          <span>Gastos inspección</span>
+          <span>Gastos Carbusters</span>
         </button>
 
         <button
@@ -312,52 +310,15 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
           <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               {/* Buscador */}
-              <div className="relative w-full sm:w-80">
+              <div className="relative w-full sm:max-w-md">
                 <Search className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Buscar matrícula, cliente o modelo..."
+                  placeholder="Buscar matrícula, comprador o modelo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] placeholder-[#9A9A9A] text-xs focus:bg-white focus:border-[#161616] outline-none transition-colors"
                 />
-              </div>
-
-              {/* Selector Tipo */}
-              <div className="flex items-center gap-1 bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3] w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter('all')}
-                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    typeFilter === 'all'
-                      ? 'bg-white text-[#161616] shadow-sm'
-                      : 'text-[#6B6B6B] hover:text-[#161616]'
-                  }`}
-                >
-                  Todos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter('precompra')}
-                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    typeFilter === 'precompra'
-                      ? 'bg-white text-[#161616] shadow-sm'
-                      : 'text-[#6B6B6B] hover:text-[#161616]'
-                  }`}
-                >
-                  Precompra
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTypeFilter('interna')}
-                  className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    typeFilter === 'interna'
-                      ? 'bg-white text-[#161616] shadow-sm'
-                      : 'text-[#6B6B6B] hover:text-[#161616]'
-                  }`}
-                >
-                  Interna automotora
-                </button>
               </div>
             </div>
 
@@ -396,9 +357,9 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
           {filteredInspections.length === 0 ? (
             <div className="p-12 text-center rounded-xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
               <ClipboardCheck className="w-12 h-12 text-[#9A9A9A] mx-auto" />
-              <h3 className="text-base font-bold text-[#161616]">No hay inspecciones que coincidan</h3>
+              <h3 className="text-base font-bold text-[#161616]">No hay peritajes que coincidan</h3>
               <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
-                No encontramos peritajes con los filtros seleccionados. Crea una nueva inspección para iniciar un peritaje.
+                No encontramos peritajes con los filtros seleccionados. Crea un nuevo peritaje para iniciar la revisión técnica.
               </p>
               <Button
                 variant="primary"
@@ -409,7 +370,7 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                 }}
               >
                 <Plus className="w-4 h-4" />
-                <span>Crear inspección</span>
+                <span>Crear peritaje</span>
               </Button>
             </div>
           ) : (
@@ -427,9 +388,6 @@ export const InspeccionModule: React.FC<InspeccionModuleProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-block mb-1.5 bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
-                            {insp.type === 'precompra' ? 'Precompra' : 'Interna automotora'}
-                          </span>
                           <h3 className="text-base font-title font-bold text-[#161616] group-hover:text-[#000000] transition-colors">
                             {insp.vehicle_info}
                           </h3>

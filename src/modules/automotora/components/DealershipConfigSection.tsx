@@ -13,17 +13,58 @@ import {
   Users,
   Eye,
   EyeOff,
-  Clock
+  Clock,
+  Database,
+  Phone,
+  MapPin,
+  UploadCloud,
+  CheckCircle2,
+  RefreshCw,
+  Building2,
+  Share2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { DealershipConfig, DealershipCustomFieldDef } from '../../../types';
 import { useData } from '../../../context/DataContext';
+import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/common/Modal';
+import { migrateDataToSupabase, MigrationSummary } from '../../../lib/supabaseMigration';
+import { dataUrlToBlob } from '../../../lib/storage';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
 
 export const DealershipConfigSection: React.FC = () => {
-  const { dealershipConfig, updateDealershipConfig } = useData();
+  const {
+    dealershipConfig,
+    updateDealershipConfig,
+    generalConfig,
+    updateGeneralConfig,
+    clients,
+    vehicles,
+    vehicleHistory,
+    appointments,
+    tasks,
+    dealershipVehicles,
+    updateDealershipVehicle,
+    dealershipInquiries,
+    detailingTariffs,
+    detailingQuotes,
+    stockItems,
+    expenses,
+    commissions,
+    whatsappTemplates,
+    inspectionTariffs,
+    inspections,
+    socialMediaConfig,
+    socialMediaPosts,
+    activityLogs
+  } = useData();
+  const { availableProfiles } = useAuth();
   const { showToast } = useToast();
+
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<MigrationSummary | null>(null);
 
   const [activeSubTab, setActiveSubTab] = useState<'lists' | 'models' | 'custom_fields' | 'general'>(() => {
     if (typeof window !== 'undefined') {
@@ -200,6 +241,164 @@ export const DealershipConfigSection: React.FC = () => {
     showToast('Campo personalizado eliminado', 'info');
   };
 
+  const handleRunMigration = async () => {
+    setIsMigrating(true);
+    setMigrationResult(null);
+    try {
+      const res = await migrateDataToSupabase({
+        generalConfig,
+        profiles: availableProfiles,
+        clients,
+        vehicles,
+        vehicleHistory,
+        appointments,
+        tasks,
+        dealershipConfig,
+        dealershipVehicles,
+        dealershipInquiries,
+        detailingTariffs,
+        detailingQuotes,
+        stockItems,
+        stockMovements: stockItems.flatMap((s) => s.movements || []),
+        expenses,
+        commissions,
+        whatsappTemplates,
+        inspectionTariffs,
+        inspections,
+        socialConfig: socialMediaConfig,
+        socialPosts: socialMediaPosts,
+        activityLogs
+      });
+      setMigrationResult(res);
+      if (res.success) {
+        showToast(`Migración completada: ${res.totalUploaded} registros subidos`, 'success');
+      } else {
+        showToast(res.message, 'error');
+      }
+    } catch (e: any) {
+      showToast(e?.message || 'Error durante la migración a Supabase', 'error');
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  const [isMigratingPhotos, setIsMigratingPhotos] = useState(false);
+
+  const handleMigratePhotosToStorage = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      showToast('Supabase no está configurado en las variables de entorno', 'error');
+      return;
+    }
+
+    setIsMigratingPhotos(true);
+    try {
+      const vehiclesWithBase64 = dealershipVehicles.filter((v) => {
+        const hasBase64Images = (v.images || []).some((img) => img.startsWith('data:image/'));
+        const hasBase64Cover = Boolean(v.cover_image && v.cover_image.startsWith('data:image/'));
+        const hasBase64Flyers = (v.flyer_images || []).some((img) => img.startsWith('data:image/'));
+        return hasBase64Images || hasBase64Cover || hasBase64Flyers;
+      });
+
+      if (vehiclesWithBase64.length === 0) {
+        showToast('No se encontraron vehículos con fotos en base64 para migrar', 'info');
+        setIsMigratingPhotos(false);
+        return;
+      }
+
+      showToast(`Iniciando migración de fotos para ${vehiclesWithBase64.length} vehículo(s)...`, 'info');
+      let totalPhotosMigrated = 0;
+
+      for (let i = 0; i < vehiclesWithBase64.length; i++) {
+        const v = vehiclesWithBase64[i];
+
+        const newImages: string[] = [];
+        for (const img of (v.images || [])) {
+          if (img.startsWith('data:image/')) {
+            try {
+              const blob = dataUrlToBlob(img);
+              const fileName = `vehicles/migrated-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
+              const { data, error } = await supabase.storage
+                .from('media')
+                .upload(fileName, blob, { contentType: 'image/webp', upsert: true });
+
+              if (!error && data) {
+                const { data: pubData } = supabase.storage.from('media').getPublicUrl(data.path);
+                newImages.push(pubData.publicUrl);
+                totalPhotosMigrated++;
+              } else {
+                newImages.push(img);
+              }
+            } catch {
+              newImages.push(img);
+            }
+          } else {
+            newImages.push(img);
+          }
+        }
+
+        let newCover = v.cover_image;
+        if (newCover && newCover.startsWith('data:image/')) {
+          const matchIdx = (v.images || []).indexOf(newCover);
+          if (matchIdx !== -1 && newImages[matchIdx]) {
+            newCover = newImages[matchIdx];
+          } else {
+            try {
+              const blob = dataUrlToBlob(newCover);
+              const fileName = `vehicles/cover-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
+              const { data, error } = await supabase.storage
+                .from('media')
+                .upload(fileName, blob, { contentType: 'image/webp', upsert: true });
+
+              if (!error && data) {
+                const { data: pubData } = supabase.storage.from('media').getPublicUrl(data.path);
+                newCover = pubData.publicUrl;
+                totalPhotosMigrated++;
+              }
+            } catch {}
+          }
+        }
+
+        const newFlyers: string[] = [];
+        for (const f of (v.flyer_images || [])) {
+          if (f.startsWith('data:image/')) {
+            try {
+              const blob = dataUrlToBlob(f);
+              const fileName = `vehicles/flyer-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
+              const { data, error } = await supabase.storage
+                .from('media')
+                .upload(fileName, blob, { contentType: 'image/webp', upsert: true });
+
+              if (!error && data) {
+                const { data: pubData } = supabase.storage.from('media').getPublicUrl(data.path);
+                newFlyers.push(pubData.publicUrl);
+                totalPhotosMigrated++;
+              } else {
+                newFlyers.push(f);
+              }
+            } catch {
+              newFlyers.push(f);
+            }
+          } else {
+            newFlyers.push(f);
+          }
+        }
+
+        updateDealershipVehicle(v.id, {
+          images: newImages,
+          cover_image: newCover || (newImages.length > 0 ? newImages[0] : undefined),
+          flyer_images: newFlyers
+        });
+      }
+
+      showToast(`Migración completada: ${totalPhotosMigrated} foto(s) migradas al bucket media de Storage`, 'success');
+    } catch (err: any) {
+      console.error('Error durante migración de fotos:', err);
+      showToast('Error durante la migración de fotos a Storage', 'error');
+    } finally {
+      setIsMigratingPhotos(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -296,7 +495,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleAddItem('brands', newBrandInput, () => setNewBrandInput(''))}
               >
@@ -339,7 +538,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleAddItem('vehicle_types', newVehicleTypeInput, () => setNewVehicleTypeInput(''))}
               >
@@ -382,7 +581,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleAddItem('fuel_types', newFuelInput, () => setNewFuelInput(''))}
               >
@@ -425,7 +624,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleAddItem('transmission_types', newTransmissionInput, () => setNewTransmissionInput(''))}
               >
@@ -468,7 +667,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleAddItem('colors', newColorInput, () => setNewColorInput(''))}
               >
@@ -511,7 +710,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleAddItem('equipment_items', newEquipmentInput, () => setNewEquipmentInput(''))}
               >
@@ -554,7 +753,7 @@ export const DealershipConfigSection: React.FC = () => {
                 className="flex-1 px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none"
               />
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 onClick={handleAddDocument}
               >
@@ -586,7 +785,7 @@ export const DealershipConfigSection: React.FC = () => {
         <div className="space-y-6">
           {/* Brand picker selector */}
           <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
-            <label className="block text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-[#6B6B6B]">
               1. Seleccioná una marca para gestionar sus modelos:
             </label>
             <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1">
@@ -626,7 +825,7 @@ export const DealershipConfigSection: React.FC = () => {
                     className="px-3 py-2 text-xs bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] outline-none w-64"
                   />
                   <Button
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
                     onClick={handleAddModel}
                   >
@@ -670,7 +869,7 @@ export const DealershipConfigSection: React.FC = () => {
               </p>
             </div>
             <Button
-              variant="primary"
+              variant="secondary"
               onClick={() => setNewFieldModalOpen(true)}
             >
               <Plus className="w-4 h-4" />
@@ -843,6 +1042,164 @@ export const DealershipConfigSection: React.FC = () => {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Datos de Contacto y Empresa */}
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#D7141A]" />
+              Identidad corporativa y teléfonos de contacto
+            </h3>
+            <p className="text-xs text-[#6B6B6B] leading-relaxed max-w-xl">
+              Estos datos se utilizan en el catálogo web público, presupuestos de detailing, informes periciales compartidos y mensajes automáticos de WhatsApp.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Nombre de la empresa:</label>
+                <input
+                  type="text"
+                  value={generalConfig.company_name}
+                  onChange={(e) => updateGeneralConfig({ company_name: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Teléfono WhatsApp (formato internacional ej: 59899267964):</label>
+                <input
+                  type="text"
+                  value={generalConfig.company_phone}
+                  onChange={(e) => updateGeneralConfig({ company_phone: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] font-mono text-xs focus:outline-none focus:border-[#D7141A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Teléfono visible / formateado (ej: 099 267 964):</label>
+                <input
+                  type="text"
+                  value={generalConfig.company_phone_formatted}
+                  onChange={(e) => updateGeneralConfig({ company_phone_formatted: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">WhatsApp Jonathan Kaitazoff (Evaluaciones automotora):</label>
+                <input
+                  type="text"
+                  value={generalConfig.jonathan_phone}
+                  onChange={(e) => updateGeneralConfig({ jonathan_phone: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] font-mono text-xs focus:outline-none focus:border-[#D7141A]"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs text-[#6B6B6B] mb-1 font-medium">Dirección del taller / automotora:</label>
+                <input
+                  type="text"
+                  value={generalConfig.address}
+                  onChange={(e) => updateGeneralConfig({ address: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Base de Datos & Modo Demostración */}
+          <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-[#161616] flex items-center gap-2">
+                  <Database className="w-4 h-4 text-[#D7141A]" />
+                  Modo demostración / Almacenamiento local
+                </h3>
+                <p className="text-xs text-[#6B6B6B] max-w-xl leading-relaxed">
+                  Cuando está activo, el sistema opera con datos locales de muestra en el navegador sin sincronizar con Supabase. Desactivalo para conectar directamente a las tablas cloud.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={generalConfig.is_demo_mode}
+                  onChange={(e) => {
+                    updateGeneralConfig({ is_demo_mode: e.target.checked });
+                    showToast(
+                      e.target.checked
+                        ? 'Modo demostración activado'
+                        : 'Modo producción / nube activado',
+                      'info'
+                    );
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-6 bg-[#E5E5E3] border border-[#D0D0CD] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#D7141A]"></div>
+              </label>
+            </div>
+
+            {/* Botón de Migración a Supabase */}
+            <div className="pt-4 border-t border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold text-[#161616] block">
+                  Migración de datos a Supabase
+                </span>
+                <span className="text-[11px] text-[#6B6B6B]">
+                  Envía el stock actual, clientes, cotizaciones y peritajes desde este dispositivo a las tablas cloud de Supabase sin duplicar registros existentes.
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button
+                  variant="secondary"
+                  onClick={handleMigratePhotosToStorage}
+                  disabled={isMigratingPhotos}
+                  className="inline-flex items-center gap-2 shrink-0"
+                >
+                  {isMigratingPhotos ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Subiendo fotos a Storage...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4" />
+                      <span>Migrar fotos a Storage</span>
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="primary"
+                  onClick={handleRunMigration}
+                  disabled={isMigrating}
+                  className="inline-flex items-center gap-2 shrink-0"
+                >
+                  {isMigrating ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Migrando datos...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-4 h-4" />
+                      <span>Migrar datos a Supabase</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {migrationResult && (
+              <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-xs space-y-2 animate-fade-in">
+                <div className="flex items-center gap-2 font-bold text-[#161616]">
+                  <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" />
+                  <span>{migrationResult.message}</span>
+                </div>
+                <div className="text-[11px] text-[#6B6B6B]">
+                  Total subidos: <strong className="text-[#161616]">{migrationResult.totalUploaded}</strong> • Omitidos (ya existían): <strong className="text-[#161616]">{migrationResult.totalSkipped}</strong>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -64,7 +64,7 @@ export interface SocialCanvasPreviewProps {
   badgeTag?: string;
   inspectionHighlights?: string[];
   detailingServices?: string[];
-  onSaveToHistory: (thumbnailData: string) => void;
+  onSaveToHistory: (thumbnailData: string, canvasBlob?: Blob) => void;
   suggestedFileName: string;
   // Soporte interactivo para elementos de texto independientes
   textElements?: CanvasTextElement[];
@@ -192,13 +192,11 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
     return {
       ...base,
-      textElements: (activeElements || []).filter(
-        (el) => el.id !== 'etiqueta_instagram' && el.id !== 'pie_marca'
-      )
+      textElements: activeElements || []
     };
   }, [layoutConfig, activeElements]);
 
-  // Renderizado del Canvas 2D
+  // Renderizado del Canvas 2D con debounce de 150ms al tipear
   useEffect(() => {
     let active = true;
     const canvas = canvasRef.current;
@@ -206,42 +204,45 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
     setIsRendering(true);
 
-    const options: RenderCanvasOptions = {
-      format,
-      templateId,
-      imageUrl,
-      secondaryImageUrl,
-      headline,
-      subtitle,
-      price,
-      originalPrice,
-      specs,
-      stampText,
-      coverPlate,
-      platePosition,
-      imagePan,
-      logoPosition,
-      instagramHandle,
-      locationName,
-      hashtag,
-      badgeTag,
-      inspectionHighlights,
-      detailingServices,
-      layoutConfig: effectiveLayoutConfig,
-      showSafeZones
-    };
+    const timer = setTimeout(() => {
+      const options: RenderCanvasOptions = {
+        format,
+        templateId,
+        imageUrl,
+        secondaryImageUrl,
+        headline,
+        subtitle,
+        price,
+        originalPrice,
+        specs,
+        stampText,
+        coverPlate,
+        platePosition,
+        imagePan,
+        logoPosition,
+        instagramHandle,
+        locationName,
+        hashtag,
+        badgeTag,
+        inspectionHighlights,
+        detailingServices,
+        layoutConfig: effectiveLayoutConfig,
+        showSafeZones
+      };
 
-    renderSocialCanvas(canvas, options)
-      .then(() => {
-        if (active) setIsRendering(false);
-      })
-      .catch((err) => {
-        console.error('Error rendering canvas:', err);
-        if (active) setIsRendering(false);
-      });
+      renderSocialCanvas(canvas, options)
+        .then(() => {
+          if (active) setIsRendering(false);
+        })
+        .catch((err) => {
+          console.error('Error rendering canvas:', err);
+          if (active) setIsRendering(false);
+        });
+    }, 150);
 
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [
     format,
@@ -282,33 +283,78 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
     [canvasLogicalWidth, canvasLogicalHeight]
   );
 
-  // Manejo de clic o inicio de arrastre en la vista previa
+  // Manejo de clic o inicio de arrastre en la vista previa con medición exacta ctx.measureText
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
 
     // Buscar si tocó sobre algún elemento visible (en orden inverso de capa)
     const reversed = [...activeElements].reverse();
     const hit = reversed.find((el) => {
       if (!el.visible || !el.text) return false;
-      const textLen = el.text.length;
-      const approxW = Math.max(80, textLen * el.fontSize * 0.6 + 40);
-      const approxH = Math.max(50, el.fontSize * 1.3 + 24);
 
-      let minX = el.x;
-      let maxX = el.x + approxW;
+      let elW = 100;
+      let elH = 40;
 
-      if (el.align === 'center') {
-        minX = el.x - approxW / 2;
-        maxX = el.x + approxW / 2;
-      } else if (el.align === 'right') {
-        minX = el.x - approxW;
-        maxX = el.x;
+      if (el.id === 'logo') {
+        const scale = (el.fontSize || 36) / 36;
+        elW = 280 * scale;
+        elH = 75 * scale;
+      } else if (el.id === 'barra_roja') {
+        elW = canvasLogicalHeight > 1500 ? 220 : 180;
+        elH = 26;
+      } else if (el.id === 'linea_divisoria') {
+        elW = canvasLogicalWidth - 120;
+        elH = 24;
+      } else if (ctx) {
+        const fontName = el.fontFamily === 'Barlow Condensed'
+          ? '"Barlow Condensed"'
+          : el.fontFamily === 'Archivo Narrow'
+          ? '"Archivo Narrow"'
+          : 'system-ui';
+        const weight = (el.fontWeight === 'black' || el.fontWeight === 'bold')
+          ? 700
+          : el.fontWeight === 'semibold'
+          ? 600
+          : 400;
+        ctx.save();
+        ctx.font = `${weight} ${el.fontSize}px ${fontName}, sans-serif`;
+        const measured = ctx.measureText(el.text);
+        ctx.restore();
+        const padX = el.bgType === 'box' || el.id === 'etiqueta' ? 36 : 12;
+        const padY = el.bgType === 'box' || el.id === 'etiqueta' ? 24 : 12;
+        elW = measured.width + padX;
+        elH = el.fontSize * 1.15 + padY;
       }
 
-      const minY = el.y - approxH / 2;
-      const maxY = el.y + approxH / 2;
+      // Transformación de coordenadas relativas con rotación inversa
+      const dx = x - el.x;
+      const dy = y - el.y;
+      const rad = ((el.rotation || 0) * Math.PI) / 180;
+      const rx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+      const ry = dx * Math.sin(-rad) + dy * Math.cos(-rad);
 
-      return x >= minX - 25 && x <= maxX + 25 && y >= minY - 25 && y <= maxY + 25;
+      let minX = 0;
+      let maxX = elW;
+      if (el.align === 'center') {
+        minX = -elW / 2;
+        maxX = elW / 2;
+      } else if (el.align === 'right') {
+        minX = -elW;
+        maxX = 0;
+      }
+
+      const minY = -elH / 2;
+      const maxY = elH / 2;
+
+      const hitMargin = 16;
+      return (
+        rx >= minX - hitMargin &&
+        rx <= maxX + hitMargin &&
+        ry >= minY - hitMargin &&
+        ry <= maxY + hitMargin
+      );
     });
 
     if (hit) {
@@ -411,7 +457,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
       showToast('Imagen descargada en alta resolución (1080px)', 'success');
 
       const thumb = canvas.toDataURL('image/jpeg', 0.6);
-      onSaveToHistory(thumb);
+      onSaveToHistory(thumb, blob);
     } catch {
       showToast('No se pudo exportar la imagen', 'error');
     }
@@ -422,17 +468,19 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
+      const blob = await exportCanvasToBlob(canvas);
       const shared = await shareCanvasImage(
         canvas,
         headline || 'CARVLAK Group',
         `Publicación oficial de CARVLAK: ${headline || ''} | ${instagramHandle}`
       );
+      const thumb = canvas.toDataURL('image/jpeg', 0.6);
       if (shared) {
         showToast('Enviado al menú de compartir de tu dispositivo', 'success');
-        const thumb = canvas.toDataURL('image/jpeg', 0.6);
-        onSaveToHistory(thumb);
+        onSaveToHistory(thumb, blob);
       } else {
-        handleDownload();
+        downloadBlob(blob, `${suggestedFileName}-${format}-${Date.now()}.png`);
+        onSaveToHistory(thumb, blob);
       }
     } catch {
       handleDownload();
@@ -440,12 +488,19 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
   };
 
   // Guardar en historial
-  const handleManualSave = () => {
+  const handleManualSave = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const thumb = canvas.toDataURL('image/jpeg', 0.6);
-    onSaveToHistory(thumb);
-    showToast('Guardado en historial de publicaciones', 'success');
+    try {
+      const blob = await exportCanvasToBlob(canvas);
+      const thumb = canvas.toDataURL('image/jpeg', 0.6);
+      onSaveToHistory(thumb, blob);
+      showToast('Guardado en historial de publicaciones', 'success');
+    } catch {
+      const thumb = canvas.toDataURL('image/jpeg', 0.6);
+      onSaveToHistory(thumb);
+      showToast('Guardado en historial de publicaciones', 'success');
+    }
   };
 
   return (
@@ -537,7 +592,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
           title="Ver u ocultar zonas seguras de Instagram (250px)"
           className={`flex-1 min-w-[110px] py-1.5 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
             showSafeZones
-              ? 'bg-[#D7141A] text-white border-[#D7141A]'
+              ? 'bg-[#161616] text-white border-[#161616]'
               : 'bg-[#F5F5F4] text-[#161616] border-[#E5E5E3] hover:bg-white'
           }`}
         >
@@ -573,7 +628,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
           title="Tapar matrícula con sello oficial CARVLAK"
           className={`flex-1 min-w-[105px] py-1.5 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
             coverPlate
-              ? 'bg-[#D7141A] text-white border-[#D7141A]'
+              ? 'bg-[#161616] text-white border-[#161616]'
               : 'bg-[#F5F5F4] text-[#161616] border-[#E5E5E3] hover:bg-white'
           }`}
         >
@@ -734,7 +789,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
                   onClick={() => handleUpdateActiveElement({ fontWeight: 'bold' })}
                   className={`flex-1 py-1 text-[11px] font-bold cursor-pointer transition-colors ${
                     activeElement.fontWeight === 'bold' || activeElement.fontWeight === 'black'
-                      ? 'bg-white font-black text-[#D7141A] shadow-xs'
+                      ? 'bg-white font-bold text-[#D7141A] shadow-xs'
                       : 'text-[#6B6B6B]'
                   }`}
                 >
@@ -1012,7 +1067,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
 
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[10px] text-[#6B6B6B] uppercase font-bold block mb-1">
+              <label className="text-[10px] text-[#6B6B6B] font-bold block mb-1">
                 Horizontal (X)
               </label>
               <input
@@ -1029,7 +1084,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] text-[#6B6B6B] uppercase font-bold block mb-1">
+              <label className="text-[10px] text-[#6B6B6B] font-bold block mb-1">
                 Vertical (Y)
               </label>
               <input
@@ -1046,7 +1101,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] text-[#6B6B6B] uppercase font-bold block mb-1">
+              <label className="text-[10px] text-[#6B6B6B] font-bold block mb-1">
                 Tamaño
               </label>
               <input
@@ -1071,7 +1126,7 @@ export const SocialCanvasPreview: React.FC<SocialCanvasPreviewProps> = ({
           type="button"
           variant="primary"
           onClick={handleShare}
-          className="w-full h-11 justify-center shadow-md text-xs font-title font-bold uppercase tracking-wider"
+          className="w-full h-11 justify-center shadow-md text-xs font-title font-bold"
         >
           <Share2 className="w-4 h-4 mr-1" />
           <span>Compartir en Instagram {format === 'story' ? 'Stories (9:16)' : 'Feed (4:5)'}</span>

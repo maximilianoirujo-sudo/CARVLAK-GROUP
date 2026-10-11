@@ -77,29 +77,45 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
 
   // Modales
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
-  const [vehicleToEdit, setVehicleToEdit] = useState<DealershipVehicle | null>(null);
+  const [vehicleToEditId, setVehicleToEditId] = useState<string | null>(null);
 
-  const [selectedVehicleForDetail, setSelectedVehicleForDetail] = useState<DealershipVehicle | null>(null);
-  const [vehicleForSale, setVehicleForSale] = useState<DealershipVehicle | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [vehicleForSaleId, setVehicleForSaleId] = useState<string | null>(null);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
+
+  // Vehículos actualizados en vivo según el contexto
+  const selectedVehicleForDetail = React.useMemo(() => {
+    if (!selectedVehicleId) return null;
+    return dealershipVehicles.find(v => v.id === selectedVehicleId) || null;
+  }, [selectedVehicleId, dealershipVehicles]);
+
+  const vehicleToEdit = React.useMemo(() => {
+    if (!vehicleToEditId) return null;
+    return dealershipVehicles.find(v => v.id === vehicleToEditId) || null;
+  }, [vehicleToEditId, dealershipVehicles]);
+
+  const vehicleForSale = React.useMemo(() => {
+    if (!vehicleForSaleId) return null;
+    return dealershipVehicles.find(v => v.id === vehicleForSaleId) || null;
+  }, [vehicleForSaleId, dealershipVehicles]);
 
   // Handlers
   const handleOpenNewVehicle = () => {
-    setVehicleToEdit(null);
+    setVehicleToEditId(null);
     setIsVehicleModalOpen(true);
   };
 
   const handleOpenEditVehicle = (veh: DealershipVehicle) => {
-    setVehicleToEdit(veh);
+    setVehicleToEditId(veh.id);
     setIsVehicleModalOpen(true);
   };
 
   const handleSelectVehicle = (veh: DealershipVehicle) => {
-    setSelectedVehicleForDetail(veh);
+    setSelectedVehicleId(veh.id);
   };
 
   const handleOpenSaleModal = (veh: DealershipVehicle) => {
-    setVehicleForSale(veh);
+    setVehicleForSaleId(veh.id);
   };
 
   const handleOpenCatalog = () => {
@@ -141,14 +157,6 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
             >
               <ExternalLink className="w-3.5 h-3.5 text-[#6B6B6B]" />
               <span>Ver catálogo web</span>
-            </Button>
-
-            <Button
-              variant="secondary"
-              onClick={() => setIsMigrationModalOpen(true)}
-            >
-              <Download className="w-3.5 h-3.5 text-[#6B6B6B]" />
-              <span>Importar AppAuto</span>
             </Button>
           </div>
         </div>
@@ -265,7 +273,10 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
       {isVehicleModalOpen && (
         <DealershipVehicleModal
           isOpen={isVehicleModalOpen}
-          onClose={() => setIsVehicleModalOpen(false)}
+          onClose={() => {
+            setIsVehicleModalOpen(false);
+            setVehicleToEditId(null);
+          }}
           vehicleToEdit={vehicleToEdit}
         />
       )}
@@ -274,7 +285,7 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
         <DealershipVehicleDetailDrawer
           vehicle={selectedVehicleForDetail}
           isOpen={Boolean(selectedVehicleForDetail)}
-          onClose={() => setSelectedVehicleForDetail(null)}
+          onClose={() => setSelectedVehicleId(null)}
           onEdit={handleOpenEditVehicle}
           onOpenSaleModal={handleOpenSaleModal}
           onOpenPublicCatalog={handleOpenCatalog}
@@ -285,7 +296,7 @@ export const AutomotoraModule: React.FC<AutomotoraModuleProps> = ({ onOpenPublic
         <DealershipSaleModal
           vehicle={vehicleForSale}
           isOpen={Boolean(vehicleForSale)}
-          onClose={() => setVehicleForSale(null)}
+          onClose={() => setVehicleForSaleId(null)}
         />
       )}
 

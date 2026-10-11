@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { BUSINESS_CONFIG, formatCurrency, normalizePlate } from '../../lib/formatters';
+import { BUSINESS_CONFIG, formatCurrency, normalizePlate, getLocalDateString, formatLocalTime } from '../../lib/formatters';
 import { isEncargado } from '../../lib/permissions';
 import { Business, Appointment, Client, Vehicle } from '../../types';
 import { AppointmentModal } from './AppointmentModal';
@@ -31,7 +31,7 @@ export const CalendarView: React.FC = () => {
   const canSeeAllByDefault = isEncargado(profile);
 
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDateString());
   const [businessFilter, setBusinessFilter] = useState<'all' | Business>('all');
   const [onlyMine, setOnlyMine] = useState(!canSeeAllByDefault);
 
@@ -48,11 +48,11 @@ export const CalendarView: React.FC = () => {
   const changeDate = (days: number) => {
     const d = new Date(selectedDate + 'T12:00:00');
     d.setDate(d.getDate() + days);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(getLocalDateString(d));
   };
 
   const setToday = () => {
-    setSelectedDate(new Date().toISOString().slice(0, 10));
+    setSelectedDate(getLocalDateString());
   };
 
   // Calcular días de la semana actual
@@ -68,7 +68,7 @@ export const CalendarView: React.FC = () => {
     for (let i = 0; i < 7; i++) {
       const current = new Date(monday);
       current.setDate(monday.getDate() + i);
-      const iso = current.toISOString().slice(0, 10);
+      const iso = getLocalDateString(current);
       const dayNum = current.getDate();
       const count = appointments.filter((a) => a.start_time.startsWith(iso)).length;
       days.push({
@@ -76,7 +76,7 @@ export const CalendarView: React.FC = () => {
         name: dayNames[i],
         dayNum,
         count,
-        isToday: iso === new Date().toISOString().slice(0, 10)
+        isToday: iso === getLocalDateString()
       });
     }
     return days;
@@ -107,13 +107,11 @@ export const CalendarView: React.FC = () => {
       if (viewMode === 'day') {
         return a.start_time.startsWith(selectedDate);
       } else {
-        const curTime = new Date(selectedDate + 'T12:00:00').getTime();
-        const apptTime = new Date(a.start_time.slice(0, 10) + 'T12:00:00').getTime();
-        const diffDays = Math.abs((apptTime - curTime) / (1000 * 60 * 60 * 24));
-        return diffDays <= 3.5;
+        const apptDate = a.start_time.slice(0, 10);
+        return apptDate >= weekDays[0].iso && apptDate <= weekDays[6].iso;
       }
     }).sort((a, b) => a.start_time.localeCompare(b.start_time));
-  }, [appointments, businessFilter, onlyMine, profile, selectedDate, viewMode]);
+  }, [appointments, businessFilter, onlyMine, profile, selectedDate, viewMode, weekDays]);
 
   // Formato legible de fecha
   const formattedSelectedDate = useMemo(() => {
@@ -313,7 +311,7 @@ export const CalendarView: React.FC = () => {
             }`}
           >
             <ClipboardCheck className="w-3.5 h-3.5" />
-            <span>Inspección</span>
+            <span>Carbusters</span>
             <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${businessFilter === 'inspeccion' ? 'bg-white/20 text-white' : 'bg-[#F5F5F4] text-[#6B6B6B]'}`}>
               {businessCounts.inspeccion}
             </span>
@@ -381,8 +379,8 @@ export const CalendarView: React.FC = () => {
             const bConfig = BUSINESS_CONFIG[appt.business];
             const client = clients.find((c) => c.id === appt.client_id);
             const vehicle = vehicles.find((v) => v.id === appt.vehicle_id);
-            const timeStr = appt.start_time.slice(11, 16);
-            const dateStr = appt.start_time.slice(0, 10);
+            const timeStr = formatLocalTime(appt.start_time) || appt.start_time.slice(11, 16);
+            const dateStr = getLocalDateString(appt.start_time);
 
             const isCompleted = appt.status === 'Finalizado';
             const isInProgress = appt.status === 'En curso';
@@ -504,7 +502,10 @@ export const CalendarView: React.FC = () => {
       {isNewModalOpen && (
         <AppointmentModal
           isOpen={isNewModalOpen}
-          onClose={() => setIsNewModalOpen(false)}
+          onClose={() => {
+            setIsNewModalOpen(false);
+            setEditingAppointment(null);
+          }}
           appointmentToEdit={editingAppointment}
           defaultDate={selectedDate}
         />

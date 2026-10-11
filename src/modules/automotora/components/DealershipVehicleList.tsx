@@ -30,6 +30,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../../components/ui/Button';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
+import { formatCurrency } from '../../../lib/formatters';
 import { DealershipBulkActionModal } from './DealershipBulkActionModal';
 import { DealershipConfirmStatusDialog } from './DealershipConfirmStatusDialog';
 
@@ -416,14 +417,14 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
             <span className="hidden sm:inline">Catálogo web</span>
           </Button>
 
-          {/* Botón Importar AppAuto */}
+          {/* Botón Importar desde Tiendanube */}
           <Button
             variant="secondary"
             onClick={onOpenMigrationModal}
-            title="Importar los 44 autos cargados en appauto oficial con fotos HD"
+            title="Importar catálogo oficial cargado en Tiendanube con fotos HD"
           >
             <Download className="w-3.5 h-3.5 text-[#6B6B6B]" />
-            <span>Importar AppAuto</span>
+            <span>Importar desde Tiendanube</span>
           </Button>
 
           {/* Botón Nuevo Auto - ACCIÓN PRINCIPAL EN ROJO */}
@@ -493,7 +494,8 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
               : 'text-[#D7141A] hover:bg-[#FDF2F2]'
           }`}
         >
-          <span>⚠️ Incompletos</span>
+          <AlertTriangle className="w-3.5 h-3.5" />
+          <span>Incompletos</span>
           <span className={`text-[10px] px-1.5 py-0.2 rounded ${conditionFilter === 'incompletos' ? 'bg-black/20 text-white' : 'bg-[#FDF2F2] text-[#D7141A]'}`}>
             {counts.incompletos}
           </span>
@@ -569,7 +571,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
           >
             <option value="todos">Todos los tipos</option>
             {(dealershipConfig?.vehicle_types || ['Auto', 'Moto', 'Todoterreno']).map((vt) => (
-              <option key={vt} value={vt.toLowerCase().replace(/[^a-z]/g, '')}>{vt}</option>
+              <option key={vt} value={vt}>{vt}</option>
             ))}
           </select>
 
@@ -682,6 +684,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                             ? 'bg-[#161616] text-white shadow-md'
                             : 'bg-white/80 text-[#161616] hover:bg-white border border-[#E5E5E3]'
                         }`}
+                        aria-label={isSelected ? `Deseleccionar ${car.brand} ${car.model}` : `Seleccionar ${car.brand} ${car.model}`}
                       >
                         {isSelected ? <Check className="w-4 h-4 stroke-[3]" /> : <Square className="w-4 h-4" />}
                       </button>
@@ -692,19 +695,21 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                   <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 max-w-[70%] z-10">
                     {getStatusBadge(car.status)}
                     {car.condition === '0km' && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-[#161616] border border-[#E5E5E3] shadow-xs flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-[#161616] border border-[#E5E5E3] shadow-xs flex items-center gap-1">
                         <Zap className="w-2.5 h-2.5 text-[#002B7A]" />
-                        0KM
+                        <span>0km</span>
                       </span>
                     )}
                     {car.fuel === 'Eléctrico' && car.autonomy_km && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3]">
-                        🔋 {car.autonomy_km} km
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-white/90 backdrop-blur-sm text-[#161616] border border-[#E5E5E3] flex items-center gap-1">
+                        <Zap className="w-2.5 h-2.5 text-[#161616]" />
+                        <span>{car.autonomy_km.toLocaleString('es-UY')} km</span>
                       </span>
                     )}
                     {car.incomplete_data && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#FDF2F2] text-[#B80E14] border border-[#F9D2D2] shadow-xs">
-                        ⚠️ Incompleto
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#FDF2F2] text-[#B80E14] border border-[#F9D2D2] shadow-xs flex items-center gap-1">
+                        <AlertTriangle className="w-2.5 h-2.5 text-[#B80E14]" />
+                        <span>Incompleto</span>
                       </span>
                     )}
                   </div>
@@ -743,7 +748,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                       <div className="text-[11px] text-[#6B6B6B] mt-0.5 flex items-center gap-2 flex-wrap">
                         <span>Año {car.year}</span>
                         <span>•</span>
-                        <span>{car.mileage.toLocaleString()} km</span>
+                        <span>{car.mileage.toLocaleString('es-UY')} km</span>
                         <span>•</span>
                         <span>{car.transmission}</span>
                         <span>•</span>
@@ -754,7 +759,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     {/* Precios y Margen con Edición Rápida Inline */}
                     <div className="mt-3 pt-3 border-t border-[#E5E5E3] flex items-end justify-between">
                       <div>
-                        <div className="text-[10px] font-semibold text-[#6B6B6B] uppercase tracking-wider flex items-center gap-1">
+                        <div className="text-[10px] font-semibold text-[#6B6B6B] flex items-center gap-1">
                           Precio contado
                           {canEdit && !isEditingThisPrice && (
                             <button
@@ -786,6 +791,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                             <button
                               onClick={(e) => saveEditingPrice(car.id, e)}
                               className="p-1 rounded-md bg-[#D7141A] text-white cursor-pointer"
+                              aria-label="Guardar nuevo precio"
                               title="Guardar precio"
                             >
                               <Check className="w-3.5 h-3.5" />
@@ -793,6 +799,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                             <button
                               onClick={cancelEditingPrice}
                               className="p-1 rounded-md bg-white border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] cursor-pointer"
+                              aria-label="Cancelar edición de precio"
                               title="Cancelar"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -804,19 +811,19 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                             className={`text-base font-bold font-display text-[#000000] tabular-nums ${canEdit ? 'cursor-pointer hover:underline' : ''}`}
                             title={canEdit ? 'Click para editar precio rápidamente' : undefined}
                           >
-                            USD {car.sale_price.toLocaleString('es-UY')}
+                            {formatCurrency(car.sale_price, car.sale_currency || 'USD')}
                           </div>
                         )}
                       </div>
 
                       {isAdmin && (
                         <div className="text-right">
-                          <div className="text-[10px] font-semibold text-[#6B6B6B] uppercase tracking-wider">
+                          <div className="text-[10px] font-semibold text-[#6B6B6B]">
                             Costo / Margen
                           </div>
                           <div className="flex items-center gap-1.5 justify-end">
                             <span className="text-[11px] text-[#6B6B6B] font-medium tabular-nums">
-                              ${Math.round(car.total_real_cost_usd || 0).toLocaleString()}
+                              {formatCurrency(Math.round(car.total_real_cost_usd || 0), 'USD')}
                             </span>
                             <span
                               className={`text-[10px] font-semibold px-1.5 py-0.2 rounded tabular-nums ${
@@ -825,7 +832,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                                   : 'bg-[#FDF2F2] text-[#B80E14] border border-[#F9D2D2]'
                               }`}
                             >
-                              +${Math.round(car.estimated_margin_usd || 0).toLocaleString()}
+                              +{formatCurrency(Math.round(car.estimated_margin_usd || 0), 'USD')}
                             </span>
                           </div>
                         </div>
@@ -896,6 +903,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                     <button
                       onClick={toggleSelectAllVisible}
                       className="text-[#6B6B6B] hover:text-[#161616] transition-colors cursor-pointer"
+                      aria-label="Seleccionar todos los vehículos"
                       title="Seleccionar todos"
                     >
                       {selectedIds.size === filteredVehicles.length && filteredVehicles.length > 0 ? (
@@ -970,8 +978,9 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                           <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                             <UruguayanPlate plate={car.plate} vin={car.chassis_vin} size="sm" />
                             {car.fuel === 'Eléctrico' && car.autonomy_km && (
-                              <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3]">
-                                🔋 {car.autonomy_km}km
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] inline-flex items-center gap-1">
+                                <Zap className="w-2.5 h-2.5 text-[#161616]" />
+                                <span>{car.autonomy_km.toLocaleString('es-UY')} km</span>
                               </span>
                             )}
                           </div>
@@ -981,7 +990,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
                     <td className="p-3 text-[#161616]">
                       <div>Año {car.year}</div>
-                      <div className="text-[11px] text-[#6B6B6B]">{car.mileage.toLocaleString()} km</div>
+                      <div className="text-[11px] text-[#6B6B6B]">{car.mileage.toLocaleString('es-UY')} km</div>
                     </td>
 
                     <td className="p-3">
@@ -1035,12 +1044,16 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                           <button
                             onClick={(e) => saveEditingPrice(car.id, e)}
                             className="p-1 rounded bg-[#D7141A] text-white cursor-pointer"
+                            aria-label="Guardar precio"
+                            title="Guardar precio"
                           >
                             <Check className="w-3 h-3" />
                           </button>
                           <button
                             onClick={cancelEditingPrice}
                             className="p-1 rounded bg-white border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] cursor-pointer"
+                            aria-label="Cancelar edición de precio"
+                            title="Cancelar"
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -1053,7 +1066,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                           }`}
                           title={canEdit ? 'Click para editar precio' : undefined}
                         >
-                          <span>USD {car.sale_price.toLocaleString('es-UY')}</span>
+                          <span>{formatCurrency(car.sale_price, car.sale_currency || 'USD')}</span>
                           {canEdit && <Edit className="w-3 h-3 text-[#6B6B6B] opacity-60 hover:opacity-100" />}
                         </div>
                       )}
@@ -1061,7 +1074,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
 
                     {isAdmin && (
                       <td className="p-3 text-right text-[#161616] font-medium tabular-nums">
-                        USD {Math.round(car.total_real_cost_usd || 0).toLocaleString()}
+                        {formatCurrency(Math.round(car.total_real_cost_usd || 0), 'USD')}
                       </td>
                     )}
 
@@ -1072,7 +1085,7 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
                             (car.estimated_margin_usd || 0) >= 0 ? 'text-[#161616]' : 'text-[#D7141A]'
                           }`}
                         >
-                          +${Math.round(car.estimated_margin_usd || 0).toLocaleString()} (
+                          +{formatCurrency(Math.round(car.estimated_margin_usd || 0), 'USD')} (
                           {car.estimated_margin_percent?.toFixed(1) || '0.0'}%)
                         </span>
                       </td>
@@ -1130,8 +1143,8 @@ export const DealershipVehicleList: React.FC<DealershipVehicleListProps> = ({
       {/* Empty State */}
       {filteredVehicles.length === 0 && (
         <div className="p-12 text-center rounded-xl bg-white border border-[#E5E5E3] space-y-3 shadow-xs">
-          <div className="w-12 h-12 rounded-lg bg-[#F5F5F4] text-[#6B6B6B] mx-auto flex items-center justify-center text-xl border border-[#E5E5E3]">
-            🔍
+          <div className="w-12 h-12 rounded-lg bg-[#F5F5F4] text-[#6B6B6B] mx-auto flex items-center justify-center border border-[#E5E5E3]">
+            <Search className="w-6 h-6 text-[#6B6B6B]" />
           </div>
           <h3 className="text-sm font-bold font-display text-[#161616]">No se encontraron vehículos</h3>
           <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">

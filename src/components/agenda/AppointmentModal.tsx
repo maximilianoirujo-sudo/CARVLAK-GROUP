@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Business, Appointment, AppointmentStatus, Currency } from '../../types';
-import { normalizePlate } from '../../lib/formatters';
+import { normalizePlate, getLocalDateString, combineLocalDateAndTime, formatLocalTime } from '../../lib/formatters';
 import { Droplets, ClipboardCheck, Car } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -13,13 +13,17 @@ interface AppointmentModalProps {
   onClose: () => void;
   appointmentToEdit?: Appointment | null;
   defaultDate?: string;
+  defaultClientId?: string;
+  defaultVehicleId?: string;
 }
 
 export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   isOpen,
   onClose,
   appointmentToEdit,
-  defaultDate
+  defaultDate,
+  defaultClientId,
+  defaultVehicleId
 }) => {
   const { clients, vehicles, addAppointment, updateAppointment } = useData();
   const { availableProfiles, profile } = useAuth();
@@ -29,7 +33,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [clientId, setClientId] = useState('');
   const [vehicleId, setVehicleId] = useState('');
   const [assignedTo, setAssignedTo] = useState(profile?.id || '');
-  const [date, setDate] = useState(defaultDate || new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(defaultDate || getLocalDateString());
   const [time, setTime] = useState('10:00');
   const [duration, setDuration] = useState(60);
   const [status, setStatus] = useState<AppointmentStatus>('Pendiente');
@@ -44,8 +48,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       setClientId(appointmentToEdit.client_id);
       setVehicleId(appointmentToEdit.vehicle_id || '');
       setAssignedTo(appointmentToEdit.assigned_to || '');
-      setDate(appointmentToEdit.start_time.slice(0, 10));
-      setTime(appointmentToEdit.start_time.slice(11, 16));
+      setDate(getLocalDateString(appointmentToEdit.start_time));
+      setTime(formatLocalTime(appointmentToEdit.start_time) || '10:00');
       setDuration(appointmentToEdit.duration_minutes || 60);
       setStatus(appointmentToEdit.status);
       setTitle(appointmentToEdit.title || '');
@@ -53,11 +57,32 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       setPriceAmount(appointmentToEdit.price_amount || 0);
       setPriceCurrency(appointmentToEdit.price_currency || 'UYU');
     } else {
-      // Defaults para nuevo turno
-      setClientId(clients[0]?.id || '');
-      setVehicleId(vehicles[0]?.id || '');
+      // Defaults para nuevo turno con precarga de cliente o auto si fue provisto
+      let initClient = defaultClientId || '';
+      let initVehicle = defaultVehicleId || '';
+
+      if (defaultVehicleId && !initClient) {
+        const v = vehicles.find((item) => item.id === defaultVehicleId);
+        if (v?.client_id) initClient = v.client_id;
+      }
+
+      if (initClient && !initVehicle) {
+        const v = vehicles.find((item) => item.client_id === initClient);
+        if (v) initVehicle = v.id;
+      }
+
+      if (!initClient && clients.length > 0) {
+        initClient = clients[0].id;
+      }
+
+      if (!initVehicle && vehicles.length > 0) {
+        initVehicle = vehicles[0].id;
+      }
+
+      setClientId(initClient);
+      setVehicleId(initVehicle);
       setAssignedTo(profile?.id || '');
-      setDate(defaultDate || new Date().toISOString().slice(0, 10));
+      setDate(defaultDate || getLocalDateString());
       setTime('10:00');
       setDuration(60);
       setStatus('Pendiente');
@@ -66,7 +91,27 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       setPriceAmount(0);
       setPriceCurrency('UYU');
     }
-  }, [appointmentToEdit, defaultDate, isOpen, clients, vehicles, profile]);
+  }, [appointmentToEdit, defaultDate, defaultClientId, defaultVehicleId, isOpen, clients, vehicles, profile]);
+
+  const handleClientChange = (newClientId: string) => {
+    setClientId(newClientId);
+    if (newClientId) {
+      const clientVeh = vehicles.find(v => v.client_id === newClientId);
+      if (clientVeh) {
+        setVehicleId(clientVeh.id);
+      }
+    }
+  };
+
+  const handleVehicleChange = (newVehicleId: string) => {
+    setVehicleId(newVehicleId);
+    if (newVehicleId) {
+      const veh = vehicles.find(v => v.id === newVehicleId);
+      if (veh?.client_id) {
+        setClientId(veh.client_id);
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +120,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       return;
     }
 
-    const start_time = `${date}T${time}:00Z`;
+    const start_time = combineLocalDateAndTime(date, time);
 
     if (appointmentToEdit) {
       updateAppointment(appointmentToEdit.id, {
@@ -124,7 +169,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         
         {/* Negocio Responsable */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1.5">
+          <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1.5">
             Negocio responsable *
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -150,7 +195,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
               }`}
             >
               <ClipboardCheck className="w-3.5 h-3.5" />
-              <span>Inspección</span>
+              <span>Carbusters</span>
             </button>
             <button
               type="button"
@@ -169,7 +214,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
         {/* Título */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+          <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
             Título o servicio *
           </label>
           <input
@@ -185,12 +230,12 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Cliente y Vehículo */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Cliente *
             </label>
             <select
               value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
+              onChange={(e) => handleClientChange(e.target.value)}
               required
               className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] outline-none cursor-pointer"
             >
@@ -204,12 +249,12 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Vehículo asociado
             </label>
             <select
               value={vehicleId}
-              onChange={(e) => setVehicleId(e.target.value)}
+              onChange={(e) => handleVehicleChange(e.target.value)}
               className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] outline-none cursor-pointer"
             >
               <option value="">Sin vehículo específico</option>
@@ -225,7 +270,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Fecha, Hora, Duración */}
         <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Fecha
             </label>
             <input
@@ -237,7 +282,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Hora
             </label>
             <input
@@ -249,7 +294,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Duración
             </label>
             <select
@@ -272,7 +317,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Asignado y Estado */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Empleado asignado
             </label>
             <select
@@ -290,7 +335,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Estado del turno
             </label>
             <select
@@ -310,7 +355,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         {/* Presupuesto y Moneda */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Monto presupuesto
             </label>
             <input
@@ -322,7 +367,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+            <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
               Moneda
             </label>
             <div className="flex rounded-xl overflow-hidden border border-[#E5E5E3]">
@@ -350,7 +395,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
         {/* Notas */}
         <div>
-          <label className="block text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wider mb-1">
+          <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
             Notas u observaciones
           </label>
           <textarea

@@ -9,10 +9,12 @@ import {
   Layers
 } from 'lucide-react';
 import { useData } from '../../../context/DataContext';
+import { useAuth } from '../../../context/AuthContext';
 import { formatCurrency } from '../../../lib/formatters';
 
 export const DetailingDashboardSection: React.FC = () => {
   const { detailingQuotes, expenses, commissions, stockItems } = useData();
+  const { availableProfiles } = useAuth();
 
   const [selectedMonth, setSelectedMonth] = useState<string>(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
 
@@ -73,8 +75,8 @@ export const DetailingDashboardSection: React.FC = () => {
   const jobsByEmployee = useMemo(() => {
     const counts: Record<string, { name: string; count: number; billed: number }> = {};
     completedQuotes.forEach((q) => {
-      const empName = q.assigned_to === 'user-maxi' ? 'Maximiliano Irujo' :
-                      q.assigned_to === 'user-matias' ? 'Matías Pereyra' : 'Maximiliano Irujo';
+      const found = availableProfiles.find((p) => p.id === q.assigned_to);
+      const empName = found ? found.full_name : (q.assigned_to || 'Sin asignar');
       if (!counts[empName]) {
         counts[empName] = { name: empName, count: 0, billed: 0 };
       }
@@ -82,7 +84,7 @@ export const DetailingDashboardSection: React.FC = () => {
       counts[empName].billed += q.total_amount;
     });
     return Object.values(counts);
-  }, [completedQuotes]);
+  }, [completedQuotes, availableProfiles]);
 
   // Insumos con stock crítico
   const lowStock = useMemo(() => {

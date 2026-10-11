@@ -115,7 +115,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] text-[#6B6B6B] font-medium mb-1">Inspección</label>
+                <label className="block text-[11px] text-[#6B6B6B] font-medium mb-1">Carbusters</label>
                 <div className="flex items-center gap-1 bg-white border border-[#E5E5E3] rounded-xl p-2 focus-within:border-[#D7141A]">
                   <input
                     type="number"

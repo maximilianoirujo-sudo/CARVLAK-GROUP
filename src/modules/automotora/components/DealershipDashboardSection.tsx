@@ -10,11 +10,14 @@ import {
   Lock,
   Layers,
   Sparkles,
-  Zap
+  Zap,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
 import { DealershipVehicle } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
+import { formatCurrency } from '../../../lib/formatters';
 
 export const DealershipDashboardSection: React.FC = () => {
   const {
@@ -219,7 +222,7 @@ export const DealershipDashboardSection: React.FC = () => {
         <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-2.5">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-[#D7141A]" />
-            <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-[#161616]">
               Comparativa de inventario: Usados vs Eléctricos 0km
             </h3>
           </div>
@@ -248,11 +251,11 @@ export const DealershipDashboardSection: React.FC = () => {
             <div className="mt-3 space-y-1.5">
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Capital invertido:</span>
-                <strong className="text-[#161616] font-mono">USD {Math.round(metricsUsed.totalCapital).toLocaleString()}</strong>
+                <strong className="text-[#161616] font-mono">{formatCurrency(metricsUsed.totalCapital, 'USD')}</strong>
               </div>
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Margen proyectado:</span>
-                <strong className="text-[#1E6B43] font-mono">+USD {Math.round(metricsUsed.totalMargin).toLocaleString()}</strong>
+                <strong className="text-[#1E6B43] font-mono">+{formatCurrency(metricsUsed.totalMargin, 'USD')}</strong>
               </div>
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Días promedio stock:</span>
@@ -282,11 +285,11 @@ export const DealershipDashboardSection: React.FC = () => {
             <div className="mt-3 space-y-1.5">
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Capital invertido:</span>
-                <strong className="text-[#161616] font-mono">USD {Math.round(metricsZeroKm.totalCapital).toLocaleString()}</strong>
+                <strong className="text-[#161616] font-mono">{formatCurrency(metricsZeroKm.totalCapital, 'USD')}</strong>
               </div>
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Margen proyectado:</span>
-                <strong className="text-[#1E6B43] font-mono">+USD {Math.round(metricsZeroKm.totalMargin).toLocaleString()}</strong>
+                <strong className="text-[#1E6B43] font-mono">+{formatCurrency(metricsZeroKm.totalMargin, 'USD')}</strong>
               </div>
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Días promedio stock:</span>
@@ -316,11 +319,11 @@ export const DealershipDashboardSection: React.FC = () => {
             <div className="mt-3 space-y-1.5">
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Capital invertido:</span>
-                <strong className="text-[#161616] font-mono">USD {Math.round(metricsAll.totalCapital).toLocaleString()}</strong>
+                <strong className="text-[#161616] font-mono">{formatCurrency(metricsAll.totalCapital, 'USD')}</strong>
               </div>
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Margen proyectado:</span>
-                <strong className="text-[#1E6B43] font-mono">+USD {Math.round(metricsAll.totalMargin).toLocaleString()}</strong>
+                <strong className="text-[#1E6B43] font-mono">+{formatCurrency(metricsAll.totalMargin, 'USD')}</strong>
               </div>
               <div className="flex justify-between text-[#6B6B6B] text-[11px]">
                 <span>Días promedio stock:</span>
@@ -340,7 +343,7 @@ export const DealershipDashboardSection: React.FC = () => {
             <DollarSign className="w-4 h-4 text-[#D7141A]" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono">
-            USD {Math.round(metricsCurrent.totalCapital).toLocaleString()}
+            {formatCurrency(metricsCurrent.totalCapital, 'USD')}
           </div>
           <div className="text-[11px] text-[#6B6B6B]">
             En {metricsCurrent.count} unidades disponibles
@@ -354,7 +357,7 @@ export const DealershipDashboardSection: React.FC = () => {
             <TrendingUp className="w-4 h-4 text-[#1E6B43]" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-[#1E6B43] font-mono">
-            +USD {Math.round(metricsCurrent.totalMargin).toLocaleString()}
+            +{formatCurrency(metricsCurrent.totalMargin, 'USD')}
           </div>
           <div className="text-[11px] text-[#6B6B6B]">
             Ganancia bruta esperada del inventario
@@ -374,8 +377,18 @@ export const DealershipDashboardSection: React.FC = () => {
           >
             {metricsCurrent.avgDays} días
           </div>
-          <div className="text-[11px] text-[#6B6B6B]">
-            {metricsCurrent.avgDays > 60 ? '⚠️ Rotación lenta (>60 días)' : '✓ Rotación saludable'}
+          <div className="text-[11px] text-[#6B6B6B] flex items-center gap-1.5">
+            {metricsCurrent.avgDays > 60 ? (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-[#B80E14]" />
+                <span>Rotación lenta (&gt;60 días)</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5 text-[#1E6B43]" />
+                <span>Rotación saludable</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -410,25 +423,25 @@ export const DealershipDashboardSection: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div className="text-[11px] font-semibold text-[#6B6B6B] uppercase">Facturación total</div>
+            <div className="text-[11px] font-semibold text-[#6B6B6B]">Facturación total</div>
             <div className="text-xl font-bold text-[#161616] mt-1 font-mono">
-              USD {salesVolumeUsd.toLocaleString()}
+              {formatCurrency(salesVolumeUsd, 'USD')}
             </div>
             <p className="text-[10px] text-[#6B6B6B] mt-0.5">Volumen vendido de inventario</p>
           </div>
 
           <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div className="text-[11px] font-semibold text-[#6B6B6B] uppercase">Margen bruto realizado</div>
+            <div className="text-[11px] font-semibold text-[#6B6B6B]">Margen bruto realizado</div>
             <div className="text-xl font-bold text-[#1E6B43] mt-1 font-mono">
-              +USD {Math.round(realizedGrossProfitUsd).toLocaleString()}
+              +{formatCurrency(realizedGrossProfitUsd, 'USD')}
             </div>
             <p className="text-[10px] text-[#6B6B6B] mt-0.5">Margen neto post costos internos</p>
           </div>
 
           <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div className="text-[11px] font-semibold text-[#6B6B6B] uppercase">Comisiones vendedores</div>
+            <div className="text-[11px] font-semibold text-[#6B6B6B]">Comisiones vendedores</div>
             <div className="text-xl font-bold text-[#D7141A] mt-1 font-mono">
-              USD {Math.round(totalCommissionsUsd).toLocaleString()}
+              {formatCurrency(totalCommissionsUsd, 'USD')}
             </div>
             <p className="text-[10px] text-[#6B6B6B] mt-0.5">Comisiones liquidadas por ventas</p>
           </div>
@@ -438,7 +451,7 @@ export const DealershipDashboardSection: React.FC = () => {
       {/* Widget: Distribución por Antigüedad del Stock */}
       <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-xs font-bold text-[#161616] flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-[#D7141A]" />
             <span>Antigüedad del stock ({activeStock.length} unidades {conditionFilter !== 'todos' ? `• ${conditionFilter}` : ''})</span>
           </h3>
@@ -447,25 +460,25 @@ export const DealershipDashboardSection: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div className="text-[10px] font-semibold uppercase text-[#6B6B6B]">0 a 30 días</div>
+            <div className="text-[10px] font-semibold text-[#6B6B6B]">0 a 30 días</div>
             <div className="text-2xl font-bold text-[#161616] mt-1 font-mono">{stockAgeBuckets.under30}</div>
             <div className="text-[10px] text-[#1E6B43] mt-0.5 font-medium">Ingreso reciente</div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div className="text-[10px] font-semibold uppercase text-[#6B6B6B]">31 a 60 días</div>
+            <div className="text-[10px] font-semibold text-[#6B6B6B]">31 a 60 días</div>
             <div className="text-2xl font-bold text-[#161616] mt-1 font-mono">{stockAgeBuckets.days30to60}</div>
             <div className="text-[10px] text-[#6B6B6B] mt-0.5 font-medium">Rotación normal</div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div className="text-[10px] font-semibold uppercase text-[#6B6B6B]">61 a 90 días</div>
+            <div className="text-[10px] font-semibold text-[#6B6B6B]">61 a 90 días</div>
             <div className="text-2xl font-bold text-[#161616] mt-1 font-mono">{stockAgeBuckets.days60to90}</div>
             <div className="text-[10px] text-[#945B0E] mt-0.5 font-medium">Atención comercial</div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-[#FDF2F2] border border-[#FADBA8]">
-            <div className="text-[10px] font-semibold uppercase text-[#B80E14]">&gt; 90 días</div>
+            <div className="text-[10px] font-semibold text-[#B80E14]">&gt; 90 días</div>
             <div className="text-2xl font-bold text-[#B80E14] mt-1 font-mono">{stockAgeBuckets.over90}</div>
             <div className="text-[10px] text-[#B80E14] mt-0.5 font-medium">Rebaja sugerida</div>
           </div>
@@ -475,14 +488,14 @@ export const DealershipDashboardSection: React.FC = () => {
       {/* Tabla de Últimas Ventas */}
       {soldVehicles.length > 0 && (
         <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
-          <h3 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-[#161616]">
             Detalle de ventas registradas
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-[#E5E5E3] text-[#6B6B6B] text-[10px] font-bold uppercase tracking-wider bg-[#F5F5F4]">
+                <tr className="border-b border-[#E5E5E3] text-[#6B6B6B] text-[10px] font-bold bg-[#F5F5F4]">
                   <th className="p-2.5">Fecha</th>
                   <th className="p-2.5">Auto / matrícula o chasis</th>
                   <th className="p-2.5">Condición</th>
@@ -510,7 +523,7 @@ export const DealershipDashboardSection: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-2.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616]">
                           {car.condition === '0km' ? '0km' : 'Usado'}
                         </span>
                       </td>
@@ -522,13 +535,13 @@ export const DealershipDashboardSection: React.FC = () => {
                         {sale?.payment_method || 'Contado'}
                       </td>
                       <td className="p-2.5 text-right font-bold text-[#161616] font-mono">
-                        USD {(sale?.sale_price || car.sale_price).toLocaleString()}
+                        {formatCurrency(sale?.sale_price || car.sale_price, car.sale_currency || 'USD')}
                       </td>
                       <td className="p-2.5 text-right font-bold text-[#1E6B43] font-mono">
-                        +USD {Math.round(sale?.gross_profit_usd || car.estimated_margin_usd || 0).toLocaleString()}
+                        +{formatCurrency(sale?.gross_profit_usd || car.estimated_margin_usd || 0, 'USD')}
                       </td>
                       <td className="p-2.5 text-right font-mono text-[#D7141A] font-bold">
-                        USD {sale?.commission_amount || 0}
+                        {formatCurrency(sale?.commission_amount || 0, 'USD')}
                       </td>
                     </tr>
                   );

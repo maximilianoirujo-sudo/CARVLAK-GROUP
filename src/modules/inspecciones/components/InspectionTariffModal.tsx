@@ -75,7 +75,8 @@ export const InspectionTariffModal: React.FC<InspectionTariffModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] transition-colors"
+            aria-label="Cerrar modal"
+            className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

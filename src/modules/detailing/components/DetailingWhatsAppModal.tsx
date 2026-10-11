@@ -143,7 +143,8 @@ export const DetailingWhatsAppModal: React.FC<DetailingWhatsAppModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3]"
+            aria-label="Cerrar modal"
+            className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3] cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

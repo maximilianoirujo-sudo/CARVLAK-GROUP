@@ -18,7 +18,7 @@ const STATUS_DETAILS: Record<
 > = {
   evaluacion: {
     label: 'En evaluación',
-    impact: 'El vehículo entra en revisión de antecedentes, peritaje técnico y valuación inicial.'
+    impact: 'El vehículo entra en revisión de antecedentes, evaluación de compra y valuación inicial.'
   },
   comprado: {
     label: 'Comprado',
@@ -101,7 +101,8 @@ export const DealershipConfirmStatusDialog: React.FC<DealershipConfirmStatusDial
           <button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="p-1 text-[#6B6B6B] hover:text-[#161616] rounded-lg transition-colors"
+            aria-label="Cerrar diálogo"
+            className="p-1 text-[#6B6B6B] hover:text-[#161616] rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

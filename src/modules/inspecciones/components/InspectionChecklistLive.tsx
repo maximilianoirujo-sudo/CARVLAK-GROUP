@@ -33,7 +33,8 @@ import {
   Eye,
   Wrench,
   Gauge,
-  UserCheck
+  UserCheck,
+  Check
 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
@@ -110,49 +111,55 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
 
   const [autoSaveToast, setAutoSaveToast] = useState<boolean>(false);
 
-  // Auto-guardado en localStorage cada vez que hay cambios
+  // Auto-guardado con 1 segundo de demora (debounce) y sin registrar auditoría en cada tecla
   useEffect(() => {
-    const draftPayload = {
-      checklist,
-      panels,
-      obdCodes,
-      obdNotes,
-      suciveDebt,
-      suciveStatus,
-      mileageDeclared,
-      mileageObserved,
-      mileageTampered,
-      repairCost,
-      repairDetails,
-      conclusion,
-      decision,
-      suggestedPrice,
-      suggestedCurrency
-    };
-    localStorage.setItem(draftKey, JSON.stringify(draftPayload));
-    
-    // Guardar también en contexto de DataContext
-    updateInspection(inspection.id, {
-      checklist,
-      panels,
-      obd_codes: obdCodes,
-      obd_notes: obdNotes,
-      sucive_debt: suciveDebt,
-      sucive_status: suciveStatus,
-      mileage_declared: mileageDeclared,
-      mileage_observed: mileageObserved,
-      mileage_tampered: mileageTampered,
-      estimated_repair_cost: repairCost,
-      repair_details: repairDetails,
-      inspector_conclusion: conclusion,
-      automotora_decision: decision,
-      automotora_suggested_price: suggestedPrice,
-      automotora_currency: suggestedCurrency
-    });
+    const timer = setTimeout(() => {
+      const draftPayload = {
+        checklist,
+        panels,
+        obdCodes,
+        obdNotes,
+        suciveDebt,
+        suciveStatus,
+        mileageDeclared,
+        mileageObserved,
+        mileageTampered,
+        repairCost,
+        repairDetails,
+        conclusion,
+        decision,
+        suggestedPrice,
+        suggestedCurrency
+      };
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(draftPayload));
+      } catch (e) {}
 
-    setAutoSaveToast(true);
-    const t = setTimeout(() => setAutoSaveToast(false), 1200);
-    return () => clearTimeout(t);
+      // Guardar también en contexto de DataContext (skipAudit = true para no saturar registros en cada tecla)
+      updateInspection(inspection.id, {
+        checklist,
+        panels,
+        obd_codes: obdCodes,
+        obd_notes: obdNotes,
+        sucive_debt: suciveDebt,
+        sucive_status: suciveStatus,
+        mileage_declared: mileageDeclared,
+        mileage_observed: mileageObserved,
+        mileage_tampered: mileageTampered,
+        estimated_repair_cost: repairCost,
+        repair_details: repairDetails,
+        inspector_conclusion: conclusion,
+        automotora_decision: decision,
+        automotora_suggested_price: suggestedPrice,
+        automotora_currency: suggestedCurrency
+      }, true);
+
+      setAutoSaveToast(true);
+      const t = setTimeout(() => setAutoSaveToast(false), 1200);
+      return () => clearTimeout(t);
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [
     checklist,
     panels,
@@ -273,19 +280,44 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
     if (onFinish) onFinish();
   };
 
+  // Pausar peritaje (guarda inmediatamente registrando auditoría)
+  const handlePauseInspection = () => {
+    updateInspection(inspection.id, {
+      checklist,
+      panels,
+      obd_codes: obdCodes,
+      obd_notes: obdNotes,
+      sucive_debt: suciveDebt,
+      sucive_status: suciveStatus,
+      mileage_declared: mileageDeclared,
+      mileage_observed: mileageObserved,
+      mileage_tampered: mileageTampered,
+      score: currentScore,
+      traffic_light: currentTraffic,
+      estimated_repair_cost: repairCost,
+      repair_details: repairDetails,
+      inspector_conclusion: conclusion,
+      automotora_decision: decision,
+      automotora_suggested_price: suggestedPrice,
+      automotora_currency: suggestedCurrency
+    }, false);
+
+    if (onFinish) onFinish();
+  };
+
   return (
     <div className="space-y-4 animate-fade-in pb-20">
       {/* 1. ENCABEZADO DE CONTEXTO TÉCNICO */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[11px] font-title font-bold text-[#6B6B6B] uppercase tracking-wider block">
-            Módulo peritajes • Taller central
+            Carbusters • Peritajes precompra
           </span>
           <h1 className="text-xl sm:text-2xl font-title font-bold text-[#161616]">
-            Inspección técnica
+            Carbusters • Peritaje técnico
           </h1>
           <p className="text-xs text-[#6B6B6B] -mt-0.5">
-            Peritaje oficial para toma y venta garantizada
+            Peritaje técnico oficial precompra para clientes
           </p>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF7F2] text-[#1E6B43] border border-[#CDE9D9] shadow-sm">
@@ -305,7 +337,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
               {inspection.vehicle_info}
             </h2>
             <span className="text-xs text-[#6B6B6B] block">
-              Categoría {inspection.vehicle_category} • {inspection.type === 'precompra' ? 'Peritaje precompra' : 'Inspección de stock'}
+              Categoría {inspection.vehicle_category} • Peritaje precompra Carbusters
             </span>
           </div>
 
@@ -338,14 +370,24 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
               <Gauge className="w-4 h-4 text-[#6B6B6B]" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] font-bold text-[#9A9A9A] uppercase leading-none block">
+              <span className="text-[10px] font-bold text-[#9A9A9A] leading-none block">
                 Odómetro digital
               </span>
               <span className="font-title font-bold text-sm sm:text-base text-[#161616] leading-tight block">
                 {(mileageObserved || 0).toLocaleString('es-UY')} <span className="text-xs font-normal text-[#6B6B6B]">km</span>
               </span>
               <span className={`text-[11px] leading-none flex items-center gap-1 font-semibold ${mileageTampered ? 'text-[#B80E14]' : 'text-[#1E6B43]'}`}>
-                {mileageTampered ? '⚠️ Posible alteración' : '✓ Odómetro verificado'}
+                {mileageTampered ? (
+                  <>
+                    <AlertTriangle className="w-3 h-3 text-[#B80E14]" />
+                    <span>Posible alteración</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3 h-3 text-[#1E6B43]" />
+                    <span>Odómetro verificado</span>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -357,7 +399,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
         <div className="flex items-end justify-between">
           <div>
             <div className="flex items-center gap-1.5 text-xs text-[#6B6B6B]">
-              <span className="font-bold text-[#6B6B6B] uppercase text-[11px]">Auditoría global</span>
+              <span className="font-bold text-[#6B6B6B] text-[11px]">Auditoría global</span>
               <span className="text-[#9A9A9A]">•</span>
               <span className="font-semibold text-[#161616]">{answeredItemsCount} de {totalItemsCount} puntos</span>
             </div>
@@ -367,7 +409,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
           </div>
 
           <div className="text-right flex flex-col items-end">
-            <span className="text-[10px] font-bold uppercase text-[#6B6B6B]">Score preliminar</span>
+            <span className="text-[10px] font-bold text-[#6B6B6B]">Score preliminar</span>
             <div className="flex items-baseline gap-1">
               <span className="font-title font-extrabold text-2xl sm:text-3xl text-[#161616] leading-none">
                 {currentScore}
@@ -780,61 +822,6 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
           </div>
         </div>
 
-        {/* DECISIÓN AUTOMOTORA (SI ES INTERNA O EVALUACIÓN) */}
-        {(inspection.type === 'interna' || profile?.roles.includes('admin') || profile?.roles.includes('encargado')) && (
-          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3">
-            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
-              Evaluación para stock CARVLAK (Fase 4 Ready)
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {(['comprar', 'negociar', 'no_comprar'] as AutomotoraDecision[]).map((dec) => {
-                const isSelected = decision === dec;
-                return (
-                  <button
-                    key={dec}
-                    type="button"
-                    onClick={() => setDecision(dec)}
-                    className={`py-2 px-2 rounded-lg text-xs font-bold transition-all border ${
-                      isSelected
-                        ? dec === 'comprar'
-                          ? 'bg-[#1E6B43] text-white border-[#1E6B43]'
-                          : dec === 'negociar'
-                          ? 'bg-[#945B0E] text-white border-[#945B0E]'
-                          : 'bg-[#D7141A] text-white border-[#D7141A]'
-                        : 'bg-white border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
-                    }`}
-                  >
-                    {dec === 'comprar' ? 'Comprar' : dec === 'negociar' ? 'Negociar' : 'Descartar'}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="text-[11px] font-semibold text-[#6B6B6B]">Precio sugerido</label>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="number"
-                    value={suggestedPrice || ''}
-                    onChange={(e) => setSuggestedPrice(Number(e.target.value) || undefined)}
-                    placeholder="Ej: 18500"
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs focus:border-[#161616] outline-none"
-                  />
-                  <select
-                    value={suggestedCurrency}
-                    onChange={(e) => setSuggestedCurrency(e.target.value as Currency)}
-                    className="px-2 py-1.5 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] font-mono text-xs outline-none"
-                  >
-                    <option value="USD">USD</option>
-                    <option value="UYU">UYU</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Conclusión del perito */}
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-[#6B6B6B]">
@@ -866,7 +853,7 @@ export const InspectionChecklistLive: React.FC<InspectionChecklistLiveProps> = (
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => onFinish && onFinish()}
+            onClick={handlePauseInspection}
             className="h-11 rounded-lg bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-sans font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors"
           >
             <PauseCircle className="w-4 h-4 text-[#6B6B6B]" />

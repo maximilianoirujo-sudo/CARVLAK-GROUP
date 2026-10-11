@@ -4,7 +4,8 @@ import {
   Plus,
   Calendar,
   User,
-  Edit2
+  Edit2,
+  Check
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -131,7 +132,7 @@ export const TaskList: React.FC = () => {
             >
               <option value="all">Todos los negocios</option>
               <option value="detailing">DetailVlak</option>
-              <option value="inspeccion">Inspección</option>
+              <option value="inspeccion">Carbusters</option>
               <option value="automotora">Automotora</option>
               <option value="general">General</option>
             </select>
@@ -167,11 +168,11 @@ export const TaskList: React.FC = () => {
                     onClick={() => updateTaskStatus(t.id, isDone ? 'Pendiente' : 'Hecha')}
                     className={`mt-0.5 w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
                       isDone
-                        ? 'bg-[#161616] border-[#161616] text-white font-bold'
+                        ? 'bg-[#161616] border-[#161616] text-white'
                         : 'border-[#D0D0CD] bg-white text-transparent hover:border-[#161616]'
                     }`}
                   >
-                    ✓
+                    {isDone && <Check className="w-3.5 h-3.5" />}
                   </button>
 
                   <div className="min-w-0">

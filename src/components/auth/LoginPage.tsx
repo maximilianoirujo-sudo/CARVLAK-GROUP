@@ -57,34 +57,38 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Acceso rápido por empleado (Modo Demo / Equipo) */}
-        <div className="space-y-2">
-          <div className="text-[11px] font-semibold text-[#6B6B6B]">
-            Ingreso rápido de equipo
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            {availableProfiles.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => switchProfile(p.id)}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] border border-[#E5E5E3] hover:border-[#D0D0CD] text-xs transition-colors flex items-center justify-between min-h-[44px] cursor-pointer shadow-xs"
-              >
-                <div>
-                  <div className="font-semibold text-[#161616]">{p.full_name}</div>
-                  <div className="text-[11px] text-[#6B6B6B]">{p.roles.join(' • ')}</div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-[#9A9A9A]" />
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Acceso rápido por empleado (Modo Demo / Equipo - Solo en Desarrollo) */}
+        {import.meta.env.DEV && (
+          <>
+            <div className="space-y-2">
+              <div className="text-[11px] font-semibold text-[#6B6B6B]">
+                Ingreso rápido de equipo (Solo Desarrollo)
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {availableProfiles.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => switchProfile(p.id)}
+                    className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] border border-[#E5E5E3] hover:border-[#D0D0CD] text-xs transition-colors flex items-center justify-between min-h-[44px] cursor-pointer shadow-xs"
+                  >
+                    <div>
+                      <div className="font-semibold text-[#161616]">{p.full_name}</div>
+                      <div className="text-[11px] text-[#6B6B6B]">{p.roles.join(' • ')}</div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#9A9A9A]" />
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <div className="relative flex py-1 items-center">
-          <div className="flex-grow border-t border-[#E5E5E3]"></div>
-          <span className="flex-shrink mx-3 text-[11px] text-[#9A9A9A] font-medium">O con credenciales</span>
-          <div className="flex-grow border-t border-[#E5E5E3]"></div>
-        </div>
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-[#E5E5E3]"></div>
+              <span className="flex-shrink mx-3 text-[11px] text-[#9A9A9A] font-medium">O con credenciales</span>
+              <div className="flex-grow border-t border-[#E5E5E3]"></div>
+            </div>
+          </>
+        )}
 
         {/* Formulario tradicional */}
         <form onSubmit={handleSubmit} className="space-y-3.5">

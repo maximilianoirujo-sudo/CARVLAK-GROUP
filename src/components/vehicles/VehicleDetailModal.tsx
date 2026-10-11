@@ -158,7 +158,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddPhoto}
-                    className="px-4 py-2 bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold text-xs rounded-xl cursor-pointer"
+                    className="px-4 py-2 bg-[#161616] hover:bg-[#2A2A2A] text-white font-semibold text-xs rounded-xl cursor-pointer transition-colors"
                   >
                     Guardar
                   </button>

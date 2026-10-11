@@ -13,12 +13,17 @@ import {
   Globe,
   UploadCloud,
   Settings,
-  Phone
+  Phone,
+  Calendar,
+  Ban,
+  RotateCcw,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
-import { DetailingQuote, DetailingQuoteStatus } from '../../types';
+import { DetailingQuote, DetailingQuoteStatus, Appointment } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { formatCurrency } from '../../lib/formatters';
+import { formatCurrency, getLocalDateString } from '../../lib/formatters';
 import { Button } from '../../components/ui/Button';
 import { UruguayanPlate } from '../../components/ui/UruguayanPlate';
 
@@ -32,6 +37,14 @@ import { DetailingCommissionsSection } from './components/DetailingCommissionsSe
 import { DetailingDashboardSection } from './components/DetailingDashboardSection';
 import { DetailingMigrationModal } from './components/DetailingMigrationModal';
 
+// Componentes de Agenda y Detailing Pro
+import { DetailingCalendarView } from './components/agenda/DetailingCalendarView';
+import { DetailingTodayPanel } from './components/agenda/DetailingTodayPanel';
+import { DetailingConfigTab } from './components/DetailingConfigTab';
+import { DetailingVoidModal } from './components/DetailingVoidModal';
+import { DetailingWhatsAppQuickModal } from './components/agenda/DetailingWhatsAppQuickModal';
+import { computeDetailingAlerts, DetailingAlert } from './services/detailingAlertsService';
+
 interface DetailingModuleProps {
   onOpenPublicForm?: () => void;
 }
@@ -39,21 +52,90 @@ interface DetailingModuleProps {
 export const DetailingModule: React.FC<DetailingModuleProps> = ({
   onOpenPublicForm
 }) => {
-  const { detailingQuotes, updateDetailingQuoteStatus } = useData();
-  const { profile } = useAuth();
+  const {
+    detailingQuotes,
+    allDetailingQuotes,
+    updateDetailingQuoteStatus,
+    voidDetailingQuote,
+    restoreDetailingQuote,
+    deleteDetailingQuotePermanent,
+    recordDetailingPayment,
+    recordDetailingCheckin,
+    recordDetailingQualityControl,
+    logDetailingWhatsAppSent,
+    appointments,
+    addAppointment,
+    updateAppointment,
+    voidAppointment,
+    stockItems,
+    detailingConfig,
+    updateDetailingConfig
+  } = useData();
+
+  const { profile, availableProfiles } = useAuth();
 
   const isAdmin = profile?.roles.includes('admin');
+  const isManagerOrAdmin = isAdmin || profile?.roles.includes('encargado_detailing');
 
-  // Pestañas principales
-  const [activeTab, setActiveTab] = useState<'quotes' | 'stock' | 'expenses' | 'commissions' | 'dashboard'>('quotes');
+  // Pestañas principales: 'agenda' primera!
+  const [activeTab, setActiveTab] = useState<
+    'agenda' | 'quotes' | 'stock' | 'expenses' | 'commissions' | 'dashboard' | 'config'
+  >('agenda');
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
+  // Alertas inteligentes y estado de posponer
+  const [snoozedAlertIds, setSnoozedAlertIds] = useState<string[]>([]);
+  const alerts = useMemo(() => {
+    return computeDetailingAlerts(
+      allDetailingQuotes || detailingQuotes,
+      appointments,
+      stockItems,
+      detailingConfig,
+      snoozedAlertIds
+    );
+  }, [allDetailingQuotes, detailingQuotes, appointments, stockItems, detailingConfig, snoozedAlertIds]);
+
+  const handleSnoozeAlert = (alertId: string) => {
+    setSnoozedAlertIds((prev) => [...prev, alertId]);
+  };
+
+  // KPIs de Hoy en el Taller
+  const todayStr = getLocalDateString(new Date());
+
+  const entriesTodayCount = useMemo(() => {
+    return appointments.filter(
+      (a) =>
+        a.business === 'detailing' &&
+        !a.voided_at &&
+        !a.is_blocked &&
+        getLocalDateString(a.start_time) === todayStr
+    ).length;
+  }, [appointments, todayStr]);
+
+  const inWorkshopNowCount = useMemo(() => {
+    return detailingQuotes.filter((q) =>
+      ['Recibido', 'En proceso', 'Control de calidad'].includes(q.status)
+    ).length;
+  }, [detailingQuotes]);
+
+  const deliveriesTodayCount = useMemo(() => {
+    return detailingQuotes.filter((q) =>
+      ['Listo para retirar', 'Entregado y cobrado'].includes(q.status)
+    ).length;
+  }, [detailingQuotes]);
+
+  const availableBaysCount = useMemo(() => {
+    const totalActive = (detailingConfig?.work_bays || []).filter((b) => b.is_active).length;
+    return Math.max(0, totalActive - inWorkshopNowCount);
+  }, [detailingConfig?.work_bays, inWorkshopNowCount]);
+
   // Filtros de Cotizaciones
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showVoidedQuotes, setShowVoidedQuotes] = useState<boolean>(false);
 
   // Modales
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
@@ -65,9 +147,38 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
   const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
 
+  // Modal de anulación y borrado definitivo
+  const [voidModalState, setVoidModalState] = useState<{
+    isOpen: boolean;
+    mode: 'void' | 'permanent_delete';
+    quote: DetailingQuote | null;
+  }>({
+    isOpen: false,
+    mode: 'void',
+    quote: null
+  });
+
+  // Modal de WhatsApp rápido desde alertas
+  const [quickWhatsAppState, setQuickWhatsAppState] = useState<{
+    isOpen: boolean;
+    quote: DetailingQuote | null;
+    templateKey: 'confirm_appointment' | 'day_before_reminder' | 'car_ready' | 'quote_followup';
+  }>({
+    isOpen: false,
+    quote: null,
+    templateKey: 'confirm_appointment'
+  });
+
+  // Base de cotizaciones a mostrar (activas o incluir anuladas)
+  const baseQuotes = showVoidedQuotes ? allDetailingQuotes : detailingQuotes;
+
   // Filtrado de Cotizaciones
   const filteredQuotes = useMemo(() => {
-    return detailingQuotes.filter((q) => {
+    return baseQuotes.filter((q) => {
+      const isVoided = !!q.voided_at;
+      if (!showVoidedQuotes && isVoided) return false;
+      if (showVoidedQuotes && !isVoided) return false;
+
       const matchStatus = statusFilter === 'all' || q.status === statusFilter;
       const term = searchTerm.toLowerCase();
       const matchSearch =
@@ -77,7 +188,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
         (q.vehicle_plate && q.vehicle_plate.toLowerCase().includes(term));
       return matchStatus && matchSearch;
     });
-  }, [detailingQuotes, statusFilter, searchTerm]);
+  }, [baseQuotes, statusFilter, searchTerm, showVoidedQuotes]);
 
   // Contadores por estado
   const countsByStatus = useMemo(() => {
@@ -105,82 +216,121 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
     setIsQuoterModalOpen(true);
   };
 
+  const handleActionClickAlert = (alert: DetailingAlert) => {
+    if (alert.quoteId) {
+      const q = (allDetailingQuotes || detailingQuotes).find((item) => item.id === alert.quoteId);
+      if (q) {
+        if (alert.actionType === 'whatsapp') {
+          setQuickWhatsAppState({
+            isOpen: true,
+            quote: q,
+            templateKey:
+              alert.type === 'unconfirmed_tomorrow'
+                ? 'day_before_reminder'
+                : alert.type === 'ready_not_notified'
+                ? 'car_ready'
+                : 'quote_followup'
+          });
+        } else {
+          setActiveTab('agenda');
+        }
+      }
+    } else {
+      setActiveTab('agenda');
+    }
+  };
+
   return (
-    <div className="space-y-5 animate-fade-in pb-12">
-      
-      {/* Banner Principal DetailVlak */}
-      <div className="p-5 sm:p-6 rounded-xl bg-white border border-[#E5E5E3] shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#6B6B6B]">
-                Detailing Shangrilá
-              </span>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[#EEF7F2] text-[#1E6B43] border border-[#D4EBDC]">
-                Taller activo
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold font-display text-[#161616] mt-1">
-              Estética automotriz y presupuestos
-            </h1>
-            <p className="text-xs text-[#6B6B6B] mt-1 max-w-2xl leading-relaxed">
-              Presupuestos paramétricos por porte de auto, WhatsApp directo (+598), stock de insumos, gastos operativos y comisiones.
-            </p>
+    <div className="space-y-6">
+      {/* ── CABECERA DEL MÓDULO ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-[#E5E5E3] rounded-2xl p-5 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#D7141A] font-display">
+              CARVLAK GROUP
+            </span>
+            <span className="text-gray-300">•</span>
+            <span className="text-[11px] font-semibold text-[#6B6B6B]">
+              Taller & Estética Automotriz Pro
+            </span>
           </div>
+          <h1 className="text-2xl font-bold font-display text-[#161616] tracking-tight">
+            DetailVlak Hub
+          </h1>
+          <p className="text-xs text-[#6B6B6B] mt-0.5">
+            Agenda del taller por boxes, flujo de trabajos, gastos y control de stock real.
+          </p>
+        </div>
 
-          {/* Botones de acción de cabecera */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {onOpenPublicForm && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onOpenPublicForm}
-                title="Abrir formulario web público"
-              >
-                <Globe className="w-3.5 h-3.5 text-[#6B6B6B]" />
-                <span>Formulario web</span>
-              </Button>
-            )}
-
-            {isAdmin && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsTariffModalOpen(true)}
-              >
-                <Settings className="w-3.5 h-3.5 text-[#6B6B6B]" />
-                <span>Tarifario</span>
-              </Button>
-            )}
-
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpenPublicForm && (
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
-              onClick={() => setIsMigrationModalOpen(true)}
-              title="Importar datos"
+              onClick={onOpenPublicForm}
+              title="Abrir formulario web público"
             >
-              <UploadCloud className="w-3.5 h-3.5 text-[#6B6B6B]" />
-              <span>Migrar datos</span>
+              <Globe className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <span>Cotizador web</span>
             </Button>
+          )}
 
-            {/* UNICO BOTÓN PRINCIPAL EN ROJO #D7141A */}
+          {isAdmin && (
             <Button
-              variant="primary"
+              variant="outline"
               size="sm"
-              onClick={() => {
-                setQuoteToEdit(null);
-                setIsQuoterModalOpen(true);
-              }}
+              onClick={() => setIsTariffModalOpen(true)}
+              title="Tarifas base"
             >
-              <Plus className="w-4 h-4" />
-              <span>Nueva cotización</span>
+              <Settings className="w-3.5 h-3.5 text-[#6B6B6B]" />
+              <span>Tarifario</span>
             </Button>
-          </div>
+          )}
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsMigrationModalOpen(true)}
+            title="Importar datos"
+          >
+            <UploadCloud className="w-3.5 h-3.5 text-[#6B6B6B]" />
+            <span>Migrar datos</span>
+          </Button>
+
+          {/* BOTÓN PRINCIPAL EN ROJO #D7141A */}
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setQuoteToEdit(null);
+              setIsQuoterModalOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nueva cotización</span>
+          </Button>
         </div>
       </div>
 
-      {/* Navegación por Pestañas del Módulo */}
+      {/* ── NAVEGACIÓN POR PESTAÑAS (AGENDA PRIMERA) ── */}
       <div className="border-b border-[#E5E5E3] flex items-center gap-2 overflow-x-auto no-scrollbar">
+        {/* PESTAÑA 1: AGENDA DEL TALLER */}
+        <button
+          onClick={() => setActiveTab('agenda')}
+          className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
+            activeTab === 'agenda'
+              ? 'text-[#161616] border-[#D7141A]'
+              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Agenda del taller</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] font-bold border border-[#E5E5E3]">
+            {appointments.filter((a) => a.business === 'detailing' && !a.voided_at).length}
+          </span>
+        </button>
+
+        {/* PESTAÑA 2: COTIZACIONES Y TRABAJOS */}
         <button
           onClick={() => setActiveTab('quotes')}
           className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
@@ -196,6 +346,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           </span>
         </button>
 
+        {/* PESTAÑA 3: INSUMOS Y STOCK */}
         <button
           onClick={() => setActiveTab('stock')}
           className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
@@ -208,6 +359,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           <span>Insumos y stock</span>
         </button>
 
+        {/* PESTAÑA 4: GASTOS Y CAJA */}
         <button
           onClick={() => setActiveTab('expenses')}
           className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
@@ -220,6 +372,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           <span>Gastos operativos</span>
         </button>
 
+        {/* PESTAÑA 5: COMISIONES */}
         <button
           onClick={() => setActiveTab('commissions')}
           className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
@@ -232,6 +385,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           <span>Comisiones</span>
         </button>
 
+        {/* PESTAÑA 6: MÉTRICAS (ADMIN) */}
         {isAdmin && (
           <button
             onClick={() => setActiveTab('dashboard')}
@@ -245,14 +399,63 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             <span>Métricas</span>
           </button>
         )}
+
+        {/* PESTAÑA 7: CONFIGURACIÓN (ADMIN / ENCARGADO) */}
+        {isManagerOrAdmin && (
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'config'
+                ? 'text-[#161616] border-[#D7141A]'
+                : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Configuración</span>
+          </button>
+        )}
       </div>
 
-      {/* CONTENIDO SEGÚN PESTAÑA */}
+      {/* ── CONTENIDO SEGÚN PESTAÑA ── */}
 
-      {/* 1. COTIZACIONES Y TRABAJOS */}
+      {/* 1. AGENDA DEL TALLER */}
+      {activeTab === 'agenda' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Panel Hoy en el Taller (4 KPIs + Centro de Alertas) */}
+          <DetailingTodayPanel
+            entriesTodayCount={entriesTodayCount}
+            inWorkshopNowCount={inWorkshopNowCount}
+            deliveriesTodayCount={deliveriesTodayCount}
+            availableBaysCount={availableBaysCount}
+            alerts={alerts}
+            onActionClick={handleActionClickAlert}
+            onSnoozeAlert={handleSnoozeAlert}
+          />
+
+          {/* Grilla y Vistas del Calendario */}
+          <DetailingCalendarView
+            appointments={appointments}
+            detailingQuotes={detailingQuotes}
+            config={detailingConfig}
+            profiles={availableProfiles || []}
+            onUpdateQuoteStatus={updateDetailingQuoteStatus}
+            onUpdateAppointment={updateAppointment}
+            onAddAppointment={addAppointment}
+            onOpenQuoterModal={(quote) => {
+              setQuoteToEdit(quote || null);
+              setIsQuoterModalOpen(true);
+            }}
+            onRecordCheckin={recordDetailingCheckin}
+            onRecordQualityControl={recordDetailingQualityControl}
+            onRecordPayment={recordDetailingPayment}
+            onLogWhatsAppSent={logDetailingWhatsAppSent}
+          />
+        </div>
+      )}
+
+      {/* 2. COTIZACIONES Y TRABAJOS */}
       {activeTab === 'quotes' && (
         <div className="space-y-4 animate-fade-in">
-          
           {/* Subfiltro de Estados Rápidos */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {[
@@ -264,64 +467,109 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             ].map((f) => (
               <button
                 key={f.id}
-                onClick={() => setStatusFilter(f.id)}
+                onClick={() => {
+                  setStatusFilter(f.id);
+                  setShowVoidedQuotes(false);
+                }}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer shadow-xs ${
-                  statusFilter === f.id
+                  statusFilter === f.id && !showVoidedQuotes
                     ? 'bg-white border-[#161616] ring-1 ring-[#161616]'
                     : 'bg-white border-[#E5E5E3] hover:border-[#D0D0CD]'
                 }`}
               >
                 <div className="text-[11px] text-[#6B6B6B] font-medium">{f.label}</div>
-                <div className="text-xl font-bold font-display mt-0.5 text-[#161616] tabular-nums">{f.count}</div>
+                <div className="text-xl font-bold font-display mt-0.5 text-[#161616] tabular-nums">
+                  {f.count}
+                </div>
               </button>
             ))}
           </div>
 
-          {/* Barra de Búsqueda */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-[#6B6B6B] pointer-events-none" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por cliente, teléfono, auto o matrícula..."
-              className="w-full bg-white border border-[#E5E5E3] rounded-md pl-10 pr-4 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:border-[#161616] focus:ring-1 focus:ring-[#161616]/10 focus:outline-none h-10"
-            />
+          {/* Barra de Búsqueda y Switch de Anulados */}
+          <div className="flex flex-col sm:flex-row gap-2 items-center justify-between">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 absolute left-3.5 top-3 text-[#6B6B6B] pointer-events-none" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por cliente, teléfono, auto o matrícula..."
+                className="w-full bg-white border border-[#E5E5E3] rounded-md pl-10 pr-4 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:border-[#161616] focus:ring-1 focus:ring-[#161616]/10 focus:outline-none h-10"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setShowVoidedQuotes(!showVoidedQuotes)}
+                className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  showVoidedQuotes
+                    ? 'bg-amber-50 text-amber-900 border-amber-300'
+                    : 'bg-white text-[#6B6B6B] border-[#E5E5E3] hover:text-[#161616]'
+                }`}
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>{showVoidedQuotes ? 'Viendo Anulados' : 'Ver Anulados'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Tarjetas de Cotizaciones */}
           {filteredQuotes.length === 0 ? (
             <div className="p-8 rounded-xl bg-white border border-[#E5E5E3] text-center text-[#6B6B6B] shadow-xs">
               <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-30 text-[#6B6B6B]" />
-              <p className="text-sm font-semibold text-[#161616]">No hay cotizaciones con este filtro</p>
-              <p className="text-xs text-[#6B6B6B] mt-1">Podés crear una nueva con el botón superior.</p>
+              <p className="text-sm font-semibold text-[#161616]">
+                {showVoidedQuotes
+                  ? 'No hay cotizaciones anuladas en el historial.'
+                  : 'No hay cotizaciones con este filtro.'}
+              </p>
+              <p className="text-xs text-[#6B6B6B] mt-1">
+                {showVoidedQuotes
+                  ? 'Las cotizaciones anuladas aparecerán aquí con su motivo y auditoría.'
+                  : 'Podés crear una nueva con el botón superior.'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredQuotes.map((quote) => {
-                const statusClasses =
-                  quote.status === 'Trabajo Completado' ? 'bg-[#EEF7F2] text-[#1E6B43] border-[#D4EBDC]' :
-                  quote.status === 'Turno Confirmado' ? 'bg-[#FEF7EC] text-[#945B0E] border-[#FDE5C3]' :
-                  quote.status === 'Presupuesto Enviado' ? 'bg-[#EEF2F6] text-[#002B7A] border-[#D3DFEE]' :
-                  quote.status === 'Cancelado' ? 'bg-[#F5F5F4] text-[#9A9A9A] border-[#E5E5E3] line-through' :
-                  'bg-[#FEF7EC] text-[#945B0E] border-[#FDE5C3]';
+                const isVoided = !!quote.voided_at;
+                const statusClasses = isVoided
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : quote.status === 'Trabajo Completado' || quote.status === 'Entregado y cobrado'
+                  ? 'bg-[#EEF7F2] text-[#1E6B43] border-[#D4EBDC]'
+                  : quote.status === 'Turno Confirmado' || quote.status === 'Confirmado'
+                  ? 'bg-[#FEF7EC] text-[#945B0E] border-[#FDE5C3]'
+                  : quote.status === 'Presupuesto Enviado'
+                  ? 'bg-[#EEF2F6] text-[#002B7A] border-[#D3DFEE]'
+                  : quote.status === 'Cancelado' || quote.status === 'No vino'
+                  ? 'bg-[#F5F5F4] text-[#9A9A9A] border-[#E5E5E3]'
+                  : 'bg-[#FEF7EC] text-[#945B0E] border-[#FDE5C3]';
 
                 return (
                   <div
                     key={quote.id}
-                    className="p-4 rounded-xl bg-white border border-[#E5E5E3] hover:border-[#D0D0CD] hover:shadow-xs transition-all flex flex-col justify-between space-y-3 shadow-xs"
+                    className={`p-4 rounded-xl bg-white border transition-all flex flex-col justify-between space-y-3 shadow-xs ${
+                      isVoided ? 'border-red-200 bg-red-50/10' : 'border-[#E5E5E3] hover:border-[#D0D0CD]'
+                    }`}
                   >
                     <div>
                       {/* Cabecera Tarjeta: Estado y Origen */}
                       <div className="flex items-center justify-between gap-2">
                         <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${statusClasses}`}>
-                          {quote.status}
+                          {isVoided ? 'Anulada' : quote.status}
                         </span>
 
                         <span className="text-[10px] font-medium text-[#6B6B6B] bg-[#F5F5F4] px-2 py-0.5 rounded border border-[#E5E5E3]">
                           {quote.origin}
                         </span>
                       </div>
+
+                      {/* Motivo de anulación si aplica */}
+                      {isVoided && (
+                        <div className="mt-2 p-2 bg-red-50 border border-red-100 rounded text-[11px] text-red-800">
+                          <strong>Motivo de anulación:</strong> {quote.void_reason || 'Sin motivo especificado'}
+                        </div>
+                      )}
 
                       {/* Cliente y Vehículo */}
                       <div className="mt-3">
@@ -350,7 +598,9 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
 
                       {/* Lista de Servicios */}
                       <div className="mt-3 pt-2.5 border-t border-[#E5E5E3] space-y-1">
-                        <div className="text-[10px] text-[#6B6B6B] font-semibold">Servicios ({quote.selected_services.length}):</div>
+                        <div className="text-[10px] text-[#6B6B6B] font-semibold">
+                          Servicios ({quote.selected_services.length}):
+                        </div>
                         <div className="text-xs text-[#161616] font-medium line-clamp-2">
                           {quote.selected_services.map((s) => s.serviceName).join(' + ')}
                         </div>
@@ -376,60 +626,117 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
 
                     {/* Acciones Rápidas de la Tarjeta */}
                     <div className="pt-2 border-t border-[#E5E5E3] flex items-center justify-between gap-2">
-                      <Button
-                        variant="whatsapp"
-                        size="sm"
-                        onClick={() => handleOpenWhatsApp(quote)}
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
-                      </Button>
+                      {isVoided ? (
+                        <div className="flex items-center justify-between w-full">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => restoreDetailingQuote(quote.id)}
+                            className="gap-1.5 text-xs text-emerald-700 hover:bg-emerald-50"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Restaurar</span>
+                          </Button>
 
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={quote.status}
-                          onChange={(e) => updateDetailingQuoteStatus(quote.id, e.target.value as DetailingQuoteStatus)}
-                          className="bg-white border border-[#E5E5E3] rounded-md px-2 py-1 text-xs text-[#161616] font-medium focus:border-[#161616] focus:outline-none cursor-pointer"
-                        >
-                          <option value="Por Cotizar">Por cotizar</option>
-                          <option value="Presupuesto Enviado">Enviado</option>
-                          <option value="Turno Confirmado">Turno</option>
-                          <option value="Trabajo Completado">Completado</option>
-                          <option value="Cancelado">Cancelado</option>
-                        </select>
+                          {isAdmin && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setVoidModalState({
+                                  isOpen: true,
+                                  mode: 'permanent_delete',
+                                  quote
+                                });
+                              }}
+                              className="text-xs text-red-600 hover:bg-red-50 p-1.5"
+                              title="Borrado definitivo"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            variant="whatsapp"
+                            size="sm"
+                            onClick={() => handleOpenWhatsApp(quote)}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </Button>
 
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleEditQuote(quote)}
-                        >
-                          Editar
-                        </Button>
-                      </div>
+                          <div className="flex items-center gap-1.5">
+                            <select
+                              value={quote.status}
+                              onChange={(e) =>
+                                updateDetailingQuoteStatus(quote.id, e.target.value as DetailingQuoteStatus)
+                              }
+                              className="bg-white border border-[#E5E5E3] rounded-md px-2 py-1 text-xs text-[#161616] font-medium focus:border-[#161616] focus:outline-none cursor-pointer"
+                            >
+                              <option value="Por Cotizar">Por cotizar</option>
+                              <option value="Presupuesto Enviado">Enviado</option>
+                              <option value="Turno Confirmado">Turno</option>
+                              <option value="Trabajo Completado">Completado</option>
+                              <option value="Cancelado">Cancelado</option>
+                            </select>
+
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEditQuote(quote)}
+                            >
+                              Editar
+                            </Button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVoidModalState({
+                                  isOpen: true,
+                                  mode: 'void',
+                                  quote
+                                });
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                              title="Anular cotización con motivo"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
-
                   </div>
                 );
               })}
             </div>
           )}
-
         </div>
       )}
 
-      {/* 2. INSUMOS & STOCK */}
+      {/* 3. INSUMOS & STOCK */}
       {activeTab === 'stock' && <DetailingStockSection businessFilter="detailing" />}
 
-      {/* 3. GASTOS */}
+      {/* 4. GASTOS */}
       {activeTab === 'expenses' && <DetailingExpensesSection businessFilter="detailing" />}
 
-      {/* 4. COMISIONES */}
+      {/* 5. COMISIONES */}
       {activeTab === 'commissions' && <DetailingCommissionsSection businessFilter="detailing" />}
 
-      {/* 5. BALANCE & MÉTRICAS (SOLO ADMIN) */}
+      {/* 6. BALANCE & MÉTRICAS (SOLO ADMIN) */}
       {activeTab === 'dashboard' && isAdmin && <DetailingDashboardSection />}
 
-      {/* MODALES MONTADOS */}
+      {/* 7. CONFIGURACIÓN (ADMIN / ENCARGADO) */}
+      {activeTab === 'config' && isManagerOrAdmin && (
+        <DetailingConfigTab
+          config={detailingConfig}
+          onSaveConfig={updateDetailingConfig}
+        />
+      )}
+
+      {/* ── MODALES ── */}
       {isQuoterModalOpen && (
         <DetailingQuoterModal
           isOpen={isQuoterModalOpen}
@@ -461,6 +768,41 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
         />
       )}
 
+      {/* Modal de Anulación / Borrado Definitivo */}
+      <DetailingVoidModal
+        isOpen={voidModalState.isOpen}
+        onClose={() => setVoidModalState({ isOpen: false, mode: 'void', quote: null })}
+        title={voidModalState.mode === 'void' ? 'Anular Cotización de Detailing' : 'Borrado Definitivo'}
+        itemDescription={
+          voidModalState.quote
+            ? `${voidModalState.quote.client_name} - ${voidModalState.quote.vehicle_info} (${formatCurrency(
+                voidModalState.quote.total_amount
+              )})`
+            : ''
+        }
+        mode={voidModalState.mode}
+        onConfirm={(reason) => {
+          if (voidModalState.quote) {
+            if (voidModalState.mode === 'void') {
+              voidDetailingQuote(voidModalState.quote.id, reason);
+            } else {
+              deleteDetailingQuotePermanent(voidModalState.quote.id);
+            }
+          }
+        }}
+      />
+
+      {/* Modal de WhatsApp Rápido disparado desde Alertas */}
+      <DetailingWhatsAppQuickModal
+        isOpen={quickWhatsAppState.isOpen}
+        onClose={() => setQuickWhatsAppState({ isOpen: false, quote: null, templateKey: 'confirm_appointment' })}
+        config={detailingConfig}
+        defaultTemplateKey={quickWhatsAppState.templateKey}
+        quote={quickWhatsAppState.quote}
+        onLoggedSend={(targetId, templateKey, phone) => {
+          logDetailingWhatsAppSent(targetId, templateKey, phone);
+        }}
+      />
     </div>
   );
 };

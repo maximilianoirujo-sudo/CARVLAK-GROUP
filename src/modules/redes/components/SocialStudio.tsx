@@ -19,6 +19,7 @@ import {
   Save,
   Wand2,
   RotateCcw,
+  Undo,
   CheckCircle2,
   Info
 } from 'lucide-react';
@@ -33,7 +34,8 @@ import {
   Client,
   CanvasTextElement,
   FormatLayoutConfig,
-  SocialMediaTemplateConfig
+  SocialMediaTemplateConfig,
+  SocialMediaPostRecord
 } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
@@ -50,15 +52,20 @@ import {
 } from '../services/socialCanvasEngine';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
 import { Button } from '../../../components/ui/Button';
+import { uploadSocialImageToStorage } from '../../../lib/storage';
 
 interface SocialStudioProps {
   initialVehicleId?: string;
   initialTemplateId?: string;
+  initialPost?: SocialMediaPostRecord | null;
+  onClearInitialPost?: () => void;
 }
 
 export const SocialStudio: React.FC<SocialStudioProps> = ({
   initialVehicleId,
-  initialTemplateId
+  initialTemplateId,
+  initialPost,
+  onClearInitialPost
 }) => {
   const { profile } = useAuth();
   const {
@@ -123,6 +130,13 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
   const [caption, setCaption] = useState('');
   const [isCopied, setIsCopied] = useState(false);
 
+  // Historial de Deshacer (últimos 20 cambios de textElements)
+  const [history, setHistory] = useState<CanvasTextElement[][]>([]);
+
+  // Sobrescritura opcional de pieza para Ubicación y Hashtag (pieza > plantilla > general)
+  const [customLocation, setCustomLocation] = useState<string>('');
+  const [customHashtag, setCustomHashtag] = useState<string>('');
+
   // Items seleccionados computados
   const activeCar = useMemo(() => {
     return dealershipVehicles.find((v) => v.id === selectedCarId) || dealershipVehicles[0] || null;
@@ -158,8 +172,51 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
   // Configuración de plantilla actual
   const currentTemplateConfig = socialMediaConfig.templates[selectedTemplateId];
 
+  // Resolución con orden de prioridad: pieza > plantilla > general
+  const effectiveLocation =
+    customLocation ||
+    currentTemplateConfig?.location_name ||
+    socialMediaConfig.location_name ||
+    'Ciudad de la Costa, Canelones';
+
+  const effectiveHashtag =
+    customHashtag ||
+    currentTemplateConfig?.default_hashtags ||
+    socialMediaConfig.default_hashtag ||
+    '#TuPróximoAuto';
+
+  // Cargar estado inicial si viene de editar una pieza guardada del historial
+  useEffect(() => {
+    if (initialPost && initialPost.editor_state) {
+      const state = initialPost.editor_state;
+      if (state.templateId) setSelectedTemplateId(state.templateId);
+      if (state.format) setFormat(state.format);
+      if (state.carId) setSelectedCarId(state.carId);
+      if (state.quoteId) setSelectedQuoteId(state.quoteId);
+      if (state.inspectionId) setSelectedInspectionId(state.inspectionId);
+      if (state.headline) setHeadline(state.headline);
+      if (state.subtitle) setSubtitle(state.subtitle);
+      if (state.price) setPrice(state.price);
+      if (state.originalPrice) setOriginalPrice(state.originalPrice);
+      if (state.badgeTag) setBadgeTag(state.badgeTag);
+      if (state.stampText) setStampText(state.stampText);
+      if (state.locationName) setCustomLocation(state.locationName);
+      if (state.hashtag) setCustomHashtag(state.hashtag);
+      if (state.imageUrl) setSelectedImage(state.imageUrl);
+      if (state.secondaryImageUrl) setSecondaryImage(state.secondaryImageUrl);
+      if (state.textElements && state.textElements.length > 0) {
+        setTextElements(state.textElements);
+      }
+      if (initialPost.suggested_caption) setCaption(initialPost.suggested_caption);
+      showToast('Pieza cargada desde el historial para continuar editando', 'info');
+    }
+  }, [initialPost]);
+
   // Cargar datos predeterminados al cambiar de auto/trabajo o plantilla
   useEffect(() => {
+    // Si estamos editando una pieza del historial con textElements ya cargados, no sobrescribir
+    if (initialPost && initialPost.editor_state?.textElements) return;
+
     const templateConfig = socialMediaConfig.templates[selectedTemplateId];
     setLogoPosition(templateConfig?.logo_position || 'top-left');
     setStampText(templateConfig?.stamp_text || '');
@@ -181,10 +238,21 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       }
 
       if (isDiscountTemplate && activeCar.sale_price) {
-        const origNum = Math.round((activeCar.sale_price * 1.1) / 100) * 100;
-        const rebajaNum = origNum - activeCar.sale_price;
-        origPriceFormatted = formatCurrency(origNum, activeCar.sale_currency || 'USD');
-        subtitleDefault = `Ahorrás USD ${rebajaNum.toLocaleString('es-UY')}. Por tiempo limitado.`;
+        // Buscar en el historial de precios del auto (field === 'sale_price' y old_value > sale_price)
+        const priceHistory = (activeCar.history || [])
+          .filter((h) => h.field === 'sale_price' && Number(h.old_value) > activeCar.sale_price)
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        const prevPriceEntry = priceHistory[0];
+        if (prevPriceEntry && Number(prevPriceEntry.old_value) > activeCar.sale_price) {
+          const origNum = Number(prevPriceEntry.old_value);
+          const rebajaNum = origNum - activeCar.sale_price;
+          origPriceFormatted = formatCurrency(origNum, activeCar.sale_currency || 'USD');
+          subtitleDefault = `Ahorrás USD ${rebajaNum.toLocaleString('es-UY')}. Por tiempo limitado.`;
+        } else {
+          origPriceFormatted = '';
+          subtitleDefault = templateConfig?.subtitle_default || 'Por tiempo limitado en nuestro showroom.';
+        }
       }
 
       setPrice(priceFormatted);
@@ -220,13 +288,16 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       // Inicialización de CanvasTextElements según el formato base oficial
       const defaultElements = getDefaultTextElements(selectedTemplateId, format, {
         carTitle,
+        version: activeCar.version,
         price: priceFormatted,
         originalPrice: origPriceFormatted,
         stampText: templateConfig?.stamp_text,
         badgeTag: templateConfig?.badge_tag,
         subtitle: subtitleDefault,
-        locationName: socialMediaConfig.location_name,
-        hashtag: templateConfig?.default_hashtags || socialMediaConfig.default_hashtag,
+        cta: 'Consultá por WhatsApp',
+        instagramHandle: socialMediaConfig.instagram_handle,
+        locationName: effectiveLocation,
+        hashtag: effectiveHashtag,
         specs: [
           {
             key: 'mileage',
@@ -242,33 +313,31 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       // Si la plantilla ya tiene configurados textElements en su layout, fusionar los estilos
       const savedLayout =
         format === 'story' ? templateConfig?.layout_story : templateConfig?.layout_post;
-      // Comprobar si el layout guardado pertenece al formato base unificado oficial (contiene 'barra_roja' o 'etiqueta')
+      // Comprobar si el layout guardado pertenece al formato base unificado oficial
       const isUnifiedLayout = savedLayout?.textElements?.some((el) => el.id === 'barra_roja' || el.id === 'etiqueta');
       if (isUnifiedLayout && savedLayout?.textElements && savedLayout.textElements.length > 0) {
-        const merged = defaultElements
-          .filter((defEl) => defEl.id !== 'etiqueta_instagram' && defEl.id !== 'pie_marca')
-          .map((defEl) => {
-            const match = savedLayout.textElements?.find((s) => s.id === defEl.id);
-            if (!match) return defEl;
-            return {
-              ...defEl,
-              color: match.color,
-              fontSize: match.fontSize,
-              fontWeight: match.fontWeight,
-              fontFamily: match.fontFamily,
-              rotation: match.rotation,
-              x: match.x,
-              y: match.y,
-              align: match.align,
-              bgType: match.bgType,
-              bgColor: match.bgColor,
-              bgOpacity: match.bgOpacity,
-              visible: match.visible !== undefined ? match.visible : defEl.visible
-            };
-          });
+        const merged = defaultElements.map((defEl) => {
+          const match = savedLayout.textElements?.find((s) => s.id === defEl.id);
+          if (!match) return defEl;
+          return {
+            ...defEl,
+            color: match.color,
+            fontSize: match.fontSize,
+            fontWeight: match.fontWeight,
+            fontFamily: match.fontFamily,
+            rotation: match.rotation,
+            x: match.x,
+            y: match.y,
+            align: match.align,
+            bgType: match.bgType,
+            bgColor: match.bgColor,
+            bgOpacity: match.bgOpacity,
+            visible: match.visible !== undefined ? match.visible : defEl.visible
+          };
+        });
         setTextElements(merged);
       } else {
-        setTextElements(defaultElements.filter((el) => el.id !== 'etiqueta_instagram' && el.id !== 'pie_marca'));
+        setTextElements(defaultElements);
       }
 
       // Generar copy sugerido para Instagram
@@ -432,15 +501,56 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     );
   };
 
-  // Toggle de visibilidad de datos ocultos (subtítulo, km, año, combustible, etc.)
+  // Historial de Deshacer (Undo)
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const last = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1));
+    setTextElements(last);
+    showToast('Acción deshecha', 'info');
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history]);
+
+  // Toggle de visibilidad de elementos individuales
   const handleToggleElementVisibility = (elementId: string) => {
-    setTextElements((prev) =>
-      prev.map((el) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
-    );
-    const target = textElements.find((el) => el.id === elementId);
-    if (target && !target.visible) {
-      setSelectedElementId(elementId);
-    }
+    setHistory((h) => [...h.slice(-19), textElements]);
+    setTextElements((prev) => {
+      const exists = prev.some((el) => el.id === elementId);
+      if (exists) {
+        return prev.map((el) => (el.id === elementId ? { ...el, visible: !el.visible } : el));
+      }
+      const defaults = getDefaultTextElements(selectedTemplateId, format, {
+        carTitle: headline,
+        version: activeCar?.version,
+        price,
+        originalPrice,
+        stampText,
+        badgeTag,
+        subtitle,
+        cta: 'Consultá por WhatsApp',
+        instagramHandle: socialMediaConfig.instagram_handle,
+        locationName: effectiveLocation,
+        hashtag: effectiveHashtag
+      });
+      const def = defaults.find((d) => d.id === elementId);
+      if (def) {
+        return [...prev, { ...def, visible: true }];
+      }
+      return prev;
+    });
+    setSelectedElementId(elementId);
   };
 
   // Guardar en la plantilla actual (para todas las futuras piezas que usen esta plantilla)
@@ -470,6 +580,8 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     const updatedTemplate: SocialMediaTemplateConfig = {
       ...currentTemplateConfig,
       stamp_text: stampText,
+      location_name: customLocation || currentTemplateConfig.location_name,
+      default_hashtags: customHashtag || currentTemplateConfig.default_hashtags,
       layout_story: format === 'story' ? updatedLayout : currentTemplateConfig.layout_story,
       layout_post: format === 'post' ? updatedLayout : currentTemplateConfig.layout_post
     };
@@ -490,14 +602,18 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     resetSocialTemplateToDefault(selectedTemplateId);
     const defaultElements = getDefaultTextElements(selectedTemplateId, format, {
       carTitle: headline,
+      version: activeCar?.version,
       price,
       originalPrice,
       stampText: currentTemplateConfig?.stamp_text,
       badgeTag: currentTemplateConfig?.badge_tag,
       subtitle,
-      locationName: socialMediaConfig.location_name,
-      hashtag: currentTemplateConfig?.default_hashtags || socialMediaConfig.default_hashtag
+      cta: 'Consultá por WhatsApp',
+      instagramHandle: socialMediaConfig.instagram_handle,
+      locationName: effectiveLocation,
+      hashtag: effectiveHashtag
     });
+    setHistory((h) => [...h.slice(-19), textElements]);
     setTextElements(defaultElements);
     showToast('Plantilla restablecida a su diseño original de fábrica', 'info');
   };
@@ -523,8 +639,17 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // Guardar publicación en historial
-  const handleSaveToHistory = (thumbnailData: string) => {
+  // Guardar publicación en historial (subiendo imagen a Supabase Storage bucket media/social)
+  const handleSaveToHistory = async (thumbnailData: string, canvasBlob?: Blob) => {
+    let finalImageUrl = thumbnailData;
+    if (canvasBlob) {
+      try {
+        finalImageUrl = await uploadSocialImageToStorage(canvasBlob, `post-${selectedTemplateId}`);
+      } catch (err) {
+        console.warn('Fallback a miniatura local:', err);
+      }
+    }
+
     addSocialMediaPost({
       category: selectedCategory,
       template_id: selectedTemplateId,
@@ -533,10 +658,34 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
       item_id: activeCar?.id || activeQuote?.id || activeInspection?.id || '',
       item_title: headline || 'Sin título',
       suggested_caption: caption,
-      thumbnail_data: thumbnailData,
+      thumbnail_data: finalImageUrl,
+      image_url: finalImageUrl,
+      editor_state: {
+        templateId: selectedTemplateId,
+        format,
+        carId: activeCar?.id,
+        quoteId: activeQuote?.id,
+        inspectionId: activeInspection?.id,
+        imageUrl: selectedImage,
+        secondaryImageUrl: secondaryImage,
+        headline,
+        subtitle,
+        price,
+        originalPrice,
+        badgeTag,
+        stampText,
+        locationName: effectiveLocation,
+        hashtag: effectiveHashtag,
+        logoPosition,
+        coverPlate,
+        platePosition,
+        imagePan,
+        textElements
+      },
       is_published: false,
       created_by_name: profile?.full_name || 'Admin CARVLAK'
     });
+    showToast('Publicación guardada en historial', 'success');
   };
 
   // Descarga del carrusel completo
@@ -598,6 +747,32 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Banner de edición de pieza del historial */}
+      {initialPost && (
+        <div className="bg-[#EEF7F2] border border-[#1E6B43]/30 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#1E6B43] shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-[#1E6B43]" />
+            <div>
+              <p className="font-semibold text-[#161616]">
+                Editando publicación guardada: <span className="font-bold text-[#1E6B43]">{initialPost.item_title}</span>
+              </p>
+              <p className="text-[11px] text-[#6B6B6B]">
+                Plantilla: {initialPost.template_title} • Formato: {initialPost.format === 'story' ? 'Historia (9:16)' : 'Publicación (4:5)'}
+              </p>
+            </div>
+          </div>
+          {onClearInitialPost && (
+            <button
+              type="button"
+              onClick={onClearInitialPost}
+              className="self-start sm:self-auto px-3 py-1.5 bg-white border border-[#1E6B43]/30 rounded-xl text-xs font-semibold hover:bg-[#F5F5F4] text-[#161616] transition-colors cursor-pointer shadow-xs"
+            >
+              Crear nueva pieza desde cero
+            </button>
+          )}
+        </div>
+      )}
+
       {/* 1. SELECCIÓN DE NEGOCIO Y PLANTILLA */}
       <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#E5E5E3] shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -658,7 +833,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Inspección</span>
+              <span>Carbusters</span>
             </button>
           </div>
         </div>
@@ -709,7 +884,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
             <label className="block text-xs font-bold text-[#161616] tracking-wide">
               {selectedCategory === 'automotora' && '1. Seleccionar vehículo de stock'}
               {selectedCategory === 'detailing' && '1. Seleccionar trabajo o cotización'}
-              {selectedCategory === 'inspeccion' && '1. Seleccionar inspección realizada'}
+              {selectedCategory === 'inspeccion' && '1. Seleccionar peritaje Carbusters realizado'}
             </label>
 
             {selectedCategory === 'automotora' && (
@@ -766,8 +941,9 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                     </p>
                     {clientBuyer ? (
                       clientBuyer.social_media_consent ? (
-                        <p className="text-[#1E6B43] text-[11px] mt-0.5 font-semibold">
-                          ✓ El comprador <strong>{clientBuyer.full_name}</strong> tiene el consentimiento autorizado en su ficha.
+                        <p className="text-[#1E6B43] text-[11px] mt-0.5 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#1E6B43] shrink-0" />
+                          <span>El comprador <strong>{clientBuyer.full_name}</strong> tiene el consentimiento autorizado en su ficha.</span>
                         </p>
                       ) : (
                         <div className="text-[11px] text-[#6B6B6B] mt-1 space-y-2">
@@ -838,6 +1014,7 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedImage(img)}
+                        aria-label={`Seleccionar foto ${idx + 1}`}
                         className={`w-full aspect-video rounded-lg overflow-hidden border-2 transition-all block cursor-pointer ${
                           selectedImage === img
                             ? 'border-[#D7141A] ring-2 ring-[#D7141A]/30 scale-95 shadow-xs'
@@ -1026,27 +1203,69 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
                   <option value="bottom-right">Inferior derecha</option>
                 </select>
               </div>
+
+              <div>
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  6. Ubicación (pie)
+                </label>
+                <input
+                  type="text"
+                  value={customLocation || currentTemplateConfig?.location_name || socialMediaConfig.location_name || ''}
+                  onChange={(e) => {
+                    setCustomLocation(e.target.value);
+                    setHistory((h) => [...h.slice(-19), textElements]);
+                    setTextElements((prev) =>
+                      prev.map((el) => (el.id === 'pie_ubicacion' ? { ...el, text: e.target.value } : el))
+                    );
+                  }}
+                  placeholder="Ej: Ciudad de la Costa, Canelones"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-[#6B6B6B] font-semibold block mb-1">
+                  7. Hashtag (pie)
+                </label>
+                <input
+                  type="text"
+                  value={customHashtag || currentTemplateConfig?.default_hashtags || socialMediaConfig.default_hashtag || ''}
+                  onChange={(e) => {
+                    setCustomHashtag(e.target.value);
+                    setHistory((h) => [...h.slice(-19), textElements]);
+                    setTextElements((prev) =>
+                      prev.map((el) => (el.id === 'pie_hashtag' ? { ...el, text: e.target.value } : el))
+                    );
+                  }}
+                  placeholder="Ej: #TuPróximoAuto o #DetailVlak"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:bg-white focus:border-[#161616] focus:outline-none"
+                />
+              </div>
             </div>
 
-            {/* Interruptores para datos adicionales de la ficha técnica (ocultos por defecto) */}
+            {/* Interruptores para datos adicionales de la ficha técnica y marca */}
             <div className="pt-3 border-t border-[#E5E5E3] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-[#161616] uppercase tracking-wide">
-                  Datos adicionales de la ficha técnica (opcionales)
+                  Elementos adicionales (mostrar / ocultar)
                 </span>
                 <span className="text-[10px] text-[#6B6B6B]">
-                  Solo el modelo está visible por defecto. Activá cualquiera para sumarlo al diseño:
+                  Activá o desactivá cualquier elemento para sumarlo al diseño:
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { id: 'subtitulo', label: 'Subtítulo / Versión', desc: subtitle || 'Versión' },
+                  { id: 'subtitulo', label: 'Mensaje', desc: subtitle || 'Mensaje' },
+                  { id: 'version', label: 'Versión', desc: activeCar?.version || 'Sin versión' },
                   { id: 'specs_km', label: 'Kilometraje', desc: `${activeCar?.mileage ? activeCar.mileage.toLocaleString('es-UY') : '0'} km` },
                   { id: 'specs_combustible', label: 'Combustible', desc: activeCar?.fuel || 'Nafta' },
                   { id: 'specs_transmision', label: 'Transmisión', desc: activeCar?.transmission || 'Manual' },
                   { id: 'specs_anio', label: 'Año', desc: `Año ${activeCar?.year || ''}` },
-                  { id: 'cta', label: 'Llamado a la acción', desc: 'Consultá por WhatsApp' }
+                  { id: 'cta', label: 'Llamado a la acción', desc: 'Consultá por WhatsApp' },
+                  { id: 'logo', label: 'Logo CARVLAK', desc: 'Logo oficial superior' },
+                  { id: 'etiqueta_instagram', label: 'Instagram (@car.vlak)', desc: '@car.vlak superior derecha' },
+                  { id: 'pie_marca', label: 'Pie de marca', desc: 'CARVLAK Group • @car.vlak inferior' }
                 ].map((item) => {
                   const el = textElements.find((t) => t.id === item.id);
                   const isVisible = el?.visible || false;
@@ -1075,37 +1294,56 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
               </div>
             </div>
 
-            {/* Botonera de Guardado y Aplicación a Plantillas */}
+            {/* Botonera de Guardado, Deshacer y Aplicación a Plantillas */}
             <div className="pt-3 border-t border-[#E5E5E3] flex items-center justify-between gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={handleSaveToCurrentTemplate}
-                className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] hover:border-[#161616] text-[#161616] font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                title="Guardar estos cambios en esta plantilla para futuras piezas"
-              >
-                <Save className="w-3.5 h-3.5 text-[#D7141A]" />
-                <span>Guardar en esta plantilla</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveToCurrentTemplate}
+                  className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] hover:border-[#161616] text-[#161616] font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  title="Guardar estos cambios en esta plantilla para futuras piezas"
+                >
+                  <Save className="w-3.5 h-3.5 text-[#D7141A]" />
+                  <span>Guardar en esta plantilla</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={handleApplyToAllTemplates}
-                className="px-3 py-1.5 rounded-lg bg-[#F5F5F4] hover:bg-white border border-[#E5E5E3] hover:border-[#D7141A] text-[#161616] font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                title="Copiar colores, tipografía y diseño a todas las plantillas de redes sociales"
-              >
-                <Wand2 className="w-3.5 h-3.5 text-[#D7141A]" />
-                <span>Aplicar este estilo a todas las plantillas</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleUndo}
+                  disabled={history.length === 0}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                    history.length > 0
+                      ? 'bg-white border-[#E5E5E3] hover:border-[#161616] text-[#161616] cursor-pointer shadow-xs'
+                      : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#9A9A9A] opacity-60 cursor-not-allowed'
+                  }`}
+                  title="Deshacer último cambio (Ctrl+Z)"
+                >
+                  <Undo className="w-3.5 h-3.5" />
+                  <span>Deshacer {history.length > 0 ? `(${history.length})` : ''}</span>
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleRestoreTemplateDefault}
-                className="px-2.5 py-1.5 rounded-lg text-[#6B6B6B] hover:text-[#D7141A] text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-                title="Restaurar el diseño original de fábrica de esta plantilla"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Restaurar original</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleApplyToAllTemplates}
+                  className="px-3 py-1.5 rounded-lg bg-[#F5F5F4] hover:bg-white border border-[#E5E5E3] hover:border-[#D7141A] text-[#161616] font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  title="Copiar colores, tipografía y diseño a todas las plantillas de redes sociales"
+                >
+                  <Wand2 className="w-3.5 h-3.5 text-[#D7141A]" />
+                  <span>Aplicar este estilo a todas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleRestoreTemplateDefault}
+                  className="px-2.5 py-1.5 rounded-lg text-[#6B6B6B] hover:text-[#D7141A] text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Restaurar el diseño original de fábrica de esta plantilla"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Restaurar original</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1165,8 +1403,8 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
             onImagePanChange={setImagePan}
             logoPosition={logoPosition}
             instagramHandle={socialMediaConfig.instagram_handle}
-            locationName={socialMediaConfig.location_name}
-            hashtag={currentTemplateConfig?.default_hashtags || socialMediaConfig.default_hashtag || '#TuPróximoAuto'}
+            locationName={effectiveLocation}
+            hashtag={effectiveHashtag}
             badgeTag={badgeTag}
             layoutConfig={
               format === 'story'
@@ -1176,7 +1414,10 @@ export const SocialStudio: React.FC<SocialStudioProps> = ({
             onSaveToHistory={handleSaveToHistory}
             suggestedFileName={headline.toLowerCase().replace(/[^a-z0-9]/g, '-')}
             textElements={textElements}
-            onTextElementsChange={setTextElements}
+            onTextElementsChange={(newElements) => {
+              setHistory((h) => [...h.slice(-19), textElements]);
+              setTextElements(newElements);
+            }}
             selectedElementId={selectedElementId}
             onSelectElement={setSelectedElementId}
           />

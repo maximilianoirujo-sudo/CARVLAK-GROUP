@@ -12,16 +12,11 @@ import {
 export const InspectionDashboardSection: React.FC = () => {
   const { inspections, commissions } = useData();
 
-  // Filtros
+  // Filtros (solo inspecciones precompra de Carbusters)
   const completedInspections = inspections.filter((i) => i.status === 'Completada');
-  const precompraInspections = completedInspections.filter((i) => i.type === 'precompra');
-  const internaInspections = completedInspections.filter((i) => i.type === 'interna');
 
   // Facturación precompra
-  const totalRevenuePrecompra = precompraInspections.reduce((sum, i) => sum + i.total_price, 0);
-
-  // Costo interno acumulado para automotora
-  const totalInternalCost = internaInspections.reduce((sum, i) => sum + i.total_price, 0);
+  const totalRevenuePrecompra = completedInspections.reduce((sum, i) => sum + i.total_price, 0);
 
   // Comisiones peritos
   const inspectionCommissions = commissions.filter((c) => c.business === 'inspeccion');
@@ -46,24 +41,10 @@ export const InspectionDashboardSection: React.FC = () => {
     ? Math.round(completedInspections.reduce((sum, i) => sum + (i.score || 0), 0) / completedInspections.length)
     : 100;
 
-  // Conversión automotora (decisiones de compra)
-  const decisionCounts = internaInspections.reduce(
-    (acc, i) => {
-      if (i.automotora_decision) {
-        acc[i.automotora_decision] = (acc[i.automotora_decision] || 0) + 1;
-      }
-      return acc;
-    },
-    { comprar: 0, negociar: 0, no_comprar: 0 } as Record<string, number>
-  );
-
-  const totalDecisions = (decisionCounts.comprar + decisionCounts.negociar + decisionCounts.no_comprar) || 1;
-  const buyRate = Math.round((decisionCounts.comprar / totalDecisions) * 100);
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* TARJETAS KPI FINANCIERAS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Facturación Precompra */}
         <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-1 shadow-sm">
           <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
@@ -76,23 +57,7 @@ export const InspectionDashboardSection: React.FC = () => {
             $U {totalRevenuePrecompra.toLocaleString('es-UY')}
           </div>
           <p className="text-[11px] text-[#6B6B6B]">
-            {precompraInspections.length} peritajes cobrados a clientes
-          </p>
-        </div>
-
-        {/* Costos Internos Automotora */}
-        <div className="p-4 rounded-xl bg-white border border-[#E5E5E3] space-y-1 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
-            <span>Costos internos patio</span>
-            <span className="p-1.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A]">
-              <Car className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-2xl font-title font-bold text-[#161616]">
-            $U {totalInternalCost.toLocaleString('es-UY')}
-          </div>
-          <p className="text-[11px] text-[#6B6B6B]">
-            {internaInspections.length} autos evaluados para compra
+            {completedInspections.length} peritajes cobrados a clientes
           </p>
         </div>
 
@@ -192,53 +157,6 @@ export const InspectionDashboardSection: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Tasa de Compra Automotora */}
-        <div className="p-5 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-title font-bold text-[#161616] flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-[#D7141A]" />
-              <span>Decisión de compra (Automotora CARVLAK)</span>
-            </h3>
-            <span className="text-xs font-mono text-[#6B6B6B]">
-              {internaInspections.length} peritajes patio
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
-              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase">Comprar</span>
-              <div className="text-xl font-title font-bold text-[#1E6B43]">
-                {decisionCounts.comprar}
-              </div>
-              <span className="text-[10px] text-[#6B6B6B]">{buyRate}%</span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
-              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase">Negociar</span>
-              <div className="text-xl font-title font-bold text-[#945B0E]">
-                {decisionCounts.negociar}
-              </div>
-              <span className="text-[10px] text-[#6B6B6B]">
-                {Math.round((decisionCounts.negociar / totalDecisions) * 100)}%
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-1">
-              <span className="text-[10px] font-bold text-[#D7141A] uppercase">Descartar</span>
-              <div className="text-xl font-title font-bold text-[#D7141A]">
-                {decisionCounts.no_comprar}
-              </div>
-              <span className="text-[10px] text-[#6B6B6B]">
-                {Math.round((decisionCounts.no_comprar / totalDecisions) * 100)}%
-              </span>
-            </div>
-          </div>
-
-          <p className="text-xs text-[#6B6B6B] italic leading-relaxed">
-            * Los costos de las revisiones internas quedan registrados para imputarse automáticamente al costo de adquisición de la unidad en el módulo automotora.
-          </p>
         </div>
       </div>
     </div>

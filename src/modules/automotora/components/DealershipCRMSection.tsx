@@ -19,6 +19,7 @@ import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { Button } from '../../../components/ui/Button';
+import { getLocalDateString, formatCurrency, combineLocalDateAndTime } from '../../../lib/formatters';
 
 interface DealershipCRMSectionProps {
   onSelectVehicle?: (vehicle: DealershipVehicle) => void;
@@ -43,7 +44,10 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedInquiryForSchedule, setSelectedInquiryForSchedule] = useState<DealershipInquiry | null>(null);
-  const [scheduleDate, setScheduleDate] = useState(() => new Date(Date.now() + 86400000).toISOString().slice(0, 16));
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const tomorrow = new Date(Date.now() + 86400000);
+    return `${getLocalDateString(tomorrow)}T10:00`;
+  });
   const [scheduleType, setScheduleType] = useState<'Visita agendada' | 'Prueba de manejo'>('Visita agendada');
 
   // Formulario nuevo lead
@@ -116,8 +120,11 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
   const handleConfirmSchedule = () => {
     if (!selectedInquiryForSchedule) return;
 
+    const [sDate, sTime] = scheduleDate.split('T');
+    const finalDate = sDate && sTime ? combineLocalDateAndTime(sDate, sTime) : scheduleDate;
+
     updateDealershipInquiryStatus(selectedInquiryForSchedule.id, scheduleType, {
-      date: new Date(scheduleDate).toISOString(),
+      date: finalDate,
       assigned_to: profile?.id || 'user-maxi',
       title: `${scheduleType}: ${selectedInquiryForSchedule.vehicle_info} con ${selectedInquiryForSchedule.client_name}`
     });
@@ -371,14 +378,14 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                   <div className="p-2.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-xs space-y-1">
                     {inq.trade_in_vehicle_info && (
                       <div className="text-[#161616] flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Entrega permuta:</span>
+                        <span className="text-[10px] font-semibold text-[#6B6B6B]">Entrega permuta:</span>
                         <span>{inq.trade_in_vehicle_info}</span>
                       </div>
                     )}
                     {inq.budget_usd && (
                       <div className="text-[#161616] flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-[#6B6B6B] uppercase">Presupuesto:</span>
-                        <span className="font-mono font-bold">USD {inq.budget_usd.toLocaleString()}</span>
+                        <span className="text-[10px] font-semibold text-[#6B6B6B]">Presupuesto:</span>
+                        <span className="font-mono font-bold">{formatCurrency(inq.budget_usd, 'USD')}</span>
                       </div>
                     )}
                   </div>
@@ -401,7 +408,6 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
                     onClick={() => handleSendWhatsApp(inq, 'bienvenida')}
                     title="Enviar saludo de bienvenida y fotos por WhatsApp"
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-white" />
                     <span>WhatsApp</span>
                   </Button>
 
@@ -441,8 +447,8 @@ export const DealershipCRMSection: React.FC<DealershipCRMSectionProps> = ({ onSe
 
         {filteredInquiries.length === 0 && (
           <div className="col-span-full p-12 text-center rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
-            <div className="w-12 h-12 rounded-xl bg-[#F5F5F4] text-[#6B6B6B] mx-auto flex items-center justify-center text-xl border border-[#E5E5E3]">
-              👥
+            <div className="w-12 h-12 rounded-xl bg-[#F5F5F4] text-[#6B6B6B] mx-auto flex items-center justify-center border border-[#E5E5E3]">
+              <Users className="w-6 h-6 text-[#6B6B6B]" />
             </div>
             <h3 className="text-sm font-bold text-[#161616]">No hay consultas en este filtro</h3>
             <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">

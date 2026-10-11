@@ -25,7 +25,7 @@ import {
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { formatCurrency, normalizePlate } from '../../../lib/formatters';
+import { formatCurrency, normalizePlate, combineLocalDateAndTime, getLocalDateString } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 
 interface DetailingQuoterModalProps {
@@ -52,7 +52,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     addVehicle
   } = useData();
 
-  const { profile } = useAuth();
+  const { profile, availableProfiles } = useAuth();
   const { showToast } = useToast();
 
   // Escuchar tecla Escape para cerrar
@@ -89,8 +89,9 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   const [extremeDirtSurcharge, setExtremeDirtSurcharge] = useState<number>(1500);
 
   // Metadatos
+  const defaultProfileId = profile?.id || availableProfiles[0]?.id || 'user-maxi';
   const [origin, setOrigin] = useState<ClientOrigin | 'Llamada' | 'Form Web'>('WhatsApp');
-  const [assignedTo, setAssignedTo] = useState<string>('user-maxi');
+  const [assignedTo, setAssignedTo] = useState<string>(defaultProfileId);
   const [estimatedTime, setEstimatedTime] = useState<string>('1 día');
   const [status, setStatus] = useState<DetailingQuoteStatus>('Por Cotizar');
   const [appointmentDate, setAppointmentDate] = useState<string>('');
@@ -113,7 +114,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setHasExtremeDirt(quoteToEdit.extreme_dirt_surcharge > 0);
       setExtremeDirtSurcharge(quoteToEdit.extreme_dirt_surcharge || 1500);
       setOrigin(quoteToEdit.origin);
-      setAssignedTo(quoteToEdit.assigned_to || profile?.id || 'user-maxi');
+      setAssignedTo(quoteToEdit.assigned_to || defaultProfileId);
       setEstimatedTime(quoteToEdit.estimated_time || '1 día');
       setStatus(quoteToEdit.status);
       setAppointmentDate(quoteToEdit.appointment_date || '');
@@ -133,10 +134,10 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setHasExtremeDirt(false);
       setExtremeDirtSurcharge(1500);
       setOrigin('WhatsApp');
-      setAssignedTo(profile?.id || 'user-maxi');
+      setAssignedTo(defaultProfileId);
       setEstimatedTime('1 día');
       setStatus('Por Cotizar');
-      setAppointmentDate(new Date(Date.now() + 86400000).toISOString().slice(0, 16));
+      setAppointmentDate(`${getLocalDateString(new Date(Date.now() + 86400000))}T10:00`);
       setNotes('');
       setPriorityZones('');
       setPhotosBefore([]);
@@ -323,10 +324,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         photos_after: photosAfter
       });
 
+      const [aDate, aTime] = appointmentDate.split('T');
+      const finalAppointmentDate = aDate && aTime ? combineLocalDateAndTime(aDate, aTime) : appointmentDate;
+
       // Si cambió el estado
       if (quoteToEdit.status !== status) {
         updateDetailingQuoteStatus(quoteToEdit.id, status, {
-          date: appointmentDate,
+          date: finalAppointmentDate,
           assigned_to: assignedTo
         });
       }
@@ -343,6 +347,9 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
       showToast('Cotización actualizada', 'success');
     } else {
+      const [aDate, aTime] = appointmentDate.split('T');
+      const finalAppointmentDate = aDate && aTime ? combineLocalDateAndTime(aDate, aTime) : appointmentDate;
+
       savedQuote = addDetailingQuote({
         client_id: finalClientId,
         client_name: finalClientName,
@@ -363,7 +370,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         notes,
         priority_zones: priorityZones,
         status,
-        appointment_date: status === 'Turno Confirmado' ? appointmentDate : undefined,
+        appointment_date: status === 'Turno Confirmado' ? finalAppointmentDate : undefined,
         photos_before: photosBefore,
         photos_after: photosAfter
       });
@@ -371,7 +378,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       // Si se crea directo como Turno Confirmado o Completado
       if (status !== 'Por Cotizar') {
         updateDetailingQuoteStatus(savedQuote.id, status, {
-          date: appointmentDate,
+          date: finalAppointmentDate,
           assigned_to: assignedTo
         });
       }
@@ -412,6 +419,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3] cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -718,9 +726,11 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                 onChange={(e) => setAssignedTo(e.target.value)}
                 className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
               >
-                <option value="user-maxi">Maximiliano Irujo (Comisión 30%)</option>
-                <option value="user-matias">Matías Pereyra</option>
-                <option value="user-romina">Romina (Administración)</option>
+                {availableProfiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name} {p.commissions?.detailing ? `(Comisión ${p.commissions.detailing}%)` : ''}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -789,7 +799,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
           {/* Resumen Final */}
           <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
             <div>
-              <div className="text-[10px] text-[#6B6B6B] font-medium uppercase tracking-wider">
+              <div className="text-[10px] text-[#6B6B6B] font-medium">
                 Total presupuestado
               </div>
               <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono mt-0.5">

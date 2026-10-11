@@ -13,9 +13,10 @@ import {
   Camera,
   ArrowLeft
 } from 'lucide-react';
-import { useData } from '../../context/DataContext';
-import { VehicleCategory } from '../../types';
+import { DetailingTariff, VehicleCategory } from '../../types';
 import { normalizePlate, sanitizePhoneForWhatsApp } from '../../lib/formatters';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { INITIAL_DETAILING_TARIFFS, INITIAL_GENERAL_CONFIG } from '../../lib/mockData';
 import { Button } from '../ui/Button';
 
 interface PublicQuoteRequestPageProps {
@@ -25,7 +26,22 @@ interface PublicQuoteRequestPageProps {
 export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
   onBackToApp
 }) => {
-  const { detailingTariffs, addClient, addVehicle, addDetailingQuote } = useData();
+  const [tariffs, setTariffs] = useState<DetailingTariff[]>(INITIAL_DETAILING_TARIFFS);
+  const [companyPhone, setCompanyPhone] = useState<string>(INITIAL_GENERAL_CONFIG.company_phone || '59899267964');
+
+  // Cargar configuración pública opcional desde Supabase
+  React.useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.rpc('get_public_config').then(({ data, error }) => {
+        if (!error && data) {
+          if (data.company_phone) setCompanyPhone(data.company_phone);
+          if (data.detailing_tariffs && Array.isArray(data.detailing_tariffs) && data.detailing_tariffs.length > 0) {
+            setTariffs(data.detailing_tariffs);
+          }
+        }
+      });
+    }
+  }, []);
 
   // Campos de formulario
   const [name, setName] = useState('');
@@ -53,7 +69,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // 1. Verificación Anti-Spam (Honeypot)
@@ -78,36 +94,13 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
     setIsSubmitting(true);
 
     try {
-      // 1. Registrar o recuperar Cliente
-      const clientRes = addClient({
-        full_name: name.trim(),
-        phone: phone.trim(),
-        origin: 'Google Form',
-        notes: 'Solicitud enviada desde formulario web público'
-      });
-      const client = clientRes.client;
-
-      // 2. Registrar Vehículo
-      const cleanPlate = vehiclePlate.trim() ? normalizePlate(vehiclePlate.trim()) : `UY-${Math.floor(1000 + Math.random() * 9000)}`;
-      const vehicleRes = addVehicle({
-        brand: vehicleBrand.trim(),
-        model: `${vehicleModel.trim()} ${vehicleYear.trim()}`.trim(),
-        plate: cleanPlate,
-        category: vehicleCategory,
-        ownership: 'client',
-        client_id: client.id,
-        photos: photoUrl.trim() ? [photoUrl.trim()] : []
-      });
-      const vehicle = vehicleRes.vehicle;
-
-      // 3. Obtener los servicios seleccionados con precios estimados
       const catKey = vehicleCategory === 'Mediano' ? 'mediano' :
                      vehicleCategory === 'SUV/Rural' ? 'suv' :
                      vehicleCategory === 'Pick-up' ? 'pickup' :
                      vehicleCategory === 'Moto' ? 'moto' : 'chico';
 
       const serviceItems = selectedServices.map((sid) => {
-        const tariff = detailingTariffs.find((t) => t.id === sid);
+        const tariff = tariffs.find((t) => t.id === sid);
         return {
           serviceId: sid,
           serviceName: tariff?.shortName || tariff?.name || sid,
@@ -116,28 +109,32 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
       });
 
       const total = serviceItems.reduce((acc, curr) => acc + curr.price, 0);
+      const cleanPlate = vehiclePlate.trim() ? normalizePlate(vehiclePlate.trim()) : '';
 
-      // 4. Crear Cotización "Por Cotizar"
-      addDetailingQuote({
-        client_id: client.id,
-        client_name: client.full_name,
-        client_phone: client.phone,
-        vehicle_id: vehicle.id,
-        vehicle_info: `${vehicle.brand} ${vehicle.model}`,
-        vehicle_plate: vehicle.plate,
-        vehicle_category: vehicleCategory,
-        selected_services: serviceItems,
-        subtotal: total,
-        discount_type: 'none',
-        discount_amount: 0,
-        extreme_dirt_surcharge: 0,
-        total_amount: total,
-        estimated_time: 'A coordinar',
-        origin: 'Form Web',
-        notes: comments.trim() || undefined,
-        status: 'Por Cotizar',
-        photos_before: photoUrl.trim() ? [photoUrl.trim()] : []
-      });
+      // Enviar de forma segura a través de la función RPC security definer submit_quote_request
+      if (isSupabaseConfigured && supabase) {
+        const { error } = await supabase.rpc('submit_quote_request', {
+          payload: {
+            client_name: name.trim(),
+            client_phone: phone.trim(),
+            vehicle_brand: vehicleBrand.trim(),
+            vehicle_model: `${vehicleModel.trim()} ${vehicleYear.trim()}`.trim(),
+            vehicle_year: vehicleYear.trim() ? parseInt(vehicleYear.trim(), 10) : null,
+            vehicle_plate: cleanPlate,
+            vehicle_category: vehicleCategory,
+            comments: comments.trim(),
+            photo_url: photoUrl.trim() || null,
+            selected_services: serviceItems,
+            subtotal: total,
+            total_amount: total
+          }
+        });
+
+        if (error) {
+          console.error('Error al enviar cotización a Supabase:', error.message);
+          throw error;
+        }
+      }
 
       setIsSubmitted(true);
     } catch (err) {
@@ -152,7 +149,8 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
     const text = encodeURIComponent(
       `¡Hola DetailVlak! Acabo de enviar una solicitud de presupuesto para mi ${vehicleBrand} ${vehicleModel}. Mi nombre es ${name}. ¿Pudieron verla?`
     );
-    window.open(`https://api.whatsapp.com/send?phone=59899267964&text=${text}`, '_blank');
+    const targetPhone = companyPhone || '59899267964';
+    window.open(`https://api.whatsapp.com/send?phone=${targetPhone}&text=${text}`, '_blank');
   };
 
   return (
@@ -196,12 +194,12 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
         
         {isSubmitted ? (
           <div className="p-8 sm:p-10 rounded-2xl bg-white border border-[#E5E5E3] text-center space-y-6 shadow-sm animate-fade-in">
-            <div className="w-16 h-16 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A] flex items-center justify-center mx-auto text-3xl shadow-sm">
-              ✨
+            <div className="w-16 h-16 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-[#D7141A] flex items-center justify-center mx-auto shadow-sm">
+              <Sparkles className="w-8 h-8 text-[#D7141A]" />
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-[#161616]">¡Solicitud recibida con éxito!</h2>
+              <h2 className="text-2xl font-bold text-[#161616]">¡Solicitud recibida con éxito!</h2>
               <p className="text-xs text-[#6B6B6B] max-w-md mx-auto mt-2 leading-relaxed">
                 Muchas gracias <strong className="text-[#161616]">{name}</strong>. Evaluaremos el tratamiento ideal para tu <strong className="text-[#161616]">{vehicleBrand} {vehicleModel}</strong> y nos contactaremos a la brevedad por WhatsApp con tu presupuesto detallado.
               </p>
@@ -232,7 +230,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
             
             {/* Presentación */}
             <div className="text-center sm:text-left space-y-1">
-              <h1 className="text-xl sm:text-2xl font-black text-[#161616] tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-[#161616] tracking-tight">
                 Solicitá tu presupuesto de detailing
               </h1>
               <p className="text-xs text-[#6B6B6B] leading-relaxed">
@@ -256,7 +254,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
 
               {/* 1. Datos Personales */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-wider text-[#161616] flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-[#D7141A]" />
                   <span>1. Tus datos de contacto</span>
                 </h3>
@@ -290,7 +288,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
 
               {/* 2. Datos del Vehículo */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-wider text-[#161616] flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
                   <Car className="w-3.5 h-3.5 text-[#D7141A]" />
                   <span>2. Tu vehículo</span>
                 </h3>
@@ -364,7 +362,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
               {/* 3. Tratamientos de Interés */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-[#161616] flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
                     <span>3. Tratamientos que te interesan</span>
                   </h3>
@@ -372,7 +370,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {detailingTariffs.map((t) => {
+                  {tariffs.map((t) => {
                     const isSelected = selectedServices.includes(t.id);
 
                     return (
@@ -403,7 +401,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
 
               {/* 4. Comentarios y Fotos */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-wider text-[#161616]">
+                <h3 className="text-xs font-bold text-[#161616]">
                   4. Detalles del estado actual
                 </h3>
 

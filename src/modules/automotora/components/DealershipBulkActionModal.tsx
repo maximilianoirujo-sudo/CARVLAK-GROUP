@@ -108,7 +108,8 @@ export const DealershipBulkActionModal: React.FC<DealershipBulkActionModalProps>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-[#6B6B6B] hover:text-[#161616] rounded-lg transition-colors"
+            aria-label="Cerrar modal"
+            className="p-1.5 text-[#6B6B6B] hover:text-[#161616] rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

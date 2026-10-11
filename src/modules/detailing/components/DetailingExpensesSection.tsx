@@ -12,8 +12,9 @@ import { Expense, ExpenseCategory, PaymentMethod, Business } from '../../../type
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { formatCurrency } from '../../../lib/formatters';
+import { formatCurrency, getLocalDateString, getLocalMonthString } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
 
 interface DetailingExpensesSectionProps {
   businessFilter?: Business;
@@ -27,11 +28,12 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
   const { showToast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [expenseIdToDelete, setExpenseIdToDelete] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getLocalMonthString()); // YYYY-MM
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Formulario nuevo gasto
-  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState<string>(() => getLocalDateString());
   const [amount, setAmount] = useState<number>(0);
   const [category, setCategory] = useState<ExpenseCategory>('Insumos');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Transferencia');
@@ -214,12 +216,8 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
                 </div>
                 {profile?.roles.includes('admin') && (
                   <button
-                    onClick={() => {
-                      if (confirm('¿Eliminar este registro de gasto?')) {
-                        deleteExpense(exp.id);
-                        showToast('Gasto eliminado', 'info');
-                      }
-                    }}
+                    onClick={() => setExpenseIdToDelete(exp.id)}
+                    aria-label="Eliminar gasto"
                     className="p-1.5 rounded-lg text-[#9A9A9A] hover:text-[#D7141A] hover:bg-[#FDF2F2] transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -242,6 +240,7 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
               </h4>
               <button
                 onClick={() => setIsModalOpen(false)}
+                aria-label="Cerrar modal"
                 className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -351,6 +350,22 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
         </div>
       )}
 
+      {/* Modal Confirmar Eliminación de Gasto */}
+      <ConfirmModal
+        isOpen={!!expenseIdToDelete}
+        onClose={() => setExpenseIdToDelete(null)}
+        onConfirm={() => {
+          if (expenseIdToDelete) {
+            deleteExpense(expenseIdToDelete);
+            showToast('Gasto eliminado', 'info');
+            setExpenseIdToDelete(null);
+          }
+        }}
+        title="¿Eliminar gasto?"
+        message="¿Estás seguro de que deseas eliminar este registro de gasto? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+      />
     </div>
   );
 };

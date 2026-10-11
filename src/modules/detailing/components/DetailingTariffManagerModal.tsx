@@ -123,7 +123,8 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
             </Button>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3]"
+              aria-label="Cerrar modal"
+              className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3] cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -133,7 +134,7 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
         {/* Formulario de Alta si se activa */}
         {isAddingNew && (
           <form onSubmit={handleCreateNewService} className="p-4 sm:p-5 bg-[#F5F5F4] border-b border-[#E5E5E3] space-y-4 animate-fade-in">
-            <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-[#161616]">
               Agregar nuevo servicio al catálogo
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -173,7 +174,7 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {(['chico', 'mediano', 'suv', 'pickup', 'moto'] as const).map((cat) => (
                 <div key={cat} className="p-2.5 rounded-xl bg-white border border-[#E5E5E3]">
-                  <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block">{cat}</span>
+                  <span className="text-[10px] font-bold text-[#6B6B6B] block">{cat}</span>
                   <div className="relative mt-1">
                     <span className="absolute left-2 top-2 text-[10px] text-[#6B6B6B] font-bold">$U</span>
                     <input
@@ -248,7 +249,7 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
 
                     return (
                       <div key={cat} className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col justify-between">
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#6B6B6B]">
+                        <span className="text-[9px] font-bold text-[#6B6B6B]">
                           {cat === 'suv' ? 'SUV/Rural' : cat}
                         </span>
                         {isEditing ? (

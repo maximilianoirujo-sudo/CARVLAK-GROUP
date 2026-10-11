@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { SocialMediaTemplateId } from '../../types';
+import { SocialMediaTemplateId, SocialMediaPostRecord } from '../../types';
 import { SocialStudio } from './components/SocialStudio';
 import { SocialHistorySection } from './components/SocialHistorySection';
 import { SocialConfigSection } from './components/SocialConfigSection';
@@ -30,6 +30,7 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
   const { socialMediaConfig, socialMediaPosts } = useData();
 
   const [activeTab, setActiveTab] = useState<'studio' | 'templates' | 'history' | 'config'>('studio');
+  const [editingPost, setEditingPost] = useState<SocialMediaPostRecord | null>(null);
 
   const roles = profile?.roles || ['admin'];
   const isAdmin = roles.includes('admin');
@@ -142,12 +143,21 @@ export const RedesSocialesModule: React.FC<RedesSocialesModuleProps> = ({
         <SocialStudio
           initialVehicleId={initialVehicleId}
           initialTemplateId={initialTemplateId}
+          initialPost={editingPost}
+          onClearInitialPost={() => setEditingPost(null)}
         />
       )}
 
       {activeTab === 'templates' && isAdmin && <SocialTemplateEditor />}
 
-      {activeTab === 'history' && <SocialHistorySection />}
+      {activeTab === 'history' && (
+        <SocialHistorySection
+          onEditPost={(post) => {
+            setEditingPost(post);
+            setActiveTab('studio');
+          }}
+        />
+      )}
 
       {activeTab === 'config' && isAdmin && <SocialConfigSection />}
     </div>

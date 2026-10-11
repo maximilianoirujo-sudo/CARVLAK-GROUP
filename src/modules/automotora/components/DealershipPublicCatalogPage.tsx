@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Car,
   Search,
@@ -9,11 +9,15 @@ import {
   ArrowLeft,
   Star,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { DealershipVehicle } from '../../../types';
-import { useData } from '../../../context/DataContext';
+import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
+import { INITIAL_GENERAL_CONFIG } from '../../../lib/mockData';
+import { INITIAL_DEALERSHIP_VEHICLES } from '../../../lib/dealershipInitialVehicles';
 import { Button } from '../../../components/ui/Button';
+import { formatCurrency } from '../../../lib/formatters';
 
 interface DealershipPublicCatalogPageProps {
   onBackToApp?: () => void;
@@ -22,7 +26,8 @@ interface DealershipPublicCatalogPageProps {
 export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPageProps> = ({
   onBackToApp
 }) => {
-  const { dealershipVehicles } = useData();
+  const [generalConfig, setGeneralConfig] = useState(INITIAL_GENERAL_CONFIG);
+  const [publishedVehicles, setPublishedVehicles] = useState<DealershipVehicle[]>([]);
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,10 +39,54 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
   const [selectedCar, setSelectedCar] = useState<DealershipVehicle | null>(null);
   const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);
 
-  // Solo autos PUBLICADOS (seguridad estricta: nunca expone costos ni datos internos)
-  const publishedVehicles = useMemo(() => {
-    return dealershipVehicles.filter((v) => v.status === 'publicado' && !v.is_archived);
-  }, [dealershipVehicles]);
+  // Consultar configuración pública opcional desde Supabase
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.rpc('get_public_config').then(({ data, error }) => {
+        if (!error && data) {
+          setGeneralConfig((prev) => ({
+            ...prev,
+            company_name: data.company_name || prev.company_name,
+            company_phone: data.company_phone || prev.company_phone,
+            company_phone_formatted: data.company_phone_formatted || prev.company_phone_formatted,
+            address: data.address || prev.address
+          }));
+        }
+      });
+    }
+  }, []);
+
+  // Consultar vista pública segura en Supabase (solo status 'publicado' y sin costos internos)
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchPublicVehicles() {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('dealership_public_catalog_view')
+            .select('*');
+          if (!error && data && isMounted) {
+            setPublishedVehicles(data as DealershipVehicle[]);
+            return;
+          }
+        } catch (e) {
+          console.warn('Error fetching public catalog from Supabase:', e);
+        }
+      }
+
+      // Fallback local solo en DEV
+      if (import.meta.env.DEV && isMounted) {
+        setPublishedVehicles(
+          INITIAL_DEALERSHIP_VEHICLES.filter((v) => v.status === 'publicado' && !v.is_archived)
+        );
+      }
+    }
+
+    fetchPublicVehicles();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredVehicles = useMemo(() => {
     return publishedVehicles.filter((car) => {
@@ -63,12 +112,12 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
   // Abrir WhatsApp con consulta específica
   const handleWhatsAppInquiry = (car: DealershipVehicle) => {
-    const phone = '59899267964';
+    const phone = generalConfig?.company_phone || '59899267964';
     const text = encodeURIComponent(
       `¡Hola CARVLAK! 👋 Me interesa consultar por el vehículo que vi en su catálogo web:\n\n` +
       `🚗 *${car.brand} ${car.model} ${car.version || ''} (${car.year})*\n` +
-      `💰 Precio: USD ${car.sale_price.toLocaleString()}\n` +
-      `⏱️ Kilometraje: ${car.mileage.toLocaleString()} km\n\n` +
+      `💰 Precio: ${formatCurrency(car.sale_price, car.sale_currency || 'USD')}\n` +
+      `⏱️ Kilometraje: ${car.mileage.toLocaleString('es-UY')} km\n\n` +
       `¿Sigue disponible? Me gustaría recibir más fotos y coordinar una visita.`
     );
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
@@ -83,8 +132,9 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
             {onBackToApp && (
               <button
                 onClick={onBackToApp}
-                className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors"
+                className="p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors cursor-pointer"
                 title="Volver al Hub de Gestión"
+                aria-label="Volver al Hub de Gestión"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -105,7 +155,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                 </span>
                 <p className="text-[10px] text-[#6B6B6B] flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-[#D7141A]" />
-                  <span>Shangrilá, Canelones • Uruguay</span>
+                  <span>{generalConfig?.address || 'Shangrilá, Canelones'} • Uruguay</span>
                 </p>
               </div>
             </div>
@@ -114,7 +164,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
           <div className="flex items-center gap-2">
             <Button
               variant="whatsapp"
-              onClick={() => window.open('https://wa.me/59899267964?text=Hola%20CARVLAK%20Automotora,%20quiero%20hacer%20una%20consulta', '_blank')}
+              onClick={() => window.open(`https://wa.me/${generalConfig?.company_phone || '59899267964'}?text=Hola%20CARVLAK%20Automotora,%20quiero%20hacer%20una%20consulta`, '_blank')}
             >
               <MessageCircle className="w-4 h-4 text-white" />
               <span className="hidden sm:inline">WhatsApp directo</span>
@@ -127,7 +177,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
       {/* Hero Banner */}
       <section className="relative px-4 py-8 sm:py-10 bg-white border-b border-[#E5E5E3]">
         <div className="max-w-4xl mx-auto text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-[#161616] text-xs font-bold">
             <ShieldCheck className="w-4 h-4 text-[#D7141A]" />
             <span>Vehículos seleccionados y garantizados</span>
           </div>
@@ -253,7 +303,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
                   {/* Badge Destacado */}
                   {car.is_featured && (
-                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded bg-[#161616] text-white font-bold text-[10px] uppercase flex items-center gap-1 shadow-md">
+                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded bg-[#161616] text-white font-bold text-[10px] flex items-center gap-1 shadow-md">
                       <Star className="w-3 h-3 fill-white" />
                       <span>Destacado</span>
                     </div>
@@ -265,7 +315,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                       {car.year}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-md text-white/80 text-xs font-medium">
-                      {car.mileage.toLocaleString()} km
+                      {car.mileage.toLocaleString('es-UY')} km
                     </span>
                   </div>
                 </div>
@@ -295,21 +345,21 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                     {/* Precio y Financiación */}
                     <div className="mt-4 pt-3 border-t border-[#E5E5E3] flex items-baseline justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                        <div className="text-[10px] font-bold text-[#6B6B6B]">
                           Precio contado
                         </div>
                         <div className="text-xl font-bold font-mono text-[#161616]">
-                          USD {car.sale_price.toLocaleString()}
+                          {formatCurrency(car.sale_price, car.sale_currency || 'USD')}
                         </div>
                       </div>
 
                       {car.financing_available && car.monthly_installment_estimate_usd ? (
                         <div className="text-right">
-                          <div className="text-[10px] font-bold text-[#6B6B6B] uppercase">
+                          <div className="text-[10px] font-bold text-[#6B6B6B]">
                             Financiación
                           </div>
                           <div className="text-xs font-bold text-[#161616]">
-                            Desde USD {car.monthly_installment_estimate_usd}/mes
+                            Desde {formatCurrency(car.monthly_installment_estimate_usd, 'USD')}/mes
                           </div>
                         </div>
                       ) : null}
@@ -334,7 +384,6 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                       size="sm"
                       onClick={() => handleWhatsAppInquiry(car)}
                     >
-                      <MessageCircle className="w-3.5 h-3.5 text-white" />
                       <span>Consultar</span>
                     </Button>
                   </div>
@@ -366,7 +415,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                   {selectedCar.brand} {selectedCar.model} {selectedCar.version || ''} ({selectedCar.year})
                 </h2>
                 <div className="text-xs text-[#6B6B6B] flex items-center gap-2 mt-0.5">
-                  <span>{selectedCar.mileage.toLocaleString()} km</span>
+                  <span>{selectedCar.mileage.toLocaleString('es-UY')} km</span>
                   <span>•</span>
                   <span>{selectedCar.transmission}</span>
                   <span>•</span>
@@ -418,11 +467,11 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               {/* Precio & Garantías */}
               <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider">
+                  <div className="text-[10px] font-bold text-[#6B6B6B]">
                     Precio contado efectivo
                   </div>
                   <div className="text-2xl font-bold font-mono text-[#161616]">
-                    USD {selectedCar.sale_price.toLocaleString()}
+                    {formatCurrency(selectedCar.sale_price, selectedCar.sale_currency || 'USD')}
                   </div>
                 </div>
 
@@ -441,7 +490,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               {/* Descripción */}
               {selectedCar.catalog_description && (
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-[#161616]">
                     Descripción del vehículo
                   </h4>
                   <p className="text-xs text-[#6B6B6B] leading-relaxed bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
@@ -452,26 +501,26 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
               {/* Ficha Técnica Rápida */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-[#161616]">
                   Especificaciones técnicas
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                    <div className="text-[10px] text-[#6B6B6B] uppercase">Año</div>
+                    <div className="text-[10px] text-[#6B6B6B]">Año</div>
                     <div className="font-bold text-[#161616] mt-0.5">{selectedCar.year}</div>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                    <div className="text-[10px] text-[#6B6B6B] uppercase">Kilómetros</div>
+                    <div className="text-[10px] text-[#6B6B6B]">Kilómetros</div>
                     <div className="font-bold text-[#161616] mt-0.5">
-                      {selectedCar.mileage.toLocaleString()} km
+                      {selectedCar.mileage.toLocaleString('es-UY')} km
                     </div>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                    <div className="text-[10px] text-[#6B6B6B] uppercase">Transmisión</div>
+                    <div className="text-[10px] text-[#6B6B6B]">Transmisión</div>
                     <div className="font-bold text-[#161616] mt-0.5">{selectedCar.transmission}</div>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                    <div className="text-[10px] text-[#6B6B6B] uppercase">Combustible</div>
+                    <div className="text-[10px] text-[#6B6B6B]">Combustible</div>
                     <div className="font-bold text-[#161616] mt-0.5">{selectedCar.fuel}</div>
                   </div>
                 </div>
@@ -480,16 +529,17 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
               {/* Equipamiento */}
               {selectedCar.features && selectedCar.features.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-[#161616]">
                     Equipamiento incluido
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedCar.features.map((feat, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-xs text-[#161616]"
+                        className="px-2.5 py-1 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] text-xs text-[#161616] flex items-center gap-1.5"
                       >
-                        ✓ {feat}
+                        <Check className="w-3.5 h-3.5 text-[#1E6B43] shrink-0" />
+                        <span>{feat}</span>
                       </span>
                     ))}
                   </div>
@@ -510,8 +560,7 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
                 variant="whatsapp"
                 onClick={() => handleWhatsAppInquiry(selectedCar)}
               >
-                <MessageCircle className="w-4 h-4 text-white" />
-                <span>Consultar por WhatsApp (+598 99 267 964)</span>
+                <span>Consultar por WhatsApp ({generalConfig?.company_phone_formatted || '+598 99 267 964'})</span>
               </Button>
             </div>
           </div>
@@ -520,8 +569,8 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
 
       {/* Footer Público */}
       <footer className="mt-auto border-t border-[#E5E5E3] bg-white px-4 py-6 text-center text-xs text-[#6B6B6B] space-y-1">
-        <p className="font-bold text-[#161616]">CARVLAK Group • Automotora & Centro Automotriz</p>
-        <p>Shangrilá, Canelones • WhatsApp: 099 267 964 • Abierto de Lunes a Sábados</p>
+        <p className="font-bold text-[#161616]">{generalConfig?.company_name || 'CARVLAK Group'} • Automotora & Centro Automotriz</p>
+        <p>{generalConfig?.address || 'Shangrilá, Canelones'} • WhatsApp: {generalConfig?.company_phone_formatted || '099 267 964'} • Abierto de Lunes a Sábados</p>
       </footer>
     </div>
   );

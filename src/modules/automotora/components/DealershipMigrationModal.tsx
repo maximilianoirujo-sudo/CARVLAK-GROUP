@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
-import { INITIAL_DEALERSHIP_VEHICLES } from '../../../lib/mockData';
+import { INITIAL_DEALERSHIP_VEHICLES } from '../../../lib/dealershipInitialVehicles';
 import { Button } from '../../../components/ui/Button';
+import { formatCurrency } from '../../../lib/formatters';
 
 interface DealershipMigrationModalProps {
   isOpen: boolean;
@@ -20,8 +21,6 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
   isOpen,
   onClose
 }) => {
-  if (!isOpen) return null;
-
   const { dealershipVehicles, importTiendanubeCatalog } = useData();
   const { showToast } = useToast();
 
@@ -58,15 +57,20 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
     return { newCount: newCars, existingCount: existing };
   }, [dealershipVehicles]);
 
-  const handleImport = () => {
+  const handleImport = async () => {
     setIsImporting(true);
-    setTimeout(() => {
-      const res = importTiendanubeCatalog();
+    try {
+      const res = await importTiendanubeCatalog();
       setResult(res);
-      setIsImporting(false);
       showToast(`¡Se importaron ${res.importedCount} vehículos del catálogo oficial!`, 'success');
-    }, 400);
+    } catch {
+      showToast('Error al importar catálogo', 'error');
+    } finally {
+      setIsImporting(false);
+    }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -94,7 +98,8 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors"
+            aria-label="Cerrar modal"
+            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -174,7 +179,7 @@ export const DealershipMigrationModal: React.FC<DealershipMigrationModalProps> =
                   </div>
 
                   <div className="font-bold text-[#161616] font-mono">
-                    USD {car.sale_price?.toLocaleString()}
+                    {formatCurrency(car.sale_price || 0, 'USD')}
                   </div>
                 </div>
               ))}

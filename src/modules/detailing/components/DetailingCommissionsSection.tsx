@@ -5,11 +5,11 @@ import {
   Clock,
   Calendar
 } from 'lucide-react';
-import { CommissionRecord, Business } from '../../../types';
+import { CommissionRecord, Business, Currency } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { formatCurrency } from '../../../lib/formatters';
+import { formatCurrency, getLocalMonthString } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 
 interface DetailingCommissionsSectionProps {
@@ -20,11 +20,12 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
   businessFilter = 'detailing'
 }) => {
   const { commissions, markCommissionPaid } = useData();
-  const { profile } = useAuth();
+  const { profile, availableProfiles } = useAuth();
   const { showToast } = useToast();
 
   const isAdmin = profile?.roles.includes('admin');
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const defaultCurrency: Currency = businessFilter === 'automotora' ? 'USD' : 'UYU';
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getLocalMonthString()); // YYYY-MM
   const [statusFilter, setStatusFilter] = useState<'all' | 'Pendiente' | 'Pagada'>('all');
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
 
@@ -78,7 +79,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
             <Clock className="w-4 h-4 text-[#D7141A]" />
           </div>
           <div className="text-2xl font-bold text-[#D7141A] font-mono mt-0.5">
-            {formatCurrency(totalPending, 'UYU')}
+            {formatCurrency(totalPending, defaultCurrency)}
           </div>
           <p className="text-[11px] text-[#6B6B6B] mt-0.5">
             Por liquidar ({filteredCommissions.filter((c) => c.status === 'Pendiente').length} trabajos)
@@ -91,7 +92,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
             <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" />
           </div>
           <div className="text-2xl font-bold text-[#161616] font-mono mt-0.5">
-            {formatCurrency(totalPaid, 'UYU')}
+            {formatCurrency(totalPaid, defaultCurrency)}
           </div>
           <p className="text-[11px] text-[#6B6B6B] mt-0.5">Liquidadas este mes</p>
         </div>
@@ -99,7 +100,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
         <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B]">Total facturado en trabajos</div>
           <div className="text-2xl font-bold text-[#161616] font-mono mt-0.5">
-            {formatCurrency(totalBilled, 'UYU')}
+            {formatCurrency(totalBilled, defaultCurrency)}
           </div>
           <p className="text-[11px] text-[#6B6B6B] mt-0.5">
             Base sobre la cual se calculan comisiones
@@ -137,8 +138,14 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
               className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
             >
               <option value="all">Todos los colaboradores</option>
-              <option value="user-maxi">Maximiliano Irujo (30%)</option>
-              <option value="user-matias">Matías Pereyra</option>
+              {availableProfiles.map((p) => {
+                const rate = p.commissions?.[businessFilter] ?? 0;
+                return (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name} {rate > 0 ? `(${rate}%)` : ''}
+                  </option>
+                );
+              })}
             </select>
           )}
         </div>
@@ -190,7 +197,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
                       <span>•</span>
                       <span>Auto: <strong className="text-[#161616]">{comm.vehicle_description}</strong></span>
                       <span>•</span>
-                      <span>Cobrado: {formatCurrency(comm.amount_charged, 'UYU')}</span>
+                      <span>Cobrado: {formatCurrency(comm.amount_charged, comm.currency || defaultCurrency)}</span>
                     </div>
                   </div>
                 </div>
@@ -199,7 +206,7 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
                   <div className="text-left sm:text-right">
                     <div className="text-[10px] text-[#6B6B6B] font-medium">Monto comisión</div>
                     <div className="text-base font-bold font-mono text-[#161616]">
-                      {formatCurrency(comm.commission_amount, 'UYU')}
+                      {formatCurrency(comm.commission_amount, comm.currency || defaultCurrency)}
                     </div>
                   </div>
 

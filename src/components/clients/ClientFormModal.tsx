@@ -4,6 +4,7 @@ import { AlertTriangle, Share2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { Client, ClientOrigin } from '../../types';
+import { validateUruguayanPhone, validateUruguayanCedula } from '../../lib/formatters';
 
 interface ClientFormModalProps {
   isOpen: boolean;
@@ -27,6 +28,9 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
   const [notes, setNotes] = useState('');
   const [socialMediaConsent, setSocialMediaConsent] = useState(false);
 
+  // Cliente existente seleccionado en caso de duplicado
+  const [activeExistingClient, setActiveExistingClient] = useState<Client | null>(null);
+
   // Detección de duplicados en tiempo real
   const [duplicateClient, setDuplicateClient] = useState<Client | null>(null);
 
@@ -40,6 +44,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       setNotes(clientToEdit.notes || '');
       setSocialMediaConsent(clientToEdit.social_media_consent ?? false);
       setDuplicateClient(null);
+      setActiveExistingClient(null);
     } else {
       setFullName('');
       setPhone('');
@@ -49,18 +54,37 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       setNotes('');
       setSocialMediaConsent(false);
       setDuplicateClient(null);
+      setActiveExistingClient(null);
     }
   }, [clientToEdit, isOpen]);
+
+  // Validaciones
+  const phoneValidation = phone.trim() ? validateUruguayanPhone(phone) : { isValid: true };
+  const cedulaValidation = cedula.trim() ? validateUruguayanCedula(cedula) : { isValid: true };
 
   // Chequeo de duplicado mientras escribe el teléfono
   const handlePhoneChange = (val: string) => {
     setPhone(val);
+    const targetId = clientToEdit?.id || activeExistingClient?.id;
     if (val.trim().length >= 8) {
-      const dup = checkPhoneDuplicate(val, clientToEdit?.id);
+      const dup = checkPhoneDuplicate(val, targetId);
       setDuplicateClient(dup);
     } else {
       setDuplicateClient(null);
     }
+  };
+
+  const handleUseExisting = (dup: Client) => {
+    setActiveExistingClient(dup);
+    setFullName(dup.full_name);
+    setPhone(dup.phone);
+    setEmail(dup.email || '');
+    setCedula(dup.cedula || '');
+    setOrigin(dup.origin);
+    setNotes(dup.notes || '');
+    setSocialMediaConsent(dup.social_media_consent ?? false);
+    setDuplicateClient(null);
+    showToast(`Cargados datos de ${dup.full_name}`, 'info');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,8 +94,20 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       return;
     }
 
-    if (clientToEdit) {
-      updateClient(clientToEdit.id, {
+    if (!phoneValidation.isValid) {
+      showToast(phoneValidation.error || 'Teléfono uruguayo inválido', 'warning');
+      return;
+    }
+
+    if (!cedulaValidation.isValid) {
+      showToast(cedulaValidation.error || 'Cédula uruguaya inválida', 'warning');
+      return;
+    }
+
+    const targetClient = clientToEdit || activeExistingClient;
+
+    if (targetClient) {
+      updateClient(targetClient.id, {
         full_name: fullName.trim(),
         phone: phone.trim(),
         email: email.trim() || undefined,
@@ -102,12 +138,14 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     onClose();
   };
 
+  const isEditing = Boolean(clientToEdit || activeExistingClient);
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={clientToEdit ? 'Editar cliente' : 'Registrar nuevo cliente'}
-      subtitle="Directorio compartido entre Automotora, Detailing e Inspección"
+      title={isEditing ? 'Editar cliente' : 'Registrar nuevo cliente'}
+      subtitle="Directorio compartido entre Automotora, Detailing y Carbusters"
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
@@ -135,19 +173,36 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
             placeholder="Ej: 099 123 456"
             required
             className={`w-full bg-white border rounded-xl p-3 text-xs text-[#161616] font-mono placeholder-[#9A9A9A] focus:outline-none transition-colors ${
-              duplicateClient ? 'border-[#D7141A] ring-1 ring-[#D7141A]' : 'border-[#E5E5E3] focus:border-[#D7141A]'
+              (phone.trim().length >= 4 && !phoneValidation.isValid) || duplicateClient
+                ? 'border-[#D7141A] ring-1 ring-[#D7141A]'
+                : 'border-[#E5E5E3] focus:border-[#D7141A]'
             }`}
           />
 
+          {phone.trim().length >= 4 && !phoneValidation.isValid && (
+            <p className="text-[11px] text-[#D7141A] font-medium mt-1">
+              {phoneValidation.error}
+            </p>
+          )}
+
           {duplicateClient && (
-            <div className="mt-2 p-2.5 rounded-xl bg-[#FDF2F2] border border-[#B80E14]/20 text-[#B80E14] flex items-start gap-2 animate-fade-in">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#D7141A]" />
-              <div>
-                <p className="font-semibold text-xs text-[#B80E14]">¡Número ya registrado!</p>
-                <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                  Pertenece a <strong className="text-[#161616]">{duplicateClient.full_name}</strong>. Podés editar el cliente existente para no duplicar datos.
-                </p>
+            <div className="mt-2 p-2.5 rounded-xl bg-[#FDF2F2] border border-[#B80E14]/20 text-[#B80E14] flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-fade-in">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[#D7141A]" />
+                <div>
+                  <p className="font-semibold text-xs text-[#B80E14]">¡Número ya registrado!</p>
+                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                    Pertenece a <strong className="text-[#161616]">{duplicateClient.full_name}</strong>.
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => handleUseExisting(duplicateClient)}
+                className="px-3 py-1.5 rounded-lg bg-[#161616] hover:bg-[#2A2A2A] text-white font-semibold text-xs shrink-0 transition-colors cursor-pointer shadow-xs self-end sm:self-auto"
+              >
+                Usar el existente
+              </button>
             </div>
           )}
         </div>
@@ -171,8 +226,17 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
               value={cedula}
               onChange={(e) => setCedula(e.target.value)}
               placeholder="Ej: 4.582.119-4"
-              className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] transition-colors"
+              className={`w-full bg-white border rounded-xl p-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none transition-colors ${
+                cedula.trim().length >= 4 && !cedulaValidation.isValid
+                  ? 'border-[#D7141A] ring-1 ring-[#D7141A]'
+                  : 'border-[#E5E5E3] focus:border-[#D7141A]'
+              }`}
             />
+            {cedula.trim().length >= 4 && !cedulaValidation.isValid && (
+              <p className="text-[11px] text-[#D7141A] font-medium mt-1">
+                {cedulaValidation.error}
+              </p>
+            )}
           </div>
         </div>
 

@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Star,
   Zap,
+  Check,
   ChevronDown,
   ChevronUp,
   Camera,
@@ -42,7 +43,10 @@ import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { compressImage } from '../../../lib/imageCompressor';
+import { uploadImageToStorage } from '../../../lib/storage';
 import { Button } from '../../../components/ui/Button';
+import { ConfirmModal } from '../../../components/common/ConfirmModal';
+import { validateUruguayanPlate, getLocalDateString } from '../../../lib/formatters';
 
 interface DealershipVehicleModalProps {
   isOpen: boolean;
@@ -126,7 +130,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
   // 1. Datos Generales
   const [condition, setCondition] = useState<DealershipVehicleCondition>('usado');
-  const [vehicleType, setVehicleType] = useState<DealershipVehicleType>('auto');
+  const [vehicleType, setVehicleType] = useState<string>('Auto');
   const [plate, setPlate] = useState('');
   const [chassisVin, setChassisVin] = useState('');
   const [brand, setBrand] = useState('');
@@ -137,6 +141,9 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   const [bodyType, setBodyType] = useState('Hatchback');
   const [status, setStatus] = useState<DealershipVehicleStatus>('evaluacion');
   const [isFeatured, setIsFeatured] = useState(false);
+
+  // Modal confirmación eliminar foto
+  const [imageIndexToDelete, setImageIndexToDelete] = useState<number | null>(null);
 
   // 2. Datos Técnicos
   const [mileage, setMileage] = useState<number>(0);
@@ -160,12 +167,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   const [purchaseOrigin, setPurchaseOrigin] = useState<PurchaseOrigin>('particular');
   const [supplierName, setSupplierName] = useState('');
   const [supplierPhone, setSupplierPhone] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [purchaseDate, setPurchaseDate] = useState(() => getLocalDateString());
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [purchaseCurrency, setPurchaseCurrency] = useState<Currency>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(() => dealershipConfig?.default_exchange_rate || 43.50);
   const [isSupplierPayable, setIsSupplierPayable] = useState(false);
-  const [payableDueDate, setPayableDueDate] = useState(() => new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10));
+  const [payableDueDate, setPayableDueDate] = useState(() => getLocalDateString(new Date(Date.now() + 15 * 86400000)));
 
   // 5. Documentación
   const [docsReceived, setDocsReceived] = useState<DealershipDocsReceived>({
@@ -211,7 +218,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   useEffect(() => {
     if (vehicleToEdit) {
       setCondition(vehicleToEdit.condition || 'usado');
-      setVehicleType(vehicleToEdit.vehicle_type || 'auto');
+      setVehicleType(vehicleToEdit.vehicle_type || 'Auto');
       setPlate(vehicleToEdit.plate || '');
       setChassisVin(vehicleToEdit.chassis_vin || '');
       setBrand(vehicleToEdit.brand || '');
@@ -242,12 +249,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
       setPurchaseOrigin(vehicleToEdit.purchase_origin || 'particular');
       setSupplierName(vehicleToEdit.supplier_name || vehicleToEdit.supplier_payable?.supplier_name || '');
       setSupplierPhone(vehicleToEdit.supplier_phone || '');
-      setPurchaseDate(vehicleToEdit.purchase_date || new Date().toISOString().slice(0, 10));
+      setPurchaseDate(vehicleToEdit.purchase_date || getLocalDateString());
       setPurchasePrice(vehicleToEdit.purchase_price || 0);
       setPurchaseCurrency(vehicleToEdit.purchase_currency || 'USD');
       setExchangeRate(vehicleToEdit.exchange_rate || 43.50);
       setIsSupplierPayable(Boolean(vehicleToEdit.supplier_payable));
-      setPayableDueDate(vehicleToEdit.supplier_payable?.due_date || new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10));
+      setPayableDueDate(vehicleToEdit.supplier_payable?.due_date || getLocalDateString(new Date(Date.now() + 15 * 86400000)));
 
       setDocsReceived(
         vehicleToEdit.docs_received || {
@@ -276,7 +283,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
     } else {
       // Defaults nuevo auto
       setCondition('usado');
-      setVehicleType('auto');
+      setVehicleType('Auto');
       setPlate('');
       setChassisVin('');
       setBrand('');
@@ -307,12 +314,12 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
       setPurchaseOrigin('particular');
       setSupplierName('');
       setSupplierPhone('');
-      setPurchaseDate(new Date().toISOString().slice(0, 10));
+      setPurchaseDate(getLocalDateString());
       setPurchasePrice(7500);
       setPurchaseCurrency('USD');
       setExchangeRate(dealershipConfig?.default_exchange_rate || 43.50);
       setIsSupplierPayable(false);
-      setPayableDueDate(new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10));
+      setPayableDueDate(getLocalDateString(new Date(Date.now() + 15 * 86400000)));
 
       setDocsReceived({
         titulo: false,
@@ -342,38 +349,37 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Manejo de carga de fotos desde cámara o galería con compresión cliente
+  // Manejo de carga de fotos desde cámara o galería subiendo a Supabase Storage
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsCompressing(true);
-    const newCompressedList: string[] = [];
+    const newUploadedList: string[] = [];
 
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const compressedBase64 = await compressImage(file, {
+        const uploadedUrl = await uploadImageToStorage(file, 'vehicles', {
           maxWidth: 1600,
           maxHeight: 1600,
-          quality: 0.82,
-          format: 'image/webp'
+          quality: 0.82
         });
-        newCompressedList.push(compressedBase64);
+        newUploadedList.push(uploadedUrl);
       }
 
       setImages((prev) => {
-        const updated = [...prev, ...newCompressedList];
+        const updated = [...prev, ...newUploadedList];
         if (!coverImage && updated.length > 0) {
           setCoverImage(updated[0]);
         }
         return updated;
       });
 
-      showToast(`${newCompressedList.length} foto(s) comprimida(s) y agregada(s)`, 'success');
+      showToast(`${newUploadedList.length} foto(s) subida(s) correctamente`, 'success');
     } catch (err) {
-      console.error('Error al procesar imágenes:', err);
-      showToast('Error al procesar o comprimir las fotos', 'error');
+      console.error('Error al procesar o subir imágenes:', err);
+      showToast('Error al subir las fotos', 'error');
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -410,14 +416,19 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta foto?')) return;
-    const removedImg = images[indexToRemove];
-    const updated = images.filter((_, idx) => idx !== indexToRemove);
+    setImageIndexToDelete(indexToRemove);
+  };
+
+  const handleConfirmDeleteImage = () => {
+    if (imageIndexToDelete === null) return;
+    const removedImg = images[imageIndexToDelete];
+    const updated = images.filter((_, idx) => idx !== imageIndexToDelete);
     setImages(updated);
     if (coverImage === removedImg) {
       setCoverImage(updated[0] || undefined);
     }
     showToast('Foto eliminada', 'info');
+    setImageIndexToDelete(null);
   };
 
   // Manejo de equipamiento
@@ -441,6 +452,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
     setFeatures(features.filter((f) => f !== feat));
   };
 
+  const plateValidation = (condition !== '0km' || plate.trim()) ? validateUruguayanPlate(plate) : { isValid: true };
+
   // Guardado
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,9 +472,17 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
         showToast('En vehículos 0km, ingresá la matrícula o el número de chasis (VIN)', 'error');
         return;
       }
+      if (plate.trim() && !plateValidation.isValid) {
+        showToast(plateValidation.error || 'Matrícula uruguaya inválida', 'warning');
+        return;
+      }
     } else {
       if (!plate.trim() || !brand.trim() || !model.trim()) {
         showToast('Por favor completá matrícula, marca y modelo', 'error');
+        return;
+      }
+      if (!plateValidation.isValid) {
+        showToast(plateValidation.error || 'Matrícula uruguaya inválida', 'warning');
         return;
       }
     }
@@ -553,7 +574,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
               <Car className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-[#161616]">
+              <h2 className="text-base sm:text-lg font-bold text-[#161616]">
                 {vehicleToEdit ? `Editar ${vehicleToEdit.brand} ${vehicleToEdit.model}` : 'Nuevo vehículo de stock'}
               </h2>
               <p className="text-[11px] text-[#6B6B6B]">
@@ -579,7 +600,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors ml-1"
+              className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors ml-1 cursor-pointer"
+              aria-label="Cerrar modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -623,8 +645,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     <span className="text-xs font-bold text-[#161616]">Condición del vehículo:</span>
                     <p className="text-[11px] text-[#6B6B6B]">
                       {condition === '0km'
-                        ? '⚡ Stock propio 0km: Matrícula opcional hasta empadronar.'
-                        : '🚗 Usado: Requiere matrícula para chequeo de documentación.'}
+                        ? 'Stock propio 0km: Matrícula opcional hasta empadronar.'
+                        : 'Usado: Requiere matrícula para chequeo de documentación.'}
                     </p>
                   </div>
                   <div className="flex items-center bg-white p-1 rounded-xl border border-[#E5E5E3] shrink-0">
@@ -656,7 +678,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                       Matrícula {condition === '0km' ? '(Opcional)' : '*'}
                     </label>
                     <input
@@ -666,12 +688,21 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       placeholder={condition === '0km' ? 'Pendiente' : 'SBA 1234'}
                       value={plate}
                       onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs font-mono font-bold text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
+                      className={`w-full px-3 py-2 bg-white border rounded-xl text-xs font-mono font-bold text-[#161616] focus:outline-none transition-colors disabled:opacity-50 ${
+                        (condition !== '0km' || plate.trim()) && plate.trim().length >= 3 && !plateValidation.isValid
+                          ? 'border-[#D7141A] ring-1 ring-[#D7141A]'
+                          : 'border-[#E5E5E3] focus:border-[#D7141A]'
+                      }`}
                     />
+                    {(condition !== '0km' || plate.trim()) && plate.trim().length >= 3 && !plateValidation.isValid && (
+                      <p className="text-[11px] text-[#D7141A] font-medium mt-1">
+                        {plateValidation.error}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                       Chasis / VIN {condition === '0km' && !plate ? '*' : ''}
                     </label>
                     <input
@@ -685,17 +716,17 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                       Tipo de vehículo
                     </label>
                     <select
                       disabled={!canEdit}
                       value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value as any)}
-                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50"
+                      onChange={(e) => setVehicleType(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] disabled:opacity-50 cursor-pointer"
                     >
                       {(dealershipConfig.vehicle_types || ['Auto', 'Moto', 'Todoterreno']).map((vt) => (
-                        <option key={vt} value={vt.toLowerCase().replace(/[^a-z]/g, '')}>
+                        <option key={vt} value={vt}>
                           {vt}
                         </option>
                       ))}
@@ -703,7 +734,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Marca *</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Marca *</label>
                     <input
                       type="text"
                       list="brands-datalist"
@@ -722,7 +753,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Modelo *</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Modelo *</label>
                     <input
                       type="text"
                       list="models-datalist"
@@ -741,7 +772,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Versión</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Versión</label>
                     <input
                       type="text"
                       disabled={!canEdit}
@@ -753,7 +784,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Año</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Año</label>
                     <input
                       type="number"
                       disabled={!canEdit}
@@ -764,7 +795,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Estado</label>
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Estado</label>
                     <select
                       disabled={!canEdit}
                       value={status}
@@ -819,7 +850,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
             {openSections.tecnicos && (
               <div className="p-4 pt-0 border-t border-[#E5E5E3] grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Kilometraje</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Kilometraje</label>
                   <input
                     type="number"
                     disabled={!canEdit}
@@ -830,7 +861,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Combustible</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Combustible</label>
                   <select
                     disabled={!canEdit}
                     value={fuel}
@@ -846,7 +877,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Transmisión</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Transmisión</label>
                   <select
                     disabled={!canEdit}
                     value={transmission}
@@ -862,7 +893,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                     Motorización (Cilindrada / Potencia)
                   </label>
                   <input
@@ -876,7 +907,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Puertas</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Puertas</label>
                   <input
                     type="number"
                     disabled={!canEdit}
@@ -889,7 +920,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Color exterior</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Color exterior</label>
                   <input
                     type="text"
                     list="colors-datalist"
@@ -908,7 +939,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 {fuel === 'Eléctrico' && (
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                       Autonomía eléctrica (km)
                     </label>
                     <input
@@ -923,7 +954,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 )}
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Padrón</label>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Padrón</label>
                   <input
                     type="text"
                     disabled={!canEdit}
@@ -958,7 +989,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
               <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                       Precio de lista (Público) *
                     </label>
                     <div className="relative">
@@ -976,7 +1007,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                   {isAdmin && (
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1 flex items-center gap-1">
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1 flex items-center gap-1">
                         <span>Precio mínimo aceptable</span>
                         <Lock className="w-3 h-3 text-[#D7141A]" />
                       </label>
@@ -994,7 +1025,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                   )}
 
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                    <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                       Financiación disponible
                     </label>
                     <select
@@ -1012,7 +1043,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 {financingAvailable && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3]">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                         Entrega inicial mínima (USD)
                       </label>
                       <input
@@ -1024,7 +1055,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                         Cuota estimada mensual (USD)
                       </label>
                       <input
@@ -1063,7 +1094,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                 <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Origen de compra</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Origen de compra</label>
                       <select
                         value={purchaseOrigin}
                         onChange={(e) => setPurchaseOrigin(e.target.value as any)}
@@ -1078,7 +1109,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Precio de compra</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Precio de compra</label>
                       <div className="flex gap-2">
                         <select
                           value={purchaseCurrency}
@@ -1098,7 +1129,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Tipo de cambio</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Tipo de cambio</label>
                       <input
                         type="number"
                         step="0.1"
@@ -1109,7 +1140,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Nombre proveedor / dueño</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Nombre proveedor / dueño</label>
                       <input
                         type="text"
                         placeholder="Juan Pérez"
@@ -1120,7 +1151,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Teléfono proveedor</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Teléfono proveedor</label>
                       <input
                         type="text"
                         placeholder="099 123 456"
@@ -1131,7 +1162,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">Fecha de compra</label>
+                      <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Fecha de compra</label>
                       <input
                         type="date"
                         value={purchaseDate}
@@ -1299,7 +1330,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(idx)}
-                                className="p-1 rounded-md bg-[#D7141A] text-white hover:bg-[#B80E14] transition-colors"
+                                className="p-1 rounded-md bg-[#D7141A] text-white hover:bg-[#B80E14] transition-colors cursor-pointer"
+                                aria-label="Eliminar foto"
                                 title="Eliminar foto"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1311,7 +1343,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleSetCover(img)}
-                                  className="px-2 py-1 rounded bg-[#D7141A] text-white font-bold text-[10px] hover:bg-[#B80E14] transition-colors"
+                                  className="px-2 py-1 rounded bg-[#D7141A] text-white font-bold text-[10px] hover:bg-[#B80E14] transition-colors cursor-pointer"
                                 >
                                   Hacer portada
                                 </button>
@@ -1321,7 +1353,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                   type="button"
                                   disabled={idx === 0}
                                   onClick={() => handleMoveImage(idx, 'up')}
-                                  className="p-1 rounded bg-white text-[#161616] hover:bg-[#F5F5F4] border border-[#E5E5E3] disabled:opacity-30"
+                                  className="p-1 rounded bg-white text-[#161616] hover:bg-[#F5F5F4] border border-[#E5E5E3] disabled:opacity-30 cursor-pointer"
+                                  aria-label="Mover foto antes"
                                   title="Mover antes"
                                 >
                                   <ArrowUp className="w-3.5 h-3.5" />
@@ -1330,7 +1363,8 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                                   type="button"
                                   disabled={idx === images.length - 1}
                                   onClick={() => handleMoveImage(idx, 'down')}
-                                  className="p-1 rounded bg-white text-[#161616] hover:bg-[#F5F5F4] border border-[#E5E5E3] disabled:opacity-30"
+                                  className="p-1 rounded bg-white text-[#161616] hover:bg-[#F5F5F4] border border-[#E5E5E3] disabled:opacity-30 cursor-pointer"
+                                  aria-label="Mover foto después"
                                   title="Mover después"
                                 >
                                   <ArrowDown className="w-3.5 h-3.5" />
@@ -1366,7 +1400,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
               <div className="p-4 pt-0 border-t border-[#E5E5E3] space-y-4 pt-3">
                 {/* Equipamiento sugerido */}
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1.5">
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1.5">
                     Equipamiento y accesorios:
                   </label>
                   <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
@@ -1378,13 +1412,18 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                           type="button"
                           disabled={!canEdit}
                           onClick={() => handleToggleFeature(eq)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all inline-flex items-center gap-1.5 ${
                             isSelected
                               ? 'bg-[#161616] text-white font-bold'
                               : 'bg-[#F5F5F4] text-[#6B6B6B] hover:bg-[#E5E5E3] border border-[#E5E5E3]'
                           }`}
                         >
-                          {isSelected ? '✓ ' : '+ '} {eq}
+                          {isSelected ? (
+                            <Check className="w-3 h-3 text-white" />
+                          ) : (
+                            <Plus className="w-3 h-3 text-[#6B6B6B]" />
+                          )}
+                          <span>{eq}</span>
                         </button>
                       );
                     })}
@@ -1419,7 +1458,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
 
                 {/* Descripción Pública */}
                 <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                     Descripción pública para catálogo web / Tiendanube
                   </label>
                   <textarea
@@ -1479,7 +1518,7 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
                     const val = customFields[cf.id];
                     return (
                       <div key={cf.id}>
-                        <label className="block text-[11px] font-bold text-[#6B6B6B] uppercase mb-1">
+                        <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                           {cf.name} {cf.required ? '*' : ''}
                           <span className="text-[9px] lowercase text-[#6B6B6B] ml-1">
                             ({cf.show_in_catalog ? 'Público' : 'Interno'})
@@ -1601,6 +1640,15 @@ export const DealershipVehicleModal: React.FC<DealershipVehicleModalProps> = ({
           </Button>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={imageIndexToDelete !== null}
+        onClose={() => setImageIndexToDelete(null)}
+        onConfirm={handleConfirmDeleteImage}
+        title="¿Eliminar foto?"
+        message="¿Seguro que deseas eliminar esta foto del vehículo?"
+        confirmText="Eliminar foto"
+      />
     </div>
   );
 };

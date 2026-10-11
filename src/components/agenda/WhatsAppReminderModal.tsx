@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
-import { MessageSquare, Send, Copy, Check } from 'lucide-react';
 import { Appointment, Client, Vehicle } from '../../types';
-import { generateAppointmentWhatsAppMessage, sanitizePhoneForWhatsApp, normalizePlate } from '../../lib/formatters';
+import { generateAppointmentWhatsAppMessage, sanitizePhoneForWhatsApp, normalizePlate, getLocalDateString, formatLocalTime } from '../../lib/formatters';
 import { useToast } from '../../context/ToastContext';
 import { Button } from '../ui/Button';
+import { Check, Copy, Send } from 'lucide-react';
 
 interface WhatsAppReminderModalProps {
   isOpen: boolean;
@@ -24,8 +24,8 @@ export const WhatsAppReminderModal: React.FC<WhatsAppReminderModalProps> = ({
   const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  const dateStr = appointment.start_time.slice(0, 10);
-  const timeStr = appointment.start_time.slice(11, 16);
+  const dateStr = getLocalDateString(appointment.start_time);
+  const timeStr = formatLocalTime(appointment.start_time) || appointment.start_time.slice(11, 16);
   const vehicleInfo = vehicle ? `${vehicle.brand} ${vehicle.model} (${normalizePlate(vehicle.plate)})` : 'su vehículo';
 
   const defaultMsg = generateAppointmentWhatsAppMessage(

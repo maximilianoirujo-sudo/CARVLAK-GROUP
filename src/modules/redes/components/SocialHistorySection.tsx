@@ -8,13 +8,18 @@ import {
   Download,
   Share2,
   Check,
-  Search
+  Search,
+  Sliders
 } from 'lucide-react';
 import { SocialMediaPostRecord, SocialMediaCategory } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
 
-export const SocialHistorySection: React.FC = () => {
+interface SocialHistorySectionProps {
+  onEditPost?: (post: SocialMediaPostRecord) => void;
+}
+
+export const SocialHistorySection: React.FC<SocialHistorySectionProps> = ({ onEditPost }) => {
   const { socialMediaPosts, updateSocialMediaPost, deleteSocialMediaPost } = useData();
   const { showToast } = useToast();
 
@@ -244,6 +249,17 @@ export const SocialHistorySection: React.FC = () => {
                   {copiedId === post.id ? <Check className="w-3.5 h-3.5 text-[#1E6B43]" /> : <Copy className="w-3.5 h-3.5 text-[#D7141A]" />}
                   <span>{copiedId === post.id ? 'Copiado' : 'Copiar texto'}</span>
                 </button>
+
+                {onEditPost && (
+                  <button
+                    type="button"
+                    onClick={() => onEditPost(post)}
+                    title="Editar en Estudio"
+                    className="p-2 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] cursor-pointer"
+                  >
+                    <Sliders className="w-4 h-4 text-[#D7141A]" />
+                  </button>
+                )}
 
                 {post.thumbnail_data && (
                   <button

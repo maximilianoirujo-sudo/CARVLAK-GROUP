@@ -19,7 +19,7 @@ import {
 import { Client, Vehicle } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
-import { sanitizePhoneForWhatsApp, BUSINESS_CONFIG, formatCurrency } from '../../lib/formatters';
+import { sanitizePhoneForWhatsApp, BUSINESS_CONFIG, formatCurrency, getLocalDateString, formatLocalTime } from '../../lib/formatters';
 import { UruguayanPlate } from '../ui/UruguayanPlate';
 
 interface ClientDetailModalProps {
@@ -220,7 +220,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                           <span className="font-semibold text-[#161616]">{a.title || 'Servicio'}</span>
                         </div>
                         <div className="text-[11px] text-[#6B6B6B] mt-1">
-                          {a.start_time.slice(0, 10)} ({a.start_time.slice(11, 16)} hs)
+                          {getLocalDateString(a.start_time)} ({formatLocalTime(a.start_time) || a.start_time.slice(11, 16)} hs)
                         </div>
                       </div>
                       <div className="text-right">

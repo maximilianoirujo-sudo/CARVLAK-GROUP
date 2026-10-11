@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
   const businessModules = [
     { id: 'mod-automotora', label: 'Automotora', subtext: 'Stock y ventas', icon: Building2 },
     { id: 'mod-detailing', label: 'Detailing', subtext: 'Taller Shangrilá', icon: Droplets },
-    { id: 'mod-inspeccion', label: 'Inspección', subtext: 'Peritaje vehicular', icon: ClipboardCheck }
+    { id: 'mod-inspeccion', label: 'Carbusters', subtext: 'Peritaje precompra', icon: ClipboardCheck }
   ];
 
   return (
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
             CARVLAK Group Hub
           </div>
           <p className="text-[10px] text-[#6B6B6B] leading-relaxed">
-            Automotora • Detailing • Inspección
+            Automotora • Detailing • Carbusters
           </p>
         </div>
       </div>

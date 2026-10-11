@@ -68,7 +68,7 @@ export const ClientList: React.FC<ClientListProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-title font-bold text-[#161616]">Directorio de clientes</h2>
-              <p className="text-xs text-[#6B6B6B]">Base compartida entre Automotora, Detailing e Inspección</p>
+              <p className="text-xs text-[#6B6B6B]">Base compartida entre Automotora, Detailing y Carbusters</p>
             </div>
           </div>
 

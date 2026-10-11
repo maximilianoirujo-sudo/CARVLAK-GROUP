@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useData } from '../../../context/DataContext';
-import { useAuth } from '../../../context/AuthContext';
+import React, { useState, useContext } from 'react';
+import { DataContext } from '../../../context/DataContext';
+import { AuthContext } from '../../../context/AuthContext';
 import { VehicleInspection, InspectionChecklistItem } from '../../../types';
 import { CarPanelsDiagram } from './CarPanelsDiagram';
 import {
@@ -23,7 +23,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { sanitizePhoneForWhatsApp } from '../../../lib/formatters';
+import { sanitizePhoneForWhatsApp, formatCurrency } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
 
@@ -38,8 +38,11 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
   onBack,
   onNavigateToDetailing
 }) => {
-  const { createDetailingQuoteFromInspection, detailingQuotes } = useData();
-  const { profile } = useAuth();
+  const dataCtx = useContext(DataContext);
+  const authCtx = useContext(AuthContext);
+  const profile = authCtx?.profile || null;
+  const generalConfig = dataCtx?.generalConfig;
+  const createDetailingQuoteFromInspection = dataCtx?.createDetailingQuoteFromInspection;
 
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [createdQuoteId, setCreatedQuoteId] = useState<string | null>(
@@ -63,39 +66,26 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
   const handleShareWhatsApp = () => {
     const phone = inspection.buyer_phone || '';
     const cleanPhone = sanitizePhoneForWhatsApp(phone);
-    const targetPhone = cleanPhone || '59899267964';
+    const targetPhone = cleanPhone || generalConfig?.company_phone || '59899267964';
 
-    const msg = `🔍 *INFORME DE PERITAJE VEHICULAR CARVLAK*\n` +
-      `🚗 *Vehículo:* ${inspection.vehicle_info} (${inspection.vehicle_plate})\n` +
+    const msg = `🚗 *INFORME DE PERITAJE PRECOMPRA • CARBUSTERS*\n\n` +
+      `Estimado/a ${inspection.buyer_name || 'Cliente'},\n` +
+      `Adjuntamos el informe del peritaje técnico realizado a su vehículo de interés *${inspection.vehicle_info}* (Matrícula: ${inspection.vehicle_plate}):\n\n` +
       `📊 *Puntaje General:* ${inspection.score}/100\n` +
       `🚥 *Dictamen:* ${inspection.traffic_light.toUpperCase()}\n` +
       `💰 *Costo estimado de reparaciones:* $U ${inspection.estimated_repair_cost.toLocaleString('es-UY')}\n` +
       (inspection.sucive_debt ? `⚠️ *Deuda SUCIVE:* $U ${inspection.sucive_debt.toLocaleString('es-UY')}\n` : '') +
       `📋 *Conclusión:* ${inspection.inspector_conclusion || 'Inspección completada con éxito.'}\n\n` +
       `🔗 *Ver Informe Completo y Fotos Online:*\n${publicUrl}\n\n` +
-      `_CARVLAK Group • Peritaje Técnico Profesional_`;
+      `_Carbusters • Peritaje Técnico Precompra_`;
 
     const url = `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
-  // Enviar a Jonathan Kaitazoff (+598 99 267 964) para decisión de compra de Automotora
-  const handleSendToJonathan = () => {
-    const jonathanPhone = '59899267964';
-    const msg = `🚨 *EVALUACIÓN DE PATIO PARA CARVLAK AUTOMOTORA*\n` +
-      `🚗 *Auto:* ${inspection.vehicle_info} (${inspection.vehicle_plate})\n` +
-      `🎯 *Dictamen Perito:* ${inspection.traffic_light.toUpperCase()} (Puntaje: ${inspection.score}/100)\n` +
-      `💼 *Decisión sugerida:* ${inspection.automotora_decision?.toUpperCase() || 'EVALUAR'}\n` +
-      (inspection.automotora_suggested_price ? `💵 *Precio sugerido:* ${inspection.automotora_currency || 'USD'} ${inspection.automotora_suggested_price.toLocaleString('es-UY')}\n` : '') +
-      `🛠️ *Arreglos a contemplar:* $U ${inspection.estimated_repair_cost.toLocaleString('es-UY')}\n` +
-      `📝 *Detalles:* ${inspection.repair_details || 'Sin observaciones mayores'}\n\n` +
-      `🔗 *Ver peritaje online:*\n${publicUrl}`;
-
-    window.open(`https://wa.me/${jonathanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
   // Generar Cross-Selling a DetailVlak en 1 toque
   const handleGenerateDetailing = () => {
+    if (!createDetailingQuoteFromInspection) return;
     const newQuoteId = createDetailingQuoteFromInspection(inspection.id);
     if (newQuoteId) {
       setCreatedQuoteId(newQuoteId);
@@ -146,15 +136,6 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             <span>Compartir WhatsApp</span>
           </Button>
 
-          {/* Enviar a Jonathan (Automotora) */}
-          <Button
-            variant="whatsapp"
-            size="sm"
-            onClick={handleSendToJonathan}
-          >
-            <span>Enviar a Jonathan (+598)</span>
-          </Button>
-
           {/* Copiar Link */}
           <Button
             variant="secondary"
@@ -177,49 +158,51 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
         </div>
       </div>
 
-      {/* BANNER DE CROSS-SELLING DETAILVLAK (1 TOQUE) */}
-      <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
-              Servicio adicional sugerido
-            </span>
+      {/* BANNER DE CROSS-SELLING DETAILVLAK (1 TOQUE - Solo visible para staff autenticado) */}
+      {profile && (
+        <div className="p-4 sm:p-5 rounded-xl bg-white border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden shadow-sm">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-title font-bold uppercase tracking-wider text-[#6B6B6B]">
+                Servicio adicional sugerido
+              </span>
+            </div>
+            <h4 className="text-sm font-title font-bold text-[#161616]">
+              ¿Mejora estética recomendada para este vehículo?
+            </h4>
+            <p className="text-xs text-[#6B6B6B]">
+              Crea una cotización en DetailVlak pre-cargada con el cliente, el vehículo y los servicios sugeridos (Tratamiento cerámico, Limpieza de tapizados, Ópticas).
+            </p>
           </div>
-          <h4 className="text-sm font-title font-bold text-[#161616]">
-            ¿Mejora estética recomendada para este vehículo?
-          </h4>
-          <p className="text-xs text-[#6B6B6B]">
-            Crea una cotización en DetailVlak pre-cargada con el cliente, el vehículo y los servicios sugeridos (Tratamiento cerámico, Limpieza de tapizados, Ópticas).
-          </p>
-        </div>
 
-        {createdQuoteId ? (
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold text-[#161616] bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3] flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" /> Cotización #{createdQuoteId.slice(-6)} creada
-            </span>
-            {onNavigateToDetailing && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onNavigateToDetailing(createdQuoteId)}
-              >
-                <span>Ver en Detailing</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            )}
-          </div>
-        ) : (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleGenerateDetailing}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Crear cotización en DetailVlak</span>
-          </Button>
-        )}
-      </div>
+          {createdQuoteId ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-semibold text-[#161616] bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3] flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" /> Cotización #{createdQuoteId.slice(-6)} creada
+              </span>
+              {onNavigateToDetailing && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onNavigateToDetailing(createdQuoteId)}
+                >
+                  <span>Ver en Detailing</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleGenerateDetailing}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Crear cotización en DetailVlak</span>
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* DOCUMENTO FORMAL DE INFORME TÉCNICO (APTO PARA PRINT / PDF) */}
       <div className="p-6 sm:p-8 rounded-xl bg-white border border-[#E5E5E3] shadow-sm space-y-6 print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
@@ -233,11 +216,11 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                 className="h-7 sm:h-8 w-auto object-contain print:h-8"
               />
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3] print:bg-[#F5F5F4] print:text-black">
-                {inspection.type === 'precompra' ? 'Peritaje precompra' : 'Inspección interna automotora'}
+                Peritaje precompra Carbusters
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-title font-bold text-[#161616] print:text-black">
-              Informe técnico de inspección
+              Informe técnico pericial precompra
             </h1>
             <p className="text-xs text-[#6B6B6B] print:text-[#444444]">
               Emitido el {new Date(inspection.completed_at || inspection.scheduled_at || inspection.created_at).toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })} • Taller Shangrilá (Av. Giannattasio)
@@ -343,8 +326,8 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                 SUCIVE:{' '}
                 <strong className="text-[#161616] print:text-black">
                   {inspection.sucive_debt === 0
-                    ? 'Al día ($0 deuda)'
-                    : `$U ${inspection.sucive_debt?.toLocaleString('es-UY') || 0} de deuda`}
+                    ? `Al día (${formatCurrency(0, 'UYU')} deuda)`
+                    : `${formatCurrency(inspection.sucive_debt || 0, 'UYU')} de deuda`}
                 </strong>
               </div>
               <div className="text-[#6B6B6B] print:text-slate-600 truncate">
@@ -356,7 +339,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
 
         {/* CONCLUSIÓN PRINCIPAL & COSTO DE ARREGLOS */}
         <div className="p-5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-3">
-          <span className="text-[10px] font-title font-bold uppercase tracking-widest text-[#6B6B6B] print:text-slate-700">
+          <span className="text-[10px] font-title font-bold text-[#6B6B6B] print:text-slate-700">
             Conclusión del perito
           </span>
           <p className="text-xs sm:text-sm text-[#161616] print:text-slate-800 leading-relaxed italic">
@@ -370,7 +353,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                 Costo estimado de reparaciones inmediatas:
               </span>{' '}
               <span className="font-mono font-bold text-[#161616] print:text-black text-sm">
-                $U {inspection.estimated_repair_cost.toLocaleString('es-UY')}
+                {formatCurrency(inspection.estimated_repair_cost, 'UYU')}
               </span>
               {inspection.repair_details && (
                 <span className="text-[#6B6B6B] print:text-slate-600 ml-2">
@@ -378,29 +361,6 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
                 </span>
               )}
             </div>
-
-            {/* Dictamen Automotora */}
-            {inspection.automotora_decision && (
-              <div className="flex items-center gap-1.5 font-bold">
-                <span className="text-[#6B6B6B] print:text-slate-600">Decisión de compra:</span>
-                <span
-                  className={`px-2 py-0.5 rounded text-[11px] uppercase ${
-                    inspection.automotora_decision === 'comprar'
-                      ? 'bg-[#EEF7F2] border border-[#CDE9D9] text-[#1E6B43]'
-                      : inspection.automotora_decision === 'negociar'
-                      ? 'bg-[#FEF7EC] border border-[#FCE2B6] text-[#945B0E]'
-                      : 'bg-[#FDF2F2] text-[#B80E14] border border-[#FACDCD]'
-                  }`}
-                >
-                  {inspection.automotora_decision}
-                </span>
-                {inspection.automotora_suggested_price && (
-                  <span className="font-mono text-[#161616]">
-                    ({inspection.automotora_currency || 'USD'} {inspection.automotora_suggested_price.toLocaleString('es-UY')})
-                  </span>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
@@ -415,7 +375,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
 
         {/* RESUMEN OBD-II */}
         <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] print:bg-slate-50 print:border-slate-300 space-y-2">
-          <span className="text-[10px] font-title font-bold uppercase text-[#161616] print:text-black tracking-wider flex items-center gap-1.5">
+          <span className="text-[10px] font-title font-bold text-[#161616] print:text-black flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5 text-[#6B6B6B]" /> Diagnóstico electrónico OBD-II
           </span>
           <div className="flex flex-wrap items-center gap-2">
@@ -555,7 +515,7 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
               {inspection.inspector_signature || 'Diego Techera (Perito Técnico CARVLAK)'}
             </div>
             <div className="text-[11px] text-[#6B6B6B] print:text-slate-600">
-              Av. Giannattasio & Calcagno, Shangrilá, Canelones
+              {generalConfig?.address || 'Av. Giannattasio & Calcagno, Shangrilá, Canelones'}
             </div>
           </div>
 
@@ -563,8 +523,9 @@ export const InspectionReportView: React.FC<InspectionReportViewProps> = ({
             <span className="font-mono text-[10px] text-[#6B6B6B]">
               Token de verificación: {inspection.token}
             </span>
-            <p className="text-[10px] text-[#161616] print:text-black font-bold">
-              ✓ Documento oficial CARVLAK Group
+            <p className="text-[10px] text-[#161616] print:text-black font-bold flex items-center justify-end gap-1">
+              <CheckCircle2 className="w-3 h-3 text-[#1E6B43]" />
+              <span>Documento oficial CARVLAK Group</span>
             </p>
           </div>
         </div>

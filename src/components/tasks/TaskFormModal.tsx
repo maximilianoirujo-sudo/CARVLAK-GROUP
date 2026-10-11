@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Task, Business, TaskStatus } from '../../types';
+import { getLocalDateString } from '../../lib/formatters';
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   const [description, setDescription] = useState('');
   const [business, setBusiness] = useState<Business | 'general'>('general');
   const [assignedTo, setAssignedTo] = useState(profile?.id || '');
-  const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState(() => getLocalDateString());
   const [status, setStatus] = useState<TaskStatus>('Pendiente');
 
   useEffect(() => {
@@ -33,14 +34,14 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       setDescription(taskToEdit.description || '');
       setBusiness(taskToEdit.business);
       setAssignedTo(taskToEdit.assigned_to || '');
-      setDueDate(taskToEdit.due_date || new Date().toISOString().slice(0, 10));
+      setDueDate(taskToEdit.due_date || getLocalDateString());
       setStatus(taskToEdit.status);
     } else {
       setTitle('');
       setDescription('');
       setBusiness('general');
       setAssignedTo(profile?.id || '');
-      setDueDate(new Date().toISOString().slice(0, 10));
+      setDueDate(getLocalDateString());
       setStatus('Pendiente');
     }
   }, [taskToEdit, isOpen, profile]);
@@ -120,7 +121,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
             >
               <option value="general">General / Todo el grupo</option>
               <option value="detailing">DetailVlak</option>
-              <option value="inspeccion">Inspección</option>
+              <option value="inspeccion">Carbusters</option>
               <option value="automotora">Automotora</option>
             </select>
           </div>

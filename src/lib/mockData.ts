@@ -24,8 +24,11 @@ import {
   DealershipInquiry,
   DealershipConfig,
   SocialMediaConfig,
-  SocialMediaPostRecord
+  SocialMediaPostRecord,
+  GeneralConfig,
+  DetailingConfig
 } from '../types';
+import { getLocalDateString } from './formatters';
 
 export const INITIAL_PROFILES: Profile[] = [
   {
@@ -58,7 +61,7 @@ export const INITIAL_PROFILES: Profile[] = [
     roles: ['encargado', 'detailer'],
     businesses: ['detailing'],
     is_active: true,
-    commissions: { automotora: 0, detailing: 20, inspeccion: 0 },
+    commissions: { automotora: 0, detailing: 0, inspeccion: 0 },
     created_at: new Date().toISOString()
   },
   {
@@ -69,7 +72,7 @@ export const INITIAL_PROFILES: Profile[] = [
     roles: ['detailer'],
     businesses: ['detailing'],
     is_active: true,
-    commissions: { automotora: 0, detailing: 10, inspeccion: 0 },
+    commissions: { automotora: 0, detailing: 0, inspeccion: 0 },
     created_at: new Date().toISOString()
   },
   {
@@ -261,7 +264,7 @@ export const INITIAL_VEHICLE_HISTORY: VehicleHistoryEvent[] = [
 ];
 
 const now = new Date();
-const todayIso = now.toISOString().slice(0, 10);
+const todayIso = getLocalDateString(now);
 
 export const INITIAL_APPOINTMENTS: Appointment[] = [
   {
@@ -270,7 +273,10 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     client_id: 'cli-2',
     vehicle_id: 'veh-1',
     assigned_to: 'user-maxi',
-    start_time: `${todayIso}T10:00:00Z`,
+    work_bay_id: 'box-2',
+    quote_id: 'quote-1',
+    stage: 'Confirmado',
+    start_time: `${todayIso}T10:00:00-03:00`,
     duration_minutes: 180,
     status: 'Confirmado',
     title: 'Tratamiento Cerámico Vidrio Líquido',
@@ -278,8 +284,8 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     price_amount: 18500,
     price_currency: 'UYU',
     created_by: 'user-maxi',
-    created_at: '2026-09-24T12:00:00Z',
-    updated_at: '2026-09-24T12:00:00Z'
+    created_at: '2026-09-24T12:00:00-03:00',
+    updated_at: '2026-09-24T12:00:00-03:00'
   },
   {
     id: 'app-2',
@@ -287,7 +293,7 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     client_id: 'cli-1',
     vehicle_id: 'veh-2',
     assigned_to: 'user-jonathan',
-    start_time: `${todayIso}T14:30:00Z`,
+    start_time: `${todayIso}T14:30:00-03:00`,
     duration_minutes: 45,
     status: 'Pendiente',
     title: 'Peritaje Rápido en Patio (Trade-In)',
@@ -295,8 +301,8 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     price_amount: 2200,
     price_currency: 'UYU',
     created_by: 'user-jonathan',
-    created_at: '2026-09-24T15:00:00Z',
-    updated_at: '2026-09-24T15:00:00Z'
+    created_at: '2026-09-24T15:00:00-03:00',
+    updated_at: '2026-09-24T15:00:00-03:00'
   },
   {
     id: 'app-3',
@@ -304,7 +310,7 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     client_id: 'cli-3',
     vehicle_id: 'veh-3',
     assigned_to: 'user-maxi',
-    start_time: `${todayIso}T16:30:00Z`,
+    start_time: `${todayIso}T16:30:00-03:00`,
     duration_minutes: 60,
     status: 'Confirmado',
     title: 'Test Drive & Coordinación de Seña',
@@ -312,8 +318,8 @@ export const INITIAL_APPOINTMENTS: Appointment[] = [
     price_amount: 24500,
     price_currency: 'USD',
     created_by: 'user-maxi',
-    created_at: '2026-09-24T16:00:00Z',
-    updated_at: '2026-09-24T16:00:00Z'
+    created_at: '2026-09-24T16:00:00-03:00',
+    updated_at: '2026-09-24T16:00:00-03:00'
   }
 ];
 
@@ -453,6 +459,158 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     isActive: true
   }
 ];
+
+export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
+  empresa_id: 'carvlak',
+  work_bays: [
+    { id: 'box-1', name: 'Box 1 (Lavado & Prep)', is_active: true },
+    { id: 'box-2', name: 'Box 2 (Pulido & Cerámico)', is_active: true },
+    { id: 'box-3', name: 'Box 3 (Interiores & Detalle)', is_active: true }
+  ],
+  schedule: {
+    monday: { open: '08:30', close: '18:30', is_open: true },
+    tuesday: { open: '08:30', close: '18:30', is_open: true },
+    wednesday: { open: '08:30', close: '18:30', is_open: true },
+    thursday: { open: '08:30', close: '18:30', is_open: true },
+    friday: { open: '08:30', close: '18:30', is_open: true },
+    saturday: { open: '09:00', close: '13:00', is_open: true },
+    sunday: { open: '09:00', close: '13:00', is_open: false }
+  },
+  buffer_between_appointments_min: 15,
+  holidays: [
+    { date: '2026-01-01', reason: 'Año Nuevo' },
+    { date: '2026-05-01', reason: 'Día de los Trabajadores' },
+    { date: '2026-07-18', reason: 'Jura de la Constitución' },
+    { date: '2026-08-25', reason: 'Declaratoria de la Independencia' },
+    { date: '2026-12-25', reason: 'Navidad' }
+  ],
+  flow_statuses: [
+    { id: 'Agendado', name: 'Agendado', color: '#2563EB', order: 1, is_active: true },
+    { id: 'Confirmado', name: 'Confirmado', color: '#4F46E5', order: 2, is_active: true },
+    { id: 'Recibido', name: 'Recibido (Check-in)', color: '#D97706', order: 3, is_active: true },
+    { id: 'En proceso', name: 'En proceso', color: '#7C3AED', order: 4, is_active: true },
+    { id: 'Control de calidad', name: 'Control de calidad', color: '#0D9488', order: 5, is_active: true },
+    { id: 'Listo para retirar', name: 'Listo para retirar', color: '#059669', order: 6, is_active: true },
+    { id: 'Entregado y cobrado', name: 'Entregado y cobrado', color: '#161616', order: 7, is_active: true },
+    { id: 'Cancelado', name: 'Cancelado', color: '#6B6B6B', order: 8, is_active: true },
+    { id: 'No vino', name: 'No vino (No-show)', color: '#DC2626', order: 9, is_active: true }
+  ],
+  alert_thresholds: {
+    unconfirmed_hours_before: 24,
+    late_checkin_minutes: 15,
+    delayed_work_hours: 0,
+    ready_not_notified_hours: 2,
+    delivered_unpaid_hours: 1,
+    quote_followup_days: 3,
+    past_unclosed_hours: 12,
+    stock_lead_days: 7
+  },
+  whatsapp_templates: {
+    confirm_appointment: '¡Hola {cliente}! Te escribimos de *DetailVlak Shangrilá* 🚗✨\n\nQueremos confirmar tu turno para tu *{auto}*:\n📅 *Fecha:* {fecha}\n⏰ *Hora:* {hora} hs\n📌 *Servicios:* {servicios}\n💰 *Total:* {total}\n📍 *Taller:* {direccion}\n\n¿Nos confirmas tu asistencia? ¡Muchas gracias!',
+    day_before_reminder: '¡Hola {cliente}! Te recordamos tu turno de mañana en *DetailVlak* para tu *{auto}* a las *{hora} hs*. ¡Te esperamos en {direccion}!',
+    car_ready: '¡Hola {cliente}! 🎉 Tu *{auto}* ya está listo en *DetailVlak*.\n\nPuedes pasar a retirarlo cuando gustes antes de las 18:30 hs. ¡Quedó impecable! ✨\n📍 {direccion}',
+    quote_followup: '¡Hola {cliente}! Te escribimos de *DetailVlak* para consultar si pudiste revisar la cotización para tu *{auto}* por {total}. ¿Tienes alguna consulta o te gustaría agendar un turno?'
+  },
+  reception_checklist: [
+    { id: 'valuable_items', label: 'Objetos de valor retirados de la cabina', is_required: true },
+    { id: 'fuel_registered', label: 'Nivel de combustible verificado y anotado', is_required: true },
+    { id: 'mileage_registered', label: 'Kilometraje registrado del tablero', is_required: true },
+    { id: 'pre_damages_photos', label: 'Fotos de daños previos y estado de ingreso', is_required: true },
+    { id: 'client_signature', label: 'Conformidad y aceptación de términos del cliente', is_required: true }
+  ],
+  quality_checklists_by_service: {
+    default: [
+      { id: 'qc_vidrios', label: 'Vidrios limpios por dentro y por fuera sin vetas' },
+      { id: 'qc_plasticos', label: 'Plásticos y gomas acondicionados satinados sin exceso' },
+      { id: 'qc_llantas', label: 'Llantas y pasarruedas limpios sin restos de ferodo' },
+      { id: 'qc_aspirado', label: 'Aspirado profundo sin residuos bajo asientos o alfombras' },
+      { id: 'qc_aroma', label: 'Aromatización sutil y terminación final prolija' }
+    ],
+    ceramico: [
+      { id: 'qc_desengrasado', label: 'Desengrasado con panel wipe / IPA verificado' },
+      { id: 'qc_nivelacion', label: 'Coating nivelado sin halos ni sombras con luz de inspección' },
+      { id: 'qc_curado', label: 'Tiempo de curado inicial completado antes de entrega' }
+    ]
+  },
+  recipes_by_service: {
+    ceramico: {
+      Chico: [{ stock_item_id: 'stk-3', quantity: 25 }, { stock_item_id: 'stk-4', quantity: 2 }],
+      Mediano: [{ stock_item_id: 'stk-3', quantity: 30 }, { stock_item_id: 'stk-4', quantity: 2 }],
+      SUV: [{ stock_item_id: 'stk-3', quantity: 40 }, { stock_item_id: 'stk-4', quantity: 3 }],
+      'SUV/Rural': [{ stock_item_id: 'stk-3', quantity: 40 }, { stock_item_id: 'stk-4', quantity: 3 }],
+      'Pick-up': [{ stock_item_id: 'stk-3', quantity: 50 }, { stock_item_id: 'stk-4', quantity: 4 }],
+      Moto: [{ stock_item_id: 'stk-3', quantity: 15 }, { stock_item_id: 'stk-4', quantity: 1 }]
+    },
+    interior: {
+      Chico: [{ stock_item_id: 'stk-1', quantity: 0.2 }, { stock_item_id: 'stk-2', quantity: 0.3 }],
+      Mediano: [{ stock_item_id: 'stk-1', quantity: 0.25 }, { stock_item_id: 'stk-2', quantity: 0.4 }],
+      SUV: [{ stock_item_id: 'stk-1', quantity: 0.35 }, { stock_item_id: 'stk-2', quantity: 0.5 }],
+      'SUV/Rural': [{ stock_item_id: 'stk-1', quantity: 0.35 }, { stock_item_id: 'stk-2', quantity: 0.5 }],
+      'Pick-up': [{ stock_item_id: 'stk-1', quantity: 0.4 }, { stock_item_id: 'stk-2', quantity: 0.6 }],
+      Moto: [{ stock_item_id: 'stk-1', quantity: 0.1 }, { stock_item_id: 'stk-2', quantity: 0.1 }]
+    }
+  },
+  recurring_expenses: [
+    { id: 'rec-1', name: 'Alquiler Taller Shangrilá', amount: 38000, category: 'Alquiler/Servicios', due_day: 10, frequency: 'mensual' },
+    { id: 'rec-2', name: 'Factura UTE (Electricidad)', amount: 6500, category: 'Alquiler/Servicios', due_day: 18, frequency: 'mensual' },
+    { id: 'rec-3', name: 'Factura OSE (Agua)', amount: 2800, category: 'Alquiler/Servicios', due_day: 15, frequency: 'mensual' },
+    { id: 'rec-4', name: 'Internet & Telefonía Antel', amount: 2400, category: 'Alquiler/Servicios', due_day: 22, frequency: 'mensual' },
+    { id: 'rec-5', name: 'Publicidad Meta Ads (Instagram/FB)', amount: 12000, category: 'Marketing/Publicidad', due_day: 5, frequency: 'mensual' }
+  ],
+  monthly_budgets: {
+    'Insumos': 30000,
+    'Alquiler/Servicios': 55000,
+    'Herramientas/Maquinaria': 15000,
+    'Marketing/Publicidad': 15000,
+    'Sueldos/Adelantos': 60000,
+    'Varios': 10000
+  },
+  discounts_available: [
+    { id: 'combo_10', label: 'Combo 2 servicios (10% OFF)', percentage: 10 },
+    { id: 'special_15', label: 'Cliente Frecuente / Especial (15% OFF)', percentage: 15 },
+    { id: 'promo_20', label: 'Promoción Apertura / Convenio (20% OFF)', percentage: 20 }
+  ],
+  extreme_dirt_surcharge_amount: 800,
+  expense_categories: [
+    'Insumos',
+    'Alquiler/Servicios',
+    'Herramientas/Maquinaria',
+    'Marketing/Publicidad',
+    'Sueldos/Adelantos',
+    'Varios'
+  ],
+  payment_methods: [
+    'Efectivo',
+    'Transferencia BROU',
+    'Transferencia Itaú',
+    'Mercado Pago',
+    'Tarjeta de Débito',
+    'Tarjeta de Crédito'
+  ],
+  suppliers: [
+    'Detailing Pro UY',
+    'Meguiars Uruguay',
+    'Vonixx Distribuidor',
+    '3M Car Care',
+    'Ferretería Shangrilá'
+  ],
+  stock_units: [
+    'litros',
+    'unidades',
+    'botellas',
+    'pack',
+    'gramos',
+    'ml'
+  ],
+  void_reasons: [
+    'Error de carga',
+    'Duplicado',
+    'Cliente canceló',
+    'Prueba del sistema',
+    'Reprogramación',
+    'Vehículo no apto para trabajo'
+  ]
+};
 
 export const INITIAL_STOCK_ITEMS: StockItem[] = [
   {
@@ -916,6 +1074,7 @@ export const INITIAL_INSPECTIONS: VehicleInspection[] = [
     automotora_decision: 'comprar',
     automotora_suggested_price: 36500,
     automotora_currency: 'USD',
+    is_archived: true,
     created_by: 'user-jonathan',
     created_at: '2026-09-24T12:00:00Z',
     updated_at: '2026-09-24T12:00:00Z'
@@ -1095,8 +1254,6 @@ export const INITIAL_DEALERSHIP_CONFIG: DealershipConfig = {
   ]
 };
 
-export { INITIAL_DEALERSHIP_VEHICLES } from './dealershipInitialVehicles';
-
 export const INITIAL_DEALERSHIP_INQUIRIES: DealershipInquiry[] = [
   {
     id: 'inq-1',
@@ -1149,154 +1306,19 @@ export const INITIAL_DEALERSHIP_INQUIRIES: DealershipInquiry[] = [
   }
 ];
 
-// 44 autos oficiales de CARVLAK extraídos de appauto para importación instantánea
-export const APPAUTO_OFFICIAL_CATALOG: Partial<DealershipVehicle>[] = [
-  {
-    plate: 'SBU 101',
-    brand: 'Fiat',
-    model: 'Uno Way',
-    version: '1.4 EVO Way',
-    category: 'Chico',
-    year: 2014,
-    mileage: 152000,
-    sale_price: 6870,
-    sale_currency: 'USD',
-    body_type: 'Hatchback',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Blanco',
-    features: ['Motor Fire 1.4 EVO', 'Aire acondicionado', 'Dirección hidráulica', 'Vidrios eléctricos delanteros', 'Faros antiniebla'],
-    images: [
-      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/fiat-uno-way-2014-blanco-ce4009d9f7d94168a517774703389288-1024-1024.webp',
-      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/whatsapp-image-2026-04-28-at-11-06-30-am-f525ee231b2f14b37b17774703274551-1024-1024.webp'
-    ]
-  },
-  {
-    plate: 'SBU 102',
-    brand: 'Faw',
-    model: 'N7',
-    version: '1.3 16V Extra Full',
-    category: 'Chico',
-    year: 2017,
-    mileage: 89000,
-    sale_price: 7500,
-    sale_currency: 'USD',
-    body_type: 'Hatchback',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Blanco',
-    features: ['Motor 1.3 16V eficiente', 'Aire acondicionado', 'Doble airbag frontal', 'Frenos ABS + EBD'],
-    images: [
-      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-n7-2017-blanco-6e03eba2e1b2e3c99117889646778099-1024-1024.webp'
-    ]
-  },
-  {
-    plate: 'SBU 103',
-    brand: 'Faw',
-    model: 'Oley',
-    version: '1.5 VCT Sedán',
-    category: 'Mediano',
-    year: 2015,
-    mileage: 149000,
-    sale_price: 7900,
-    sale_currency: 'USD',
-    body_type: 'Sedán',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Blanco',
-    features: ['Motor 1.5 VCT', 'Gran capacidad de baúl', 'Aire acondicionado', 'Frenos ABS'],
-    images: [
-      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/faw-oley-26589ebfbcbbc106a017857881393392-1024-1024.webp'
-    ]
-  },
-  {
-    plate: 'SBU 104',
-    brand: 'BYD',
-    model: 'F0 GLX-i',
-    version: '1.0 GLX-I Extra Full',
-    category: 'Chico',
-    year: 2015,
-    mileage: 91000,
-    sale_price: 7900,
-    sale_currency: 'USD',
-    body_type: 'Hatchback',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Blanco',
-    features: ['Motor 1.0 12V muy económico', 'Aire acondicionado', 'Dirección asistida'],
-    images: [
-      'https://dcdn-us.mitiendanube.com/stores/006/928/264/products/byf-f0-rojo-3b6ca2b621c5a440a417794684652785-1024-1024.webp'
-    ]
-  },
-  {
-    plate: 'SBU 105',
-    brand: 'Chevrolet',
-    model: 'Prisma Joy',
-    version: '1.0 Sedán',
-    category: 'Mediano',
-    year: 2018,
-    mileage: 110000,
-    sale_price: 11800,
-    sale_currency: 'USD',
-    body_type: 'Sedán',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Gris Plata',
-    features: ['Motor 1.0 económico', 'Doble airbag', 'Frenos ABS', 'Gran baúl'],
-    images: ['https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&auto=format&fit=crop']
-  },
-  {
-    plate: 'SBU 106',
-    brand: 'Volkswagen',
-    model: 'Up!',
-    version: '1.0 Take Up!',
-    category: 'Chico',
-    year: 2016,
-    mileage: 95000,
-    sale_price: 9900,
-    sale_currency: 'USD',
-    body_type: 'Hatchback',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Rojo',
-    features: ['Motor 1.0 3 cilindros', '5 estrellas Latin NCAP', 'Aire acondicionado'],
-    images: ['https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop']
-  },
-  {
-    plate: 'SBU 107',
-    brand: 'Renault',
-    model: 'Duster',
-    version: '1.6 Expression 4x2',
-    category: 'SUV/Rural',
-    year: 2017,
-    mileage: 115000,
-    sale_price: 13900,
-    sale_currency: 'USD',
-    body_type: 'SUV',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Marrón Safari',
-    features: ['Excelente despeje del suelo', 'Gran espacio interior', 'Doble airbag', 'ABS'],
-    images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop']
-  },
-  {
-    plate: 'SBU 108',
-    brand: 'Nissan',
-    model: 'Versa',
-    version: '1.6 Advance MT',
-    category: 'Mediano',
-    year: 2019,
-    mileage: 72000,
-    sale_price: 14500,
-    sale_currency: 'USD',
-    body_type: 'Sedán',
-    transmission: 'Manual',
-    fuel: 'Nafta',
-    color_exterior: 'Gris Oscuro',
-    features: ['Pantalla táctil con cámara', 'Llave inteligente', 'Control de velocidad crucero'],
-    images: ['https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop']
-  }
-];
+// ==============================================================================
+// CONFIGURACIÓN GENERAL DEL HUB
+// ==============================================================================
+export const INITIAL_GENERAL_CONFIG: GeneralConfig = {
+  company_name: 'CARVLAK Group',
+  company_phone: '59899267964',
+  company_phone_formatted: '099 267 964',
+  jonathan_phone: '59899267964',
+  address: 'Av. Giannattasio & Calcagno, Shangrilá, Canelones',
+  instagram_handle: '@car.vlak',
+  catalog_url: 'https://carvlak.com/?catalogo=autos',
+  is_demo_mode: false
+};
 
 // ==============================================================================
 // REDES SOCIALES & MARKETING STUDIO - CONFIG & MOCK DATA

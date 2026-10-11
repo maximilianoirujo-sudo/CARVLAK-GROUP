@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CarPanelInspection, CarPanelId, CarPanelState } from '../../../types';
-import { Layers, CheckCircle2, AlertTriangle, AlertCircle, Wrench, Edit3, X } from 'lucide-react';
+import { LucideIcon, Layers, CheckCircle2, AlertTriangle, AlertCircle, Wrench, Edit3, X } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 
 interface CarPanelsDiagramProps {
@@ -11,7 +11,7 @@ interface CarPanelsDiagramProps {
 
 const STATE_CONFIG: Record<
   CarPanelState,
-  { label: string; bg: string; border: string; text: string; badgeBg: string; dotColor: string }
+  { label: string; bg: string; border: string; text: string; badgeBg: string; dotColor: string; icon: LucideIcon }
 > = {
   original: {
     label: 'Original',
@@ -19,7 +19,8 @@ const STATE_CONFIG: Record<
     border: 'border-[#CDE9D9]',
     text: 'text-[#1E6B43]',
     badgeBg: 'bg-[#CDE9D9] text-[#1E6B43]',
-    dotColor: 'bg-[#1E6B43]'
+    dotColor: 'bg-[#1E6B43]',
+    icon: CheckCircle2
   },
   repintado: {
     label: 'Repintado',
@@ -27,15 +28,17 @@ const STATE_CONFIG: Record<
     border: 'border-[#FCE2B6]',
     text: 'text-[#945B0E]',
     badgeBg: 'bg-[#FCE2B6] text-[#945B0E]',
-    dotColor: 'bg-[#945B0E]'
+    dotColor: 'bg-[#945B0E]',
+    icon: AlertTriangle
   },
   masillado: {
     label: 'Masillado',
-    bg: 'bg-purple-50 hover:bg-purple-100',
-    border: 'border-purple-200',
-    text: 'text-purple-800',
-    badgeBg: 'bg-purple-100 text-purple-800',
-    dotColor: 'bg-purple-600'
+    bg: 'bg-[#F5F5F4] hover:bg-[#EBEBEA]',
+    border: 'border-[#D0D0CD]',
+    text: 'text-[#161616]',
+    badgeBg: 'bg-[#EBEBEA] text-[#161616]',
+    dotColor: 'bg-[#161616]',
+    icon: Wrench
   },
   danado: {
     label: 'Dañado',
@@ -43,7 +46,8 @@ const STATE_CONFIG: Record<
     border: 'border-[#FACDCD]',
     text: 'text-[#B80E14]',
     badgeBg: 'bg-[#FACDCD] text-[#B80E14]',
-    dotColor: 'bg-[#B80E14]'
+    dotColor: 'bg-[#B80E14]',
+    icon: AlertCircle
   }
 };
 
@@ -138,8 +142,9 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
         </div>
 
         <div className="mt-2 flex items-center justify-between text-[10px]">
-          <span className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${cfg.badgeBg}`}>
-            {cfg.label}
+          <span className={`px-1.5 py-0.5 rounded font-semibold flex items-center gap-1 ${cfg.badgeBg}`}>
+            <cfg.icon className="w-2.5 h-2.5 shrink-0" />
+            <span>{cfg.label}</span>
           </span>
           {panel.thicknessMicrons ? (
             <span className="font-mono text-[#6B6B6B] font-semibold">
@@ -173,19 +178,19 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
 
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#EEF7F2] border border-[#CDE9D9] text-[#1E6B43] text-[11px] font-semibold">
-            <span className="w-2 h-2 rounded-full bg-[#1E6B43]" />
+            <CheckCircle2 className="w-3 h-3 text-[#1E6B43]" />
             Original: <strong>{counts.original}</strong>
           </span>
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#FEF7EC] border border-[#FCE2B6] text-[#945B0E] text-[11px] font-semibold">
-            <span className="w-2 h-2 rounded-full bg-[#945B0E]" />
+            <AlertTriangle className="w-3 h-3 text-[#945B0E]" />
             Repintado: <strong>{counts.repintado}</strong>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-purple-800 text-[11px] font-semibold">
-            <span className="w-2 h-2 rounded-full bg-purple-600" />
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#F5F5F4] border border-[#D0D0CD] text-[#161616] text-[11px] font-semibold">
+            <Wrench className="w-3 h-3 text-[#161616]" />
             Masillado: <strong>{counts.masillado}</strong>
           </span>
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#FDF2F2] border border-[#FACDCD] text-[#B80E14] text-[11px] font-semibold">
-            <span className="w-2 h-2 rounded-full bg-[#B80E14]" />
+            <AlertCircle className="w-3 h-3 text-[#B80E14]" />
             Dañado: <strong>{counts.danado}</strong>
           </span>
         </div>
@@ -276,13 +281,16 @@ export const CarPanelsDiagram: React.FC<CarPanelsDiagramProps> = ({
                       key={st}
                       type="button"
                       onClick={() => setEditingPanel({ ...editingPanel, state: st })}
-                      className={`p-2.5 rounded-lg border text-xs font-bold transition-all text-left flex items-center justify-between ${
+                      className={`p-2.5 rounded-lg border text-xs font-semibold transition-all text-left flex items-center justify-between ${
                         isSelected
                           ? `${cfg.bg} ${cfg.text} ${cfg.border} ring-1 ring-[#161616]`
                           : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
                       }`}
                     >
-                      <span>{cfg.label}</span>
+                      <div className="flex items-center gap-2">
+                        <cfg.icon className="w-3.5 h-3.5 shrink-0" />
+                        <span>{cfg.label}</span>
+                      </div>
                       <span className={`w-2.5 h-2.5 rounded-full ${isSelected ? cfg.dotColor : 'bg-[#9A9A9A]'}`} />
                     </button>
                   );
