@@ -71,7 +71,7 @@ import {
   INITIAL_DETAILING_CONFIG
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense } from '../lib/formatters';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, isDemoModeAllowed } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
 
@@ -260,10 +260,11 @@ const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) 
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, availableProfiles } = useAuth();
+  const isLocalOrDemo = Boolean(import.meta.env.DEV || isDemoModeAllowed());
 
-  // Estados con carga inicial desde localStorage o seed (solo en DEV)
+  // Estados con carga inicial desde localStorage o seed (en DEV o modo demo)
   const [clients, setClients] = useState<Client[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_clients');
       return s ? JSON.parse(s) : INITIAL_CLIENTS;
     }
@@ -271,7 +272,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_vehicles');
       return s ? JSON.parse(s) : INITIAL_VEHICLES;
     }
@@ -279,7 +280,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_appointments');
       return s ? JSON.parse(s) : INITIAL_APPOINTMENTS;
     }
@@ -287,7 +288,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_tasks');
       return s ? JSON.parse(s) : INITIAL_TASKS;
     }
@@ -295,7 +296,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [vehicleHistory, setVehicleHistory] = useState<VehicleHistoryEvent[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_vehicle_history');
       return s ? JSON.parse(s) : INITIAL_VEHICLE_HISTORY;
     }
@@ -303,7 +304,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_activity_logs');
       return s ? JSON.parse(s) : INITIAL_ACTIVITY_LOGS;
     }
@@ -317,7 +318,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [detailingQuotes, setDetailingQuotes] = useState<DetailingQuote[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_detailing_quotes');
       return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
     }
@@ -325,7 +326,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [stockItems, setStockItems] = useState<StockItem[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_stock_items');
       return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
     }
@@ -333,7 +334,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_expenses');
       return s ? JSON.parse(s) : INITIAL_EXPENSES;
     }
@@ -341,7 +342,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [commissions, setCommissions] = useState<CommissionRecord[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_commissions');
       return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
     }
@@ -394,7 +395,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // FASE 3: Estados Inspecciones Vehiculares (Peritaje Carbusters)
   const [inspections, setInspections] = useState<VehicleInspection[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_inspections');
       const raw: VehicleInspection[] = s ? JSON.parse(s) : INITIAL_INSPECTIONS;
       // Las inspecciones internas que ya existen no se borran: marcarlas como archivadas y guardarlas para migrarlas después
@@ -455,7 +456,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const [dealershipInquiries, setDealershipInquiries] = useState<DealershipInquiry[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_dealership_inquiries');
       return s ? JSON.parse(s) : INITIAL_DEALERSHIP_INQUIRIES;
     }
@@ -477,7 +478,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // FASE 5: Estados Redes Sociales & Marketing Studio
   const [socialMediaPosts, setSocialMediaPosts] = useState<SocialMediaPostRecord[]>(() => {
-    if (import.meta.env.DEV) {
+    if (isLocalOrDemo) {
       const s = localStorage.getItem('carvlak_social_media_posts');
       if (s) {
         try {

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Profile, Role } from '../types';
 import { INITIAL_PROFILES } from '../lib/mockData';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, isDemoModeAllowed } from '../lib/supabase';
+import { SupabaseSetupScreen } from '../components/common/SupabaseSetupScreen';
 
 export interface AuthContextType {
   profile: Profile | null;
@@ -20,36 +21,16 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // En producción sin Supabase configurado, bloquear ingreso totalmente
-  if (!import.meta.env.DEV && !isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F4] flex flex-col justify-center items-center p-4">
-        <div className="w-full max-w-md bg-white border border-[#E5E5E3] rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm text-center">
-          <div className="flex items-center justify-center gap-2">
-            <img
-              src="/carvlak-logo-negro.png"
-              alt="CARVLAK"
-              className="h-8 sm:h-9 w-auto object-contain"
-            />
-            <span className="text-sm font-sans font-medium text-[#6B6B6B] tracking-wide">
-              Group
-            </span>
-          </div>
-          <h1 className="text-lg font-title font-bold text-[#161616]">
-            Configuración incompleta
-          </h1>
-          <p className="text-xs text-[#6B6B6B] leading-relaxed">
-            Las credenciales de Supabase no están configuradas en las variables de entorno de este despliegue.
-            Por políticas de seguridad, el ingreso al sistema se encuentra deshabilitado.
-          </p>
-        </div>
-      </div>
-    );
+  const isDemo = Boolean(!isSupabaseConfigured || isDemoModeAllowed());
+
+  // En producción sin Supabase configurado y sin modo demo activado, mostrar pantalla de configuración
+  if (!import.meta.env.DEV && !isSupabaseConfigured && !isDemoModeAllowed()) {
+    return <SupabaseSetupScreen />;
   }
 
-  // En producción, los perfiles no se leen de localStorage
+  // En producción, los perfiles se leen de Supabase a menos que esté en DEV o modo demo
   const [profiles, setProfiles] = useState<Profile[]>(() => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV || isDemoModeAllowed()) {
       const saved = localStorage.getItem('carvlak_profiles');
       return saved ? JSON.parse(saved) : INITIAL_PROFILES;
     }
@@ -57,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [profile, setProfile] = useState<Profile | null>(() => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV || isDemoModeAllowed()) {
       const savedId = localStorage.getItem('carvlak_active_user_id');
       const found = profiles.find((p) => p.id === savedId);
       return found || profiles[0] || null;
@@ -65,18 +46,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  const [loading, setLoading] = useState<boolean>(Boolean(isSupabaseConfigured && !import.meta.env.DEV));
-  const isDemoMode = !isSupabaseConfigured;
+  const [loading, setLoading] = useState<boolean>(Boolean(isSupabaseConfigured && !isDemoModeAllowed() && !import.meta.env.DEV));
+  const isDemoMode = isDemo;
 
-  // Persistir en localStorage solo en desarrollo
+  // Persistir en localStorage en desarrollo o modo demo
   useEffect(() => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV || isDemoModeAllowed()) {
       localStorage.setItem('carvlak_profiles', JSON.stringify(profiles));
     }
   }, [profiles]);
 
   useEffect(() => {
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV || isDemoModeAllowed()) {
       if (profile) {
         localStorage.setItem('carvlak_active_user_id', profile.id);
       } else {
@@ -138,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fetchSupabaseProfile(session.user.id);
         } else {
           setProfile(null);
-          if (!import.meta.env.DEV) {
+          if (!import.meta.env.DEV && !isDemoModeAllowed()) {
             setProfiles([]);
           }
           setLoading(false);
@@ -150,33 +131,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password?: string): Promise<{ error?: string }> => {
-    // Fuera de DEV, la contraseña es estrictamente obligatoria
-    if (!import.meta.env.DEV && !password) {
-      return { error: 'Debe ingresar una contraseña.' };
-    }
-
+    // Si Supabase está configurado y hay contraseña, autenticación real
     if (isSupabaseConfigured && supabase && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       return {};
     }
 
-    // Login sin contraseña solo permitido en entorno DEV
-    if (!import.meta.env.DEV) {
-      return { error: 'Autenticación con Supabase requerida en este entorno.' };
-    }
-
-    // Modo Demo / Fallback local para desarrollo
-    const found = profiles.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-    if (found) {
-      if (!found.is_active) {
-        return { error: 'Este usuario se encuentra inactivo. Contacte al administrador.' };
+    // Modo Demo / Fallback local para desarrollo o prueba
+    if (import.meta.env.DEV || isDemoModeAllowed()) {
+      const found = profiles.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+      if (found) {
+        if (!found.is_active) {
+          return { error: 'Este usuario se encuentra inactivo. Contacte al administrador.' };
+        }
+        setProfile(found);
+        return {};
       }
-      setProfile(found);
-      return {};
+      return { error: 'Usuario no encontrado en los perfiles de demostración.' };
     }
 
-    return { error: 'Usuario no encontrado en el sistema.' };
+    if (!password) {
+      return { error: 'Debe ingresar una contraseña.' };
+    }
+
+    return { error: 'Autenticación con Supabase requerida en este entorno.' };
   };
 
   const logout = async () => {
@@ -184,14 +163,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     }
     setProfile(null);
-    if (!import.meta.env.DEV) {
+    if (!import.meta.env.DEV && !isDemoModeAllowed()) {
       setProfiles([]);
     }
   };
 
   const switchProfile = (profileId: string) => {
-    if (!import.meta.env.DEV) {
-      console.warn('El cambio directo de perfil está deshabilitado en producción.');
+    if (!import.meta.env.DEV && !isDemoModeAllowed()) {
+      console.warn('El cambio directo de perfil está deshabilitado en producción con Supabase.');
       return;
     }
     const found = profiles.find((p) => p.id === profileId);
