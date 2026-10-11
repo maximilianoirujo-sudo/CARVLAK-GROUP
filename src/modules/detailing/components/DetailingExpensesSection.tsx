@@ -12,7 +12,7 @@ import { Expense, ExpenseCategory, PaymentMethod, Business } from '../../../type
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { formatCurrency, getLocalDateString, getLocalMonthString } from '../../../lib/formatters';
+import { formatCurrency, getLocalDateString, getLocalMonthString, isActiveExpense } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 import { ConfirmModal } from '../../../components/common/ConfirmModal';
 
@@ -42,7 +42,7 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
 
   // Gastos filtrados
   const businessExpenses = useMemo(() => {
-    return expenses.filter((e) => e.business === businessFilter || e.business === 'general');
+    return expenses.filter((e) => isActiveExpense(e) && (e.business === businessFilter || e.business === 'general'));
   }, [expenses, businessFilter]);
 
   const filteredExpenses = useMemo(() => {

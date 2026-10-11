@@ -12,6 +12,9 @@ export interface AuthContextType {
   switchProfile: (profileId: string) => void;
   availableProfiles: Profile[];
   updateProfileCommissions: (profileId: string, commissions: { automotora: number; detailing: number; inspeccion: number }) => Promise<void> | void;
+  addProfile: (newProfile: Omit<Profile, 'id' | 'created_at' | 'updated_at'> & { id?: string }) => Promise<{ error?: string }>;
+  updateProfile: (profileId: string, updates: Partial<Profile>) => Promise<{ error?: string }>;
+  toggleProfileActive: (profileId: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -225,6 +228,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const addProfile = async (newProfile: Omit<Profile, 'id' | 'created_at' | 'updated_at'> & { id?: string }): Promise<{ error?: string }> => {
+    const nowIso = new Date().toISOString();
+    const createdProfile: Profile = {
+      ...newProfile,
+      id: newProfile.id || `user-${crypto.randomUUID()}`,
+      created_at: nowIso,
+      updated_at: nowIso
+    };
+
+    setProfiles((prev) => [...prev.filter((p) => p.id !== createdProfile.id), createdProfile]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('profiles').upsert(createdProfile);
+        if (error) {
+          console.error('Error insert profile Supabase:', error.message);
+          return { error: error.message };
+        }
+      } catch (err: any) {
+        return { error: err?.message || 'Error al guardar usuario' };
+      }
+    }
+    return {};
+  };
+
+  const updateProfile = async (profileId: string, updates: Partial<Profile>): Promise<{ error?: string }> => {
+    const nowIso = new Date().toISOString();
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === profileId ? { ...p, ...updates, updated_at: nowIso } : p))
+    );
+    if (profile?.id === profileId) {
+      setProfile((prev) => (prev ? { ...prev, ...updates, updated_at: nowIso } : null));
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ ...updates, updated_at: nowIso })
+          .eq('id', profileId);
+        if (error) return { error: error.message };
+      } catch (err: any) {
+        return { error: err?.message };
+      }
+    }
+    return {};
+  };
+
+  const toggleProfileActive = async (profileId: string) => {
+    const target = profiles.find((p) => p.id === profileId);
+    if (!target) return;
+    await updateProfile(profileId, { is_active: !target.is_active });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -235,7 +292,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         switchProfile,
         availableProfiles: profiles,
-        updateProfileCommissions
+        updateProfileCommissions,
+        addProfile,
+        updateProfile,
+        toggleProfileActive
       }}
     >
       {children}

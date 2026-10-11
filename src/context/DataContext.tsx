@@ -41,7 +41,9 @@ import {
   DetailingPayment,
   DetailingCheckinData,
   DetailingQualityControlData,
-  DetailingCashClosure
+  DetailingCashClosure,
+  DetailingReceipt,
+  DetailingCleanSelection
 } from '../types';
 import {
   INITIAL_CLIENTS,
@@ -150,6 +152,12 @@ export interface DataContextType {
 
   commissions: CommissionRecord[];
   markCommissionPaid: (id: string) => void;
+  recalculateDetailingCommissions: (periodStr: string) => void;
+  adjustSingleCommission: (commissionId: string, newAmount: number, reason: string) => void;
+
+  detailingReceipts: DetailingReceipt[];
+  generateDetailingReceipt: (quoteId: string, options?: { includePhotos?: boolean; version?: number }) => DetailingReceipt | null;
+  cleanDetailingTestData: (selection: DetailingCleanSelection) => Promise<{ success: boolean; counts: Record<string, number> }>;
 
   whatsappTemplates: WhatsAppTemplate[];
   updateWhatsAppTemplate: (key: WhatsAppTemplateKey, templateText: string) => void;
@@ -371,6 +379,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useDebouncedLocalStorage('carvlak_detailing_config', detailingConfig, 500);
   useDebouncedLocalStorage('carvlak_detailing_cash_closures', detailingCashClosures, 500);
+
+  const [detailingReceipts, setDetailingReceipts] = useState<DetailingReceipt[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_receipts');
+    if (s) {
+      try {
+        return JSON.parse(s);
+      } catch {}
+    }
+    return [];
+  });
+
+  useDebouncedLocalStorage('carvlak_detailing_receipts', detailingReceipts, 500);
 
   // FASE 3: Estados Inspecciones Vehiculares (Peritaje Carbusters)
   const [inspections, setInspections] = useState<VehicleInspection[]>(() => {
@@ -596,11 +616,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   }, []);
 
-  // Si Supabase está configurado, sincronizar con la nube
+  // Si Supabase está configurado, sincronizar con la nube y mantener Realtime en vivo
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
       loadSupabaseData();
       processSyncQueue();
+
+      // Realtime channel para mantener sincronizados varios celulares en el taller
+      const channel = supabase
+        .channel('carvlak-realtime-detailing')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_quotes' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'commissions' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_items' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_receipts' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_configs' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_cash_closures' }, () => {
+          loadSupabaseData();
+        })
+        .subscribe();
+
+      // Reconexión y cambio de pestaña
+      const handleSyncOnVisible = () => {
+        loadSupabaseData();
+      };
+      window.addEventListener('focus', handleSyncOnVisible);
+      window.addEventListener('online', handleSyncOnVisible);
+      const handleVisChange = () => {
+        if (document.visibilityState === 'visible') handleSyncOnVisible();
+      };
+      document.addEventListener('visibilitychange', handleVisChange);
+
+      return () => {
+        supabase.removeChannel(channel);
+        window.removeEventListener('focus', handleSyncOnVisible);
+        window.removeEventListener('online', handleSyncOnVisible);
+        document.removeEventListener('visibilitychange', handleVisChange);
+      };
     }
   }, []);
 
@@ -631,7 +698,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resSocialPosts,
         resSocialConfig,
         resDetailingConfig,
-        resDetailingCashClosures
+        resDetailingCashClosures,
+        resDetailingReceipts
       ] = await Promise.all([
         supabase.from('general_configs').select('*').limit(1).maybeSingle(),
         supabase.from('clients').select('*').eq('is_archived', false),
@@ -653,7 +721,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supabase.from('social_post_records').select('*'),
         supabase.from('social_media_configs').select('*').limit(1).maybeSingle(),
         supabase.from('detailing_configs').select('*').limit(1).maybeSingle(),
-        supabase.from('detailing_cash_closures').select('*')
+        supabase.from('detailing_cash_closures').select('*'),
+        supabase.from('detailing_receipts').select('*')
       ]);
 
       if (resGeneralConfig.data) setGeneralConfig((prev) => ({ ...prev, ...resGeneralConfig.data }));
@@ -677,6 +746,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resSocialConfig.data) setSocialMediaConfig((prev) => ({ ...prev, ...resSocialConfig.data }));
       if (resDetailingConfig.data) setDetailingConfig((prev) => ({ ...prev, ...resDetailingConfig.data }));
       if (resDetailingCashClosures.data) setDetailingCashClosures(resDetailingCashClosures.data as DetailingCashClosure[]);
+      if (resDetailingReceipts.data) setDetailingReceipts(resDetailingReceipts.data as DetailingReceipt[]);
     } catch (err) {
       console.warn('Conexión con Supabase en curso o tablas aún vacías:', err);
     }
@@ -1090,31 +1160,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Generar comisión para el empleado asignado (RECIÉN AL ENTREGAR Y COBRAR)
-      const employeeId = currentQuote.assigned_to || profile?.id;
-      const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
-      const employee = allProfiles.find((p) => p.id === employeeId) || profile;
-      const rate = employee?.commissions?.detailing ?? (employeeId === 'user-maxi' ? 30 : 0);
+      // Generar comisión dinámica y configurable (RECIÉN AL ENTREGAR Y COBRAR)
+      const newComms = calculateCommissionsForQuote(currentQuote, updatedFields.materials_cost);
+      if (newComms.length > 0) {
+        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), ...newComms]);
+        newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
+      }
 
-      if (rate > 0) {
-        const commAmount = Math.round(currentQuote.total_amount * (rate / 100));
-        const newComm: CommissionRecord = {
-          id: `comm-${crypto.randomUUID()}`,
-          business: 'detailing',
-          currency: 'UYU',
-          employee_id: employeeId || 'user-maxi',
-          employee_name: employee?.full_name || 'Maximiliano Irujo',
-          quote_id: currentQuote.id,
-          client_name: currentQuote.client_name,
-          vehicle_description: `${currentQuote.vehicle_info}${currentQuote.vehicle_plate ? ` (${currentQuote.vehicle_plate})` : ''}`,
-          amount_charged: currentQuote.total_amount,
-          commission_rate: rate,
-          commission_amount: commAmount,
-          status: 'Pendiente',
-          created_at: nowIso
-        };
-        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), newComm]);
-        syncSupabase('commissions', 'insert', newComm);
+      // Generar automáticamente el comprobante oficial de DetailVlak
+      try {
+        setTimeout(() => {
+          generateDetailingReceipt(currentQuote.id);
+        }, 50);
+      } catch (err) {
+        console.warn('Auto-comprobante Detailing error:', err);
       }
     } else if (currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
       // Reversión: si el trabajo vuelve atrás o se cancela, se elimina la comisión generada
@@ -1129,7 +1188,73 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     syncSupabase('detailing_quotes', 'update', updatedFields, 'id', id);
   };
 
-  // PARTE F: ANULAR TRABAJOS EN CASCADA
+  // Cálculo dinámico de comisiones por participante y reglas de origen
+  const calculateCommissionsForQuote = (
+    quote: DetailingQuote,
+    materialsCost?: number
+  ): CommissionRecord[] => {
+    const commissionConfig = detailingConfig?.commission_config;
+    const baseCalc = commissionConfig?.calculation_base || 'total_after_discounts';
+
+    let baseAmount = quote.total_amount;
+    if (baseCalc === 'exclude_surcharges') {
+      baseAmount = Math.max(0, quote.total_amount - (quote.extreme_dirt_surcharge || 0));
+    } else if (baseCalc === 'subtract_supplies') {
+      const matCost = materialsCost ?? quote.materials_cost ?? 0;
+      baseAmount = Math.max(0, quote.total_amount - matCost);
+    }
+
+    const defaultIds = commissionConfig?.default_participants || [];
+    const participantIds: string[] = quote.commission_participants && quote.commission_participants.length > 0
+      ? quote.commission_participants.map((p) => p.employee_id)
+      : defaultIds.length > 0
+      ? defaultIds
+      : [quote.assigned_to || profile?.id || ''];
+
+    const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
+    const result: CommissionRecord[] = [];
+    const nowIso = new Date().toISOString();
+
+    participantIds.forEach((empId) => {
+      if (!empId) return;
+      const empProfile = allProfiles.find((p) => p.id === empId);
+      const empRule = commissionConfig?.employee_rules?.find((r) => r.employee_id === empId);
+
+      // Regla específica de origen del cliente si existe (ej. Anuncios pagos)
+      const originRule = empRule?.origin_rules?.find(
+        (or) => or.origin?.trim().toLowerCase() === (quote.origin || '').trim().toLowerCase()
+      );
+
+      const rate = originRule
+        ? originRule.percentage
+        : (empRule ? empRule.base_percentage : (empProfile?.commissions?.detailing ?? 0));
+
+      if (rate > 0) {
+        const commAmount = Math.round(baseAmount * (rate / 100));
+        result.push({
+          id: `comm-${crypto.randomUUID()}`,
+          business: 'detailing',
+          currency: 'UYU',
+          employee_id: empId,
+          employee_name: empProfile?.full_name || empRule?.employee_name || 'Colaborador',
+          quote_id: quote.id,
+          client_name: quote.client_name,
+          vehicle_description: `${quote.vehicle_info}${quote.vehicle_plate ? ` (${quote.vehicle_plate})` : ''}`,
+          amount_charged: quote.total_amount,
+          commission_rate: rate,
+          commission_amount: commAmount,
+          origin: quote.origin,
+          receipt_number: quote.receipt_number,
+          status: 'Pendiente',
+          created_at: nowIso
+        });
+      }
+    });
+
+    return result;
+  };
+
+  // PARTE 3 & 4: ANULAR TRABAJOS EN CASCADA
   const voidDetailingQuote = (id: string, reason: string) => {
     const currentQuote = detailingQuotes.find((q) => q.id === id);
     if (!currentQuote) return;
@@ -1157,7 +1282,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    // 2. Eliminar comisión
+    // 2. Eliminar comisión en cascada
     setCommissions((prev) => prev.filter((c) => c.quote_id !== id));
     syncSupabase('commissions', 'delete', undefined, 'quote_id', id);
 
@@ -1175,6 +1300,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 4. Anular cobros asociados
     const voidedPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: true }));
+
+    // 5. Anular comprobante asociado en cascada
+    setDetailingReceipts((prev) =>
+      prev.map((r) =>
+        r.quote_id === id
+          ? { ...r, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' }
+          : r
+      )
+    );
+    syncSupabase('detailing_receipts', 'update', {
+      is_voided: true,
+      voided_at: nowIso,
+      void_reason: reason,
+      status: 'Anulado'
+    }, 'quote_id', id);
 
     const updatedFields: Partial<DetailingQuote> = {
       voided_at: nowIso,
@@ -1220,7 +1360,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       syncSupabase('appointments', 'update', { voided_at: null, voided_by: null, void_reason: null, status: 'Confirmado' }, 'id', currentQuote.appointment_id);
     }
 
-    // Si estaba entregado y cobrado, re-descontar stock y re-crear comisión
+    // Si estaba entregado y cobrado, re-descontar stock y re-crear comisiones dinámicamente
     if (currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
       if (currentQuote.materials_consumed && currentQuote.materials_consumed.length > 0) {
         currentQuote.materials_consumed.forEach((c) => {
@@ -1234,31 +1374,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      const employeeId = currentQuote.assigned_to || profile?.id;
-      const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
-      const employee = allProfiles.find((p) => p.id === employeeId) || profile;
-      const rate = employee?.commissions?.detailing ?? (employeeId === 'user-maxi' ? 30 : 0);
-      if (rate > 0) {
-        const commAmount = Math.round(currentQuote.total_amount * (rate / 100));
-        const newComm: CommissionRecord = {
-          id: `comm-${crypto.randomUUID()}`,
-          business: 'detailing',
-          currency: 'UYU',
-          employee_id: employeeId || 'user-maxi',
-          employee_name: employee?.full_name || 'Maximiliano Irujo',
-          quote_id: currentQuote.id,
-          client_name: currentQuote.client_name,
-          vehicle_description: `${currentQuote.vehicle_info}${currentQuote.vehicle_plate ? ` (${currentQuote.vehicle_plate})` : ''}`,
-          amount_charged: currentQuote.total_amount,
-          commission_rate: rate,
-          commission_amount: commAmount,
-          status: 'Pendiente',
-          created_at: nowIso
-        };
-        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), newComm]);
-        syncSupabase('commissions', 'insert', newComm);
+      const newComms = calculateCommissionsForQuote(currentQuote);
+      if (newComms.length > 0) {
+        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), ...newComms]);
+        newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
       }
     }
+
+    // Restaurar comprobante asociado si existía
+    setDetailingReceipts((prev) =>
+      prev.map((r) =>
+        r.quote_id === id
+          ? { ...r, is_voided: false, voided_at: undefined, void_reason: undefined, status: r.balance_pending === 0 ? 'Pagado' : 'Saldo pendiente' }
+          : r
+      )
+    );
+    syncSupabase('detailing_receipts', 'update', {
+      is_voided: false,
+      voided_at: null,
+      void_reason: null
+    }, 'quote_id', id);
 
     const updatedFields: Partial<DetailingQuote> = {
       voided_at: undefined,
@@ -1290,6 +1425,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setCommissions((prev) => prev.filter((c) => c.quote_id !== id));
     syncSupabase('commissions', 'delete', undefined, 'quote_id', id);
+
+    setDetailingReceipts((prev) => prev.filter((r) => r.quote_id !== id));
+    syncSupabase('detailing_receipts', 'delete', undefined, 'quote_id', id);
+
     syncSupabase('detailing_quotes', 'delete', undefined, 'id', id);
     logActivity('cotizacion_detailing', id, 'archive', { permanent_deleted: true });
   };
@@ -1302,6 +1441,295 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!profile?.roles?.includes('admin')) return;
     ids.forEach((id) => deleteDetailingQuotePermanent(id));
   };
+
+  // GENERAR COMPROBANTE OFICIAL DE SERVICIO DETAILVLAK
+  const generateDetailingReceipt = (
+    quoteId: string,
+    options?: { includePhotos?: boolean; version?: number }
+  ): DetailingReceipt | null => {
+    const quote = detailingQuotes.find((q) => q.id === quoteId);
+    if (!quote) return null;
+
+    const receiptCfg = detailingConfig?.receipt_config || INITIAL_DETAILING_CONFIG.receipt_config!;
+    const nowIso = new Date().toISOString();
+    const todayStr = getLocalDateString();
+
+    const existingReceipt = detailingReceipts.find((r) => r.quote_id === quoteId);
+    let receiptNum = quote.receipt_number || existingReceipt?.receipt_number;
+    let version = options?.version || (existingReceipt ? existingReceipt.version + 1 : 1);
+
+    if (!receiptNum) {
+      const nextNum = receiptCfg.next_number || 1;
+      receiptNum = `${receiptCfg.prefix || 'DV-'}${String(nextNum).padStart(6, '0')}`;
+
+      // Incrementar correlativo en la configuración
+      const updatedConfig: DetailingConfig = {
+        ...detailingConfig,
+        receipt_config: {
+          ...receiptCfg,
+          next_number: nextNum + 1
+        }
+      };
+      setDetailingConfig(updatedConfig);
+      syncSupabase('detailing_configs', 'update', { receipt_config: updatedConfig.receipt_config }, 'empresa_id', updatedConfig.empresa_id);
+    }
+
+    // Cuidados posteriores automáticos por servicio
+    const warranties = receiptCfg.service_care_warranties || {};
+    const careList: string[] = [];
+    (quote.selected_services || []).forEach((s) => {
+      const sId = (s.serviceId || '').toLowerCase();
+      const sName = (s.serviceName || '').toLowerCase();
+      if (sId.includes('ceram') || sName.includes('cerám')) {
+        if (warranties['ceramico'] && !careList.includes(warranties['ceramico'])) {
+          careList.push(warranties['ceramico']);
+        }
+      } else if (sId.includes('puli') || sName.includes('pulid')) {
+        if (warranties['pulido'] && !careList.includes(warranties['pulido'])) {
+          careList.push(warranties['pulido']);
+        }
+      } else if (sId.includes('inter') || sName.includes('tapiz')) {
+        if (warranties['interior'] && !careList.includes(warranties['interior'])) {
+          careList.push(warranties['interior']);
+        }
+      }
+    });
+    if (careList.length === 0 && warranties['default']) {
+      careList.push(warranties['default']);
+    }
+
+    const totalPaid = (quote.payments || [])
+      .filter((p) => !p.is_voided)
+      .reduce((sum, p) => sum + p.amount, 0);
+    const balance = Math.max(0, quote.total_amount - totalPaid);
+
+    const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
+    const detailer = allProfiles.find((p) => p.id === quote.assigned_to);
+
+    const newReceipt: DetailingReceipt = {
+      id: existingReceipt ? existingReceipt.id : `rec-${crypto.randomUUID()}`,
+      quote_id: quote.id,
+      receipt_number: receiptNum,
+      version,
+      issue_date: todayStr,
+      service_date: quote.appointment_date ? quote.appointment_date.split('T')[0] : todayStr,
+      token: existingReceipt?.token || `tk_${crypto.randomUUID().replace(/-/g, '')}`,
+
+      company_trade_name: receiptCfg.company_trade_name || 'CARVLAK DetailVlak',
+      company_legal_name: receiptCfg.company_legal_name || 'CARVLAK GROUP S.A.S.',
+      company_rut: receiptCfg.company_rut || '219988770014',
+      company_address: receiptCfg.company_address || 'Av. Giannattasio & Calcagno, Shangrilá, Canelones',
+      company_phone: receiptCfg.company_phone || '+598 99 267 964',
+      company_instagram: receiptCfg.company_instagram || '@car.vlak',
+      company_logo_url: receiptCfg.company_logo_url || '/carvlak-logo-negro.png',
+
+      client_id: quote.client_id,
+      client_name: quote.client_name,
+      client_phone: quote.client_phone,
+
+      vehicle_info: quote.vehicle_info,
+      vehicle_plate: quote.vehicle_plate,
+      reception_mileage: quote.checkin_data?.mileage,
+
+      detailer_id: quote.assigned_to,
+      detailer_name: detailer?.full_name || 'Detailer oficial',
+
+      services: (quote.selected_services || []).map((s) => ({
+        serviceId: s.serviceId,
+        serviceName: s.serviceName,
+        description: s.description,
+        price: s.price
+      })),
+      subtotal: quote.subtotal,
+      discount_amount: quote.discount_amount || 0,
+      discount_label: quote.discount_type === 'none' ? undefined : quote.discount_type,
+      surcharge_amount: quote.extreme_dirt_surcharge || 0,
+      total_amount: quote.total_amount,
+      deposit_amount: totalPaid,
+      balance_pending: balance,
+      payments: (quote.payments || []).filter((p) => !p.is_voided).map((p) => ({
+        amount: p.amount,
+        payment_method: p.payment_method,
+        date: p.date,
+        notes: p.notes
+      })),
+      status: balance === 0 ? 'Pagado' : 'Saldo pendiente',
+
+      care_instructions: careList.join('\n\n'),
+      observations: quote.notes,
+      include_photos: options?.includePhotos ?? false,
+      photos_before: quote.photos_before,
+      photos_after: quote.photos_after,
+      footer_legend: receiptCfg.footer_legend || 'Comprobante de servicio. No válido como factura electrónica (CFE).',
+
+      is_voided: quote.status === 'Anulado' || !!quote.voided_at,
+      voided_at: quote.voided_at,
+      void_reason: quote.void_reason,
+      created_at: existingReceipt?.created_at || nowIso,
+      created_by: profile?.id
+    };
+
+    setDetailingReceipts((prev) => [
+      ...prev.filter((r) => r.id !== newReceipt.id && r.quote_id !== quote.id),
+      newReceipt
+    ]);
+    syncSupabase('detailing_receipts', 'upsert', newReceipt);
+
+    // Enlazar id y correlativo en la cotización
+    if (quote.receipt_id !== newReceipt.id || quote.receipt_number !== newReceipt.receipt_number) {
+      updateDetailingQuote(quote.id, {
+        receipt_id: newReceipt.id,
+        receipt_number: newReceipt.receipt_number
+      });
+    }
+
+    logActivity('cotizacion_detailing', quote.id, 'update', {
+      action: 'generate_receipt',
+      receipt_number: newReceipt.receipt_number,
+      version: newReceipt.version
+    });
+
+    return newReceipt;
+  };
+
+  // RECALCULAR COMISIONES DE UN PERÍODO (SOLO ADMIN)
+  const recalculateDetailingCommissions = (periodStr: string) => {
+    if (!profile?.roles?.includes('admin')) return;
+
+    const targetQuotes = detailingQuotes.filter((q) =>
+      isActiveJob(q) &&
+      (q.status === 'Entregado y cobrado' || q.status === 'Trabajo Completado') &&
+      q.created_at.startsWith(periodStr)
+    );
+
+    targetQuotes.forEach((quote) => {
+      const newComms = calculateCommissionsForQuote(quote);
+      setCommissions((prev) => [
+        ...prev.filter((c) => c.quote_id !== quote.id || c.status === 'Pagada'),
+        ...newComms
+      ]);
+      syncSupabase('commissions', 'delete', undefined, 'quote_id', quote.id);
+      newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
+    });
+
+    logActivity('comision', periodStr, 'update', { action: 'recalculate_period', period: periodStr });
+  };
+
+  // AJUSTE MANUAL DE UNA COMISIÓN PUNTUAL (SOLO ADMIN, CON MOTIVO OBLIGATORIO)
+  const adjustSingleCommission = (commissionId: string, newAmount: number, reason: string) => {
+    if (!profile?.roles?.includes('admin')) return;
+    const nowIso = new Date().toISOString();
+    setCommissions((prev) =>
+      prev.map((c) =>
+        c.id === commissionId
+          ? {
+              ...c,
+              commission_amount: newAmount,
+              adjustment_reason: reason,
+              adjusted_at: nowIso,
+              adjusted_by: profile?.id
+            }
+          : c
+      )
+    );
+    syncSupabase('commissions', 'update', {
+      commission_amount: newAmount,
+      adjustment_reason: reason,
+      adjusted_at: nowIso,
+      adjusted_by: profile?.id
+    }, 'id', commissionId);
+    logActivity('comision', commissionId, 'update', { action: 'manual_adjustment', newAmount, reason });
+  };
+
+  // LIMPIEZA DE DATOS DE PRUEBA DE DETAILVLAK (SOLO ADMIN, CON RESPALDO Y PROTECCIÓN)
+  const cleanDetailingTestData = async (
+    selection: DetailingCleanSelection
+  ): Promise<{ success: boolean; counts: Record<string, number> }> => {
+    if (!profile?.roles?.includes('admin')) return { success: false, counts: {} };
+
+    const counts: Record<string, number> = {
+      quotes: 0,
+      appointments: 0,
+      commissions: 0,
+      expenses: 0,
+      receipts: 0,
+      clients: 0,
+      vehicles: 0
+    };
+
+    // 1. Cotizaciones y turnos de Detailing
+    if (selection.quotes) {
+      counts.quotes = detailingQuotes.length;
+      detailingQuotes.forEach((q) => {
+        syncSupabase('detailing_quotes', 'delete', undefined, 'id', q.id);
+      });
+      setDetailingQuotes([]);
+
+      const detailingAppts = appointments.filter((a) => a.business === 'detailing');
+      counts.appointments = detailingAppts.length;
+      detailingAppts.forEach((a) => {
+        syncSupabase('appointments', 'delete', undefined, 'id', a.id);
+      });
+      setAppointments((prev) => prev.filter((a) => a.business !== 'detailing'));
+
+      counts.receipts = detailingReceipts.length;
+      detailingReceipts.forEach((r) => {
+        syncSupabase('detailing_receipts', 'delete', undefined, 'id', r.id);
+      });
+      setDetailingReceipts([]);
+    }
+
+    // 2. Comisiones de Detailing
+    if (selection.commissions) {
+      const detailingComms = commissions.filter((c) => c.business === 'detailing');
+      counts.commissions = detailingComms.length;
+      detailingComms.forEach((c) => {
+        syncSupabase('commissions', 'delete', undefined, 'id', c.id);
+      });
+      setCommissions((prev) => prev.filter((c) => c.business !== 'detailing'));
+    }
+
+    // 3. Gastos de Detailing
+    if (selection.expenses) {
+      const detailingExp = expenses.filter((e) => e.business === 'detailing');
+      counts.expenses = detailingExp.length;
+      detailingExp.forEach((e) => {
+        syncSupabase('expenses', 'delete', undefined, 'id', e.id);
+      });
+      setExpenses((prev) => prev.filter((e) => e.business !== 'detailing'));
+    }
+
+    // 4. Clientes y vehículos EXCLUSIVOS de Detailing (nunca los vinculados a automotora o Carbusters)
+    if (selection.only_detailing_clients_vehicles) {
+      const dealershipClientIds = new Set(dealershipInquiries.map((i) => i.client_id).filter(Boolean));
+      const inspectionClientIds = new Set(inspections.map((i) => i.client_id).filter(Boolean));
+
+      const clientsToDelete = clients.filter(
+        (c) => !dealershipClientIds.has(c.id) && !inspectionClientIds.has(c.id)
+      );
+      counts.clients = clientsToDelete.length;
+      clientsToDelete.forEach((c) => {
+        syncSupabase('clients', 'delete', undefined, 'id', c.id);
+      });
+      setClients((prev) => prev.filter((c) => dealershipClientIds.has(c.id) || inspectionClientIds.has(c.id)));
+
+      const dealershipVehiclePlates = new Set(dealershipVehicles.map((v) => normalizePlate(v.plate)).filter(Boolean));
+      const inspectionPlates = new Set(inspections.map((i) => normalizePlate(i.vehicle_plate)).filter(Boolean));
+
+      const vehiclesToDelete = vehicles.filter(
+        (v) => !dealershipVehiclePlates.has(normalizePlate(v.plate)) && !inspectionPlates.has(normalizePlate(v.plate))
+      );
+      counts.vehicles = vehiclesToDelete.length;
+      vehiclesToDelete.forEach((v) => {
+        syncSupabase('vehicles', 'delete', undefined, 'id', v.id);
+      });
+      setVehicles((prev) => prev.filter((v) => dealershipVehiclePlates.has(normalizePlate(v.plate)) || inspectionPlates.has(normalizePlate(v.plate))));
+    }
+
+    logActivity('sistema', 'limpieza_detailing', 'archive', { selection, counts });
+    return { success: true, counts };
+  };
+
 
   // REGISTRO DE COBROS, CHECK-IN, CONTROL DE CALIDAD Y WHATSAPP LOG
   const recordDetailingPayment = (quoteId: string, paymentData: Omit<DetailingPayment, 'id'>) => {
@@ -3156,6 +3584,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveDetailingCashClosure,
     commissions,
     markCommissionPaid,
+    recalculateDetailingCommissions,
+    adjustSingleCommission,
+    detailingReceipts,
+    generateDetailingReceipt,
+    cleanDetailingTestData,
     whatsappTemplates,
     updateWhatsAppTemplate,
     importDetailVlakData,
@@ -3318,7 +3751,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetSocialTemplateToDefault,
     updateClientConsent,
     toggleVehicleFlyerImage,
-    applyStyleToAllTemplates
+    applyStyleToAllTemplates,
+    detailingReceipts,
+    recalculateDetailingCommissions,
+    adjustSingleCommission,
+    generateDetailingReceipt,
+    cleanDetailingTestData
   ]);
 
   return (

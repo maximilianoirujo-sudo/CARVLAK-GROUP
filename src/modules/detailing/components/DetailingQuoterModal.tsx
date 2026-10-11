@@ -49,7 +49,8 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     updateDetailingQuote,
     updateDetailingQuoteStatus,
     addClient,
-    addVehicle
+    addVehicle,
+    detailingConfig
   } = useData();
 
   const { profile, availableProfiles } = useAuth();
@@ -89,8 +90,18 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   const [extremeDirtSurcharge, setExtremeDirtSurcharge] = useState<number>(1500);
 
   // Metadatos
-  const defaultProfileId = profile?.id || availableProfiles[0]?.id || 'user-maxi';
-  const [origin, setOrigin] = useState<ClientOrigin | 'Llamada' | 'Form Web'>('WhatsApp');
+  const defaultProfileId = profile?.id || availableProfiles[0]?.id || '';
+  const clientOrigins = detailingConfig?.client_origins || [
+    'Presencial',
+    'WhatsApp',
+    'Instagram orgánico',
+    'Anuncios pagos',
+    'Referido',
+    'Formulario web',
+    'Llamada'
+  ];
+  const [origin, setOrigin] = useState<string>('WhatsApp');
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string>(defaultProfileId);
   const [estimatedTime, setEstimatedTime] = useState<string>('1 día');
   const [status, setStatus] = useState<DetailingQuoteStatus>('Por Cotizar');
@@ -113,7 +124,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setFixedDiscountAmount(quoteToEdit.discount_amount || 0);
       setHasExtremeDirt(quoteToEdit.extreme_dirt_surcharge > 0);
       setExtremeDirtSurcharge(quoteToEdit.extreme_dirt_surcharge || 1500);
-      setOrigin(quoteToEdit.origin);
+      setOrigin(quoteToEdit.origin || 'WhatsApp');
+      if (quoteToEdit.commission_participants && quoteToEdit.commission_participants.length > 0) {
+        setSelectedParticipantIds(quoteToEdit.commission_participants.map((p) => p.employee_id));
+      } else {
+        const defaults = detailingConfig?.commission_config?.default_participants || [];
+        setSelectedParticipantIds(defaults.length > 0 ? defaults : (quoteToEdit.assigned_to ? [quoteToEdit.assigned_to] : []));
+      }
       setAssignedTo(quoteToEdit.assigned_to || defaultProfileId);
       setEstimatedTime(quoteToEdit.estimated_time || '1 día');
       setStatus(quoteToEdit.status);
@@ -134,6 +151,8 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setHasExtremeDirt(false);
       setExtremeDirtSurcharge(1500);
       setOrigin('WhatsApp');
+      const defaults = detailingConfig?.commission_config?.default_participants || [];
+      setSelectedParticipantIds(defaults.length > 0 ? defaults : (defaultProfileId ? [defaultProfileId] : []));
       setAssignedTo(defaultProfileId);
       setEstimatedTime('1 día');
       setStatus('Por Cotizar');
@@ -145,7 +164,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setIsNewClientMode(false);
       setIsNewVehicleMode(false);
     }
-  }, [quoteToEdit, profile, isOpen]);
+  }, [quoteToEdit, profile, isOpen, detailingConfig]);
 
   // Si se selecciona un vehículo existente, autodetectar su categoría
   const currentVehicle = useMemo(() => {
@@ -300,6 +319,18 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
     let savedQuote: DetailingQuote;
 
+    const participants = selectedParticipantIds.map((empId) => {
+      const p = availableProfiles.find((ap) => ap.id === empId);
+      const rule = detailingConfig?.commission_config?.employee_rules?.find((r) => r.employee_id === empId);
+      const originRule = rule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === origin.trim().toLowerCase());
+      const rate = originRule ? originRule.percentage : (rule?.base_percentage ?? (p?.commissions?.detailing ?? 0));
+      return {
+        employee_id: empId,
+        employee_name: p?.full_name || rule?.employee_name || 'Colaborador',
+        rate
+      };
+    });
+
     if (quoteToEdit) {
       updateDetailingQuote(quoteToEdit.id, {
         client_id: finalClientId,
@@ -317,6 +348,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         total_amount: calculatedTotal,
         estimated_time: estimatedTime,
         assigned_to: assignedTo,
+        commission_participants: participants,
         origin,
         notes,
         priority_zones: priorityZones,
@@ -342,6 +374,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         vehicle_info: finalVehicleInfo,
         total_amount: calculatedTotal,
         selected_services: selectedServiceObjects,
+        commission_participants: participants,
         status
       };
 
@@ -366,6 +399,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         total_amount: calculatedTotal,
         estimated_time: estimatedTime,
         assigned_to: assignedTo,
+        commission_participants: participants,
         origin,
         notes,
         priority_zones: priorityZones,
@@ -736,19 +770,64 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
             <div>
               <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                Origen de la consulta
+                Origen del cliente *
               </label>
               <select
                 value={origin}
-                onChange={(e) => setOrigin(e.target.value as any)}
-                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                onChange={(e) => setOrigin(e.target.value)}
+                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-medium focus:border-[#D7141A] focus:outline-none cursor-pointer"
               >
-                <option value="Presencial">Presencial en taller</option>
-                <option value="WhatsApp">WhatsApp</option>
-                <option value="Instagram">Instagram</option>
-                <option value="Llamada">Llamada telefónica</option>
-                <option value="Google Form">Google Form / Web</option>
+                {clientOrigins.map((ori) => (
+                  <option key={ori} value={ori}>
+                    {ori}
+                  </option>
+                ))}
               </select>
+            </div>
+
+            {/* Participantes por trabajo */}
+            <div className="sm:col-span-3 p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#161616]">
+                  Participantes que comisionan en este trabajo
+                </span>
+                <span className="text-[10px] text-[#6B6B6B]">
+                  Reglas aplicadas según origen "{origin}"
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {availableProfiles.map((p) => {
+                  const isChecked = selectedParticipantIds.includes(p.id);
+                  const rule = detailingConfig?.commission_config?.employee_rules?.find((r) => r.employee_id === p.id);
+                  const originRule = rule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === origin.trim().toLowerCase());
+                  const rate = originRule ? originRule.percentage : (rule?.base_percentage ?? (p.commissions?.detailing ?? 0));
+
+                  return (
+                    <label
+                      key={p.id}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs cursor-pointer transition-colors ${
+                        isChecked
+                          ? 'bg-[#F5F5F4] border-[#161616] font-semibold text-[#161616]'
+                          : 'bg-white border-[#E5E5E3] text-[#6B6B6B] hover:bg-[#F5F5F4]'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          if (isChecked) {
+                            setSelectedParticipantIds(selectedParticipantIds.filter((id) => id !== p.id));
+                          } else {
+                            setSelectedParticipantIds([...selectedParticipantIds, p.id]);
+                          }
+                        }}
+                        className="w-3.5 h-3.5 rounded text-[#D7141A] accent-[#D7141A]"
+                      />
+                      <span>{p.full_name} ({rate}%)</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             {status === 'Turno Confirmado' && (

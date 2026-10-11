@@ -111,6 +111,18 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
       const total = serviceItems.reduce((acc, curr) => acc + curr.price, 0);
       const cleanPlate = vehiclePlate.trim() ? normalizePlate(vehiclePlate.trim()) : '';
 
+      // Detectar parámetros UTM (Meta Ads, Google Ads, etc.)
+      const searchParams = new URLSearchParams(window.location.search);
+      const isPaidAd = !!(
+        searchParams.get('utm_source') ||
+        searchParams.get('utm_medium') ||
+        searchParams.get('utm_campaign') ||
+        searchParams.get('fbclid') ||
+        searchParams.get('gclid') ||
+        searchParams.get('ad_id')
+      );
+      const detectedOrigin = isPaidAd ? 'Anuncios pagos' : 'Formulario web';
+
       // Enviar de forma segura a través de la función RPC security definer submit_quote_request
       if (isSupabaseConfigured && supabase) {
         const { error } = await supabase.rpc('submit_quote_request', {
@@ -122,6 +134,7 @@ export const PublicQuoteRequestPage: React.FC<PublicQuoteRequestPageProps> = ({
             vehicle_year: vehicleYear.trim() ? parseInt(vehicleYear.trim(), 10) : null,
             vehicle_plate: cleanPlate,
             vehicle_category: vehicleCategory,
+            origin: detectedOrigin,
             comments: comments.trim(),
             photo_url: photoUrl.trim() || null,
             selected_services: serviceItems,

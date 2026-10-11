@@ -292,17 +292,17 @@ export function validateUruguayanCedula(cedula: string): { isValid: boolean; err
 /**
  * Helper universal para verificar si un trabajo o cotización está activo (no archivado y no anulado)
  */
-export function isActiveJob(job: { is_archived?: boolean; voided_at?: string } | null | undefined): boolean {
+export function isActiveJob(job: { is_archived?: boolean; voided_at?: string; is_voided?: boolean; status?: string } | null | undefined): boolean {
   if (!job) return false;
-  return !job.is_archived && !job.voided_at;
+  return !job.is_archived && !job.voided_at && !job.is_voided && job.status !== 'Anulado';
 }
 
 /**
  * Helper universal para verificar si un gasto está activo (no archivado y no anulado)
  */
-export function isActiveExpense(expense: { is_archived?: boolean; voided_at?: string } | null | undefined): boolean {
+export function isActiveExpense(expense: { is_archived?: boolean; voided_at?: string; is_voided?: boolean; status?: string } | null | undefined): boolean {
   if (!expense) return false;
-  return !expense.is_archived && !expense.voided_at;
+  return !expense.is_archived && !expense.voided_at && !expense.is_voided && expense.status !== 'Anulado';
 }
 
 /**

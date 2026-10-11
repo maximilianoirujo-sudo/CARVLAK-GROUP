@@ -61,7 +61,7 @@ export const INITIAL_PROFILES: Profile[] = [
     roles: ['encargado', 'detailer'],
     businesses: ['detailing'],
     is_active: true,
-    commissions: { automotora: 0, detailing: 0, inspeccion: 0 },
+    commissions: { automotora: 0, detailing: 30, inspeccion: 0 },
     created_at: new Date().toISOString()
   },
   {
@@ -602,15 +602,64 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
     'gramos',
     'ml'
   ],
-  void_reasons: [
-    'Error de carga',
-    'Duplicado',
-    'Cliente canceló',
-    'Prueba del sistema',
-    'Reprogramación',
-    'Vehículo no apto para trabajo'
-  ]
-};
+    void_reasons: [
+      'Error de carga',
+      'Duplicado',
+      'Cliente canceló',
+      'Prueba del sistema',
+      'Reprogramación',
+      'Vehículo no apto para trabajo'
+    ],
+    client_origins: [
+      'Presencial',
+      'WhatsApp',
+      'Instagram orgánico',
+      'Anuncios pagos',
+      'Referido',
+      'Formulario web',
+      'Llamada'
+    ],
+    commission_config: {
+      calculation_base: 'total_after_discounts',
+      default_participants: ['user-romina', 'user-maxi'],
+      employee_rules: [
+        {
+          employee_id: 'user-romina',
+          employee_name: 'Romina',
+          base_percentage: 30,
+          origin_rules: [],
+          is_default_participant: true
+        },
+        {
+          employee_id: 'user-maxi',
+          employee_name: 'Maximiliano Irujo',
+          base_percentage: 30,
+          origin_rules: [
+            { origin: 'Anuncios pagos', percentage: 12.5 }
+          ],
+          is_default_participant: true
+        }
+      ]
+    },
+    receipt_config: {
+      prefix: 'DV-',
+      next_number: 1,
+      company_trade_name: 'CARVLAK DetailVlak',
+      company_legal_name: 'CARVLAK GROUP S.A.S.',
+      company_rut: '219988770014',
+      company_address: 'Av. Giannattasio & Calcagno, Shangrilá, Canelones',
+      company_phone: '+598 99 267 964',
+      company_instagram: '@car.vlak',
+      company_logo_url: '/carvlak-logo-negro.png',
+      footer_legend: 'Comprobante de servicio. No válido como factura electrónica (CFE).',
+      service_care_warranties: {
+        'ceramico': 'Garantía y cuidado de sellado cerámico: No lavar con champú químico ni mojar durante las primeras 72 horas. Evitar túneles de lavado con rodillos agresivos.',
+        'pulido': 'Cuidado post-pulido: Mantener con cera sintética o sellador rápido cada 60 días para proteger la capa transparente de barniz corregida.',
+        'interior': 'Cuidado de interiores y tapizados: No aplicar siliconas aceitosas sobre torpedo ni asientos. Limpiar con microfibra húmeda y aspirar periódicamente.',
+        'default': 'Recomendamos mantener el vehículo limpio, secar siempre a la sombra con microfibra suave y estacionar bajo techo cuando sea posible.'
+      }
+    }
+  };
 
 export const INITIAL_STOCK_ITEMS: StockItem[] = [
   {

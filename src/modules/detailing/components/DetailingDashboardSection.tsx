@@ -10,22 +10,22 @@ import {
 } from 'lucide-react';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
-import { formatCurrency } from '../../../lib/formatters';
+import { formatCurrency, getLocalMonthString, isActiveJob, isActiveExpense } from '../../../lib/formatters';
 
 export const DetailingDashboardSection: React.FC = () => {
   const { detailingQuotes, expenses, commissions, stockItems } = useData();
   const { availableProfiles } = useAuth();
 
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getLocalMonthString()); // YYYY-MM
 
-  // Cotizaciones del mes
+  // Cotizaciones activas del mes
   const monthQuotes = useMemo(() => {
-    return detailingQuotes.filter((q) => q.created_at.startsWith(selectedMonth));
+    return detailingQuotes.filter((q) => isActiveJob(q) && q.created_at.startsWith(selectedMonth));
   }, [detailingQuotes, selectedMonth]);
 
-  // Trabajos completados del mes
+  // Trabajos completados o entregados del mes
   const completedQuotes = useMemo(() => {
-    return monthQuotes.filter((q) => q.status === 'Trabajo Completado');
+    return monthQuotes.filter((q) => q.status === 'Trabajo Completado' || q.status === 'Entregado y cobrado');
   }, [monthQuotes]);
 
   // 1. Ingresos brutos por trabajos completados
@@ -36,7 +36,7 @@ export const DetailingDashboardSection: React.FC = () => {
   // 2. Gastos operativos del mes (Detailing + General)
   const monthExpenses = useMemo(() => {
     return expenses
-      .filter((e) => (e.business === 'detailing' || e.business === 'general') && e.date.startsWith(selectedMonth))
+      .filter((e) => isActiveExpense(e) && (e.business === 'detailing' || e.business === 'general') && e.date.startsWith(selectedMonth))
       .reduce((acc, curr) => acc + curr.amount, 0);
   }, [expenses, selectedMonth]);
 
@@ -148,7 +148,7 @@ export const DetailingDashboardSection: React.FC = () => {
         {/* Comisiones */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B] flex items-center justify-between">
-            <span>Comisiones (30%)</span>
+            <span>Comisiones devengadas</span>
             <TrendingUp className="w-4 h-4 text-[#D7141A]" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-[#D7141A] font-mono">

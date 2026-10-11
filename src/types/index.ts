@@ -135,7 +135,7 @@ export interface ActivityLog {
   id: string;
   user_id?: string;
   user_name?: string;
-  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'marketing' | 'configuracion';
+  entity_type: 'cliente' | 'vehiculo' | 'turno' | 'tarea' | 'empleado' | 'cotizacion_detailing' | 'stock' | 'gasto' | 'inspeccion' | 'automotora' | 'consulta_automotora' | 'venta_automotora' | 'marketing' | 'configuracion' | 'comision' | 'sistema';
   entity_id?: string;
   action: 'create' | 'update' | 'archive' | 'status_change';
   details?: Record<string, any>;
@@ -179,11 +179,13 @@ export type DetailingQuoteStatus =
   | 'Entregado y cobrado'
   | 'Trabajo Completado' 
   | 'Cancelado'
-  | 'No vino';
+  | 'No vino'
+  | 'Anulado';
 
 export interface DetailingQuoteServiceItem {
   serviceId: string;
   serviceName: string;
+  description?: string;
   price: number;
 }
 
@@ -245,13 +247,23 @@ export interface DetailingQuote {
   estimated_time?: string;
   assigned_to?: string; // ID del empleado (detailer)
   assignee?: Profile;
-  origin: ClientOrigin | 'Llamada' | 'Form Web';
+  commission_participants?: {
+    employee_id: string;
+    employee_name: string;
+    rate: number;
+    custom_rate?: number;
+    manual_adjustment?: number;
+    adjustment_reason?: string;
+  }[];
+  origin: string; // Origen del cliente (obligatorio)
   notes?: string;
   priority_zones?: string;
   status: DetailingQuoteStatus;
   appointment_id?: string; // Id del turno creado en la Agenda
   appointment_date?: string; // ISO string de cuando se agendó
   work_bay_id?: string; // Box o puesto de trabajo asignado
+  receipt_id?: string; // ID del comprobante oficial generado
+  receipt_number?: string; // Número correlativo (ej. DV-000001)
   payments?: DetailingPayment[];
   checkin_data?: DetailingCheckinData;
   quality_control_data?: DetailingQualityControlData;
@@ -378,6 +390,10 @@ export interface CommissionRecord {
   status: 'Pendiente' | 'Pagada';
   created_at: string;
   paid_at?: string;
+  origin?: string;
+  receipt_number?: string;
+  adjustment_reason?: string;
+  adjusted_at?: string;
 }
 
 export type WhatsAppTemplateKey = 'formal' | 'promo' | 'fotos' | 'seguimiento' | 'turno';
@@ -1071,6 +1087,97 @@ export interface DetailingDiscountConfig {
   percentage: number;
 }
 
+export interface DetailingCommissionOriginRule {
+  origin: string; // ej. 'Anuncios pagos'
+  percentage: number; // ej. 12.5
+}
+
+export interface DetailingCommissionEmployeeRule {
+  employee_id: string;
+  employee_name: string;
+  base_percentage: number; // ej. 30
+  origin_rules: DetailingCommissionOriginRule[];
+  is_default_participant?: boolean;
+}
+
+export interface DetailingCommissionGlobalConfig {
+  calculation_base: 'total_after_discounts' | 'exclude_surcharges' | 'subtract_supplies';
+  default_participants: string[]; // employee_ids
+  employee_rules: DetailingCommissionEmployeeRule[];
+}
+
+export interface DetailingReceiptConfig {
+  prefix: string; // 'DV-'
+  next_number: number; // 1
+  company_trade_name: string;
+  company_legal_name: string;
+  company_rut: string;
+  company_address: string;
+  company_phone: string;
+  company_instagram: string;
+  company_logo_url?: string;
+  footer_legend: string;
+  service_care_warranties: Record<string, string>; // service_id o service_name -> texto
+}
+
+export interface DetailingReceipt {
+  id: string;
+  quote_id: string;
+  receipt_number: string; // ej. DV-000001
+  version: number;
+  issue_date: string; // YYYY-MM-DD
+  service_date: string; // YYYY-MM-DD
+  token: string; // token público para ?comprobante=tk_...
+
+  company_trade_name: string;
+  company_legal_name: string;
+  company_rut: string;
+  company_address: string;
+  company_phone: string;
+  company_instagram: string;
+  company_logo_url?: string;
+
+  client_id?: string;
+  client_name: string;
+  client_phone: string;
+  client_doc?: string;
+
+  vehicle_info: string;
+  vehicle_brand?: string;
+  vehicle_model?: string;
+  vehicle_year?: number;
+  vehicle_color?: string;
+  vehicle_plate?: string;
+  reception_mileage?: number;
+
+  detailer_id?: string;
+  detailer_name: string;
+
+  services: { serviceId: string; serviceName: string; description?: string; price: number }[];
+  subtotal: number;
+  discount_amount: number;
+  discount_label?: string;
+  surcharge_amount: number;
+  total_amount: number;
+  deposit_amount: number;
+  balance_pending: number;
+  payments: { amount: number; payment_method: string; date: string; notes?: string }[];
+  status: 'Pagado' | 'Saldo pendiente' | 'Anulado';
+
+  care_instructions: string;
+  observations?: string;
+  include_photos?: boolean;
+  photos_before?: string[];
+  photos_after?: string[];
+  footer_legend: string;
+
+  is_voided: boolean;
+  voided_at?: string;
+  void_reason?: string;
+  created_at: string;
+  created_by?: string;
+}
+
 export interface DetailingConfig {
   empresa_id: string;
   work_bays: DetailingWorkBay[];
@@ -1098,6 +1205,37 @@ export interface DetailingConfig {
   suppliers: string[];
   stock_units: string[];
   void_reasons: string[];
+  client_origins?: string[];
+  commission_config?: DetailingCommissionGlobalConfig;
+  receipt_config?: DetailingReceiptConfig;
 }
+
+export interface DetailingCleanSelection {
+  quotes: boolean;
+  appointments: boolean;
+  commissions: boolean;
+  payments: boolean;
+  expenses: boolean;
+  stock_movements: boolean;
+  only_detailing_clients_vehicles: boolean;
+}
+
+export const isActiveJob = (job?: { voided_at?: string | null; is_voided?: boolean; status?: string; is_archived?: boolean } | null): boolean => {
+  if (!job) return false;
+  if (job.voided_at) return false;
+  if (job.is_voided) return false;
+  if (job.is_archived) return false;
+  if (job.status === 'Anulado') return false;
+  return true;
+};
+
+export const isActiveExpense = (exp?: { voided_at?: string | null; is_voided?: boolean; status?: string; is_archived?: boolean } | null): boolean => {
+  if (!exp) return false;
+  if (exp.voided_at) return false;
+  if (exp.is_voided) return false;
+  if (exp.is_archived) return false;
+  if (exp.status === 'Anulado') return false;
+  return true;
+};
 
 

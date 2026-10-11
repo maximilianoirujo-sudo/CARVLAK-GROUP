@@ -3,7 +3,6 @@ import {
   Settings,
   Clock,
   Layers,
-  Users,
   Calendar,
   MessageCircle,
   CheckSquare,
@@ -13,11 +12,25 @@ import {
   Trash2,
   Save,
   Check,
-  Package
+  FileText,
+  Globe,
+  Database,
+  Award,
+  ShieldAlert,
+  Percent,
+  Download
 } from 'lucide-react';
-import { DetailingConfig, DetailingWorkBay, DetailingHoliday } from '../../../types';
+import {
+  DetailingConfig,
+  DetailingWorkBay,
+  DetailingHoliday,
+  DetailingCommissionEmployeeRule
+} from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../context/ToastContext';
+import { useAuth } from '../../../context/AuthContext';
+import { useData } from '../../../context/DataContext';
+import { DetailingCleanTestDataModal } from './DetailingCleanTestDataModal';
 
 interface DetailingConfigTabProps {
   config: DetailingConfig;
@@ -29,12 +42,61 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
   onSaveConfig
 }) => {
   const { showToast } = useToast();
+  const { availableProfiles, profile } = useAuth();
+  const { detailingQuotes, appointments, commissions, expenses, stockItems } = useData();
+
+  const isAdmin = profile?.roles.includes('admin');
+
   const [activeSection, setActiveSection] = useState<
-    'bays' | 'schedule' | 'holidays' | 'whatsapp' | 'thresholds' | 'flow' | 'checklists'
+    'bays' | 'schedule' | 'holidays' | 'whatsapp' | 'flow' | 'thresholds' | 'commissions' | 'receipts' | 'origins' | 'backup'
   >('bays');
 
   // Copia local para edición
-  const [formData, setFormData] = useState<DetailingConfig>(JSON.parse(JSON.stringify(config)));
+  const [formData, setFormData] = useState<DetailingConfig>(() => {
+    const copy = JSON.parse(JSON.stringify(config)) as DetailingConfig;
+    if (!copy.client_origins || copy.client_origins.length === 0) {
+      copy.client_origins = [
+        'Presencial',
+        'WhatsApp',
+        'Instagram orgánico',
+        'Anuncios pagos',
+        'Referido',
+        'Formulario web',
+        'Llamada'
+      ];
+    }
+    if (!copy.commission_config) {
+      copy.commission_config = {
+        calculation_base: 'total_after_discounts',
+        default_participants: [],
+        employee_rules: []
+      };
+    }
+    if (!copy.receipt_config) {
+      copy.receipt_config = {
+        prefix: 'DV-',
+        next_number: 1,
+        company_trade_name: 'CARVLAK DetailVlak',
+        company_legal_name: 'CARVLAK GROUP S.A.S.',
+        company_rut: '219988770014',
+        company_address: 'Av. Giannattasio & Calcagno, Shangrilá, Canelones',
+        company_phone: '+598 99 267 964',
+        company_instagram: '@car.vlak',
+        company_logo_url: '/carvlak-logo-negro.png',
+        footer_legend: 'Comprobante de servicio. No válido como factura electrónica (CFE).',
+        service_care_warranties: {
+          ceramico: 'Garantía y cuidado de sellado cerámico: No lavar con champú químico ni mojar durante las primeras 72 horas. Evitar túneles de lavado con rodillos agresivos.',
+          pulido: 'Cuidado post-pulido: Mantener con cera sintética o sellador rápido cada 60 días para proteger la capa de barniz corregida.',
+          interior: 'Cuidado de interiores y tapizados: No aplicar siliconas aceitosas. Limpiar con microfibra húmeda y aspirar periódicamente.',
+          default: 'Recomendamos mantener el vehículo limpio, secar siempre a la sombra con microfibra suave y estacionar bajo techo.'
+        }
+      };
+    }
+    return copy;
+  });
+
+  const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
+  const [newOriginText, setNewOriginText] = useState('');
 
   const handleSave = () => {
     onSaveConfig(formData);
@@ -91,6 +153,54 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     }));
   };
 
+  // 3. Orígenes de Clientes
+  const handleAddOrigin = () => {
+    const val = newOriginText.trim();
+    if (!val) return;
+    if (formData.client_origins?.includes(val)) {
+      showToast('Ese origen ya existe en el listado', 'info');
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      client_origins: [...(prev.client_origins || []), val]
+    }));
+    setNewOriginText('');
+    showToast(`Origen "${val}" agregado`, 'success');
+  };
+
+  const handleRemoveOrigin = (orig: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      client_origins: (prev.client_origins || []).filter((o) => o !== orig)
+    }));
+  };
+
+  // 4. Descargar respaldo JSON de Detailing
+  const handleDownloadDetailingBackupJson = () => {
+    const backupData = {
+      exported_at: new Date().toISOString(),
+      business: 'detailing',
+      quotes: detailingQuotes,
+      appointments: appointments.filter((a) => a.business === 'detailing'),
+      commissions: commissions.filter((c) => c.business === 'detailing'),
+      expenses: expenses.filter((e) => e.business === 'detailing'),
+      stock_items: stockItems.filter((s) => s.business === 'detailing' || s.business === 'general'),
+      config: formData
+    };
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Respaldo_DetailVlak_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Copia de respaldo en JSON descargada.', 'success');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header con botón guardar fijo */}
@@ -101,7 +211,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
             Configuración del Taller DetailVlak
           </h2>
           <p className="text-xs text-[#6B6B6B]">
-            Personalizá horarios, boxes, plantillas, estados y umbrales de alerta.
+            Personalizá horarios, boxes, comisiones dinámicas, comprobantes oficiales y orígenes.
           </p>
         </div>
         <Button variant="primary" onClick={handleSave} className="gap-2">
@@ -111,14 +221,18 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
       </div>
 
       {/* Navegación interna de configuración */}
-      <div className="flex border-b border-[#E5E5E3] overflow-x-auto gap-2 pb-1">
+      <div className="flex border-b border-[#E5E5E3] overflow-x-auto gap-1 pb-1">
         {[
-          { id: 'bays', label: 'Puestos de Trabajo (Boxes)', icon: Layers },
-          { id: 'schedule', label: 'Horarios de Taller', icon: Clock },
-          { id: 'holidays', label: 'Feriados y Días No Laborables', icon: Calendar },
+          { id: 'bays', label: 'Boxes de Trabajo', icon: Layers },
+          { id: 'schedule', label: 'Horarios', icon: Clock },
+          { id: 'holidays', label: 'Feriados', icon: Calendar },
+          { id: 'commissions', label: 'Comisiones & Reglas', icon: Award },
+          { id: 'receipts', label: 'Comprobantes Oficiales', icon: FileText },
+          { id: 'origins', label: 'Orígenes de Clientes', icon: Globe },
           { id: 'whatsapp', label: 'Plantillas WhatsApp', icon: MessageCircle },
           { id: 'flow', label: 'Estados y Colores', icon: CheckSquare },
-          { id: 'thresholds', label: 'Umbrales de Alertas', icon: AlertTriangle }
+          { id: 'thresholds', label: 'Umbrales de Alertas', icon: AlertTriangle },
+          { id: 'backup', label: 'Datos & Respaldo', icon: Database }
         ].map((sec) => {
           const Icon = sec.icon;
           const isActive = activeSection === sec.id;
@@ -127,7 +241,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
               key={sec.id}
               type="button"
               onClick={() => setActiveSection(sec.id as any)}
-              className={`flex items-center gap-2 px-3 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                 isActive
                   ? 'bg-[#161616] text-white shadow-xs'
                   : 'text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]'
@@ -373,7 +487,541 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
         </div>
       )}
 
-      {/* SECCIÓN 4: WHATSAPP */}
+      {/* SECCIÓN 4: COMISIONES Y REGLAS DINÁMICAS */}
+      {activeSection === 'commissions' && (
+        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-6">
+          <div>
+            <h3 className="text-sm font-bold font-display text-[#161616] flex items-center gap-2">
+              <Award className="w-4 h-4 text-[#D7141A]" />
+              Configuración de Comisiones de Detailing
+            </h3>
+            <p className="text-xs text-[#6B6B6B]">
+              Definí la base de cálculo contable, los colaboradores participantes y las reglas específicas por origen de cliente (ej: Meta Ads).
+            </p>
+          </div>
+
+          {/* Base de Cálculo */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 space-y-3">
+            <label className="block text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+              1. Base de Cálculo para las Comisiones
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                {
+                  id: 'total_after_discounts',
+                  title: 'Total cobrado final',
+                  desc: 'Monto total facturado al cliente después de promociones y descuentos aplicados.'
+                },
+                {
+                  id: 'exclude_surcharges',
+                  title: 'Total sin recargos',
+                  desc: 'Excluye el recargo por suciedad extrema del taller de la base comisionable.'
+                },
+                {
+                  id: 'subtract_supplies',
+                  title: 'Margen neto de insumos',
+                  desc: 'Resta el costo directo de los productos químicos y pads utilizados en el trabajo.'
+                }
+              ].map((b) => {
+                const isSelected = formData.commission_config?.calculation_base === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        commission_config: {
+                          ...formData.commission_config!,
+                          calculation_base: b.id as any
+                        }
+                      });
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-[#161616] bg-white ring-2 ring-[#161616]/10 shadow-xs'
+                        : 'border-[#E5E5E3] bg-white hover:border-[#D0D0CD]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-[#161616]">{b.title}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#D7141A]" />}
+                    </div>
+                    <p className="text-[11px] text-[#6B6B6B] leading-tight">{b.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Participantes por defecto */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 space-y-3">
+            <label className="block text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+              2. Participantes por defecto al cotizar
+            </label>
+            <p className="text-xs text-[#6B6B6B]">
+              Estos empleados aparecerán preseleccionados al crear un trabajo en Detailing.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {availableProfiles
+                .filter((p) => p.is_active !== false && p.businesses?.includes('detailing'))
+                .map((p) => {
+                  const isDefault = formData.commission_config?.default_participants?.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        const current = formData.commission_config?.default_participants || [];
+                        const updated = isDefault
+                          ? current.filter((id) => id !== p.id)
+                          : [...current, p.id];
+                        setFormData({
+                          ...formData,
+                          commission_config: {
+                            ...formData.commission_config!,
+                            default_participants: updated
+                          }
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        isDefault
+                          ? 'bg-[#161616] text-white border-[#161616]'
+                          : 'bg-white text-[#161616] border-[#E5E5E3] hover:bg-[#F5F5F4]'
+                      }`}
+                    >
+                      <span>{p.full_name}</span>
+                      {isDefault && <Check className="w-3 h-3 text-[#D7141A]" />}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Reglas de porcentaje y sobreescrituras por origen */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+                  3. Porcentajes y Reglas por Colaborador
+                </label>
+                <p className="text-xs text-[#6B6B6B]">
+                  Porcentaje base y excepciones automáticas según de dónde provenga el cliente.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {availableProfiles
+                .filter((p) => p.businesses?.includes('detailing'))
+                .map((emp) => {
+                  const existingRule = formData.commission_config?.employee_rules?.find((r) => r.employee_id === emp.id) || {
+                    employee_id: emp.id,
+                    employee_name: emp.full_name,
+                    base_percentage: emp.commissions?.detailing ?? 30,
+                    origin_rules: []
+                  };
+
+                  const updateThisEmployeeRule = (newRule: DetailingCommissionEmployeeRule) => {
+                    const currentRules = formData.commission_config?.employee_rules || [];
+                    const filtered = currentRules.filter((r) => r.employee_id !== emp.id);
+                    setFormData({
+                      ...formData,
+                      commission_config: {
+                        ...formData.commission_config!,
+                        employee_rules: [...filtered, newRule]
+                      }
+                    });
+                  };
+
+                  return (
+                    <div
+                      key={emp.id}
+                      className="p-4 rounded-xl border border-[#E5E5E3] bg-white shadow-xs space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5E5E3] pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[#161616]">{emp.full_name}</span>
+                          <span className="text-[10px] text-[#6B6B6B]">({emp.roles.join(', ')})</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-[#6B6B6B]">Porcentaje base general:</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={existingRule.base_percentage}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                updateThisEmployeeRule({ ...existingRule, base_percentage: val });
+                              }}
+                              className="w-16 px-2 py-1 bg-[#F5F5F4] border border-[#E5E5E3] rounded text-xs font-mono font-bold text-[#161616] text-right"
+                            />
+                            <span className="font-bold">%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reglas específicas de origen */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-[#6B6B6B]">
+                          <span>Reglas por origen del cliente:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const availableOrigins = (formData.client_origins || []).filter(
+                                (o) => !existingRule.origin_rules?.some((r) => r.origin === o)
+                              );
+                              const targetOrigin = availableOrigins[0] || 'Anuncios pagos';
+                              updateThisEmployeeRule({
+                                ...existingRule,
+                                origin_rules: [
+                                  ...(existingRule.origin_rules || []),
+                                  { origin: targetOrigin, percentage: 12.5 }
+                                ]
+                              });
+                            }}
+                            className="text-[#D7141A] hover:underline font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Agregar excepción por origen
+                          </button>
+                        </div>
+
+                        {(existingRule.origin_rules || []).length === 0 ? (
+                          <p className="text-[11px] text-[#9A9A9A] italic">
+                            Sin excepciones: cobra {existingRule.base_percentage}% para cualquier origen.
+                          </p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {existingRule.origin_rules.map((or, orIdx) => (
+                              <div
+                                key={orIdx}
+                                className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#F5F5F4] text-xs"
+                              >
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="text-[#6B6B6B] text-[11px]">Si el cliente viene de:</span>
+                                  <select
+                                    value={or.origin}
+                                    onChange={(e) => {
+                                      const updatedList = [...existingRule.origin_rules];
+                                      updatedList[orIdx].origin = e.target.value;
+                                      updateThisEmployeeRule({ ...existingRule, origin_rules: updatedList });
+                                    }}
+                                    className="bg-white border border-[#E5E5E3] rounded px-2 py-1 text-xs text-[#161616]"
+                                  >
+                                    {(formData.client_origins || []).map((o) => (
+                                      <option key={o} value={o}>{o}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[#6B6B6B] text-[11px]">Cobra:</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    step="0.5"
+                                    value={or.percentage}
+                                    onChange={(e) => {
+                                      const updatedList = [...existingRule.origin_rules];
+                                      updatedList[orIdx].percentage = parseFloat(e.target.value) || 0;
+                                      updateThisEmployeeRule({ ...existingRule, origin_rules: updatedList });
+                                    }}
+                                    className="w-16 px-2 py-1 bg-white border border-[#E5E5E3] rounded text-xs font-mono font-bold text-[#161616] text-right"
+                                  />
+                                  <span className="font-bold">%</span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updatedList = existingRule.origin_rules.filter((_, idx) => idx !== orIdx);
+                                      updateThisEmployeeRule({ ...existingRule, origin_rules: updatedList });
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 p-1 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECCIÓN 5: COMPROBANTES OFICIALES */}
+      {activeSection === 'receipts' && (
+        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-6">
+          <div>
+            <h3 className="text-sm font-bold font-display text-[#161616] flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#D7141A]" />
+              Configuración de Comprobantes de Servicio
+            </h3>
+            <p className="text-xs text-[#6B6B6B]">
+              Personalizá la numeración correlativa, datos de la empresa emisora, textos de garantía y cuidados posteriores.
+            </p>
+          </div>
+
+          {/* Numeración Correlativa */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 space-y-3">
+            <label className="block text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+              1. Numeración Correlativa Oficial
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Prefijo identificador</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.prefix || 'DV-'}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, prefix: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs font-mono font-bold text-[#161616]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Próximo número a emitir</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={formData.receipt_config?.next_number || 1}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: {
+                        ...formData.receipt_config!,
+                        next_number: parseInt(e.target.value, 10) || 1
+                      }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs font-mono font-bold text-[#161616]"
+                />
+                <span className="text-[10px] text-[#6B6B6B] mt-1 block">
+                  Próximo comprobante: {formData.receipt_config?.prefix || 'DV-'}
+                  {String(formData.receipt_config?.next_number || 1).padStart(6, '0')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Datos fiscales y de contacto de la empresa */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 space-y-3">
+            <label className="block text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+              2. Datos del Taller Emisor
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Nombre comercial</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.company_trade_name || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, company_trade_name: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Razón Social</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.company_legal_name || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, company_legal_name: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">RUT</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.company_rut || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, company_rut: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Dirección del taller</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.company_address || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, company_address: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Teléfono / WhatsApp</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.company_phone || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, company_phone: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#6B6B6B] mb-1">Instagram</label>
+                <input
+                  type="text"
+                  value={formData.receipt_config?.company_instagram || ''}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      receipt_config: { ...formData.receipt_config!, company_instagram: e.target.value }
+                    });
+                  }}
+                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Cuidados posteriores automáticos por servicio */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 space-y-3">
+            <label className="block text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+              3. Textos de Cuidados Posteriores y Garantía
+            </label>
+            <p className="text-xs text-[#6B6B6B]">
+              Se insertan automáticamente en el comprobante según los servicios realizados.
+            </p>
+
+            <div className="space-y-3">
+              {[
+                { key: 'ceramico', label: 'Sellado Cerámico / Vidrio Líquido' },
+                { key: 'pulido', label: 'Corrección de Barniz / Pulido' },
+                { key: 'interior', label: 'Limpieza de Tapizados e Interior' },
+                { key: 'default', label: 'Texto por defecto (otros servicios)' }
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs font-bold text-[#161616] mb-1">{label}</label>
+                  <textarea
+                    rows={2}
+                    value={formData.receipt_config?.service_care_warranties?.[key] || ''}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        receipt_config: {
+                          ...formData.receipt_config!,
+                          service_care_warranties: {
+                            ...formData.receipt_config!.service_care_warranties,
+                            [key]: e.target.value
+                          }
+                        }
+                      });
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Leyenda al pie */}
+          <div>
+            <label className="block text-xs font-bold text-[#161616] mb-1">
+              Leyenda legal al pie del comprobante
+            </label>
+            <input
+              type="text"
+              value={formData.receipt_config?.footer_legend || ''}
+              onChange={(e) => {
+                setFormData({
+                  ...formData,
+                  receipt_config: { ...formData.receipt_config!, footer_legend: e.target.value }
+                });
+              }}
+              className="w-full px-3 py-2 bg-white border border-[#E5E5E3] rounded-lg text-xs text-[#161616]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* SECCIÓN 6: ORÍGENES DE CLIENTES */}
+      {activeSection === 'origins' && (
+        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-bold font-display text-[#161616] flex items-center gap-2">
+              <Globe className="w-4 h-4 text-[#D7141A]" />
+              Canales y Orígenes de Clientes
+            </h3>
+            <p className="text-xs text-[#6B6B6B]">
+              Gestioná los canales de captación para clasificar cotizaciones y aplicar reglas de comisión (ej. Anuncios pagos).
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Nuevo origen (ej. Convenio Empresa X, TikTok...)"
+              value={newOriginText}
+              onChange={(e) => setNewOriginText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddOrigin()}
+              className="flex-1 px-3 py-2 bg-white border border-[#E5E5E3] rounded-xl text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+            />
+            <Button variant="primary" size="sm" onClick={handleAddOrigin} className="gap-1.5 text-xs">
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar Canal</span>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+            {(formData.client_origins || []).map((orig) => (
+              <div
+                key={orig}
+                className="p-3 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/40 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#D7141A]" />
+                  <span className="text-xs font-bold text-[#161616]">{orig}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveOrigin(orig)}
+                  className="text-gray-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
+                  title="Eliminar origen"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SECCIÓN 7: WHATSAPP */}
       {activeSection === 'whatsapp' && (
         <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-4">
           <div>
@@ -469,7 +1117,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
         </div>
       )}
 
-      {/* SECCIÓN 5: ESTADOS Y COLORES */}
+      {/* SECCIÓN 8: ESTADOS Y COLORES */}
       {activeSection === 'flow' && (
         <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-4">
           <div>
@@ -512,7 +1160,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
         </div>
       )}
 
-      {/* SECCIÓN 6: UMBRALES DE ALERTA */}
+      {/* SECCIÓN 9: UMBRALES DE ALERTA */}
       {activeSection === 'thresholds' && (
         <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-4">
           <div>
@@ -569,6 +1217,77 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* SECCIÓN 10: DATOS Y RESPALDO (EMPEZAR DE CERO) */}
+      {activeSection === 'backup' && (
+        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-5 space-y-6">
+          <div>
+            <h3 className="text-sm font-bold font-display text-[#161616] flex items-center gap-2">
+              <Database className="w-4 h-4 text-[#D7141A]" />
+              Gestión de Datos y Respaldo de DetailVlak
+            </h3>
+            <p className="text-xs text-[#6B6B6B]">
+              Descargá copias de seguridad completas o limpiá los datos de prueba cargados para iniciar operaciones reales.
+            </p>
+          </div>
+
+          {/* Tarjeta de Respaldo */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-[#161616]">Descargar Respaldo Completo (JSON)</h4>
+              <p className="text-xs text-[#6B6B6B]">
+                Exporta todas las cotizaciones, turnos, movimientos de stock, gastos y configuración actual.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadDetailingBackupJson}
+              className="gap-1.5 text-xs shrink-0"
+            >
+              <Download className="w-3.5 h-3.5 text-[#161616]" />
+              <span>Descargar JSON</span>
+            </Button>
+          </div>
+
+          {/* Tarjeta de Limpieza de Datos de Prueba */}
+          {isAdmin && (
+            <div className="p-5 rounded-xl border-2 border-[#D7141A]/30 bg-[#FEF7EC]/30 space-y-3">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-[#D7141A] shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-bold text-[#161616]">
+                    Limpiar datos de prueba de DetailVlak ("Empezar de cero")
+                  </h4>
+                  <p className="text-xs text-[#6B6B6B] mt-1 leading-relaxed">
+                    Permite borrar cotizaciones de prueba, comisiones y gastos simulados para arrancar en limpio.
+                    Exige descarga obligatoria de respaldo (Excel y JSON) antes de confirmar.
+                    <strong> Garantía de seguridad:</strong> los clientes y vehículos vinculados a la automotora o peritajes nunca se tocan.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsCleanModalOpen(true)}
+                  className="gap-1.5 bg-[#D7141A] hover:bg-[#b01015]"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Abrir Herramienta de Limpieza</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal de Limpieza de Datos de Prueba */}
+      <DetailingCleanTestDataModal
+        isOpen={isCleanModalOpen}
+        onClose={() => setIsCleanModalOpen(false)}
+      />
     </div>
   );
 };

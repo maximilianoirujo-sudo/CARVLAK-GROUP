@@ -5,7 +5,8 @@ import {
   Percent,
   History,
   Lock,
-  Edit2
+  Edit2,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -19,6 +20,7 @@ export const EmployeeList: React.FC = () => {
 
   const [activeSubTab, setActiveSubTab] = useState<'empleados' | 'auditoria'>('empleados');
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const isBossAdmin = canViewCommissions(profile);
 
@@ -71,11 +73,23 @@ export const EmployeeList: React.FC = () => {
       {/* Vista de Empleados */}
       {activeSubTab === 'empleados' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between px-1 text-xs text-[#6B6B6B]">
-            <span>{availableProfiles.length} integrantes en el equipo</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 text-xs text-[#6B6B6B]">
+            <div className="flex items-center gap-3">
+              <span>{availableProfiles.length} integrantes en el equipo</span>
+              {isBossAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#D7141A] hover:bg-[#B80E14] text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Nuevo integrante</span>
+                </button>
+              )}
+            </div>
             {isBossAdmin ? (
               <span className="text-[#161616] font-semibold flex items-center gap-1 text-[11px]">
-                <Percent className="w-3.5 h-3.5 text-[#D7141A]" /> Comisiones visibles para Maximiliano (Admin)
+                <Percent className="w-3.5 h-3.5 text-[#D7141A]" /> Comisiones visibles para Administrador
               </span>
             ) : (
               <span className="text-[#6B6B6B] flex items-center gap-1 text-[11px]">
@@ -220,10 +234,13 @@ export const EmployeeList: React.FC = () => {
         </div>
       )}
 
-      {selectedEmployee && (
+      {(selectedEmployee || isCreateModalOpen) && (
         <EmployeeModal
-          isOpen={Boolean(selectedEmployee)}
-          onClose={() => setSelectedEmployee(null)}
+          isOpen={Boolean(selectedEmployee || isCreateModalOpen)}
+          onClose={() => {
+            setSelectedEmployee(null);
+            setIsCreateModalOpen(false);
+          }}
           employee={selectedEmployee}
         />
       )}

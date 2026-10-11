@@ -18,9 +18,13 @@ import {
   Ban,
   RotateCcw,
   Trash2,
-  AlertTriangle
+  FileText,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  X
 } from 'lucide-react';
-import { DetailingQuote, DetailingQuoteStatus, Appointment } from '../../types';
+import { DetailingQuote, DetailingQuoteStatus } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, getLocalDateString } from '../../lib/formatters';
@@ -36,6 +40,7 @@ import { DetailingExpensesSection } from './components/DetailingExpensesSection'
 import { DetailingCommissionsSection } from './components/DetailingCommissionsSection';
 import { DetailingDashboardSection } from './components/DetailingDashboardSection';
 import { DetailingMigrationModal } from './components/DetailingMigrationModal';
+import { DetailingReceiptsSection } from './components/receipts/DetailingReceiptsSection';
 
 // Componentes de Agenda y Detailing Pro
 import { DetailingCalendarView } from './components/agenda/DetailingCalendarView';
@@ -59,6 +64,8 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
     voidDetailingQuote,
     restoreDetailingQuote,
     deleteDetailingQuotePermanent,
+    bulkVoidDetailingQuotes,
+    bulkDeleteDetailingQuotes,
     recordDetailingPayment,
     recordDetailingCheckin,
     recordDetailingQualityControl,
@@ -66,10 +73,10 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
     appointments,
     addAppointment,
     updateAppointment,
-    voidAppointment,
     stockItems,
     detailingConfig,
-    updateDetailingConfig
+    updateDetailingConfig,
+    detailingReceipts
   } = useData();
 
   const { profile, availableProfiles } = useAuth();
@@ -79,7 +86,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
 
   // Pestañas principales: 'agenda' primera!
   const [activeTab, setActiveTab] = useState<
-    'agenda' | 'quotes' | 'stock' | 'expenses' | 'commissions' | 'dashboard' | 'config'
+    'agenda' | 'quotes' | 'receipts' | 'stock' | 'expenses' | 'commissions' | 'dashboard' | 'config'
   >('agenda');
 
   React.useEffect(() => {
@@ -137,6 +144,9 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showVoidedQuotes, setShowVoidedQuotes] = useState<boolean>(false);
 
+  // Selección múltiple para cotizaciones
+  const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>([]);
+
   // Modales
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
   const [quoteToEdit, setQuoteToEdit] = useState<DetailingQuote | null>(null);
@@ -147,11 +157,12 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
   const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
 
-  // Modal de anulación y borrado definitivo
+  // Modal de anulación y borrado definitivo (individual o múltiple)
   const [voidModalState, setVoidModalState] = useState<{
     isOpen: boolean;
     mode: 'void' | 'permanent_delete';
     quote: DetailingQuote | null;
+    bulkIds?: string[];
   }>({
     isOpen: false,
     mode: 'void',
@@ -240,6 +251,21 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
     }
   };
 
+  // Manejadores de selección múltiple
+  const handleToggleSelectQuote = (id: string) => {
+    setSelectedQuoteIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllFiltered = () => {
+    if (selectedQuoteIds.length === filteredQuotes.length) {
+      setSelectedQuoteIds([]);
+    } else {
+      setSelectedQuoteIds(filteredQuotes.map((q) => q.id));
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* ── CABECERA DEL MÓDULO ── */}
@@ -258,7 +284,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             DetailVlak Hub
           </h1>
           <p className="text-xs text-[#6B6B6B] mt-0.5">
-            Agenda del taller por boxes, flujo de trabajos, gastos y control de stock real.
+            Agenda del taller por boxes, flujo de trabajos, comprobantes oficiales, gastos y comisiones.
           </p>
         </div>
 
@@ -346,7 +372,23 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           </span>
         </button>
 
-        {/* PESTAÑA 3: INSUMOS Y STOCK */}
+        {/* PESTAÑA 3: COMPROBANTES DE SERVICIO */}
+        <button
+          onClick={() => setActiveTab('receipts')}
+          className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
+            activeTab === 'receipts'
+              ? 'text-[#161616] border-[#D7141A]'
+              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Comprobantes</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B6B6B] font-bold border border-[#E5E5E3]">
+            {detailingReceipts.length}
+          </span>
+        </button>
+
+        {/* PESTAÑA 4: INSUMOS Y STOCK */}
         <button
           onClick={() => setActiveTab('stock')}
           className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
@@ -359,20 +401,22 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           <span>Insumos y stock</span>
         </button>
 
-        {/* PESTAÑA 4: GASTOS Y CAJA */}
-        <button
-          onClick={() => setActiveTab('expenses')}
-          className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
-            activeTab === 'expenses'
-              ? 'text-[#161616] border-[#D7141A]'
-              : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
-          }`}
-        >
-          <DollarSign className="w-4 h-4" />
-          <span>Gastos operativos</span>
-        </button>
+        {/* PESTAÑA 5: GASTOS Y CAJA */}
+        {isManagerOrAdmin && (
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
+              activeTab === 'expenses'
+                ? 'text-[#161616] border-[#D7141A]'
+                : 'text-[#6B6B6B] hover:text-[#161616] border-transparent'
+            }`}
+          >
+            <DollarSign className="w-4 h-4" />
+            <span>Gastos operativos</span>
+          </button>
+        )}
 
-        {/* PESTAÑA 5: COMISIONES */}
+        {/* PESTAÑA 6: COMISIONES */}
         <button
           onClick={() => setActiveTab('commissions')}
           className={`pb-3 pt-2 px-3 text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap min-h-[40px] border-b-2 -mb-[1px] cursor-pointer ${
@@ -385,7 +429,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           <span>Comisiones</span>
         </button>
 
-        {/* PESTAÑA 6: MÉTRICAS (ADMIN) */}
+        {/* PESTAÑA 7: MÉTRICAS (ADMIN) */}
         {isAdmin && (
           <button
             onClick={() => setActiveTab('dashboard')}
@@ -400,7 +444,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           </button>
         )}
 
-        {/* PESTAÑA 7: CONFIGURACIÓN (ADMIN / ENCARGADO) */}
+        {/* PESTAÑA 8: CONFIGURACIÓN (ADMIN / ENCARGADO) */}
         {isManagerOrAdmin && (
           <button
             onClick={() => setActiveTab('config')}
@@ -470,6 +514,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
                 onClick={() => {
                   setStatusFilter(f.id);
                   setShowVoidedQuotes(false);
+                  setSelectedQuoteIds([]);
                 }}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer shadow-xs ${
                   statusFilter === f.id && !showVoidedQuotes
@@ -501,8 +546,11 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 type="button"
-                onClick={() => setShowVoidedQuotes(!showVoidedQuotes)}
-                className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                onClick={() => {
+                  setShowVoidedQuotes(!showVoidedQuotes);
+                  setSelectedQuoteIds([]);
+                }}
+                className={`px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   showVoidedQuotes
                     ? 'bg-amber-50 text-amber-900 border-amber-300'
                     : 'bg-white text-[#6B6B6B] border-[#E5E5E3] hover:text-[#161616]'
@@ -513,6 +561,93 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
               </button>
             </div>
           </div>
+
+          {/* BARRA FLOTANTE DE ACCIONES POR SELECCIÓN MÚLTIPLE */}
+          {selectedQuoteIds.length > 0 && (
+            <div className="bg-[#161616] text-white p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-lg animate-fade-in">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-bold font-mono px-2 py-0.5 bg-[#D7141A] rounded-full text-white text-[11px]">
+                  {selectedQuoteIds.length}
+                </span>
+                <span>cotizaciones seleccionadas</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!showVoidedQuotes ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setVoidModalState({
+                        isOpen: true,
+                        mode: 'void',
+                        quote: null,
+                        bulkIds: selectedQuoteIds
+                      });
+                    }}
+                    className="gap-1.5 text-xs bg-[#D7141A] hover:bg-[#b01015]"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>Anular seleccionadas</span>
+                  </Button>
+                ) : (
+                  isAdmin && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setVoidModalState({
+                          isOpen: true,
+                          mode: 'permanent_delete',
+                          quote: null,
+                          bulkIds: selectedQuoteIds
+                        });
+                      }}
+                      className="gap-1.5 text-xs bg-red-700 hover:bg-red-800"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Borrar definitivamente</span>
+                    </Button>
+                  )
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedQuoteIds([])}
+                  className="text-xs text-gray-300 hover:text-white px-2 py-1 cursor-pointer flex items-center gap-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Deseleccionar</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Selector de Seleccionar Todos */}
+          {filteredQuotes.length > 0 && isManagerOrAdmin && (
+            <div className="flex items-center justify-between text-xs text-[#6B6B6B] px-1">
+              <button
+                type="button"
+                onClick={handleSelectAllFiltered}
+                className="flex items-center gap-1.5 hover:text-[#161616] cursor-pointer font-medium"
+              >
+                {selectedQuoteIds.length === filteredQuotes.length ? (
+                  <CheckSquare className="w-4 h-4 text-[#D7141A]" />
+                ) : (
+                  <Square className="w-4 h-4 text-[#9A9A9A]" />
+                )}
+                <span>
+                  {selectedQuoteIds.length === filteredQuotes.length
+                    ? 'Deseleccionar todas'
+                    : 'Seleccionar todas las visibles'}
+                </span>
+              </button>
+
+              <span>
+                Mostrando {filteredQuotes.length} cotizaciones
+              </span>
+            </div>
+          )}
 
           {/* Tarjetas de Cotizaciones */}
           {filteredQuotes.length === 0 ? (
@@ -533,6 +668,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredQuotes.map((quote) => {
                 const isVoided = !!quote.voided_at;
+                const isSelected = selectedQuoteIds.includes(quote.id);
                 const statusClasses = isVoided
                   ? 'bg-red-50 text-red-700 border-red-200'
                   : quote.status === 'Trabajo Completado' || quote.status === 'Entregado y cobrado'
@@ -549,15 +685,34 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
                   <div
                     key={quote.id}
                     className={`p-4 rounded-xl bg-white border transition-all flex flex-col justify-between space-y-3 shadow-xs ${
-                      isVoided ? 'border-red-200 bg-red-50/10' : 'border-[#E5E5E3] hover:border-[#D0D0CD]'
+                      isSelected
+                        ? 'border-[#161616] ring-2 ring-[#161616]/10'
+                        : isVoided
+                        ? 'border-red-200 bg-red-50/10'
+                        : 'border-[#E5E5E3] hover:border-[#D0D0CD]'
                     }`}
                   >
                     <div>
-                      {/* Cabecera Tarjeta: Estado y Origen */}
+                      {/* Cabecera Tarjeta: Checkbox, Estado y Origen */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${statusClasses}`}>
-                          {isVoided ? 'Anulada' : quote.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {isManagerOrAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSelectQuote(quote.id)}
+                              className="text-[#161616] cursor-pointer"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-[#D7141A]" />
+                              ) : (
+                                <Square className="w-4 h-4 text-[#9A9A9A]" />
+                              )}
+                            </button>
+                          )}
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${statusClasses}`}>
+                            {isVoided ? 'Anulada' : quote.status}
+                          </span>
+                        </div>
 
                         <span className="text-[10px] font-medium text-[#6B6B6B] bg-[#F5F5F4] px-2 py-0.5 rounded border border-[#E5E5E3]">
                           {quote.origin}
@@ -699,7 +854,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
                                   quote
                                 });
                               }}
-                              className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
                               title="Anular cotización con motivo"
                             >
                               <Ban className="w-4 h-4" />
@@ -716,19 +871,24 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
         </div>
       )}
 
-      {/* 3. INSUMOS & STOCK */}
+      {/* 3. COMPROBANTES DE SERVICIO OFICIALES */}
+      {activeTab === 'receipts' && (
+        <DetailingReceiptsSection />
+      )}
+
+      {/* 4. INSUMOS & STOCK */}
       {activeTab === 'stock' && <DetailingStockSection businessFilter="detailing" />}
 
-      {/* 4. GASTOS */}
-      {activeTab === 'expenses' && <DetailingExpensesSection businessFilter="detailing" />}
+      {/* 5. GASTOS */}
+      {activeTab === 'expenses' && isManagerOrAdmin && <DetailingExpensesSection businessFilter="detailing" />}
 
-      {/* 5. COMISIONES */}
+      {/* 6. COMISIONES */}
       {activeTab === 'commissions' && <DetailingCommissionsSection businessFilter="detailing" />}
 
-      {/* 6. BALANCE & MÉTRICAS (SOLO ADMIN) */}
+      {/* 7. BALANCE & MÉTRICAS (SOLO ADMIN) */}
       {activeTab === 'dashboard' && isAdmin && <DetailingDashboardSection />}
 
-      {/* 7. CONFIGURACIÓN (ADMIN / ENCARGADO) */}
+      {/* 8. CONFIGURACIÓN (ADMIN / ENCARGADO) */}
       {activeTab === 'config' && isManagerOrAdmin && (
         <DetailingConfigTab
           config={detailingConfig}
@@ -768,13 +928,23 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
         />
       )}
 
-      {/* Modal de Anulación / Borrado Definitivo */}
+      {/* Modal de Anulación / Borrado Definitivo (individual y múltiple) */}
       <DetailingVoidModal
         isOpen={voidModalState.isOpen}
-        onClose={() => setVoidModalState({ isOpen: false, mode: 'void', quote: null })}
-        title={voidModalState.mode === 'void' ? 'Anular Cotización de Detailing' : 'Borrado Definitivo'}
+        onClose={() => setVoidModalState({ isOpen: false, mode: 'void', quote: null, bulkIds: undefined })}
+        title={
+          voidModalState.bulkIds
+            ? voidModalState.mode === 'void'
+              ? `Anular ${voidModalState.bulkIds.length} Cotizaciones`
+              : `Borrado Definitivo de ${voidModalState.bulkIds.length} Cotizaciones`
+            : voidModalState.mode === 'void'
+            ? 'Anular Cotización de Detailing'
+            : 'Borrado Definitivo'
+        }
         itemDescription={
-          voidModalState.quote
+          voidModalState.bulkIds
+            ? `${voidModalState.bulkIds.length} cotizaciones seleccionadas para procesar en lote.`
+            : voidModalState.quote
             ? `${voidModalState.quote.client_name} - ${voidModalState.quote.vehicle_info} (${formatCurrency(
                 voidModalState.quote.total_amount
               )})`
@@ -782,7 +952,14 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
         }
         mode={voidModalState.mode}
         onConfirm={(reason) => {
-          if (voidModalState.quote) {
+          if (voidModalState.bulkIds && voidModalState.bulkIds.length > 0) {
+            if (voidModalState.mode === 'void') {
+              bulkVoidDetailingQuotes(voidModalState.bulkIds, reason);
+            } else {
+              bulkDeleteDetailingQuotes(voidModalState.bulkIds);
+            }
+            setSelectedQuoteIds([]);
+          } else if (voidModalState.quote) {
             if (voidModalState.mode === 'void') {
               voidDetailingQuote(voidModalState.quote.id, reason);
             } else {
