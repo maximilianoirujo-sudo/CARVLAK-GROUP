@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -18,7 +18,13 @@ import {
   Sparkles,
   Layers,
   ChevronDown,
-  Phone
+  Phone,
+  Edit2,
+  Trash2,
+  X,
+  Check,
+  CheckCheck,
+  DollarSign
 } from 'lucide-react';
 import {
   Appointment,
@@ -37,7 +43,8 @@ import {
   getDayOfWeekKey,
   timeStringToMinutes,
   minutesToTimeString,
-  formatCurrency
+  formatCurrency,
+  addMinutesToIso
 } from '../../../../lib/formatters';
 
 // Submodales
@@ -47,6 +54,8 @@ import { DetailingCheckinModal } from './DetailingCheckinModal';
 import { DetailingQualityControlModal } from './DetailingQualityControlModal';
 import { DetailingBlockTimeModal } from './DetailingBlockTimeModal';
 import { DetailingPaymentDeliveryModal } from './DetailingPaymentDeliveryModal';
+
+const HOUR_HEIGHT = 64; // Escala 1 hora = 64px
 
 interface DetailingCalendarViewProps {
   appointments: Appointment[];
@@ -60,7 +69,10 @@ interface DetailingCalendarViewProps {
   ) => void;
   onUpdateAppointment: (id: string, updates: Partial<Appointment>) => void;
   onAddAppointment: (data: any) => void;
-  onOpenQuoterModal: (quote?: DetailingQuote) => void;
+  onOpenQuoterModal: (
+    quote?: DetailingQuote,
+    initialSlot?: { date: string; time?: string; bayId?: string }
+  ) => void;
   onRecordCheckin: (quoteId: string, checkinData: any) => void;
   onRecordQualityControl: (quoteId: string, qcData: any) => void;
   onRecordPayment: (quoteId: string, paymentData: any) => void;
@@ -83,7 +95,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
 }) => {
   // Vista actual: 'dia' | 'semana' | 'mes' | 'lista'
   const [viewMode, setViewMode] = useState<'dia' | 'semana' | 'mes' | 'lista'>('dia');
-  
+
   // Fecha seleccionada (YYYY-MM-DD en hora de Uruguay)
   const [selectedDateStr, setSelectedDateStr] = useState<string>(getLocalDateString());
 
@@ -94,6 +106,8 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
   const [filterDetailerId, setFilterDetailerId] = useState<string>('all');
   const [filterBayId, setFilterBayId] = useState<string>('all');
   const [filterStage, setFilterStage] = useState<string>('all');
+  const [showPastInList, setShowPastInList] = useState<boolean>(false);
+  const [weekDaysCount, setWeekDaysCount] = useState<3 | 7>(7);
 
   // Modales
   const [isFindSlotOpen, setIsFindSlotOpen] = useState(false);
@@ -108,12 +122,26 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
     'confirm_appointment' | 'day_before_reminder' | 'car_ready' | 'quote_followup'
   >('confirm_appointment');
 
+  // Hoja inferior (Bottom sheet) para detalle del turno
+  const [selectedTurnDetail, setSelectedTurnDetail] = useState<{
+    appointment: Appointment;
+    quote?: DetailingQuote;
+  } | null>(null);
+
   // Touch swipe support para celular en vista Día
   const touchStartXRef = useRef<number | null>(null);
+  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Lista de Detailers asignables
+  // Lista de Detailers asignables: activos con negocio detailing o rol detailer / admin
   const detailers = useMemo(() => {
-    return profiles.filter((p) => p.roles.includes('detailer') || p.roles.includes('admin'));
+    return profiles.filter(
+      (p) =>
+        p.is_active &&
+        (p.businesses?.includes('detailing') ||
+          p.roles.includes('detailer') ||
+          p.roles.includes('admin') ||
+          p.roles.includes('encargado_detailing'))
+    );
   }, [profiles]);
 
   // Boxes activos
@@ -170,15 +198,15 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
     if (touchStartXRef.current === null) return;
     const touchEndX = e.changedTouches[0].clientX;
     const diff = touchEndX - touchStartXRef.current;
-    if (diff > 60) {
-      handlePrevDay(); // Deslizar derecha -> día anterior
-    } else if (diff < -60) {
-      handleNextDay(); // Deslizar izquierda -> día siguiente
+    if (diff > 70) {
+      handlePrevDay();
+    } else if (diff < -70) {
+      handleNextDay();
     }
     touchStartXRef.current = null;
   };
 
-  // Horas del día para la grilla (ej. 08:00 a 19:00 según config)
+  // Horas del día para la grilla según config
   const currentDayOfWeekKey = getDayOfWeekKey(selectedDateStr);
   const currentDayConfig = config.schedule?.[currentDayOfWeekKey] as any;
   const openTime = currentDayConfig?.open_time || currentDayConfig?.open || '08:00';
@@ -186,6 +214,11 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
 
   const startHour = parseInt(openTime.split(':')[0], 10) || 8;
   const endHour = parseInt(closeTime.split(':')[0], 10) || 19;
+  const openMinutes = startHour * 60;
+  const closeMinutes = (endHour + 1) * 60;
+  const totalGridMinutes = closeMinutes - openMinutes;
+  const totalGridHeight = (totalGridMinutes / 60) * HOUR_HEIGHT;
+
   const hoursRange = useMemo(() => {
     const list = [];
     for (let h = startHour; h <= endHour; h++) {
@@ -198,6 +231,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
   const nowUruguay = new Date();
   const todayStr = getLocalDateString(nowUruguay);
   const isSelectedDateToday = selectedDateStr === todayStr;
+
   const currentMinutesFromStart = useMemo(() => {
     if (!isSelectedDateToday) return null;
     const uruguayTimeString = nowUruguay.toLocaleTimeString('en-GB', {
@@ -205,88 +239,198 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
       hour12: false
     });
     const currentMins = timeStringToMinutes(uruguayTimeString.substring(0, 5));
-    const startMins = startHour * 60;
-    const endMins = (endHour + 1) * 60;
-    if (currentMins < startMins || currentMins > endMins) return null;
-    return currentMins - startMins;
-  }, [isSelectedDateToday, startHour, endHour]);
+    if (currentMins < openMinutes || currentMins > closeMinutes) return null;
+    return currentMins - openMinutes;
+  }, [isSelectedDateToday, openMinutes, closeMinutes]);
 
-  // Chequeo de colisión al mover o crear turno
-  const checkCollision = (
-    bayId: string,
-    startTimeIso: string,
-    durationMins: number,
-    excludeAppId?: string
-  ): { hasCollision: boolean; conflictingTurn?: Appointment } => {
-    const startMins = new Date(startTimeIso).getTime();
-    const endMins = startMins + durationMins * 60000;
-
-    for (const app of detailingAppointments) {
-      if (excludeAppId && app.id === excludeAppId) continue;
-      if (app.work_bay_id !== bayId) continue;
-      if (app.voided_at) continue;
-
-      const appStart = new Date(app.start_time).getTime();
-      const appEnd = appStart + app.duration_minutes * 60000;
-
-      // Hay superposición si los intervalos se cruzan
-      if (startMins < appEnd && endMins > appStart) {
-        return { hasCollision: true, conflictingTurn: app };
-      }
+  // Scroll automático a la línea roja de "Ahora" al entrar
+  useEffect(() => {
+    if (viewMode === 'dia' && isSelectedDateToday && currentMinutesFromStart !== null && timelineContainerRef.current) {
+      const targetScroll = Math.max(0, (currentMinutesFromStart / 60) * HOUR_HEIGHT - 120);
+      timelineContainerRef.current.scrollTop = targetScroll;
     }
-    return { hasCollision: false };
+  }, [viewMode, isSelectedDateToday]);
+
+  // Verificación de feriado en la fecha seleccionada
+  const activeHoliday = (config.holidays || []).find((h) => h.date === selectedDateStr);
+
+  // Helper para calcular segmentos de turnos multi-día
+  const getAppointmentSegmentForDate = (
+    app: Appointment,
+    targetDateStr: string
+  ): {
+    startsAtMinutes: number;
+    durationMinutes: number;
+    dayIndex: number;
+    totalDays: number;
+  } | null => {
+    const appStartDateStr = getLocalDateString(app.start_time);
+    const totalDuration = app.duration_minutes || 60;
+    const dailyCapacity = Math.max(60, closeMinutes - openMinutes);
+    const startMinsOfDay = timeStringToMinutes(formatLocalTime(app.start_time));
+    const day1Available = Math.max(60, closeMinutes - startMinsOfDay);
+
+    // Si entra en un solo día
+    if (totalDuration <= day1Available) {
+      if (appStartDateStr === targetDateStr) {
+        return {
+          startsAtMinutes: startMinsOfDay,
+          durationMinutes: totalDuration,
+          dayIndex: 1,
+          totalDays: 1
+        };
+      }
+      return null;
+    }
+
+    // Turno multi-día (ej. 14 horas = 2 días)
+    let remaining = totalDuration;
+    const days: { dateStr: string; startMins: number; dur: number }[] = [];
+    const curDate = new Date(appStartDateStr + 'T12:00:00-03:00');
+
+    // Día 1
+    const seg1Dur = Math.min(remaining, day1Available);
+    days.push({
+      dateStr: getLocalDateString(curDate),
+      startMins: startMinsOfDay,
+      dur: seg1Dur
+    });
+    remaining -= seg1Dur;
+
+    // Días subsiguientes
+    while (remaining > 0) {
+      curDate.setDate(curDate.getDate() + 1);
+      const segDur = Math.min(remaining, dailyCapacity);
+      days.push({
+        dateStr: getLocalDateString(curDate),
+        startMins: openMinutes,
+        dur: segDur
+      });
+      remaining -= segDur;
+    }
+
+    const matchIdx = days.findIndex((d) => d.dateStr === targetDateStr);
+    if (matchIdx >= 0) {
+      return {
+        startsAtMinutes: days[matchIdx].startMins,
+        durationMinutes: days[matchIdx].dur,
+        dayIndex: matchIdx + 1,
+        totalDays: days.length
+      };
+    }
+    return null;
   };
 
-  // Manejador del avance de etapa en 1 clic
-  const handleAdvanceStage = (quote: DetailingQuote, appointment?: Appointment) => {
-    const stagesFlow: DetailingQuoteStatus[] = [
-      'Agendado',
-      'Confirmado',
-      'Recibido',
-      'En proceso',
-      'Control de calidad',
-      'Listo para retirar',
-      'Entregado y cobrado'
-    ];
+  // Cálculo de solapamientos para renderizado side-by-side con borde rojo
+  const getColumnLayout = (
+    colId: string,
+    targetDateStr: string
+  ) => {
+    const itemsInCol: {
+      appointment: Appointment;
+      segment: { startsAtMinutes: number; durationMinutes: number; dayIndex: number; totalDays: number };
+      startMins: number;
+      endMins: number;
+    }[] = [];
 
-    const currentIdx = stagesFlow.indexOf(quote.status as DetailingQuoteStatus);
-    const nextStage = stagesFlow[currentIdx + 1];
+    detailingAppointments.forEach((app) => {
+      if (dayGroupBy === 'bay' && app.work_bay_id !== colId) return;
+      if (dayGroupBy === 'detailer' && app.assigned_to !== colId) return;
 
-    if (!nextStage) return;
+      const seg = getAppointmentSegmentForDate(app, targetDateStr);
+      if (seg) {
+        itemsInCol.push({
+          appointment: app,
+          segment: seg,
+          startMins: seg.startsAtMinutes,
+          endMins: seg.startsAtMinutes + seg.durationMinutes
+        });
+      }
+    });
 
-    if (nextStage === 'Recibido') {
-      setActiveQuoteForModal(quote);
-      setActiveAppointmentForModal(appointment || null);
-      setIsCheckinModalOpen(true);
-    } else if (nextStage === 'Control de calidad') {
-      setActiveQuoteForModal(quote);
-      setActiveAppointmentForModal(appointment || null);
-      setIsQCModalOpen(true);
-    } else if (nextStage === 'Listo para retirar') {
+    // Mapear colIndex, colCount y hasConflict
+    const layoutMap: Record<
+      string,
+      {
+        colIndex: number;
+        colCount: number;
+        hasConflict: boolean;
+        appointment: Appointment;
+        segment: { startsAtMinutes: number; durationMinutes: number; dayIndex: number; totalDays: number };
+      }
+    > = {};
+
+    itemsInCol.forEach((item) => {
+      const overlapping = itemsInCol.filter(
+        (other) => item.startMins < other.endMins && item.endMins > other.startMins
+      );
+      const hasConflict = overlapping.length > 1;
+      overlapping.sort((a, b) => a.startMins - b.startMins || a.appointment.id.localeCompare(b.appointment.id));
+      const colIndex = overlapping.findIndex((o) => o.appointment.id === item.appointment.id);
+      layoutMap[item.appointment.id] = {
+        colIndex: Math.max(0, colIndex),
+        colCount: Math.max(1, overlapping.length),
+        hasConflict,
+        appointment: item.appointment,
+        segment: item.segment
+      };
+    });
+
+    return Object.values(layoutMap);
+  };
+
+  // Manejador del avance de etapa simplificado
+  const handleNextAction = (quote: DetailingQuote, appointment?: Appointment) => {
+    const currentStatus = quote.status;
+    if (currentStatus === 'Presupuesto') {
+      onOpenQuoterModal(quote);
+    } else if (currentStatus === 'Agendado') {
+      onUpdateQuoteStatus(quote.id, 'En taller');
+      if (appointment) {
+        onUpdateAppointment(appointment.id, { stage: 'En taller', status: 'Confirmado' });
+      }
+      setSelectedTurnDetail(null);
+    } else if (currentStatus === 'En taller') {
       onUpdateQuoteStatus(quote.id, 'Listo para retirar');
+      if (appointment) {
+        onUpdateAppointment(appointment.id, { stage: 'Listo para retirar' });
+      }
       setActiveQuoteForModal(quote);
       setActiveAppointmentForModal(appointment || null);
       setWhatsAppTemplateKey('car_ready');
       setIsWhatsAppModalOpen(true);
-    } else if (nextStage === 'Entregado y cobrado') {
+      setSelectedTurnDetail(null);
+    } else if (currentStatus === 'Listo para retirar') {
       setActiveQuoteForModal(quote);
       setActiveAppointmentForModal(appointment || null);
       setIsPaymentDeliveryOpen(true);
-    } else {
-      onUpdateQuoteStatus(quote.id, nextStage);
+      setSelectedTurnDetail(null);
     }
   };
 
   // Acción "No vino"
   const handleMarkNoShow = (quote: DetailingQuote, appointment?: Appointment) => {
-    if (window.confirm(`¿Marcar que ${quote.client_name} no se presentó al turno? Se liberará el horario.`)) {
+    if (window.confirm(`¿Marcar que ${quote.client_name} no vino? Se liberará el box en la agenda.`)) {
       onUpdateQuoteStatus(quote.id, 'No vino');
       if (appointment) {
         onUpdateAppointment(appointment.id, { stage: 'No vino', status: 'Cancelado' });
       }
+      setSelectedTurnDetail(null);
       setActiveQuoteForModal(quote);
       setWhatsAppTemplateKey('quote_followup');
       setIsWhatsAppModalOpen(true);
+    }
+  };
+
+  // Acción "Anular"
+  const handleVoidQuote = (quote: DetailingQuote, appointment?: Appointment) => {
+    const reason = window.prompt(`Motivo de anulación para ${quote.client_name}:`, 'Cancelado por el cliente');
+    if (reason !== null) {
+      onUpdateQuoteStatus(quote.id, 'Anulado', { reason });
+      if (appointment) {
+        onUpdateAppointment(appointment.id, { stage: 'Anulado', status: 'Cancelado' });
+      }
+      setSelectedTurnDetail(null);
     }
   };
 
@@ -302,8 +446,27 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
     setIsWhatsAppModalOpen(true);
   };
 
-  // Verificación de feriado en la fecha seleccionada
-  const activeHoliday = (config.holidays || []).find((h) => h.date === selectedDateStr);
+  // Click en hueco vacío de la grilla -> abre cotizador con día, hora y box
+  const handleGridBackgroundClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    colId: string
+  ) => {
+    // Si el clic vino de un turno, ignorar
+    if ((e.target as HTMLElement).closest('[data-appointment-card]')) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const clickedMinutes = openMinutes + Math.floor((offsetY / HOUR_HEIGHT) * 60);
+    // Redondear a intervalos de 30 min
+    const roundedMinutes = Math.min(closeMinutes - 60, Math.max(openMinutes, Math.floor(clickedMinutes / 30) * 30));
+    const timeStr = minutesToTimeString(roundedMinutes);
+
+    onOpenQuoterModal(undefined, {
+      date: selectedDateStr,
+      time: timeStr,
+      bayId: dayGroupBy === 'bay' ? colId : activeBays[0]?.id || 'box-1'
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -424,8 +587,8 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
               type="button"
               variant="primary"
               size="sm"
-              onClick={() => onOpenQuoterModal()}
-              className="gap-1.5 text-xs"
+              onClick={() => onOpenQuoterModal(undefined, { date: selectedDateStr })}
+              className="gap-1.5 text-xs bg-[#D7141A] hover:bg-[#B80E14] text-white border-none"
             >
               <Plus className="w-4 h-4" />
               Nuevo Turno
@@ -471,21 +634,18 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
               className="px-2.5 py-1 bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg text-xs font-medium text-[#161616] focus:outline-none"
             >
               <option value="all">Todos los Estados</option>
-              {config.flow_statuses.map((st) => {
-                const stName = (st as any).label || (st as any).name || st.id;
-                return (
-                  <option key={st.id} value={stName}>
-                    {stName}
-                  </option>
-                );
-              })}
+              {config.flow_statuses?.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {(st as any).label || (st as any).name || st.id}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* En vista DÍA: switch para alternar columnas por Puesto vs Detailer */}
+          {/* Switch de columnas en Vista Día */}
           {viewMode === 'dia' && (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-[#6B6B6B] font-semibold">Columnas por:</span>
+              <span className="text-[11px] font-semibold text-[#6B6B6B]">Columnas por:</span>
               <div className="flex bg-[#F5F5F4] p-0.5 rounded-lg border border-[#E5E5E3]">
                 <button
                   type="button"
@@ -494,7 +654,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
                     dayGroupBy === 'bay' ? 'bg-white text-[#161616] font-bold shadow-xs' : 'text-[#6B6B6B]'
                   }`}
                 >
-                  Puestos ({activeBays.length})
+                  Boxes ({activeBays.length})
                 </button>
                 <button
                   type="button"
@@ -506,6 +666,20 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
                   Detailers ({detailers.length})
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Toggle móvil 3 días / 7 días en semana */}
+          {viewMode === 'semana' && (
+            <div className="flex items-center gap-1.5 sm:hidden">
+              <span className="text-[11px] font-semibold text-[#6B6B6B]">Mostrar:</span>
+              <button
+                type="button"
+                onClick={() => setWeekDaysCount(weekDaysCount === 7 ? 3 : 7)}
+                className="px-2 py-0.5 bg-[#F5F5F4] border border-[#E5E5E3] rounded-md text-xs font-bold text-[#161616]"
+              >
+                {weekDaysCount === 7 ? 'Ver 3 días' : 'Ver 7 días'}
+              </button>
             </div>
           )}
         </div>
@@ -526,212 +700,382 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
         </div>
       )}
 
-      {/* ── CONTENIDO PRINCIPAL SEGÚN VISTA ── */}
-
-      {/* ── 1. VISTA DÍA (Línea de tiempo por horas + columnas) ── */}
+      {/* ── 1. VISTA DÍA (Línea de tiempo 64px/h con Posicionamiento Absoluto) ── */}
       {viewMode === 'dia' && (
         <div
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className="bg-white border border-[#E5E5E3] rounded-2xl p-4 overflow-x-auto select-none"
+          className="bg-white border border-[#E5E5E3] rounded-2xl p-4 overflow-hidden select-none"
         >
-          {/* Columnas Header */}
-          <div className="min-w-[650px]">
-            <div className="grid grid-cols-[80px_repeat(auto-fit,minmax(200px,1fr))] border-b border-[#E5E5E3] pb-3 mb-2">
+          {/* Header de Columnas */}
+          <div className="min-w-[650px] overflow-x-auto">
+            <div className="grid grid-cols-[70px_repeat(auto-fit,minmax(200px,1fr))] border-b border-[#E5E5E3] pb-2.5 mb-1">
               <div className="text-xs font-semibold text-[#6B6B6B] uppercase font-display flex items-center">
                 Hora
               </div>
-              {dayGroupBy === 'bay'
-                ? activeBays.map((bay) => (
-                    <div key={bay.id} className="px-3 border-l border-[#E5E5E3]">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: bay.color || '#2563EB' }}
-                        />
-                        <span className="text-sm font-bold font-display text-[#161616]">
-                          {bay.name}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-[#6B6B6B]">
-                        {(bay.supported_services || ['Detallado general']).join(', ')}
-                      </span>
-                    </div>
-                  ))
-                : detailers.map((det) => (
-                    <div key={det.id} className="px-3 border-l border-[#E5E5E3]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-[#161616] text-white text-[10px] flex items-center justify-center font-bold">
-                          {det.full_name.charAt(0)}
-                        </div>
-                        <span className="text-sm font-bold font-display text-[#161616]">
-                          {det.full_name}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-[#6B6B6B]">Detailer Profesional</span>
-                    </div>
-                  ))}
+              {(dayGroupBy === 'bay' ? activeBays : detailers).map((col: any) => (
+                <div key={col.id} className="px-3 border-l border-[#E5E5E3]">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: col.color || (dayGroupBy === 'bay' ? '#2563EB' : '#161616') }}
+                    />
+                    <span className="text-sm font-bold font-display text-[#161616] truncate">
+                      {col.name || col.full_name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#6B6B6B] truncate block">
+                    {dayGroupBy === 'bay'
+                      ? (col.supported_services || ['Detallado general']).join(', ')
+                      : 'Detailer'}
+                  </span>
+                </div>
+              ))}
             </div>
 
-            {/* Timeline Grilla */}
-            <div className="relative">
+            {/* Timeline Contenedor */}
+            <div
+              ref={timelineContainerRef}
+              className="relative overflow-y-auto max-h-[750px] border-b border-[#E5E5E3]"
+              style={{ height: `${totalGridHeight}px` }}
+            >
               {/* Línea roja con la hora actual de Uruguay */}
               {currentMinutesFromStart !== null && (
                 <div
-                  className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                  style={{ top: `${(currentMinutesFromStart / 60) * 80}px` }}
+                  className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
+                  style={{ top: `${(currentMinutesFromStart / 60) * HOUR_HEIGHT}px` }}
                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#D7141A] -ml-1.5" />
+                  <div className="w-3 h-3 rounded-full bg-[#D7141A] -ml-1.5 shadow-xs" />
                   <div className="w-full border-t-2 border-[#D7141A] border-dashed" />
-                  <span className="text-[10px] font-bold text-white bg-[#D7141A] px-1.5 py-0.5 rounded ml-1">
+                  <span className="text-[9px] font-bold text-white bg-[#D7141A] px-1.5 py-0.5 rounded ml-1 shadow-xs">
                     Ahora
                   </span>
                 </div>
               )}
 
-              {/* Filas de horas */}
-              {hoursRange.map((hourStr, idx) => {
-                const hourInt = parseInt(hourStr.split(':')[0], 10);
-                return (
-                  <div
-                    key={hourStr}
-                    className="grid grid-cols-[80px_repeat(auto-fit,minmax(200px,1fr))] min-h-[80px] border-b border-[#F5F5F4]"
-                  >
-                    {/* Celda Hora */}
-                    <div className="text-xs font-medium text-[#6B6B6B] pt-2 pr-3 font-display">
+              {/* Grilla de Fondo con Horas */}
+              <div className="grid grid-cols-[70px_repeat(auto-fit,minmax(200px,1fr))] h-full absolute inset-0 pointer-events-none">
+                {/* Columna de Horas */}
+                <div className="border-r border-[#E5E5E3]">
+                  {hoursRange.map((hourStr, idx) => (
+                    <div
+                      key={hourStr}
+                      className="text-xs font-semibold text-[#6B6B6B] pr-2 pt-1 font-display text-right border-b border-[#F5F5F4]"
+                      style={{ height: `${HOUR_HEIGHT}px` }}
+                    >
                       {hourStr}
                     </div>
+                  ))}
+                </div>
 
-                    {/* Celdas por puesto o detailer */}
-                    {(dayGroupBy === 'bay' ? activeBays : detailers).map((col) => {
-                      // Buscar turnos que inicien en esta fecha y columna
-                      const turnsInCell = detailingAppointments.filter((app) => {
-                        const appDateStr = getLocalDateString(app.start_time);
-                        if (appDateStr !== selectedDateStr) return false;
+                {/* Columnas de los Boxes/Detailers (líneas de hora tenues) */}
+                {(dayGroupBy === 'bay' ? activeBays : detailers).map((col: any) => (
+                  <div key={col.id} className="border-r border-[#F5F5F4] h-full relative">
+                    {hoursRange.map((hourStr) => (
+                      <div
+                        key={hourStr}
+                        className="border-b border-[#F5F5F4] w-full"
+                        style={{ height: `${HOUR_HEIGHT}px` }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
 
-                        if (dayGroupBy === 'bay' && app.work_bay_id !== col.id) return false;
-                        if (dayGroupBy === 'detailer' && app.assigned_to !== col.id) return false;
+              {/* Capa Interactiva: Columnas con Clic en Hueco y Bloques Posicionados Absolutos */}
+              <div className="grid grid-cols-[70px_repeat(auto-fit,minmax(200px,1fr))] h-full relative z-10">
+                <div /> {/* Espacio para columna de hora */}
+                {(dayGroupBy === 'bay' ? activeBays : detailers).map((col: any) => {
+                  const layoutCards = getColumnLayout(col.id, selectedDateStr);
 
-                        const appStartHour = new Date(app.start_time).getHours();
-                        return appStartHour === hourInt;
-                      });
+                  return (
+                    <div
+                      key={col.id}
+                      onClick={(e) => handleGridBackgroundClick(e, col.id)}
+                      className="relative h-full border-r border-transparent cursor-pointer hover:bg-slate-50/40 transition-colors"
+                      title="Tocá un hueco libre para agendar un turno aquí"
+                    >
+                      {layoutCards.map(({ appointment: app, segment, colIndex, colCount, hasConflict }) => {
+                        const quote = detailingQuotes.find((q) => q.id === app.quote_id);
+                        const currentStage = app.stage || quote?.status || app.status;
+                        const stageColor = getStageColor(currentStage);
 
-                      return (
-                        <div
-                          key={col.id}
-                          className="border-l border-[#F5F5F4] p-1.5 relative hover:bg-[#FAFAFA] transition-all group min-h-[80px]"
-                        >
-                          {turnsInCell.map((app) => {
-                            const quote = detailingQuotes.find((q) => q.id === app.quote_id);
-                            const currentStage = app.stage || quote?.status || app.status;
-                            const stageColor = getStageColor(currentStage);
+                        const topPx = Math.max(0, ((segment.startsAtMinutes - openMinutes) / 60) * HOUR_HEIGHT);
+                        const heightPx = Math.max(38, (segment.durationMinutes / 60) * HOUR_HEIGHT);
 
-                            if (app.is_blocked) {
-                              return (
-                                <div
-                                  key={app.id}
-                                  className="p-2.5 rounded-xl border border-dashed border-amber-300 bg-amber-50/80 text-amber-900 text-xs space-y-1 mb-1 shadow-xs"
-                                >
-                                  <div className="flex items-center gap-1 font-bold text-[11px]">
-                                    <Ban className="w-3.5 h-3.5 text-amber-600" />
-                                    <span>Horario Bloqueado</span>
-                                  </div>
-                                  <p className="text-[11px] font-medium text-amber-800">
-                                    {app.block_reason || 'No disponible'}
-                                  </p>
-                                  <div className="text-[10px] text-amber-700">
-                                    {formatLocalTime(app.start_time)} ({app.duration_minutes} min)
-                                  </div>
+                        // Cálculo horizontal side-by-side si hay solapamiento
+                        const widthPercent = 100 / colCount;
+                        const leftPercent = colIndex * widthPercent;
+
+                        const isBlocked = app.is_blocked;
+
+                        if (isBlocked) {
+                          return (
+                            <div
+                              key={app.id}
+                              data-appointment-card="true"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTurnDetail({ appointment: app, quote: undefined });
+                              }}
+                              className="absolute rounded-xl p-2 text-xs border border-dashed border-amber-300 bg-amber-50/90 text-amber-900 shadow-xs cursor-pointer overflow-hidden z-20"
+                              style={{
+                                top: `${topPx}px`,
+                                height: `${heightPx}px`,
+                                left: `${leftPercent}%`,
+                                width: `calc(${widthPercent}% - 4px)`
+                              }}
+                            >
+                              <div className="flex items-center gap-1 font-bold text-[11px]">
+                                <Ban className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span className="truncate">Bloqueado</span>
+                              </div>
+                              <p className="text-[10px] text-amber-800 truncate mt-0.5">
+                                {app.block_reason || 'Mantenimiento / Pausa'}
+                              </p>
+                              <span className="text-[9px] text-amber-700 block mt-0.5 font-medium">
+                                {formatLocalTime(app.start_time)} ({app.duration_minutes}m)
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        const hasConfirmed = !!quote?.confirmed_at;
+                        const hasDeposit = (quote?.payments || []).some((p) => !p.is_voided && p.amount > 0);
+                        const hasWhatsApp = (quote?.whatsapp_sent_log || []).length > 0;
+                        const isMultiDay = segment.totalDays > 1;
+
+                        return (
+                          <div
+                            key={app.id}
+                            data-appointment-card="true"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTurnDetail({ appointment: app, quote });
+                            }}
+                            className={`absolute rounded-xl p-2 shadow-xs hover:shadow-md transition-all cursor-pointer overflow-hidden z-20 flex flex-col justify-between ${
+                              hasConflict ? 'border-2 border-red-500 shadow-red-100' : 'border border-[#E5E5E3]'
+                            }`}
+                            style={{
+                              top: `${topPx}px`,
+                              height: `${heightPx}px`,
+                              left: `${leftPercent}%`,
+                              width: `calc(${widthPercent}% - 4px)`,
+                              backgroundColor: '#FFFFFF',
+                              borderLeftWidth: '4px',
+                              borderLeftColor: stageColor
+                            }}
+                          >
+                            {/* Cabecera: Hora, Badge y Alerta de Choque */}
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-[#161616] truncate">
+                                  <Clock className="w-3 h-3 text-[#6B6B6B] shrink-0" />
+                                  <span>{formatLocalTime(app.start_time)}</span>
+                                  <span className="text-[9px] text-[#6B6B6B] font-normal">
+                                    ({app.duration_minutes}m)
+                                  </span>
                                 </div>
-                              );
-                            }
 
-                            return (
-                              <div
-                                key={app.id}
-                                className="bg-white border border-[#E5E5E3] rounded-xl p-2.5 shadow-xs hover:shadow-md transition-all space-y-2 mb-1.5 border-l-4"
-                                style={{ borderLeftColor: stageColor }}
-                              >
-                                {/* Header del turno: Hora y Badge Estado */}
-                                <div className="flex items-center justify-between gap-1">
-                                  <div className="flex items-center gap-1 text-[11px] font-bold text-[#161616]">
-                                    <Clock className="w-3 h-3 text-[#6B6B6B]" />
-                                    <span>{formatLocalTime(app.start_time)}</span>
-                                    <span className="text-[10px] text-[#6B6B6B] font-normal">
-                                      ({app.duration_minutes}m)
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {isMultiDay && (
+                                    <span className="px-1 py-0.2 bg-blue-100 text-blue-800 rounded text-[9px] font-bold">
+                                      Día {segment.dayIndex} de {segment.totalDays}
                                     </span>
-                                  </div>
+                                  )}
+                                  {hasConflict && (
+                                    <span
+                                      className="w-2 h-2 rounded-full bg-red-600 animate-ping"
+                                      title="Choque de horario detectado"
+                                    />
+                                  )}
                                   <span
-                                    className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white"
+                                    className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white truncate max-w-[80px]"
                                     style={{ backgroundColor: stageColor }}
                                   >
                                     {currentStage}
                                   </span>
                                 </div>
+                              </div>
 
-                                {/* Auto y Chapa */}
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="truncate">
-                                    <p className="text-xs font-bold text-[#161616] truncate font-display">
-                                      {quote?.vehicle_info || (app.vehicle ? `${app.vehicle.brand} ${app.vehicle.model}` : app.title)}
-                                    </p>
-                                    <p className="text-[11px] text-[#6B6B6B] truncate">
-                                      {quote?.client_name || app.client?.full_name}
-                                    </p>
-                                  </div>
-                                  {(quote?.vehicle_plate || app.vehicle?.plate) && (
+                              {/* Auto, Matrícula y Cliente */}
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="truncate">
+                                  <p className="text-xs font-bold text-[#161616] truncate font-display">
+                                    {quote?.vehicle_info || (app.vehicle ? `${app.vehicle.brand} ${app.vehicle.model}` : app.title)}
+                                  </p>
+                                  <p className="text-[10px] text-[#6B6B6B] truncate">
+                                    {quote?.client_name || app.client?.full_name || 'Cliente'}
+                                  </p>
+                                </div>
+                                {(quote?.vehicle_plate || app.vehicle?.plate) && (
+                                  <div className="shrink-0 scale-90 origin-right">
                                     <UruguayanPlate
                                       plate={quote?.vehicle_plate || app.vehicle?.plate || ''}
                                       size="sm"
                                     />
-                                  )}
-                                </div>
-
-                                {/* Servicios & Monto */}
-                                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[#F5F5F4]">
-                                  <span className="font-semibold text-[#161616]">
-                                    {formatCurrency(quote?.total_amount || app.price_amount || 0)}
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    {quote?.client_phone && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleTriggerWhatsApp(quote, app, 'confirm_appointment')}
-                                        className="p-1 rounded bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-all"
-                                        title="WhatsApp rápido"
-                                      >
-                                        <MessageCircle className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                    {quote && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleAdvanceStage(quote, app)}
-                                        className="px-2 py-0.5 rounded bg-[#161616] text-white hover:bg-[#D7141A] transition-all font-bold text-[10px] flex items-center gap-1"
-                                        title="Avanzar etapa"
-                                      >
-                                        <span>Avanzar</span>
-                                        <ArrowRight className="w-2.5 h-2.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Botón "No vino" si está en agendado/confirmado */}
-                                {quote && ['Agendado', 'Turno Confirmado', 'Confirmado'].includes(currentStage) && (
-                                  <div className="pt-1 flex justify-end">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleMarkNoShow(quote, app)}
-                                      className="text-[10px] text-gray-500 hover:text-red-600 transition-colors"
-                                    >
-                                      No se presentó
-                                    </button>
                                   </div>
                                 )}
                               </div>
-                            );
-                          })}
+                            </div>
+
+                            {/* Pie de tarjeta: Monto e Íconos chicos */}
+                            <div className="flex items-center justify-between pt-1 border-t border-[#F5F5F4] text-[10px]">
+                              <span className="font-bold text-[#161616] font-display">
+                                {formatCurrency(quote?.total_amount || app.price_amount || 0)}
+                              </span>
+
+                              <div className="flex items-center gap-1">
+                                {hasConfirmed && (
+                                  <span
+                                    title="Turno confirmado por cliente"
+                                    className="text-emerald-600 font-bold text-[10px]"
+                                  >
+                                    ✓
+                                  </span>
+                                )}
+                                {hasDeposit && (
+                                  <span
+                                    title="Seña o pago registrado"
+                                    className="text-blue-600 font-bold text-[10px]"
+                                  >
+                                    $
+                                  </span>
+                                )}
+                                {hasWhatsApp && (
+                                  <span title="Mensaje WhatsApp enviado">
+                                    <MessageCircle className="w-2.5 h-2.5 text-emerald-600" />
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. VISTA SEMANA (7 columnas o 3 días en móvil) ── */}
+      {viewMode === 'semana' && (
+        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4 overflow-x-auto">
+          <div className="min-w-[700px]">
+            {/* Headers de días */}
+            <div
+              className={`grid border-b border-[#E5E5E3] pb-2 mb-2 text-center text-xs font-bold font-display ${
+                weekDaysCount === 3 ? 'grid-cols-3' : 'grid-cols-7'
+              }`}
+            >
+              {Array.from({ length: weekDaysCount }).map((_, idx) => {
+                const baseDate = new Date(selectedDateStr + 'T12:00:00-03:00');
+                const startDay = new Date(baseDate);
+                if (weekDaysCount === 7) {
+                  const dayOfWeek = (baseDate.getDay() + 6) % 7;
+                  startDay.setDate(baseDate.getDate() - dayOfWeek + idx);
+                } else {
+                  startDay.setDate(baseDate.getDate() + idx);
+                }
+                const colDateStr = getLocalDateString(startDay);
+                const isToday = colDateStr === todayStr;
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setSelectedDateStr(colDateStr);
+                      setViewMode('dia');
+                    }}
+                    className={`p-2 rounded-xl cursor-pointer transition-all ${
+                      isToday ? 'bg-[#D7141A] text-white shadow-xs' : 'hover:bg-[#F5F5F4] text-[#161616]'
+                    }`}
+                  >
+                    <span className="block uppercase text-[10px]">
+                      {formatLocalDate(startDay.toISOString(), { weekday: 'short' })}
+                    </span>
+                    <span className="text-base font-black">{startDay.getDate()}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Listado de turnos de la semana por día */}
+            <div
+              className={`grid gap-2 ${weekDaysCount === 3 ? 'grid-cols-3' : 'grid-cols-7'}`}
+            >
+              {Array.from({ length: weekDaysCount }).map((_, idx) => {
+                const baseDate = new Date(selectedDateStr + 'T12:00:00-03:00');
+                const startDay = new Date(baseDate);
+                if (weekDaysCount === 7) {
+                  const dayOfWeek = (baseDate.getDay() + 6) % 7;
+                  startDay.setDate(baseDate.getDate() - dayOfWeek + idx);
+                } else {
+                  startDay.setDate(baseDate.getDate() + idx);
+                }
+                const colDateStr = getLocalDateString(startDay);
+
+                const dayTurns = detailingAppointments.filter(
+                  (a) => getLocalDateString(a.start_time) === colDateStr && !a.voided_at
+                );
+
+                return (
+                  <div
+                    key={idx}
+                    className="min-h-[300px] bg-[#FAFAFA] rounded-xl p-2 border border-[#E5E5E3] space-y-2"
+                  >
+                    <div className="flex items-center justify-between pb-1 border-b border-[#E5E5E3]">
+                      <span className="text-[10px] font-bold text-[#6B6B6B]">
+                        {dayTurns.length} {dayTurns.length === 1 ? 'turno' : 'turnos'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDateStr(colDateStr);
+                          onOpenQuoterModal(undefined, { date: colDateStr });
+                        }}
+                        className="text-[#D7141A] hover:bg-red-50 p-0.5 rounded text-xs"
+                        title="Agendar en este día"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {dayTurns.map((app) => {
+                      const quote = detailingQuotes.find((q) => q.id === app.quote_id);
+                      const currentStage = app.stage || quote?.status || app.status;
+                      const stageColor = getStageColor(currentStage);
+
+                      return (
+                        <div
+                          key={app.id}
+                          onClick={() => {
+                            setSelectedTurnDetail({ appointment: app, quote });
+                          }}
+                          className="bg-white border border-[#E5E5E3] rounded-lg p-2 shadow-xs hover:shadow-md cursor-pointer text-[10px] space-y-1 transition-all"
+                          style={{ borderLeftWidth: '3px', borderLeftColor: stageColor }}
+                        >
+                          <div className="flex items-center justify-between font-bold text-[#161616]">
+                            <span>{formatLocalTime(app.start_time)}</span>
+                            <span
+                              className="px-1.5 py-0.2 rounded-full text-[8px] font-bold text-white"
+                              style={{ backgroundColor: stageColor }}
+                            >
+                              {currentStage}
+                            </span>
+                          </div>
+                          <p className="font-bold text-[#161616] truncate font-display">
+                            {quote?.vehicle_info || app.title}
+                          </p>
+                          <p className="text-[#6B6B6B] truncate">
+                            {quote?.client_name || app.client?.full_name}
+                          </p>
+                          <div className="text-right font-semibold text-[#161616]">
+                            {formatCurrency(quote?.total_amount || app.price_amount || 0)}
+                          </div>
                         </div>
                       );
                     })}
@@ -743,100 +1087,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
         </div>
       )}
 
-      {/* ── 2. VISTA SEMANA (Grilla de 7 días por horas) ── */}
-      {viewMode === 'semana' && (
-        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4 overflow-x-auto">
-          <div className="min-w-[850px]">
-            {/* Header de 7 días */}
-            <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-[#E5E5E3] pb-3 mb-2">
-              <div className="text-xs font-semibold text-[#6B6B6B] uppercase font-display">Hora</div>
-              {Array.from({ length: 7 }).map((_, dIdx) => {
-                const baseDate = new Date(selectedDateStr + 'T12:00:00-03:00');
-                const dayOffset = dIdx - ((baseDate.getDay() + 6) % 7); // Inicio en Lunes
-                const colDate = new Date(baseDate.getTime() + dayOffset * 86400000);
-                const colDateStr = getLocalDateString(colDate);
-                const isToday = colDateStr === todayStr;
-
-                return (
-                  <div
-                    key={dIdx}
-                    onClick={() => {
-                      setSelectedDateStr(colDateStr);
-                      setViewMode('dia');
-                    }}
-                    className={`px-2 text-center cursor-pointer rounded-lg py-1 transition-all ${
-                      isToday ? 'bg-red-50 text-[#D7141A]' : 'hover:bg-[#F5F5F4]'
-                    }`}
-                  >
-                    <span className="text-xs font-bold block uppercase font-display">
-                      {formatLocalDate(colDateStr + 'T12:00:00-03:00', { weekday: 'short' })}
-                    </span>
-                    <span className="text-sm font-extrabold">{colDate.getDate()}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Horas */}
-            {hoursRange.map((hourStr) => {
-              const hourInt = parseInt(hourStr.split(':')[0], 10);
-              return (
-                <div
-                  key={hourStr}
-                  className="grid grid-cols-[60px_repeat(7,1fr)] min-h-[60px] border-b border-[#F5F5F4]"
-                >
-                  <div className="text-xs font-medium text-[#6B6B6B] pt-1">{hourStr}</div>
-                  {Array.from({ length: 7 }).map((_, dIdx) => {
-                    const baseDate = new Date(selectedDateStr + 'T12:00:00-03:00');
-                    const dayOffset = dIdx - ((baseDate.getDay() + 6) % 7);
-                    const colDate = new Date(baseDate.getTime() + dayOffset * 86400000);
-                    const colDateStr = getLocalDateString(colDate);
-
-                    const turns = detailingAppointments.filter((app) => {
-                      const appDate = getLocalDateString(app.start_time);
-                      return appDate === colDateStr && new Date(app.start_time).getHours() === hourInt;
-                    });
-
-                    return (
-                      <div
-                        key={dIdx}
-                        className="border-l border-[#F5F5F4] p-1 min-h-[60px] hover:bg-[#FAFAFA]"
-                      >
-                        {turns.map((app) => {
-                          const quote = detailingQuotes.find((q) => q.id === app.quote_id);
-                          const currentStage = app.stage || quote?.status || app.status;
-                          const stageColor = getStageColor(currentStage);
-
-                          return (
-                            <div
-                              key={app.id}
-                              onClick={() => {
-                                setSelectedDateStr(colDateStr);
-                                setViewMode('dia');
-                              }}
-                              className="p-1.5 rounded-lg border border-[#E5E5E3] bg-white text-[10px] mb-1 cursor-pointer hover:shadow-xs border-l-2"
-                              style={{ borderLeftColor: stageColor }}
-                            >
-                              <p className="font-bold text-[#161616] truncate">
-                                {quote?.vehicle_info || app.title}
-                              </p>
-                              <span className="text-[#6B6B6B] block">
-                                {formatLocalTime(app.start_time)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── 3. VISTA MES (% ocupación y puntos por día) ── */}
+      {/* ── 3. VISTA MES (5 o 6 semanas dinámicas + ocupación por horario configurado) ── */}
       {viewMode === 'mes' && (
         <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4">
           <div className="grid grid-cols-7 gap-2 mb-2">
@@ -847,215 +1098,455 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: 35 }).map((_, idx) => {
-              const currentMonthBase = new Date(selectedDateStr + 'T12:00:00-03:00');
-              const firstDayOfMonth = new Date(
-                currentMonthBase.getFullYear(),
-                currentMonthBase.getMonth(),
-                1
-              );
-              const startDayOffset = (firstDayOfMonth.getDay() + 6) % 7;
-              const cellDate = new Date(
-                currentMonthBase.getFullYear(),
-                currentMonthBase.getMonth(),
-                1 - startDayOffset + idx
-              );
-              const cellDateStr = getLocalDateString(cellDate);
-              const isToday = cellDateStr === todayStr;
-              const isSelected = cellDateStr === selectedDateStr;
+          {(() => {
+            const currentMonthBase = new Date(selectedDateStr + 'T12:00:00-03:00');
+            const year = currentMonthBase.getFullYear();
+            const month = currentMonthBase.getMonth();
+            const firstDayOfMonth = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const startDayOffset = (firstDayOfMonth.getDay() + 6) % 7; // Lunes = 0
 
-              // Turnos de este día
-              const dayTurns = detailingAppointments.filter((a) => {
-                return getLocalDateString(a.start_time) === cellDateStr && !a.is_blocked;
-              });
+            // 5 o 6 semanas dinámicamente según días del mes y desplazamiento
+            const totalCells = startDayOffset + daysInMonth > 35 ? 42 : 35;
 
-              // Estimación simple de ocupación (% de horas usadas respecto a capacidad de boxes)
-              const totalBays = activeBays.length || 1;
-              const maxDayMinutes = totalBays * 9 * 60; // 9 horas de taller
-              const bookedMinutes = dayTurns.reduce((acc, t) => acc + (t.duration_minutes || 120), 0);
-              const occupancyPercent = Math.min(100, Math.round((bookedMinutes / maxDayMinutes) * 100));
+            return (
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: totalCells }).map((_, idx) => {
+                  const cellDate = new Date(year, month, 1 - startDayOffset + idx);
+                  const cellDateStr = getLocalDateString(cellDate);
+                  const isToday = cellDateStr === todayStr;
+                  const isSelected = cellDateStr === selectedDateStr;
+                  const isCurrentMonth = cellDate.getMonth() === month;
 
-              return (
-                <div
-                  key={idx}
-                  onClick={() => {
-                    setSelectedDateStr(cellDateStr);
-                    setViewMode('dia');
-                  }}
-                  className={`min-h-[90px] p-2 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
-                    isSelected
-                      ? 'border-[#161616] bg-[#F5F5F4]'
-                      : isToday
-                      ? 'border-[#D7141A] bg-red-50/20'
-                      : 'border-[#E5E5E3] bg-white hover:border-gray-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-xs font-bold ${
-                        isToday ? 'text-[#D7141A]' : 'text-[#161616]'
-                      }`}
-                    >
-                      {cellDate.getDate()}
-                    </span>
-                    {dayTurns.length > 0 && (
-                      <span className="text-[10px] font-bold text-[#6B6B6B]">
-                        {dayTurns.length} {dayTurns.length === 1 ? 'turno' : 'turnos'}
-                      </span>
-                    )}
-                  </div>
+                  // Turnos de este día
+                  const dayTurns = detailingAppointments.filter((a) => {
+                    return getLocalDateString(a.start_time) === cellDateStr && !a.is_blocked && !a.voided_at;
+                  });
 
-                  {/* Puntos de color por estado */}
-                  <div className="flex flex-wrap gap-1 my-1">
-                    {dayTurns.slice(0, 5).map((turn) => {
-                      const quote = detailingQuotes.find((q) => q.id === turn.quote_id);
-                      const stageColor = getStageColor(turn.stage || quote?.status || turn.status);
-                      return (
-                        <span
-                          key={turn.id}
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: stageColor }}
-                        />
-                      );
-                    })}
-                  </div>
+                  // Ocupación calculada según horas configuradas de ese día
+                  const cellDayKey = getDayOfWeekKey(cellDateStr);
+                  const scheduleDay = config.schedule?.[cellDayKey] as any;
+                  const isOpen = scheduleDay?.is_open ?? true;
+                  const oMin = timeStringToMinutes(scheduleDay?.open_time || scheduleDay?.open || '08:00');
+                  const cMin = timeStringToMinutes(scheduleDay?.close_time || scheduleDay?.close || '19:00');
+                  const dayOperatingMinutes = isOpen ? Math.max(60, cMin - oMin) : 0;
+                  const totalBays = activeBays.length || 1;
+                  const capacityMinutes = dayOperatingMinutes * totalBays;
 
-                  {/* Barra de ocupación */}
-                  <div>
-                    <div className="flex justify-between text-[9px] text-[#6B6B6B] mb-0.5">
-                      <span>Ocupación</span>
-                      <span className="font-semibold">{occupancyPercent}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-[#F5F5F4] rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          occupancyPercent > 85
-                            ? 'bg-red-500'
-                            : occupancyPercent > 50
-                            ? 'bg-amber-500'
-                            : 'bg-emerald-500'
-                        }`}
-                        style={{ width: `${occupancyPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── 4. VISTA LISTA (Próximos turnos ordenados) ── */}
-      {viewMode === 'lista' && (
-        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4 space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold font-display text-[#161616] uppercase tracking-wider">
-              Próximos Turnos Programados
-            </h3>
-            <span className="text-xs text-[#6B6B6B]">
-              Total encontrados: {detailingAppointments.length}
-            </span>
-          </div>
-
-          {detailingAppointments.length === 0 ? (
-            <div className="p-8 text-center text-xs text-[#6B6B6B]">
-              No hay turnos registrados que coincidan con los filtros seleccionados.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {detailingAppointments
-                .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-                .map((app) => {
-                  const quote = detailingQuotes.find((q) => q.id === app.quote_id);
-                  const currentStage = app.stage || quote?.status || app.status;
-                  const stageColor = getStageColor(currentStage);
+                  const bookedMinutes = dayTurns.reduce(
+                    (acc, t) => acc + (t.duration_minutes || 120),
+                    0
+                  );
+                  const occupancyPercent =
+                    capacityMinutes > 0
+                      ? Math.min(100, Math.round((bookedMinutes / capacityMinutes) * 100))
+                      : 0;
 
                   return (
                     <div
-                      key={app.id}
-                      className="p-3.5 rounded-xl border border-[#E5E5E3] bg-white hover:border-gray-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-l-4"
-                      style={{ borderLeftColor: stageColor }}
+                      key={idx}
+                      onClick={() => {
+                        setSelectedDateStr(cellDateStr);
+                        setViewMode('dia');
+                      }}
+                      className={`min-h-[92px] p-2 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                        !isCurrentMonth
+                          ? 'opacity-40 bg-[#FAFAFA] border-[#F5F5F4]'
+                          : isSelected
+                          ? 'border-[#161616] bg-[#F5F5F4]'
+                          : isToday
+                          ? 'border-[#D7141A] bg-red-50/20'
+                          : 'border-[#E5E5E3] bg-white hover:border-gray-400'
+                      }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col items-center justify-center shrink-0">
-                          <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">
-                            {formatLocalDate(app.start_time, { month: 'short' })}
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-xs font-bold ${
+                            isToday ? 'text-[#D7141A]' : 'text-[#161616]'
+                          }`}
+                        >
+                          {cellDate.getDate()}
+                        </span>
+                        {dayTurns.length > 0 && (
+                          <span className="text-[10px] font-bold text-[#6B6B6B]">
+                            {dayTurns.length} {dayTurns.length === 1 ? 'auto' : 'autos'}
                           </span>
-                          <span className="text-sm font-black text-[#161616]">
-                            {new Date(app.start_time).getDate()}
-                          </span>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-bold text-[#161616]">
-                              {formatLocalTime(app.start_time)} ({app.duration_minutes} min)
-                            </span>
-                            <span
-                              className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-                              style={{ backgroundColor: stageColor }}
-                            >
-                              {currentStage}
-                            </span>
-                            {app.work_bay_id && (
-                              <span className="text-[10px] font-semibold text-[#6B6B6B] bg-[#F5F5F4] px-2 py-0.5 rounded">
-                                {config.work_bays.find((b) => b.id === app.work_bay_id)?.name || 'Box'}
-                              </span>
-                            )}
-                          </div>
-
-                          <p className="text-sm font-bold text-[#161616] font-display mt-0.5">
-                            {quote?.vehicle_info || app.title}
-                          </p>
-                          <p className="text-xs text-[#6B6B6B]">
-                            Cliente: {quote?.client_name || app.client?.full_name} ({quote?.client_phone || app.client?.phone || 'Sin tel'})
-                          </p>
-                        </div>
+                        )}
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-0 border-[#F5F5F4]">
-                        {(quote?.vehicle_plate || app.vehicle?.plate) && (
-                          <UruguayanPlate plate={quote?.vehicle_plate || app.vehicle?.plate || ''} size="sm" />
-                        )}
+                      {/* Puntos de color por estado */}
+                      <div className="flex flex-wrap gap-1 my-1">
+                        {dayTurns.slice(0, 5).map((turn) => {
+                          const quote = detailingQuotes.find((q) => q.id === turn.quote_id);
+                          const stageColor = getStageColor(turn.stage || quote?.status || turn.status);
+                          return (
+                            <span
+                              key={turn.id}
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: stageColor }}
+                            />
+                          );
+                        })}
+                      </div>
 
-                        <span className="text-sm font-bold font-display text-[#161616]">
-                          {formatCurrency(quote?.total_amount || app.price_amount || 0)}
-                        </span>
-
-                        <div className="flex items-center gap-1.5">
-                          {quote?.client_phone && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleTriggerWhatsApp(quote, app)}
-                              className="p-2 text-[#25D366] hover:bg-emerald-50"
-                              title="WhatsApp"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {quote && (
-                            <Button
-                              type="button"
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleAdvanceStage(quote, app)}
-                              className="text-xs gap-1"
-                            >
-                              <span>Avanzar</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
+                      {/* Barra de ocupación real */}
+                      <div>
+                        <div className="flex justify-between text-[9px] text-[#6B6B6B] mb-0.5">
+                          <span>Ocupación</span>
+                          <span className="font-semibold">{occupancyPercent}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-[#F5F5F4] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              occupancyPercent > 85
+                                ? 'bg-red-500'
+                                : occupancyPercent > 50
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${occupancyPercent}%` }}
+                          />
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── 4. VISTA LISTA (Próximos turnos desde hoy + filtro pasados) ── */}
+      {viewMode === 'lista' && (
+        <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 className="text-sm font-bold font-display text-[#161616] uppercase tracking-wider">
+                Próximos Turnos en Taller
+              </h3>
+              <p className="text-xs text-[#6B6B6B]">
+                Agenda cronológica de servicios programados
+              </p>
             </div>
-          )}
+
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-xs text-[#6B6B6B] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showPastInList}
+                  onChange={(e) => setShowPastInList(e.target.checked)}
+                  className="rounded text-[#D7141A] focus:ring-[#D7141A]"
+                />
+                <span>Ver turnos pasados</span>
+              </label>
+            </div>
+          </div>
+
+          {(() => {
+            const listFiltered = detailingAppointments
+              .filter((app) => {
+                if (showPastInList) return true;
+                const dateStr = getLocalDateString(app.start_time);
+                return dateStr >= todayStr;
+              })
+              .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+            if (listFiltered.length === 0) {
+              return (
+                <div className="p-8 text-center text-xs text-[#6B6B6B]">
+                  No hay turnos registrados desde hoy en adelante.
+                </div>
+              );
+            }
+
+            // Agrupar por fecha
+            const groupsByDate: Record<string, Appointment[]> = {};
+            listFiltered.forEach((a) => {
+              const dStr = getLocalDateString(a.start_time);
+              if (!groupsByDate[dStr]) groupsByDate[dStr] = [];
+              groupsByDate[dStr].push(a);
+            });
+
+            return (
+              <div className="space-y-4">
+                {Object.entries(groupsByDate).map(([dStr, appts]) => {
+                  const isToday = dStr === todayStr;
+                  const tomorrowDate = new Date();
+                  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+                  const isTomorrow = dStr === getLocalDateString(tomorrowDate);
+
+                  const dateHeaderLabel = isToday
+                    ? 'Hoy'
+                    : isTomorrow
+                    ? 'Mañana'
+                    : formatLocalDate(dStr + 'T12:00:00-03:00', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'short'
+                      });
+
+                  return (
+                    <div key={dStr} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider font-display text-[#161616]">
+                          {dateHeaderLabel}
+                        </span>
+                        <div className="h-px bg-[#E5E5E3] flex-1" />
+                      </div>
+
+                      <div className="space-y-2">
+                        {appts.map((app) => {
+                          const quote = detailingQuotes.find((q) => q.id === app.quote_id);
+                          const currentStage = app.stage || quote?.status || app.status;
+                          const stageColor = getStageColor(currentStage);
+
+                          return (
+                            <div
+                              key={app.id}
+                              onClick={() => setSelectedTurnDetail({ appointment: app, quote })}
+                              className="p-3.5 rounded-xl border border-[#E5E5E3] bg-white hover:border-gray-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
+                              style={{ borderLeftWidth: '4px', borderLeftColor: stageColor }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex flex-col items-center justify-center shrink-0">
+                                  <span className="text-[10px] uppercase font-bold text-[#6B6B6B]">
+                                    {formatLocalDate(app.start_time, { month: 'short' })}
+                                  </span>
+                                  <span className="text-sm font-black text-[#161616]">
+                                    {new Date(app.start_time).getDate()}
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-bold text-[#161616]">
+                                      {formatLocalTime(app.start_time)} ({app.duration_minutes}m)
+                                    </span>
+                                    <span
+                                      className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                                      style={{ backgroundColor: stageColor }}
+                                    >
+                                      {currentStage}
+                                    </span>
+                                    {app.work_bay_id && (
+                                      <span className="text-[10px] font-semibold text-[#6B6B6B] bg-[#F5F5F4] px-2 py-0.5 rounded">
+                                        {config.work_bays.find((b) => b.id === app.work_bay_id)?.name || 'Box'}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <p className="text-sm font-bold text-[#161616] font-display mt-0.5">
+                                    {quote?.vehicle_info || app.title}
+                                  </p>
+                                  <p className="text-xs text-[#6B6B6B]">
+                                    Cliente: {quote?.client_name || app.client?.full_name} ({quote?.client_phone || app.client?.phone || 'Sin tel'})
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-0 border-[#F5F5F4]">
+                                {(quote?.vehicle_plate || app.vehicle?.plate) && (
+                                  <UruguayanPlate plate={quote?.vehicle_plate || app.vehicle?.plate || ''} size="sm" />
+                                )}
+
+                                <span className="text-sm font-bold font-display text-[#161616]">
+                                  {formatCurrency(quote?.total_amount || app.price_amount || 0)}
+                                </span>
+
+                                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                  {quote?.client_phone && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleTriggerWhatsApp(quote, app)}
+                                      className="p-2 text-[#25D366] hover:bg-emerald-50"
+                                      title="WhatsApp"
+                                    >
+                                      <MessageCircle className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                  {quote && (
+                                    <Button
+                                      type="button"
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() => handleNextAction(quote, app)}
+                                      className="text-xs gap-1 bg-[#D7141A] hover:bg-[#B80E14] text-white border-none"
+                                    >
+                                      <span>Avanzar</span>
+                                      <ArrowRight className="w-3.5 h-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── HOJA INFERIOR (BOTTOM SHEET) PARA DETALLE DEL TURNO AL TOCAR UN BLOQUE ── */}
+      {selectedTurnDetail && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Cabecera */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E3]">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full"
+                  style={{
+                    backgroundColor: getStageColor(
+                      selectedTurnDetail.appointment.stage ||
+                        selectedTurnDetail.quote?.status ||
+                        selectedTurnDetail.appointment.status
+                    )
+                  }}
+                />
+                <h3 className="text-base font-bold font-display text-[#161616]">
+                  Detalle del Servicio en Agenda
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTurnDetail(null)}
+                className="p-1 rounded-full text-[#6B6B6B] hover:bg-[#F5F5F4]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Datos del Turno y Auto */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-base font-bold text-[#161616] font-display">
+                    {selectedTurnDetail.quote?.vehicle_info || selectedTurnDetail.appointment.title}
+                  </p>
+                  <p className="text-xs text-[#6B6B6B]">
+                    Cliente: {selectedTurnDetail.quote?.client_name || selectedTurnDetail.appointment.client?.full_name}
+                  </p>
+                </div>
+                {(selectedTurnDetail.quote?.vehicle_plate || selectedTurnDetail.appointment.vehicle?.plate) && (
+                  <UruguayanPlate
+                    plate={selectedTurnDetail.quote?.vehicle_plate || selectedTurnDetail.appointment.vehicle?.plate || ''}
+                    size="sm"
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
+                <div>
+                  <span className="text-[#6B6B6B] block">Horario</span>
+                  <span className="font-bold text-[#161616]">
+                    {formatLocalTime(selectedTurnDetail.appointment.start_time)} ({selectedTurnDetail.appointment.duration_minutes} min)
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block">Box asignado</span>
+                  <span className="font-bold text-[#161616]">
+                    {config.work_bays.find((b) => b.id === selectedTurnDetail.appointment.work_bay_id)?.name || 'Box 1'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block">Estado</span>
+                  <span className="font-bold text-[#161616]">
+                    {selectedTurnDetail.quote?.status || selectedTurnDetail.appointment.stage || selectedTurnDetail.appointment.status}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] block">Total</span>
+                  <span className="font-bold text-[#161616]">
+                    {formatCurrency(selectedTurnDetail.quote?.total_amount || selectedTurnDetail.appointment.price_amount || 0)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botón de Acción Siguiente Principal (Rojo) */}
+              {selectedTurnDetail.quote && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full justify-center text-sm font-bold bg-[#D7141A] hover:bg-[#B80E14] text-white border-none py-3"
+                  onClick={() => handleNextAction(selectedTurnDetail.quote!, selectedTurnDetail.appointment)}
+                >
+                  {selectedTurnDetail.quote.status === 'Agendado' && 'Ingresó al taller'}
+                  {selectedTurnDetail.quote.status === 'En taller' && 'Marcar listo'}
+                  {selectedTurnDetail.quote.status === 'Listo para retirar' && 'Cobrar y entregar'}
+                  {selectedTurnDetail.quote.status === 'Presupuesto' && 'Agendar turno'}
+                  {selectedTurnDetail.quote.status === 'Entregado' && 'Ver comprobante'}
+                </Button>
+              )}
+
+              {/* Acciones Rápidas */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {selectedTurnDetail.quote?.client_phone && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 text-xs text-[#25D366] hover:bg-emerald-50 border-emerald-200"
+                    onClick={() => {
+                      const q = selectedTurnDetail.quote!;
+                      const a = selectedTurnDetail.appointment;
+                      setSelectedTurnDetail(null);
+                      handleTriggerWhatsApp(q, a);
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>WhatsApp</span>
+                  </Button>
+                )}
+
+                {selectedTurnDetail.quote && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 text-xs text-[#161616]"
+                    onClick={() => {
+                      const q = selectedTurnDetail.quote!;
+                      setSelectedTurnDetail(null);
+                      onOpenQuoterModal(q);
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>Editar trabajo</span>
+                  </Button>
+                )}
+
+                {selectedTurnDetail.quote && selectedTurnDetail.quote.status === 'Agendado' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 text-xs text-amber-700 hover:bg-amber-50"
+                    onClick={() => handleMarkNoShow(selectedTurnDetail.quote!, selectedTurnDetail.appointment)}
+                  >
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                    <span>No vino</span>
+                  </Button>
+                )}
+
+                {selectedTurnDetail.quote && selectedTurnDetail.quote.status !== 'Anulado' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2 text-xs text-red-700 hover:bg-red-50"
+                    onClick={() => handleVoidQuote(selectedTurnDetail.quote!, selectedTurnDetail.appointment)}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                    <span>Anular</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1072,12 +1563,15 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
           setViewMode('dia');
           setFilterBayId(slot.bayId);
           setIsFindSlotOpen(false);
-          // Opcional: abrir cotizador con el horario preseleccionado
-          onOpenQuoterModal();
+          onOpenQuoterModal(undefined, {
+            date: slot.date,
+            time: slot.time,
+            bayId: slot.bayId
+          });
         }}
       />
 
-      {/* 2. Modal Bloquear Horario */}
+      {/* 2. Modal Bloquear Horario (client_id NULL y status Bloqueado) */}
       <DetailingBlockTimeModal
         isOpen={isBlockModalOpen}
         onClose={() => setIsBlockModalOpen(false)}
@@ -1087,11 +1581,12 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
         onSaveBlock={(data) => {
           onAddAppointment({
             business: 'detailing',
-            client_id: 'block',
+            client_id: undefined,
             work_bay_id: data.work_bay_id,
             start_time: data.start_time,
             duration_minutes: data.duration_minutes,
-            status: 'confirmed',
+            status: 'Bloqueado',
+            stage: 'Bloqueado',
             is_blocked: true,
             block_reason: data.reason,
             price_amount: 0,
@@ -1108,7 +1603,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
         onConfirmCheckin={(quoteId, checkinData) => {
           onRecordCheckin(quoteId, checkinData);
           if (activeAppointmentForModal) {
-            onUpdateAppointment(activeAppointmentForModal.id, { stage: 'Recibido' });
+            onUpdateAppointment(activeAppointmentForModal.id, { stage: 'En taller' });
           }
         }}
       />
@@ -1142,10 +1637,10 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = ({
           if (paymentData) {
             onRecordPayment(quoteId, paymentData);
           }
-          onUpdateQuoteStatus(quoteId, 'Entregado y cobrado');
+          onUpdateQuoteStatus(quoteId, 'Entregado');
           if (activeAppointmentForModal) {
             onUpdateAppointment(activeAppointmentForModal.id, {
-              stage: 'Entregado y cobrado',
+              stage: 'Entregado',
               status: 'Finalizado'
             });
           }

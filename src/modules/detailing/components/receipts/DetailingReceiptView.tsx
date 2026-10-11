@@ -168,7 +168,7 @@ Podés ver e imprimir tu comprobante aquí:
                 />
                 <div>
                   <h1 className="text-xl font-black font-title uppercase tracking-wide text-[#161616]">
-                    {receipt.company_trade_name || 'CARVLAK DetailVlak'}
+                    {receipt.company_trade_name || 'Comprobante de Servicio'}
                   </h1>
                   <p className="text-[11px] text-[#6B6B6B] font-medium">
                     Estética Automotriz Profesional & Protección Cerámica
@@ -177,10 +177,16 @@ Podés ver e imprimir tu comprobante aquí:
               </div>
 
               <div className="text-xs text-[#6B6B6B] space-y-0.5 pt-1">
-                <p><strong>Razón Social:</strong> {receipt.company_legal_name || 'CARVLAK GROUP S.A.S.'}</p>
-                <p><strong>RUT:</strong> {receipt.company_rut || '219988770014'}</p>
-                <p><strong>Dirección:</strong> {receipt.company_address || 'Shangrilá, Canelones, Uruguay'}</p>
-                <p><strong>Contacto:</strong> {receipt.company_phone || '+598 99 267 964'} • {receipt.company_instagram || '@car.vlak'}</p>
+                {receipt.company_legal_name && <p><strong>Razón Social:</strong> {receipt.company_legal_name}</p>}
+                {receipt.company_rut && <p><strong>RUT:</strong> {receipt.company_rut}</p>}
+                {receipt.company_address && <p><strong>Dirección:</strong> {receipt.company_address}</p>}
+                {(receipt.company_phone || receipt.company_instagram) && (
+                  <p>
+                    {receipt.company_phone && <span><strong>Contacto:</strong> {receipt.company_phone}</span>}
+                    {receipt.company_phone && receipt.company_instagram && <span> • </span>}
+                    {receipt.company_instagram && <span>{receipt.company_instagram}</span>}
+                  </p>
+                )}
               </div>
             </div>
 

@@ -13,19 +13,32 @@ import {
   Plus,
   MessageCircle,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Search,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import {
   DetailingQuote,
   DetailingQuoteStatus,
   DetailingDiscountType,
   VehicleCategory,
-  ClientOrigin
+  ClientOrigin,
+  DetailingWorkBay
 } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { formatCurrency, normalizePlate, combineLocalDateAndTime, getLocalDateString } from '../../../lib/formatters';
+import {
+  formatCurrency,
+  normalizePlate,
+  combineLocalDateAndTime,
+  getLocalDateString,
+  addMinutesToIso,
+  timeStringToMinutes,
+  minutesToTimeString,
+  getDayOfWeekKey
+} from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 
 interface DetailingQuoterModalProps {
@@ -33,21 +46,30 @@ interface DetailingQuoterModalProps {
   onClose: () => void;
   quoteToEdit?: DetailingQuote | null;
   onOpenWhatsApp?: (quote: DetailingQuote) => void;
+  initialDate?: string;
+  initialTime?: string;
+  initialBayId?: string;
 }
 
 export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   isOpen,
   onClose,
   quoteToEdit,
-  onOpenWhatsApp
+  onOpenWhatsApp,
+  initialDate,
+  initialTime,
+  initialBayId
 }) => {
   const {
     clients,
     vehicles,
     detailingTariffs,
+    appointments,
     addDetailingQuote,
     updateDetailingQuote,
     updateDetailingQuoteStatus,
+    updateAppointment,
+    addAppointment,
     addClient,
     addVehicle,
     detailingConfig
@@ -57,7 +79,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   const { showToast } = useToast();
 
   // Escuchar tecla Escape para cerrar
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -67,15 +89,16 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Estados de Formulario
+  // Estados de Formulario - Cliente
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
-
-  // En caso de creación rápida en el momento
   const [isNewClientMode, setIsNewClientMode] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
+  const [newClientNotes, setNewClientNotes] = useState('');
 
+  // Estados de Formulario - Vehículo
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [isNewVehicleMode, setIsNewVehicleMode] = useState(false);
   const [newVehicleBrand, setNewVehicleBrand] = useState('');
   const [newVehicleModel, setNewVehicleModel] = useState('');
@@ -84,10 +107,19 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
   // Selección de servicios y montos
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [customServices, setCustomServices] = useState<{ id: string; name: string; price: number; durationHours: number }[]>([]);
+  const [isAddingCustomService, setIsAddingCustomService] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customPrice, setCustomPrice] = useState<number>(1500);
+  const [customHours, setCustomHours] = useState<number>(2);
+
   const [discountType, setDiscountType] = useState<DetailingDiscountType>('none');
   const [fixedDiscountAmount, setFixedDiscountAmount] = useState<number>(0);
   const [hasExtremeDirt, setHasExtremeDirt] = useState(false);
   const [extremeDirtSurcharge, setExtremeDirtSurcharge] = useState<number>(1500);
+
+  // Duración en minutos (con ajuste rápido)
+  const [durationMinutes, setDurationMinutes] = useState<number>(180);
 
   // Metadatos
   const defaultProfileId = profile?.id || availableProfiles[0]?.id || '';
@@ -103,18 +135,19 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   const [origin, setOrigin] = useState<string>('WhatsApp');
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string>(defaultProfileId);
-  const [estimatedTime, setEstimatedTime] = useState<string>('1 día');
-  const [status, setStatus] = useState<DetailingQuoteStatus>('Por Cotizar');
-  const [appointmentDate, setAppointmentDate] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [priorityZones, setPriorityZones] = useState('');
 
+  // Agenda y Turno
+  const [scheduleActive, setScheduleActive] = useState(false);
+  const [appointmentDate, setAppointmentDate] = useState<string>('');
+  const [workBayId, setWorkBayId] = useState<string>('box-1');
+
   // Fotos
-  const [photoInput, setPhotoInput] = useState('');
   const [photosBefore, setPhotosBefore] = useState<string[]>([]);
   const [photosAfter, setPhotosAfter] = useState<string[]>([]);
 
-  // Inicializar si estamos editando
+  // Cargar datos al abrir o editar
   useEffect(() => {
     if (quoteToEdit) {
       setSelectedClientId(quoteToEdit.client_id || '');
@@ -122,19 +155,21 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setSelectedServiceIds(quoteToEdit.selected_services.map((s) => s.serviceId));
       setDiscountType(quoteToEdit.discount_type || 'none');
       setFixedDiscountAmount(quoteToEdit.discount_amount || 0);
-      setHasExtremeDirt(quoteToEdit.extreme_dirt_surcharge > 0);
+      setHasExtremeDirt((quoteToEdit.extreme_dirt_surcharge || 0) > 0);
       setExtremeDirtSurcharge(quoteToEdit.extreme_dirt_surcharge || 1500);
       setOrigin(quoteToEdit.origin || 'WhatsApp');
+      setWorkBayId(quoteToEdit.work_bay_id || initialBayId || 'box-1');
+
       if (quoteToEdit.commission_participants && quoteToEdit.commission_participants.length > 0) {
         setSelectedParticipantIds(quoteToEdit.commission_participants.map((p) => p.employee_id));
       } else {
         const defaults = detailingConfig?.commission_config?.default_participants || [];
         setSelectedParticipantIds(defaults.length > 0 ? defaults : (quoteToEdit.assigned_to ? [quoteToEdit.assigned_to] : []));
       }
+
       setAssignedTo(quoteToEdit.assigned_to || defaultProfileId);
-      setEstimatedTime(quoteToEdit.estimated_time || '1 día');
-      setStatus(quoteToEdit.status);
       setAppointmentDate(quoteToEdit.appointment_date || '');
+      setScheduleActive(!!quoteToEdit.appointment_date || quoteToEdit.status === 'Agendado' || quoteToEdit.status === 'Turno Confirmado');
       setNotes(quoteToEdit.notes || '');
       setPriorityZones(quoteToEdit.priority_zones || '');
       setPhotosBefore(quoteToEdit.photos_before || []);
@@ -142,21 +177,27 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setIsNewClientMode(false);
       setIsNewVehicleMode(false);
     } else {
-      // Valores por defecto para nueva cotización
       setSelectedClientId('');
       setSelectedVehicleId('');
-      setSelectedServiceIds(['lavado_exterior', 'interior']);
+      setSelectedServiceIds(detailingConfig?.default_services && detailingConfig.default_services.length > 0 ? detailingConfig.default_services : []);
+      setCustomServices([]);
       setDiscountType('none');
       setFixedDiscountAmount(0);
       setHasExtremeDirt(false);
       setExtremeDirtSurcharge(1500);
-      setOrigin('WhatsApp');
+      setOrigin('');
+      setWorkBayId(initialBayId || 'box-1');
+
       const defaults = detailingConfig?.commission_config?.default_participants || [];
       setSelectedParticipantIds(defaults.length > 0 ? defaults : (defaultProfileId ? [defaultProfileId] : []));
       setAssignedTo(defaultProfileId);
-      setEstimatedTime('1 día');
-      setStatus('Por Cotizar');
-      setAppointmentDate(`${getLocalDateString(new Date(Date.now() + 86400000))}T10:00`);
+
+      const defaultTimePart = initialTime || '09:00';
+      const defaultDate = initialDate 
+        ? `${initialDate}T${defaultTimePart}` 
+        : `${getLocalDateString(new Date(Date.now() + 86400000))}T09:00`;
+      setAppointmentDate(defaultDate);
+      setScheduleActive(!!(initialDate || initialBayId));
       setNotes('');
       setPriorityZones('');
       setPhotosBefore([]);
@@ -164,45 +205,70 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setIsNewClientMode(false);
       setIsNewVehicleMode(false);
     }
-  }, [quoteToEdit, profile, isOpen, detailingConfig]);
+  }, [quoteToEdit, profile, isOpen, detailingConfig, initialDate, initialTime, initialBayId]);
 
-  // Si se selecciona un vehículo existente, autodetectar su categoría
-  const currentVehicle = useMemo(() => {
-    return vehicles.find((v) => v.id === selectedVehicleId);
-  }, [vehicles, selectedVehicleId]);
+  // Lista de vehículos del cliente seleccionado
+  const clientVehicles = useMemo(() => {
+    if (!selectedClientId) return [];
+    return vehicles.filter((v) => v.client_id === selectedClientId && !v.is_archived);
+  }, [vehicles, selectedClientId]);
 
+  // Categoría activa de vehículo
   const activeCategory: VehicleCategory = useMemo(() => {
-    if (currentVehicle) return currentVehicle.category;
+    const veh = vehicles.find((v) => v.id === selectedVehicleId);
+    if (veh) return veh.category;
     if (isNewVehicleMode) return newVehicleCategory;
-    return 'Chico';
-  }, [currentVehicle, isNewVehicleMode, newVehicleCategory]);
+    return 'Mediano';
+  }, [vehicles, selectedVehicleId, isNewVehicleMode, newVehicleCategory]);
 
-  // Mapear categoría a key del tarifario ('chico' | 'mediano' | 'suv' | 'pickup' | 'moto')
   const categoryKey = useMemo(() => {
     switch (activeCategory) {
-      case 'Mediano':
-        return 'mediano';
-      case 'SUV/Rural':
-        return 'suv';
-      case 'Pick-up':
-        return 'pickup';
-      case 'Moto':
-        return 'moto';
-      default:
-        return 'chico';
+      case 'Mediano': return 'mediano';
+      case 'SUV/Rural': return 'suv';
+      case 'Pick-up': return 'pickup';
+      case 'Moto': return 'moto';
+      default: return 'chico';
     }
   }, [activeCategory]);
 
+  // Cálculo de duración sugerida por servicios
+  useEffect(() => {
+    let totalMins = 0;
+    selectedServiceIds.forEach((sid) => {
+      const tariff = detailingTariffs.find((t) => t.id === sid);
+      if (tariff?.durationHours) {
+        totalMins += Math.round(tariff.durationHours * 60);
+      }
+    });
+    customServices.forEach((cs) => {
+      totalMins += Math.round((cs.durationHours || 2) * 60);
+    });
+    if (totalMins > 0) {
+      setDurationMinutes(totalMins);
+    }
+  }, [selectedServiceIds, customServices, detailingTariffs]);
+
   // Cálculo en tiempo real de Subtotal, Descuentos y Total
   const { subtotal, discountAmount, calculatedTotal, selectedServiceObjects } = useMemo(() => {
-    const serviceObjs = selectedServiceIds.map((id) => {
+    const serviceObjs: { serviceId: string; serviceName: string; price: number; description?: string }[] = [];
+
+    selectedServiceIds.forEach((id) => {
       const tariff = detailingTariffs.find((t) => t.id === id);
       const price = tariff ? tariff.prices[categoryKey] || 0 : 0;
-      return {
+      serviceObjs.push({
         serviceId: id,
         serviceName: tariff?.name || tariff?.shortName || id,
-        price
-      };
+        price,
+        description: tariff?.description
+      });
+    });
+
+    customServices.forEach((cs) => {
+      serviceObjs.push({
+        serviceId: cs.id,
+        serviceName: cs.name,
+        price: cs.price
+      });
     });
 
     const sub = serviceObjs.reduce((acc, curr) => acc + curr.price, 0);
@@ -225,30 +291,98 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       calculatedTotal: total,
       selectedServiceObjects: serviceObjs
     };
-  }, [selectedServiceIds, detailingTariffs, categoryKey, discountType, fixedDiscountAmount, hasExtremeDirt, extremeDirtSurcharge]);
+  }, [selectedServiceIds, customServices, detailingTariffs, categoryKey, discountType, fixedDiscountAmount, hasExtremeDirt, extremeDirtSurcharge]);
+
+  // Filtro de clientes para el buscador inline
+  const filteredClients = useMemo(() => {
+    if (!clientSearchTerm.trim()) return [];
+    const term = clientSearchTerm.toLowerCase();
+    return clients
+      .filter((c) => !c.is_archived && (c.full_name.toLowerCase().includes(term) || (c.phone && c.phone.includes(term))))
+      .slice(0, 5);
+  }, [clients, clientSearchTerm]);
+
+  const selectedClient = useMemo(() => {
+    return clients.find((c) => c.id === selectedClientId);
+  }, [clients, selectedClientId]);
+
+  // Próximos 3 huecos libres disponibles
+  const suggestedSlots = useMemo(() => {
+    if (!isOpen) return [];
+    const slots: { label: string; dateIso: string }[] = [];
+    const today = new Date();
+
+    for (let dayOffset = 0; dayOffset <= 4 && slots.length < 3; dayOffset++) {
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + dayOffset);
+      const dateStr = getLocalDateString(targetDate);
+      const dayKey = getDayOfWeekKey(dateStr);
+      const schedule = (detailingConfig?.schedule?.[dayKey] as any);
+
+      if (!schedule || !schedule.is_open) continue;
+
+      const openMin = timeStringToMinutes(schedule.open_time || '08:30');
+      const closeMin = timeStringToMinutes(schedule.close_time || '18:30');
+      const dayAppts = appointments.filter(
+        (a) => a.business === 'detailing' && !a.voided_at && a.status !== 'Cancelado' && a.start_time.startsWith(dateStr)
+      );
+
+      // Evaluar horas típicas (09:00, 13:00, 15:00)
+      const testTimes = ['09:00', '13:30', '15:00'];
+      for (const timeStr of testTimes) {
+        if (slots.length >= 3) break;
+        const startMin = timeStringToMinutes(timeStr);
+        if (startMin < openMin || startMin + durationMinutes > closeMin) continue;
+
+        // Verificar si algún box está disponible
+        const availableBays = (detailingConfig?.work_bays || [{ id: 'box-1', name: 'Box 1', is_active: true }])
+          .filter((b) => b.is_active);
+
+        const hasFreeBay = availableBays.some((bay) => {
+          const conflict = dayAppts.some((app) => {
+            if (app.work_bay_id !== bay.id) return false;
+            const appStart = timeStringToMinutes(app.start_time.split('T')[1]?.slice(0, 5) || '00:00');
+            const appEnd = appStart + (app.duration_minutes || 60);
+            return startMin < appEnd && startMin + durationMinutes > appStart;
+          });
+          return !conflict;
+        });
+
+        if (hasFreeBay) {
+          const dayLabel = dayOffset === 0 ? 'Hoy' : dayOffset === 1 ? 'Mañana' : dateStr.slice(5);
+          slots.push({
+            label: `${dayLabel} ${timeStr}`,
+            dateIso: `${dateStr}T${timeStr}`
+          });
+        }
+      }
+    }
+    return slots;
+  }, [isOpen, appointments, detailingConfig, durationMinutes]);
 
   if (!isOpen) return null;
 
   const toggleService = (serviceId: string) => {
-    if (selectedServiceIds.includes(serviceId)) {
-      setSelectedServiceIds(selectedServiceIds.filter((id) => id !== serviceId));
-    } else {
-      setSelectedServiceIds([...selectedServiceIds, serviceId]);
-    }
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
+    );
   };
 
-  const handleAddPhoto = (type: 'before' | 'after') => {
-    if (!photoInput.trim()) return;
-    if (type === 'before') {
-      setPhotosBefore([...photosBefore, photoInput.trim()]);
-    } else {
-      setPhotosAfter([...photosAfter, photoInput.trim()]);
-    }
-    setPhotoInput('');
+  const handleAddCustomService = () => {
+    if (!customName.trim()) return;
+    const newCS = {
+      id: `cs-${Date.now()}`,
+      name: customName.trim(),
+      price: customPrice || 0,
+      durationHours: customHours || 2
+    };
+    setCustomServices((prev) => [...prev, newCS]);
+    setCustomName('');
+    setIsAddingCustomService(false);
   };
 
-  const handleSave = (openWhatsAppAfterSave = false) => {
-    // 1. Resolver Cliente
+  const handleSave = (mode: 'quote_only' | 'schedule', openWhatsApp = false) => {
+    // 1. Validar Cliente
     let finalClientId = selectedClientId;
     let finalClientName = '';
     let finalClientPhone = '';
@@ -262,7 +396,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         full_name: newClientName.trim(),
         phone: newClientPhone.trim(),
         origin: origin as any,
-        notes: 'Creado desde Cotizador de Detailing'
+        notes: newClientNotes.trim() || 'Creado desde Cotizador Detailing'
       });
       finalClientId = res.client.id;
       finalClientName = res.client.full_name;
@@ -270,7 +404,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     } else {
       const cli = clients.find((c) => c.id === selectedClientId);
       if (!cli) {
-        showToast('Seleccioná un cliente existente o creá uno nuevo', 'error');
+        showToast('Seleccioná un cliente o creá uno nuevo', 'error');
         return;
       }
       finalClientId = cli.id;
@@ -278,7 +412,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       finalClientPhone = cli.phone;
     }
 
-    // 2. Resolver Vehículo
+    // 2. Validar Vehículo
     let finalVehicleId = selectedVehicleId;
     let finalVehicleInfo = '';
     let finalPlate = '';
@@ -288,7 +422,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         showToast('Ingresá la marca y modelo del vehículo', 'error');
         return;
       }
-      const plate = newVehiclePlate.trim() ? normalizePlate(newVehiclePlate.trim()) : `UY-${Math.floor(1000 + Math.random() * 9000)}`;
+      const plate = newVehiclePlate.trim() ? normalizePlate(newVehiclePlate.trim()) : 'S/M';
       const res = addVehicle({
         brand: newVehicleBrand.trim(),
         model: newVehicleModel.trim(),
@@ -309,6 +443,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         finalPlate = veh.plate;
       } else {
         finalVehicleInfo = 'Vehículo a confirmar';
+        finalPlate = 'S/M';
       }
     }
 
@@ -317,7 +452,10 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       return;
     }
 
-    let savedQuote: DetailingQuote;
+    if (!origin) {
+      showToast('Seleccioná el origen del contacto para las métricas', 'error');
+      return;
+    }
 
     const participants = selectedParticipantIds.map((empId) => {
       const p = availableProfiles.find((ap) => ap.id === empId);
@@ -330,6 +468,12 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         rate
       };
     });
+
+    const targetStatus: DetailingQuoteStatus = mode === 'schedule' ? 'Agendado' : (quoteToEdit ? quoteToEdit.status : 'Presupuesto');
+    const [aDate, aTime] = appointmentDate.split('T');
+    const finalAppointmentDate = aDate && aTime ? combineLocalDateAndTime(aDate, aTime) : appointmentDate;
+
+    let savedQuote: DetailingQuote;
 
     if (quoteToEdit) {
       updateDetailingQuote(quoteToEdit.id, {
@@ -346,8 +490,10 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         discount_amount: discountAmount,
         extreme_dirt_surcharge: hasExtremeDirt ? extremeDirtSurcharge : 0,
         total_amount: calculatedTotal,
-        estimated_time: estimatedTime,
+        estimated_time: `${Math.round(durationMinutes / 60)}h`,
         assigned_to: assignedTo,
+        work_bay_id: workBayId,
+        appointment_date: mode === 'schedule' ? finalAppointmentDate : quoteToEdit.appointment_date,
         commission_participants: participants,
         origin,
         notes,
@@ -356,14 +502,40 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         photos_after: photosAfter
       });
 
-      const [aDate, aTime] = appointmentDate.split('T');
-      const finalAppointmentDate = aDate && aTime ? combineLocalDateAndTime(aDate, aTime) : appointmentDate;
+      if (quoteToEdit.appointment_id) {
+        updateAppointment(quoteToEdit.appointment_id, {
+          start_time: finalAppointmentDate,
+          duration_minutes: durationMinutes,
+          work_bay_id: workBayId,
+          assigned_to: assignedTo,
+          stage: targetStatus,
+          status: targetStatus === 'Cancelado' || targetStatus === 'No vino' ? 'Cancelado' : 'Confirmado'
+        });
+      } else if (mode === 'schedule') {
+        const newAppt = addAppointment({
+          business: 'detailing',
+          client_id: finalClientId,
+          vehicle_id: finalVehicleId,
+          assigned_to: assignedTo,
+          start_time: finalAppointmentDate,
+          duration_minutes: durationMinutes,
+          status: 'Confirmado',
+          stage: 'Agendado',
+          work_bay_id: workBayId,
+          quote_id: quoteToEdit.id,
+          title: `Detailing: ${selectedServiceObjects.map((s) => s.serviceName).join(' + ')}`,
+          notes: `Origen: ${origin}. ${notes}`,
+          price_amount: calculatedTotal,
+          price_currency: 'UYU'
+        });
+        updateDetailingQuote(quoteToEdit.id, { appointment_id: newAppt.id });
+      }
 
-      // Si cambió el estado
-      if (quoteToEdit.status !== status) {
-        updateDetailingQuoteStatus(quoteToEdit.id, status, {
+      if (quoteToEdit.status !== targetStatus) {
+        updateDetailingQuoteStatus(quoteToEdit.id, targetStatus, {
           date: finalAppointmentDate,
-          assigned_to: assignedTo
+          assigned_to: assignedTo,
+          work_bay_id: workBayId
         });
       }
 
@@ -374,15 +546,10 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         vehicle_info: finalVehicleInfo,
         total_amount: calculatedTotal,
         selected_services: selectedServiceObjects,
-        commission_participants: participants,
-        status
+        status: targetStatus
       };
-
-      showToast('Cotización actualizada', 'success');
+      showToast('Trabajo actualizado con éxito', 'success');
     } else {
-      const [aDate, aTime] = appointmentDate.split('T');
-      const finalAppointmentDate = aDate && aTime ? combineLocalDateAndTime(aDate, aTime) : appointmentDate;
-
       savedQuote = addDetailingQuote({
         client_id: finalClientId,
         client_name: finalClientName,
@@ -397,542 +564,587 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         discount_amount: discountAmount,
         extreme_dirt_surcharge: hasExtremeDirt ? extremeDirtSurcharge : 0,
         total_amount: calculatedTotal,
-        estimated_time: estimatedTime,
+        estimated_time: `${Math.round(durationMinutes / 60)}h`,
         assigned_to: assignedTo,
+        work_bay_id: workBayId,
+        appointment_date: mode === 'schedule' ? finalAppointmentDate : undefined,
         commission_participants: participants,
         origin,
+        status: targetStatus,
         notes,
         priority_zones: priorityZones,
-        status,
-        appointment_date: status === 'Turno Confirmado' ? finalAppointmentDate : undefined,
         photos_before: photosBefore,
         photos_after: photosAfter
       });
 
-      // Si se crea directo como Turno Confirmado o Completado
-      if (status !== 'Por Cotizar') {
-        updateDetailingQuoteStatus(savedQuote.id, status, {
-          date: finalAppointmentDate,
-          assigned_to: assignedTo
+      if (mode === 'schedule') {
+        const newAppt = addAppointment({
+          business: 'detailing',
+          client_id: finalClientId,
+          vehicle_id: finalVehicleId,
+          assigned_to: assignedTo,
+          start_time: finalAppointmentDate,
+          duration_minutes: durationMinutes,
+          status: 'Confirmado',
+          stage: 'Agendado',
+          work_bay_id: workBayId,
+          quote_id: savedQuote.id,
+          title: `Detailing: ${selectedServiceObjects.map((s) => s.serviceName).join(' + ')}`,
+          notes: `Origen: ${origin}. ${notes}`,
+          price_amount: calculatedTotal,
+          price_currency: 'UYU'
         });
+        updateDetailingQuote(savedQuote.id, { appointment_id: newAppt.id });
       }
-
-      showToast('Cotización creada exitosamente', 'success');
+      showToast(mode === 'schedule' ? 'Turno agendado en el taller' : 'Presupuesto creado con éxito', 'success');
     }
 
-    onClose();
-
-    if (openWhatsAppAfterSave && onOpenWhatsApp) {
+    if (openWhatsApp && onOpenWhatsApp) {
       onOpenWhatsApp(savedQuote);
     }
+    onClose();
   };
+
+  const activeBays = (detailingConfig?.work_bays || [
+    { id: 'box-1', name: 'Box 1', is_active: true },
+    { id: 'box-2', name: 'Box 2', is_active: true }
+  ]).filter((b) => b.is_active);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
-        
+      <div className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white border border-[#E5E5E3] text-[#161616] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-[#D7141A]" />
+        <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#FDF2F2] border border-[#D7141A]/20 text-[#D7141A] flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#161616] flex items-center gap-2">
-                {quoteToEdit ? 'Editar cotización o trabajo' : 'Nueva cotización DetailVlak'}
+              <h3 className="text-base font-bold text-[#161616] font-display">
+                {quoteToEdit ? 'Editar trabajo o presupuesto' : 'Nuevo trabajo DetailVlak'}
               </h3>
-              <p className="text-xs text-[#6B6B6B]">
-                Calculadora inteligente según categoría y tarifario oficial en $UYU.
+              <p className="text-[11px] text-[#6B6B6B]">
+                Carga rápida pensada para taller • Tarifas oficiales en $UYU
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="w-9 h-9 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors border border-[#E5E5E3] cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Formulario */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-          
-          {/* SECCIÓN 1: CLIENTE Y VEHÍCULO */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            {/* Cliente */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="font-semibold text-[#161616] flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-[#6B6B6B]" />
-                  <span>Cliente</span>
-                </label>
+        {/* Cuerpo con scroll */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+          {/* PASO 1: CLIENTE */}
+          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-[#D7141A]" />
+                <span>1. Cliente</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewClientMode(!isNewClientMode);
+                  setSelectedClientId('');
+                }}
+                className="text-xs font-semibold text-[#D7141A] hover:underline"
+              >
+                {isNewClientMode ? 'Buscar existente' : '+ Nuevo cliente'}
+              </button>
+            </div>
+
+            {isNewClientMode ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 animate-fade-in">
+                <input
+                  type="text"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  placeholder="Nombre y apellido *"
+                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={newClientPhone}
+                  onChange={(e) => setNewClientPhone(e.target.value)}
+                  placeholder="Teléfono / WhatsApp (09X...) *"
+                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
+                />
+              </div>
+            ) : selectedClient ? (
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#161616] text-white flex items-center justify-center font-bold text-xs">
+                    {selectedClient.full_name.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="font-bold text-[#161616] block">{selectedClient.full_name}</span>
+                    <span className="text-[11px] text-[#6B6B6B]">{selectedClient.phone || 'Sin teléfono'}</span>
+                  </div>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setIsNewClientMode(!isNewClientMode)}
-                  className="text-xs font-medium text-[#D7141A] hover:text-[#B80E14] cursor-pointer"
-                >
-                  {isNewClientMode ? 'Elegir existente' : '+ Crear nuevo'}
-                </button>
-              </div>
-
-              {isNewClientMode ? (
-                <div className="space-y-2 animate-fade-in">
-                  <input
-                    type="text"
-                    value={newClientName}
-                    onChange={(e) => setNewClientName(e.target.value)}
-                    placeholder="Nombre y apellido"
-                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={newClientPhone}
-                    onChange={(e) => setNewClientPhone(e.target.value)}
-                    placeholder="Celular / WhatsApp (09X...)"
-                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-                  />
-                </div>
-              ) : (
-                <select
-                  value={selectedClientId}
-                  onChange={(e) => {
-                    setSelectedClientId(e.target.value);
-                    const clientVehs = vehicles.filter((v) => v.client_id === e.target.value);
-                    if (clientVehs.length > 0) {
-                      setSelectedVehicleId(clientVehs[0].id);
-                    }
+                  onClick={() => {
+                    setSelectedClientId('');
+                    setSelectedVehicleId('');
                   }}
-                  className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                  className="text-xs text-[#6B6B6B] hover:text-[#D7141A] font-semibold"
                 >
-                  <option value="">-- Seleccionar cliente --</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name} ({c.phone})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Vehículo */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="font-semibold text-[#161616] flex items-center gap-1.5">
-                  <Car className="w-3.5 h-3.5 text-[#6B6B6B]" />
-                  <span>Vehículo</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsNewVehicleMode(!isNewVehicleMode)}
-                  className="text-xs font-medium text-[#D7141A] hover:text-[#B80E14] cursor-pointer"
-                >
-                  {isNewVehicleMode ? 'Elegir existente' : '+ Crear nuevo'}
+                  Cambiar
                 </button>
               </div>
-
-              {isNewVehicleMode ? (
-                <div className="space-y-2 animate-fade-in">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={newVehicleBrand}
-                      onChange={(e) => setNewVehicleBrand(e.target.value)}
-                      placeholder="Marca (ej. Toyota)"
-                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      value={newVehicleModel}
-                      onChange={(e) => setNewVehicleModel(e.target.value)}
-                      placeholder="Modelo (ej. Corolla)"
-                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={newVehiclePlate}
-                      onChange={(e) => setNewVehiclePlate(e.target.value)}
-                      placeholder="Matrícula (opcional)"
-                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-mono uppercase placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-                    />
-                    <select
-                      value={newVehicleCategory}
-                      onChange={(e) => setNewVehicleCategory(e.target.value as VehicleCategory)}
-                      className="bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-semibold focus:border-[#D7141A] focus:outline-none cursor-pointer"
-                    >
-                      <option value="Chico">Chico / Hatchback</option>
-                      <option value="Mediano">Mediano / Sedán</option>
-                      <option value="SUV/Rural">SUV / Rural</option>
-                      <option value="Pick-up">Pick-up / Camioneta</option>
-                      <option value="Moto">Moto</option>
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <select
-                    value={selectedVehicleId}
-                    onChange={(e) => setSelectedVehicleId(e.target.value)}
-                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
-                  >
-                    <option value="">-- Seleccionar vehículo --</option>
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.brand} {v.model} [{normalizePlate(v.plate)}] ({v.category})
-                      </option>
+            ) : (
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#6B6B6B] pointer-events-none" />
+                <input
+                  type="text"
+                  value={clientSearchTerm}
+                  onChange={(e) => setClientSearchTerm(e.target.value)}
+                  placeholder="Escribí nombre o celular del cliente..."
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg pl-9 pr-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
+                />
+                {filteredClients.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-[#E5E5E3] rounded-xl shadow-lg overflow-hidden divide-y divide-[#E5E5E3]">
+                    {filteredClients.map((cli) => (
+                      <button
+                        key={cli.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedClientId(cli.id);
+                          setClientSearchTerm('');
+                          const vList = vehicles.filter((v) => v.client_id === cli.id && !v.is_archived);
+                          if (vList.length > 0) setSelectedVehicleId(vList[0].id);
+                        }}
+                        className="w-full text-left p-2.5 hover:bg-[#F5F5F4] transition-colors flex items-center justify-between"
+                      >
+                        <span className="font-semibold text-[#161616]">{cli.full_name}</span>
+                        <span className="text-[11px] text-[#6B6B6B]">{cli.phone}</span>
+                      </button>
                     ))}
-                  </select>
-                  {currentVehicle && (
-                    <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B]">
-                      <span>Categoría detectada:</span>
-                      <span className="font-semibold text-[#161616] px-1.5 py-0.5 rounded bg-white border border-[#E5E5E3]">
-                        {currentVehicle.category}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* SECCIÓN 2: SELECCIÓN DE SERVICIOS DEL TARIFARIO */}
-          <div className="space-y-3">
+          {/* PASO 2: VEHÍCULO */}
+          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-2.5">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-[#161616] flex items-center gap-2">
-                <span>Servicios de detailing</span>
-                <span className="text-[11px] font-normal text-[#6B6B6B]">
-                  (Precios calculados para categoría: <strong className="text-[#161616]">{activeCategory}</strong>)
-                </span>
-              </h4>
-              <span className="text-xs font-mono font-semibold text-[#161616]">
+              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-[#D7141A]" />
+                <span>2. Vehículo y Categoría</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsNewVehicleMode(!isNewVehicleMode)}
+                className="text-xs font-semibold text-[#D7141A] hover:underline"
+              >
+                {isNewVehicleMode ? 'Elegir cargado' : '+ Cargar otro auto'}
+              </button>
+            </div>
+
+            {/* Píldoras de vehículos del cliente si existen */}
+            {!isNewVehicleMode && clientVehicles.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-[#6B6B6B]">Vehículos de este cliente (1 toque):</span>
+                <div className="flex flex-wrap gap-2">
+                  {clientVehicles.map((veh) => {
+                    const isSelected = selectedVehicleId === veh.id;
+                    return (
+                      <button
+                        key={veh.id}
+                        type="button"
+                        onClick={() => setSelectedVehicleId(veh.id)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                            : 'bg-[#F5F5F4] text-[#161616] border-[#E5E5E3] hover:border-[#D0D0CD]'
+                        }`}
+                      >
+                        <Car className="w-3.5 h-3.5" />
+                        <span>{veh.brand} {veh.model}</span>
+                        {veh.plate && <span className="font-mono text-[10px] opacity-80">[{normalizePlate(veh.plate)}]</span>}
+                        <span className="text-[10px] px-1 py-0.2 rounded bg-white/20">{veh.category}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Formulario nuevo vehículo */}
+            {isNewVehicleMode || (!selectedVehicleId && clientVehicles.length === 0) ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 animate-fade-in">
+                <input
+                  type="text"
+                  value={newVehicleBrand}
+                  onChange={(e) => setNewVehicleBrand(e.target.value)}
+                  placeholder="Marca (ej. Toyota) *"
+                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={newVehicleModel}
+                  onChange={(e) => setNewVehicleModel(e.target.value)}
+                  placeholder="Modelo (ej. Corolla) *"
+                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={newVehiclePlate}
+                  onChange={(e) => setNewVehiclePlate(e.target.value)}
+                  placeholder="Matrícula (o S/M)"
+                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] font-mono uppercase focus:bg-white focus:border-[#D7141A] focus:outline-none"
+                />
+                <select
+                  value={newVehicleCategory}
+                  onChange={(e) => setNewVehicleCategory(e.target.value as VehicleCategory)}
+                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] font-bold focus:bg-white focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                >
+                  <option value="Chico">Chico / Hatchback</option>
+                  <option value="Mediano">Mediano / Sedán</option>
+                  <option value="SUV/Rural">SUV / Rural</option>
+                  <option value="Pick-up">Pick-up / Camioneta</option>
+                  <option value="Moto">Moto</option>
+                </select>
+              </div>
+            ) : null}
+          </div>
+
+          {/* PASO 3: SERVICIOS */}
+          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
+                  <span>3. Servicios ({activeCategory})</span>
+                </label>
+                <span className="text-[11px] text-[#6B6B6B]">Precios directos según la categoría elegida</span>
+              </div>
+              <span className="text-sm font-bold font-mono text-[#161616]">
                 Subtotal: {formatCurrency(subtotal, 'UYU')}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {detailingTariffs.map((t) => {
+              {detailingTariffs.filter((t) => t.isActive !== false).map((t) => {
                 const isSelected = selectedServiceIds.includes(t.id);
                 const price = t.prices[categoryKey] || 0;
-
                 return (
                   <div
                     key={t.id}
                     onClick={() => toggleService(t.id)}
-                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-3 ${
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-white border-[#D7141A] shadow-xs'
-                        : 'bg-white border-[#E5E5E3] hover:border-[#D0D0CD]'
+                        ? 'bg-[#FDF2F2] border-[#D7141A] text-[#161616] shadow-xs'
+                        : 'bg-white border-[#E5E5E3] hover:border-[#D0D0CD] text-[#161616]'
                     }`}
                   >
-                    <div className="flex items-start gap-2.5">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}}
-                        className="mt-0.5 w-4 h-4 rounded text-[#D7141A] accent-[#D7141A] pointer-events-none"
-                      />
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${
+                        isSelected ? 'bg-[#D7141A] border-[#D7141A] text-white' : 'border-[#E5E5E3] bg-white'
+                      }`}>
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                      </div>
                       <div>
-                        <div className="font-semibold text-[#161616] leading-tight">{t.shortName || t.name}</div>
-                        <p className="text-[11px] text-[#6B6B6B] line-clamp-1 mt-0.5">{t.description}</p>
+                        <span className="font-bold text-xs block">{t.name}</span>
+                        <span className="text-[10px] text-[#6B6B6B]">{t.durationHours || 2}h estimadas</span>
                       </div>
                     </div>
-                    <div className="font-mono font-bold text-[#161616] shrink-0 text-right">
+                    <span className="font-mono font-bold text-xs">
                       {formatCurrency(price, 'UYU')}
-                    </div>
+                    </span>
                   </div>
                 );
               })}
             </div>
+
+            {/* Servicio personalizado opcional */}
+            {isAddingCustomService ? (
+              <div className="p-3 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl grid grid-cols-1 sm:grid-cols-4 gap-2 animate-fade-in">
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Nombre del servicio"
+                  className="sm:col-span-2 bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616]"
+                />
+                <input
+                  type="number"
+                  value={customPrice}
+                  onChange={(e) => setCustomPrice(parseFloat(e.target.value) || 0)}
+                  placeholder="Precio $"
+                  className="bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616]"
+                />
+                <Button size="sm" variant="primary" onClick={handleAddCustomService}>
+                  Agregar
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAddingCustomService(true)}
+                className="text-xs text-[#6B6B6B] hover:text-[#161616] font-semibold flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Agregar servicio personalizado</span>
+              </button>
+            )}
           </div>
 
-          {/* SECCIÓN 3: AJUSTES (DESCUENTO, RECARGO POR SUCIEDAD, TIEMPO) */}
-          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-4">
-            <h4 className="text-xs font-bold text-[#161616]">
-              Descuentos y recargos especiales
-            </h4>
+          {/* PASO 4: DURACIÓN Y AJUSTES */}
+          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#D7141A]" />
+                <span>4. Duración Estimada</span>
+              </label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setDurationMinutes(Math.max(30, durationMinutes - 30))}
+                  className="w-7 h-7 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] font-bold text-[#161616] hover:bg-gray-200"
+                >
+                  -30m
+                </button>
+                <span className="font-mono font-bold text-xs px-2.5 py-1 rounded bg-[#F5F5F4] border border-[#E5E5E3]">
+                  {Math.floor(durationMinutes / 60)}h {durationMinutes % 60 > 0 ? `${durationMinutes % 60}m` : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDurationMinutes(durationMinutes + 30)}
+                  className="w-7 h-7 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] font-bold text-[#161616] hover:bg-gray-200"
+                >
+                  +30m
+                </button>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Descuento */}
+            {/* Descuentos y Suciedad Extrema */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#E5E5E3]">
               <div>
-                <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                  Descuento aplicado
-                </label>
+                <label className="text-[11px] font-semibold text-[#161616] block mb-1">Descuento aplicado</label>
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value as DetailingDiscountType)}
-                  className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616]"
                 >
                   <option value="none">Sin descuento</option>
-                  <option value="combo_10">10% Combo promocional</option>
-                  <option value="special_15">15% Cliente especial / Automotora</option>
-                  <option value="fixed">Monto fijo personalizado</option>
+                  <option value="combo_10">Combo 2 o más servicios (10%)</option>
+                  <option value="special_15">Promo Especial (15%)</option>
+                  <option value="fixed">Monto fijo en pesos</option>
                 </select>
-
                 {discountType === 'fixed' && (
-                  <div className="mt-2 relative">
-                    <span className="absolute left-2.5 top-2 text-[10px] text-[#9A9A9A] font-bold">$U</span>
-                    <input
-                      type="number"
-                      value={fixedDiscountAmount}
-                      onChange={(e) => setFixedDiscountAmount(Number(e.target.value))}
-                      placeholder="Monto descuento"
-                      className="w-full bg-white border border-[#E5E5E3] rounded-xl pl-8 pr-3 py-1.5 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Suciedad Extrema */}
-              <div>
-                <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                  Suciedad extrema o campo
-                </label>
-                <label className="flex items-center gap-2 mt-2 cursor-pointer">
                   <input
-                    type="checkbox"
-                    checked={hasExtremeDirt}
-                    onChange={(e) => setHasExtremeDirt(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#D7141A] accent-[#D7141A]"
+                    type="number"
+                    value={fixedDiscountAmount}
+                    onChange={(e) => setFixedDiscountAmount(parseFloat(e.target.value) || 0)}
+                    placeholder="Monto de descuento $"
+                    className="mt-1 w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1 text-xs"
                   />
-                  <span className="text-[#161616]">Aplicar recargo</span>
-                </label>
-                {hasExtremeDirt && (
-                  <div className="mt-1.5 relative">
-                    <span className="absolute left-2.5 top-2 text-[10px] text-[#9A9A9A] font-bold">$U</span>
-                    <input
-                      type="number"
-                      value={extremeDirtSurcharge}
-                      onChange={(e) => setExtremeDirtSurcharge(Number(e.target.value))}
-                      className="w-full bg-white border border-[#E5E5E3] rounded-xl pl-8 pr-3 py-1.5 text-[#161616] focus:border-[#D7141A] focus:outline-none"
-                    />
-                  </div>
                 )}
               </div>
 
-              {/* Tiempo Estimado */}
-              <div>
-                <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                  Tiempo estimado de trabajo
-                </label>
+              <div className="flex items-center gap-2 pt-4">
                 <input
-                  type="text"
-                  value={estimatedTime}
-                  onChange={(e) => setEstimatedTime(e.target.value)}
-                  placeholder="Ej: 1 día, 8 horas"
-                  className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
+                  type="checkbox"
+                  id="dirt_check"
+                  checked={hasExtremeDirt}
+                  onChange={(e) => setHasExtremeDirt(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#D7141A] accent-[#D7141A]"
                 />
+                <label htmlFor="dirt_check" className="text-xs text-[#161616] font-medium cursor-pointer">
+                  Recargo por suciedad extrema (+{formatCurrency(extremeDirtSurcharge, 'UYU')})
+                </label>
               </div>
             </div>
           </div>
 
-          {/* SECCIÓN 4: ESTADO, ATENDIDO POR, Y AGENDA */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3]">
-            <div>
-              <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                Estado del trabajo
-              </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as DetailingQuoteStatus)}
-                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-semibold focus:border-[#D7141A] focus:outline-none cursor-pointer"
-              >
-                <option value="Por Cotizar">Por Cotizar</option>
-                <option value="Presupuesto Enviado">Presupuesto Enviado</option>
-                <option value="Turno Confirmado">Turno Confirmado</option>
-                <option value="Trabajo Completado">Trabajo Completado</option>
-                <option value="Cancelado">Cancelado</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                Atendido por (Detailer)
-              </label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none cursor-pointer"
-              >
-                {availableProfiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name} {p.commissions?.detailing ? `(Comisión ${p.commissions.detailing}%)` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                Origen del cliente *
-              </label>
-              <select
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-                className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] font-medium focus:border-[#D7141A] focus:outline-none cursor-pointer"
-              >
-                {clientOrigins.map((ori) => (
-                  <option key={ori} value={ori}>
-                    {ori}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Participantes por trabajo */}
-            <div className="sm:col-span-3 p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#161616]">
-                  Participantes que comisionan en este trabajo
-                </span>
-                <span className="text-[10px] text-[#6B6B6B]">
-                  Reglas aplicadas según origen "{origin}"
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {availableProfiles.map((p) => {
-                  const isChecked = selectedParticipantIds.includes(p.id);
-                  const rule = detailingConfig?.commission_config?.employee_rules?.find((r) => r.employee_id === p.id);
-                  const originRule = rule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === origin.trim().toLowerCase());
-                  const rate = originRule ? originRule.percentage : (rule?.base_percentage ?? (p.commissions?.detailing ?? 0));
-
-                  return (
-                    <label
-                      key={p.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs cursor-pointer transition-colors ${
-                        isChecked
-                          ? 'bg-[#F5F5F4] border-[#161616] font-semibold text-[#161616]'
-                          : 'bg-white border-[#E5E5E3] text-[#6B6B6B] hover:bg-[#F5F5F4]'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          if (isChecked) {
-                            setSelectedParticipantIds(selectedParticipantIds.filter((id) => id !== p.id));
-                          } else {
-                            setSelectedParticipantIds([...selectedParticipantIds, p.id]);
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded text-[#D7141A] accent-[#D7141A]"
-                      />
-                      <span>{p.full_name} ({rate}%)</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {status === 'Turno Confirmado' && (
-              <div className="sm:col-span-3 pt-2 border-t border-[#E5E5E3] animate-fade-in">
-                <label className="text-[11px] font-semibold text-[#161616] block mb-1 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
-                  <span>Fecha y hora del turno (Se reflejará en la agenda unificada)</span>
+            {/* PASO 5: ORIGEN Y RESPONSABLE */}
+            <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
+              <div>
+                <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center justify-between mb-1">
+                  <span>4. Origen del Contacto (Obligatorio) *</span>
+                  {!origin && <span className="text-[10px] text-[#D7141A] font-semibold">Elegí una opción</span>}
                 </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  {clientOrigins.map((ori) => {
+                    const isSelected = origin === ori;
+                    return (
+                      <button
+                        key={ori}
+                        type="button"
+                        onClick={() => setOrigin(ori)}
+                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
+                          isSelected
+                            ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                            : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-gray-400'
+                        }`}
+                      >
+                        <div>{ori}</div>
+                        {ori === 'Anuncios pagos' && (
+                          <div className={`text-[10px] font-normal mt-0.5 ${isSelected ? 'text-amber-300' : 'text-amber-700'}`}>
+                            Romina 30% · Maxi 12.5%
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-[#6B6B6B] block mb-1">Detailer responsable asignado</label>
+                <select
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs font-semibold text-[#161616]"
+                >
+                  {availableProfiles
+                    .filter((p) => p.is_active && (p.businesses?.includes('detailing') || p.roles.includes('detailer') || p.roles.includes('admin')))
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.full_name} {p.roles.includes('detailer') ? '(Detailer)' : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+          {/* PASO 6: AGENDAR O PRESUPUESTAR */}
+          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
+                <span>6. Agendar Turno en Taller</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="datetime-local"
-                  value={appointmentDate}
-                  onChange={(e) => setAppointmentDate(e.target.value)}
-                  className="w-full sm:w-80 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-[#161616] focus:border-[#D7141A] focus:outline-none"
-                  required
+                  type="checkbox"
+                  checked={scheduleActive}
+                  onChange={(e) => setScheduleActive(e.target.checked)}
+                  className="w-4 h-4 rounded text-[#D7141A] accent-[#D7141A]"
                 />
+                <span className="text-xs font-bold text-[#161616]">Fijar fecha y box ahora</span>
+              </label>
+            </div>
+
+            {scheduleActive && (
+              <div className="space-y-3 pt-2 border-t border-[#E5E5E3] animate-fade-in">
+                {/* Sugerencias de huecos libres */}
+                {suggestedSlots.length > 0 && (
+                  <div>
+                    <span className="text-[11px] text-[#6B6B6B] block mb-1">Próximos huecos libres disponibles:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedSlots.map((slot) => (
+                        <button
+                          key={slot.dateIso}
+                          type="button"
+                          onClick={() => setAppointmentDate(slot.dateIso)}
+                          className={`px-3 py-1 rounded-xl border text-xs font-semibold transition-all ${
+                            appointmentDate === slot.dateIso
+                              ? 'bg-[#161616] text-white border-[#161616]'
+                              : 'bg-[#F5F5F4] text-[#161616] border-[#E5E5E3] hover:border-[#D0D0CD]'
+                          }`}
+                        >
+                          {slot.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[11px] text-[#6B6B6B] block mb-1">Fecha y hora de inicio</label>
+                    <input
+                      type="datetime-local"
+                      value={appointmentDate}
+                      onChange={(e) => setAppointmentDate(e.target.value)}
+                      className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs font-bold text-[#161616]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-[#6B6B6B] block mb-1">Puesto de trabajo (Box)</label>
+                    <select
+                      value={workBayId}
+                      onChange={(e) => setWorkBayId(e.target.value)}
+                      className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs font-bold text-[#161616]"
+                    >
+                      {activeBays.map((bay) => (
+                        <option key={bay.id} value={bay.id}>
+                          {bay.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
-          {/* SECCIÓN 5: NOTAS Y FOTOS ANTES/DESPUÉS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* TOTAL FINAL */}
+          <div className="bg-[#161616] text-white rounded-xl p-4 flex items-center justify-between">
             <div>
-              <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                Zonas a priorizar u observaciones
-              </label>
-              <textarea
-                value={priorityZones}
-                onChange={(e) => setPriorityZones(e.target.value)}
-                placeholder="Ej: Techo con marcas de pájaros, capot con microrayones..."
-                rows={2}
-                className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                Notas internas
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Comentarios adicionales para el equipo..."
-                rows={2}
-                className="w-full bg-white border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Resumen Final */}
-          <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between">
-            <div>
-              <div className="text-[10px] text-[#6B6B6B] font-medium">
-                Total presupuestado
-              </div>
-              <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono mt-0.5">
+              <span className="text-[11px] text-gray-400 block font-medium">TOTAL A COBRAR</span>
+              <span className="text-2xl font-bold font-mono tracking-tight text-white mt-0.5 block">
                 {formatCurrency(calculatedTotal, 'UYU')}
-              </div>
+              </span>
               {discountAmount > 0 && (
-                <div className="text-[11px] text-[#D7141A]">
+                <span className="text-[11px] text-red-400">
                   Descuento: -{formatCurrency(discountAmount, 'UYU')}
-                </div>
+                </span>
               )}
             </div>
-
-            <div className="text-right text-[11px] text-[#6B6B6B]">
-              <div>Servicios: <strong className="text-[#161616]">{selectedServiceObjects.length}</strong></div>
-              <div>Estimado: <strong className="text-[#161616]">{estimatedTime}</strong></div>
+            <div className="text-right text-[11px] text-gray-300">
+              <div>Servicios: <strong className="text-white">{selectedServiceObjects.length}</strong></div>
+              <div>Duración: <strong className="text-white">{Math.round(durationMinutes / 60)}h</strong></div>
             </div>
           </div>
-
         </div>
 
-        {/* Barra de Acciones */}
-        <div className="p-4 sm:p-5 border-t border-[#E5E5E3] bg-[#F5F5F4] flex items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onClose}
-          >
+        {/* Botones de Acción (2 caminos claros) */}
+        <div className="p-4 border-t border-[#E5E5E3] bg-white flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
+          <Button type="button" variant="ghost" size="sm" onClick={onClose} className="w-full sm:w-auto">
             Cancelar
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Camino 1: Solo Presupuesto */}
             <Button
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => handleSave(true)}
+              onClick={() => handleSave('quote_only', false)}
+              className="flex-1 sm:flex-none border-[#E5E5E3]"
             >
-              <MessageCircle className="w-4 h-4 text-[#1E6B43]" />
-              <span>Guardar y enviar WhatsApp</span>
+              <Save className="w-4 h-4 mr-1 text-[#6B6B6B]" />
+              <span>Solo Presupuesto</span>
             </Button>
 
+            {/* Camino 2: Agendar Turno (Acción principal roja) */}
             <Button
               type="button"
               variant="primary"
               size="sm"
-              onClick={() => handleSave(false)}
+              onClick={() => handleSave(scheduleActive ? 'schedule' : 'quote_only', false)}
+              className="flex-1 sm:flex-none bg-[#D7141A] hover:bg-[#B80E14] text-white font-bold"
             >
-              <Save className="w-4 h-4" />
-              <span>Guardar cotización</span>
+              <Calendar className="w-4 h-4 mr-1" />
+              <span>{scheduleActive ? 'Agendar Turno' : 'Guardar Trabajo'}</span>
             </Button>
           </div>
         </div>
-
       </div>
     </div>
   );

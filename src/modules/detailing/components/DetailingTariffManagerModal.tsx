@@ -26,11 +26,13 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
     pickup: 0,
     moto: 0
   });
+  const [editedCareText, setEditedCareText] = useState<string>('');
 
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
   const [newServiceShort, setNewServiceShort] = useState('');
   const [newServiceDesc, setNewServiceDesc] = useState('');
+  const [newServiceCareText, setNewServiceCareText] = useState('');
   const [newServiceHours, setNewServiceHours] = useState(3);
   const [newPrices, setNewPrices] = useState<DetailingTariffPrices>({
     chico: 2000,
@@ -56,10 +58,11 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
   const startEditing = (tariff: DetailingTariff) => {
     setEditingId(tariff.id);
     setEditedPrices({ ...tariff.prices });
+    setEditedCareText(tariff.care_text || '');
   };
 
   const saveEditing = (id: string) => {
-    updateDetailingTariff(id, editedPrices);
+    updateDetailingTariff(id, { prices: editedPrices, care_text: editedCareText.trim() || undefined });
     setEditingId(null);
     showToast('Tarifario actualizado correctamente', 'success');
   };
@@ -77,6 +80,7 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
       description: newServiceDesc.trim() || 'Servicio de estética automotriz',
       durationHours: Number(newServiceHours) || 2,
       prices: newPrices,
+      care_text: newServiceCareText.trim() || undefined,
       isActive: true
     });
 
@@ -84,6 +88,7 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
     setNewServiceName('');
     setNewServiceShort('');
     setNewServiceDesc('');
+    setNewServiceCareText('');
     showToast('Nuevo servicio agregado al tarifario', 'success');
   };
 
@@ -169,6 +174,19 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
                   className="w-full mt-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-[#6B6B6B]">
+                Cuidados posteriores específicos (para el comprobante del cliente)
+              </label>
+              <input
+                type="text"
+                value={newServiceCareText}
+                onChange={(e) => setNewServiceCareText(e.target.value)}
+                placeholder="Ej: No mojar por 72 hs. Lavar siempre con shampoo pH neutro y microfibra limpia."
+                className="w-full mt-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
+              />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -270,6 +288,30 @@ export const DetailingTariffManagerModal: React.FC<DetailingTariffManagerModalPr
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Cuidados posteriores */}
+                <div className="pt-2 border-t border-[#E5E5E3]">
+                  {isEditing ? (
+                    <div>
+                      <label className="text-[10px] font-bold text-[#6B6B6B] block mb-1">
+                        Cuidados posteriores (para comprobante del cliente):
+                      </label>
+                      <input
+                        type="text"
+                        value={editedCareText}
+                        onChange={(e) => setEditedCareText(e.target.value)}
+                        placeholder="Ej: No mojar por 72 horas..."
+                        className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                      />
+                    </div>
+                  ) : (
+                    t.care_text && (
+                      <p className="text-[11px] text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                        <strong>Cuidados:</strong> {t.care_text}
+                      </p>
+                    )
+                  )}
                 </div>
               </div>
             );

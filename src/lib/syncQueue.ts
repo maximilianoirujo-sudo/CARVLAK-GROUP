@@ -23,7 +23,20 @@ const QUEUE_STORAGE_KEY = 'carvlak_sync_queue';
 export function getSyncQueue(): QueuedSyncItem[] {
   try {
     const raw = localStorage.getItem(QUEUE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed: QueuedSyncItem[] = JSON.parse(raw);
+    const cleaned = parsed.filter((item) => {
+      // Descartar ítems antiguos de detailing_configs con formato plano ({ empresa_id, ... })
+      if (item.table === 'detailing_configs' && item.payload && !item.payload.config) {
+        console.warn('Descartando ítem obsoleto de detailing_configs en cola offline:', item);
+        return false;
+      }
+      return true;
+    });
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(cleaned));
+    }
+    return cleaned;
   } catch (err) {
     console.error('Error leyendo cola de sincronización:', err);
     return [];

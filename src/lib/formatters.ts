@@ -108,25 +108,63 @@ export const BUSINESS_CONFIG: Record<Business, { name: string; shortName: string
 };
 
 /**
- * Obtiene la fecha en formato YYYY-MM-DD en la zona horaria local (Uruguay UTC-3),
- * evitando el desfase de toISOString() que después de las 21:00 hs salta al día siguiente.
+ * Extrae partes de fecha y hora directamente en la zona horaria 'America/Montevideo' (-03:00)
+ * garantizando cero desfases sin importar la zona horaria del navegador o del servidor.
  */
-export function getLocalDateString(inputDate?: Date | string | number): string {
-  const d = inputDate ? new Date(inputDate) : new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+export function getUruguayParts(inputDate?: Date | string | number) {
+  let d: Date;
+  if (!inputDate) {
+    d = new Date();
+  } else if (typeof inputDate === 'string' && inputDate.length === 10 && /^\d{4}-\d{2}-\d{2}$/.test(inputDate)) {
+    // Para YYYY-MM-DD forzamos mediodía de Uruguay para evitar saltos
+    d = new Date(`${inputDate}T12:00:00-03:00`);
+  } else {
+    d = new Date(inputDate);
+  }
+  if (isNaN(d.getTime())) d = new Date();
+
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Montevideo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  const parts = formatter.formatToParts(d);
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    map[p.type] = p.value;
+  }
+
+  return {
+    year: map.year || '2026',
+    month: map.month || '01',
+    day: map.day || '01',
+    hour: map.hour === '24' ? '00' : map.hour || '00',
+    minute: map.minute || '00',
+    second: map.second || '00'
+  };
 }
 
 /**
- * Obtiene el mes actual o de la fecha en formato YYYY-MM en zona horaria local
+ * Obtiene la fecha en formato YYYY-MM-DD en la zona horaria de Uruguay (America/Montevideo, UTC-3),
+ * evitando el desfase de toISOString() que después de las 21:00 hs salta al día siguiente.
+ */
+export function getLocalDateString(inputDate?: Date | string | number): string {
+  const p = getUruguayParts(inputDate);
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+/**
+ * Obtiene el mes actual o de la fecha en formato YYYY-MM en zona horaria de Uruguay
  */
 export function getLocalMonthString(inputDate?: Date | string | number): string {
-  const d = inputDate ? new Date(inputDate) : new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
+  const p = getUruguayParts(inputDate);
+  return `${p.year}-${p.month}`;
 }
 
 /**
@@ -148,13 +186,13 @@ export function getLocalMonthRange(monthString?: string): { startDate: string; e
  * Se guarda como YYYY-MM-DDTHH:mm:00-03:00 para garantizar coherencia en PostgreSQL y Supabase.
  */
 export function combineLocalDateAndTime(dateStr: string, timeStr: string): string {
-  const cleanDate = dateStr.trim();
+  const cleanDate = dateStr.trim().slice(0, 10);
   const cleanTime = timeStr.trim();
   const timeWithSec = cleanTime.length === 5 
     ? `${cleanTime}:00` 
     : cleanTime.length >= 8 
       ? cleanTime.slice(0, 8) 
-      : `${cleanTime}:00`;
+      : `${cleanTime.padStart(5, '0')}:00`;
   return `${cleanDate}T${timeWithSec}-03:00`;
 }
 
@@ -163,14 +201,8 @@ export function combineLocalDateAndTime(dateStr: string, timeStr: string): strin
  */
 export function formatLocalTime(inputDate: Date | string | number): string {
   if (!inputDate) return '';
-  const d = new Date(inputDate);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('es-UY', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'America/Montevideo'
-  });
+  const p = getUruguayParts(inputDate);
+  return `${p.hour}:${p.minute}`;
 }
 
 /**
@@ -329,12 +361,8 @@ export function minutesToTimeString(minutes: number): string {
 export function addMinutesToIso(isoString: string, minutesToAdd: number): string {
   const d = new Date(isoString);
   const updated = new Date(d.getTime() + minutesToAdd * 60000);
-  const year = updated.getFullYear();
-  const month = String(updated.getMonth() + 1).padStart(2, '0');
-  const day = String(updated.getDate()).padStart(2, '0');
-  const hours = String(updated.getHours()).padStart(2, '0');
-  const mins = String(updated.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${mins}:00-03:00`;
+  const p = getUruguayParts(updated);
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00-03:00`;
 }
 
 /**
@@ -350,6 +378,47 @@ export function getDayOfWeekKey(dateStr: string): 'monday' | 'tuesday' | 'wednes
     'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
   ];
   return keys[dayIdx] as any;
+}
+
+/**
+ * Mapea cualquier estado antiguo o legado hacia el nuevo flujo unificado:
+ * Presupuesto → Agendado → En taller → Listo para retirar → Entregado (Cancelado / No vino / Anulado)
+ */
+export function mapOldStatusToNew(oldStatus?: string | null): string {
+  if (!oldStatus) return 'Presupuesto';
+  switch (oldStatus) {
+    case 'Por Cotizar':
+    case 'Presupuesto Enviado':
+      return 'Presupuesto';
+    case 'Turno Confirmado':
+    case 'Confirmado':
+      return 'Agendado';
+    case 'Recibido':
+    case 'En proceso':
+    case 'Control de calidad':
+      return 'En taller';
+    case 'Trabajo Completado':
+    case 'Entregado y cobrado':
+      return 'Entregado';
+    default:
+      return oldStatus;
+  }
+}
+
+/**
+ * Devuelve un texto legible para el tipo de descuento aplicado
+ * Ej: 'combo_10' -> 'Combo 10%'
+ */
+export function getDiscountLabel(discountType?: string, discountsConfig?: { id: string; label: string }[]): string {
+  if (!discountType || discountType === 'none') return '';
+  if (discountsConfig && discountsConfig.length > 0) {
+    const found = discountsConfig.find((d) => d.id === discountType);
+    if (found) return found.label;
+  }
+  if (discountType === 'combo_10') return 'Combo 10%';
+  if (discountType === 'special_15') return 'Especial 15%';
+  if (discountType === 'fixed') return 'Descuento fijo';
+  return discountType;
 }
 
 

@@ -30,6 +30,7 @@ import { Button } from '../../../components/ui/Button';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useData } from '../../../context/DataContext';
+import { supabase } from '../../../lib/supabase';
 import { DetailingCleanTestDataModal } from './DetailingCleanTestDataModal';
 
 interface DetailingConfigTabProps {
@@ -76,13 +77,13 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
       copy.receipt_config = {
         prefix: 'DV-',
         next_number: 1,
-        company_trade_name: 'CARVLAK DetailVlak',
-        company_legal_name: 'CARVLAK GROUP S.A.S.',
-        company_rut: '219988770014',
-        company_address: 'Av. Giannattasio & Calcagno, Shangrilá, Canelones',
-        company_phone: '+598 99 267 964',
-        company_instagram: '@car.vlak',
-        company_logo_url: '/carvlak-logo-negro.png',
+        company_trade_name: '',
+        company_legal_name: '',
+        company_rut: '',
+        company_address: '',
+        company_phone: '',
+        company_instagram: '',
+        company_logo_url: '',
         footer_legend: 'Comprobante de servicio. No válido como factura electrónica (CFE).',
         service_care_warranties: {
           ceramico: 'Garantía y cuidado de sellado cerámico: No lavar con champú químico ni mojar durante las primeras 72 horas. Evitar túneles de lavado con rodillos agresivos.',
@@ -793,21 +794,44 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
               </div>
               <div>
                 <label className="block text-xs text-[#6B6B6B] mb-1">Próximo número a emitir</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={formData.receipt_config?.next_number || 1}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      receipt_config: {
-                        ...formData.receipt_config!,
-                        next_number: parseInt(e.target.value, 10) || 1
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    value={formData.receipt_config?.next_number || 1}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        receipt_config: {
+                          ...formData.receipt_config!,
+                          next_number: parseInt(e.target.value, 10) || 1
+                        }
+                      });
+                    }}
+                    className="flex-1 px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs font-mono font-bold text-[#161616]"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const targetNum = formData.receipt_config?.next_number || 1;
+                        const { error } = await supabase.rpc('set_detailing_receipt_seq', { p_val: targetNum });
+                        if (error) {
+                          showToast(`Error al fijar secuencia: ${error.message}`, 'error');
+                        } else {
+                          showToast(`Secuencia oficial fijada en el número ${targetNum} en la base de datos.`, 'success');
+                        }
+                      } catch (err: any) {
+                        showToast(`Error al fijar secuencia: ${err.message}`, 'error');
                       }
-                    });
-                  }}
-                  className="w-full px-3 py-1.5 bg-white border border-[#E5E5E3] rounded-lg text-xs font-mono font-bold text-[#161616]"
-                />
+                    }}
+                    className="text-xs shrink-0 cursor-pointer whitespace-nowrap"
+                  >
+                    Fijar en BD
+                  </Button>
+                </div>
                 <span className="text-[10px] text-[#6B6B6B] mt-1 block">
                   Próximo comprobante: {formData.receipt_config?.prefix || 'DV-'}
                   {String(formData.receipt_config?.next_number || 1).padStart(6, '0')}
@@ -1156,6 +1180,106 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
                 </span>
               </div>
             ))}
+          </div>
+
+          {/* Reglas Operativas del Taller */}
+          <div className="p-4 rounded-xl border border-[#E5E5E3] bg-[#F5F5F4]/30 space-y-4 pt-4 border-t">
+            <h4 className="text-xs font-bold text-[#161616] uppercase font-display tracking-wider">
+              Reglas Operativas del Taller (Para 2 Personas)
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-[#E5E5E3] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.require_checkin)}
+                  onChange={(e) => setFormData({ ...formData, require_checkin: e.target.checked })}
+                  className="mt-0.5 rounded text-[#D7141A] focus:ring-[#D7141A]"
+                />
+                <div>
+                  <span className="text-xs font-bold text-[#161616] block">Pedir Check-in al ingresar</span>
+                  <span className="text-[11px] text-[#6B6B6B]">
+                    Si está desactivado (recomendado para agilidad), el check-in con fotos queda disponible como botón opcional.
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-[#E5E5E3] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.require_quality_control)}
+                  onChange={(e) => setFormData({ ...formData, require_quality_control: e.target.checked })}
+                  className="mt-0.5 rounded text-[#D7141A] focus:ring-[#D7141A]"
+                />
+                <div>
+                  <span className="text-xs font-bold text-[#161616] block">Pedir Control de Calidad al terminar</span>
+                  <span className="text-[11px] text-[#6B6B6B]">
+                    Si está desactivado, el operario pasa el auto a "Listo para retirar" en un solo toque sin checklist obligatorio.
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 bg-white rounded-xl border border-[#E5E5E3] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.auto_ingreso_enabled ?? true}
+                  onChange={(e) => setFormData({ ...formData, auto_ingreso_enabled: e.target.checked })}
+                  className="mt-0.5 rounded text-[#D7141A] focus:ring-[#D7141A]"
+                />
+                <div>
+                  <span className="text-xs font-bold text-[#161616] block">Ingreso Automático a Taller</span>
+                  <span className="text-[11px] text-[#6B6B6B]">
+                    Pasa automáticamente los turnos confirmados a "En taller" al llegar su horario asignado.
+                  </span>
+                </div>
+              </label>
+
+              <div className="p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-1.5">
+                <label className="block text-xs font-bold text-[#161616]">
+                  Tolerancia para ingreso automático
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={formData.auto_ingreso_tolerance_minutes ?? 0}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        auto_ingreso_tolerance_minutes: parseInt(e.target.value, 10) || 0
+                      })
+                    }
+                    className="w-20 px-2 py-1 bg-white border border-[#E5E5E3] rounded text-xs font-bold font-mono"
+                  />
+                  <span className="text-xs text-[#6B6B6B]">minutos (0 = a la hora del turno)</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-1.5 sm:col-span-2">
+                <label className="block text-xs font-bold text-[#161616]">
+                  Ventana de horas para botón "No vino"
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={formData.no_show_window_hours ?? 3}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        no_show_window_hours: parseInt(e.target.value, 10) || 3
+                      })
+                    }
+                    className="w-20 px-2 py-1 bg-white border border-[#E5E5E3] rounded text-xs font-bold font-mono"
+                  />
+                  <span className="text-xs text-[#6B6B6B]">
+                    horas pasadas la hora del turno para ofrecer marcar como "No vino".
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

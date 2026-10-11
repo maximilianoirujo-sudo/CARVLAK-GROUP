@@ -48,6 +48,7 @@ import { DetailingTodayPanel } from './components/agenda/DetailingTodayPanel';
 import { DetailingConfigTab } from './components/DetailingConfigTab';
 import { DetailingVoidModal } from './components/DetailingVoidModal';
 import { DetailingWhatsAppQuickModal } from './components/agenda/DetailingWhatsAppQuickModal';
+import { DetailingPaymentDeliveryModal } from './components/agenda/DetailingPaymentDeliveryModal';
 import { computeDetailingAlerts, DetailingAlert } from './services/detailingAlertsService';
 
 interface DetailingModuleProps {
@@ -76,7 +77,8 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
     stockItems,
     detailingConfig,
     updateDetailingConfig,
-    detailingReceipts
+    detailingReceipts,
+    detailingPayments
   } = useData();
 
   const { profile, availableProfiles } = useAuth();
@@ -150,12 +152,17 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
   // Modales
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
   const [quoteToEdit, setQuoteToEdit] = useState<DetailingQuote | null>(null);
+  const [quoterInitialDate, setQuoterInitialDate] = useState<string | undefined>();
+  const [quoterInitialTime, setQuoterInitialTime] = useState<string | undefined>();
+  const [quoterInitialBayId, setQuoterInitialBayId] = useState<string | undefined>();
 
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [quoteForWhatsApp, setQuoteForWhatsApp] = useState<DetailingQuote | null>(null);
 
   const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
   const [isMigrationModalOpen, setIsMigrationModalOpen] = useState(false);
+  const [isPaymentDeliveryOpen, setIsPaymentDeliveryOpen] = useState(false);
+  const [quoteForPayment, setQuoteForPayment] = useState<DetailingQuote | null>(null);
 
   // Modal de anulación y borrado definitivo (individual o múltiple)
   const [voidModalState, setVoidModalState] = useState<{
@@ -465,15 +472,29 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
       {/* 1. AGENDA DEL TALLER */}
       {activeTab === 'agenda' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Panel Hoy en el Taller (4 KPIs + Centro de Alertas) */}
+          {/* Panel Hoy en el Taller (Kanban 3 Columnas + Barra de Pendientes + Totales) */}
           <DetailingTodayPanel
-            entriesTodayCount={entriesTodayCount}
-            inWorkshopNowCount={inWorkshopNowCount}
-            deliveriesTodayCount={deliveriesTodayCount}
-            availableBaysCount={availableBaysCount}
-            alerts={alerts}
-            onActionClick={handleActionClickAlert}
-            onSnoozeAlert={handleSnoozeAlert}
+            appointments={appointments}
+            detailingQuotes={detailingQuotes}
+            detailingPayments={detailingPayments}
+            config={detailingConfig}
+            profiles={availableProfiles || []}
+            onAdvanceStatus={updateDetailingQuoteStatus}
+            onOpenPayment={(quote) => {
+              setQuoteForPayment(quote);
+              setIsPaymentDeliveryOpen(true);
+            }}
+            onOpenWhatsApp={(quote, templateKey) => {
+              setQuickWhatsAppState({
+                isOpen: true,
+                quote,
+                templateKey
+              });
+            }}
+            onOpenQuoterModal={(quote) => {
+              setQuoteToEdit(quote || null);
+              setIsQuoterModalOpen(true);
+            }}
           />
 
           {/* Grilla y Vistas del Calendario */}
@@ -485,8 +506,11 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
             onUpdateQuoteStatus={updateDetailingQuoteStatus}
             onUpdateAppointment={updateAppointment}
             onAddAppointment={addAppointment}
-            onOpenQuoterModal={(quote) => {
+            onOpenQuoterModal={(quote, slot) => {
               setQuoteToEdit(quote || null);
+              setQuoterInitialDate(slot?.date);
+              setQuoterInitialTime(slot?.time);
+              setQuoterInitialBayId(slot?.bayId);
               setIsQuoterModalOpen(true);
             }}
             onRecordCheckin={recordDetailingCheckin}
@@ -903,6 +927,37 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           onClose={() => setIsQuoterModalOpen(false)}
           quoteToEdit={quoteToEdit}
           onOpenWhatsApp={handleOpenWhatsApp}
+          initialDate={quoterInitialDate}
+          initialTime={quoterInitialTime}
+          initialBayId={quoterInitialBayId}
+        />
+      )}
+
+      {/* Modal Entrega y Cobrado desde panel Hoy */}
+      {isPaymentDeliveryOpen && (
+        <DetailingPaymentDeliveryModal
+          isOpen={isPaymentDeliveryOpen}
+          onClose={() => {
+            setIsPaymentDeliveryOpen(false);
+            setQuoteForPayment(null);
+          }}
+          quote={quoteForPayment}
+          config={detailingConfig}
+          onConfirmDeliveryAndPayment={(quoteId, paymentsData) => {
+            if (paymentsData && paymentsData.length > 0) {
+              paymentsData.forEach((pay) => {
+                recordDetailingPayment(quoteId, pay);
+              });
+            }
+            updateDetailingQuoteStatus(quoteId, 'Entregado');
+            const targetAppt = appointments.find((a) => a.quote_id === quoteId);
+            if (targetAppt) {
+              updateAppointment(targetAppt.id, {
+                stage: 'Entregado',
+                status: 'Finalizado'
+              });
+            }
+          }}
         />
       )}
 
@@ -980,6 +1035,22 @@ export const DetailingModule: React.FC<DetailingModuleProps> = ({
           logDetailingWhatsAppSent(targetId, templateKey, phone);
         }}
       />
+
+      {/* Botón flotante móvil "+ Nuevo trabajo" siempre visible */}
+      <button
+        type="button"
+        onClick={() => {
+          setQuoteToEdit(null);
+          setQuoterInitialDate(undefined);
+          setQuoterInitialTime(undefined);
+          setQuoterInitialBayId(undefined);
+          setIsQuoterModalOpen(true);
+        }}
+        className="fixed bottom-6 right-6 sm:hidden z-40 bg-[#D7141A] hover:bg-[#B80E14] text-white p-3.5 rounded-full shadow-xl flex items-center justify-center transition-transform active:scale-95"
+        title="Nuevo trabajo"
+      >
+        <Plus className="w-6 h-6 stroke-[2.5]" />
+      </button>
     </div>
   );
 };

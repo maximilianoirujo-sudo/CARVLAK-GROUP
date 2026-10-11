@@ -70,7 +70,7 @@ import {
   INITIAL_SOCIAL_MEDIA_POSTS,
   INITIAL_DETAILING_CONFIG
 } from '../lib/mockData';
-import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense } from '../lib/formatters';
+import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, mapOldStatusToNew, getDiscountLabel } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
@@ -111,7 +111,7 @@ export interface DataContextType {
 
   // FASE 2: DETAILING (DETAILVLAK)
   detailingTariffs: DetailingTariff[];
-  updateDetailingTariff: (id: string, prices: DetailingTariffPrices, isActive?: boolean) => void;
+  updateDetailingTariff: (id: string, pricesOrUpdates: DetailingTariffPrices | Partial<DetailingTariff>, isActive?: boolean) => void;
   addDetailingTariff: (tariff: Omit<DetailingTariff, 'id'>) => DetailingTariff;
 
   detailingQuotes: DetailingQuote[];
@@ -127,6 +127,7 @@ export interface DataContextType {
   deleteDetailingQuotePermanent: (id: string) => void;
   bulkVoidDetailingQuotes: (ids: string[], reason: string) => void;
   bulkDeleteDetailingQuotes: (ids: string[]) => void;
+  detailingPayments: DetailingPayment[];
   recordDetailingPayment: (quoteId: string, payment: Omit<DetailingPayment, 'id'>) => void;
   recordDetailingCheckin: (quoteId: string, checkin: DetailingCheckinData) => void;
   recordDetailingQualityControl: (quoteId: string, qc: DetailingQualityControlData) => void;
@@ -156,7 +157,7 @@ export interface DataContextType {
   adjustSingleCommission: (commissionId: string, newAmount: number, reason: string) => void;
 
   detailingReceipts: DetailingReceipt[];
-  generateDetailingReceipt: (quoteId: string, options?: { includePhotos?: boolean; version?: number }) => DetailingReceipt | null;
+  generateDetailingReceipt: (quoteId: string, options?: { includePhotos?: boolean; version?: number }) => Promise<DetailingReceipt | null> | DetailingReceipt | null;
   cleanDetailingTestData: (selection: DetailingCleanSelection) => Promise<{ success: boolean; counts: Record<string, number> }>;
 
   whatsappTemplates: WhatsAppTemplate[];
@@ -361,6 +362,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useDebouncedLocalStorage('carvlak_detailing_receipts', detailingReceipts, 500);
+
+  const [detailingPayments, setDetailingPayments] = useState<DetailingPayment[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_payments');
+    if (s) {
+      try {
+        return JSON.parse(s);
+      } catch {}
+    }
+    return [];
+  });
+  useDebouncedLocalStorage('carvlak_detailing_payments', detailingPayments, 500);
+
+  const detailingQuotesRef = useRef(detailingQuotes);
+  detailingQuotesRef.current = detailingQuotes;
+  const detailingConfigRef = useRef(detailingConfig);
+  detailingConfigRef.current = detailingConfig;
+  const stockItemsRef = useRef(stockItems);
+  stockItemsRef.current = stockItems;
 
   // FASE 3: Estados Inspecciones Vehiculares (Peritaje Carbusters)
   const [inspections, setInspections] = useState<VehicleInspection[]>(() => {
@@ -610,6 +629,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_cash_closures' }, () => {
           loadSupabaseData();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_payments' }, () => {
+          loadSupabaseData();
+        })
         .subscribe();
 
       // Reconexión y cambio de pestaña
@@ -631,6 +653,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
   }, []);
+
+  // Timer de auto-ingreso a "En taller" (fallback en cliente cada 60 segundos)
+  useEffect(() => {
+    if (!detailingConfig.auto_ingreso_enabled || detailingConfig.require_checkin) return;
+
+    const checkAutoIngreso = () => {
+      const toleranceMin = detailingConfig.auto_ingreso_tolerance_minutes || 0;
+      const nowMs = Date.now();
+
+      detailingQuotesRef.current.forEach((quote) => {
+        if (
+          (quote.status === 'Agendado' || quote.status === 'Turno Confirmado') &&
+          quote.appointment_date &&
+          !quote.is_voided &&
+          !quote.is_archived
+        ) {
+          const apptTime = new Date(quote.appointment_date).getTime();
+          if (!isNaN(apptTime) && nowMs >= apptTime + toleranceMin * 60 * 1000) {
+            updateDetailingQuoteStatus(quote.id, 'En taller');
+          }
+        }
+      });
+    };
+
+    const interval = setInterval(checkAutoIngreso, 60000);
+    checkAutoIngreso();
+    return () => clearInterval(interval);
+  }, [detailingConfig.auto_ingreso_enabled, detailingConfig.require_checkin, detailingConfig.auto_ingreso_tolerance_minutes]);
 
   const loadSupabaseData = async () => {
     if (!supabase || !isSupabaseConfigured) return;
@@ -660,7 +710,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resSocialConfig,
         resDetailingConfig,
         resDetailingCashClosures,
-        resDetailingReceipts
+        resDetailingReceipts,
+        resDetailingPayments
       ] = await Promise.all([
         supabase.from('general_configs').select('*').limit(1).maybeSingle(),
         supabase.from('clients').select('*').eq('is_archived', false),
@@ -683,7 +734,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supabase.from('social_media_configs').select('*').limit(1).maybeSingle(),
         supabase.from('detailing_configs').select('*').limit(1).maybeSingle(),
         supabase.from('detailing_cash_closures').select('*'),
-        supabase.from('detailing_receipts').select('*')
+        supabase.from('detailing_receipts').select('*'),
+        supabase.from('detailing_payments').select('*')
       ]);
 
       if (resGeneralConfig.data) setGeneralConfig((prev) => ({ ...prev, ...resGeneralConfig.data }));
@@ -696,7 +748,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resDealershipInquiries.data) setDealershipInquiries(resDealershipInquiries.data as DealershipInquiry[]);
       if (resDealershipConfig.data) setDealershipConfig((prev) => ({ ...prev, ...resDealershipConfig.data }));
       if (resDetailingTariffs.data) setDetailingTariffs(resDetailingTariffs.data as DetailingTariff[]);
-      if (resDetailingQuotes.data) setDetailingQuotes(resDetailingQuotes.data as DetailingQuote[]);
+      if (resDetailingQuotes.data) {
+        const mapped = (resDetailingQuotes.data as DetailingQuote[]).map((q) => ({
+          ...q,
+          status: mapOldStatusToNew(q.status) as DetailingQuoteStatus
+        }));
+        setDetailingQuotes(mapped);
+      }
       if (resStockItems.data) setStockItems(resStockItems.data as StockItem[]);
       if (resExpenses.data) setExpenses(resExpenses.data as Expense[]);
       if (resCommissions.data) setCommissions(resCommissions.data as CommissionRecord[]);
@@ -705,9 +763,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resInspectionTariffs.data) setInspectionTariffs((prev) => ({ ...prev, ...resInspectionTariffs.data }));
       if (resSocialPosts.data) setSocialMediaPosts(resSocialPosts.data as SocialMediaPostRecord[]);
       if (resSocialConfig.data) setSocialMediaConfig((prev) => ({ ...prev, ...resSocialConfig.data }));
-      if (resDetailingConfig.data) setDetailingConfig((prev) => ({ ...prev, ...resDetailingConfig.data }));
+      if (resDetailingConfig.data) {
+        const cfg = resDetailingConfig.data.config || resDetailingConfig.data;
+        setDetailingConfig({ ...INITIAL_DETAILING_CONFIG, ...cfg });
+      }
       if (resDetailingCashClosures.data) setDetailingCashClosures(resDetailingCashClosures.data as DetailingCashClosure[]);
       if (resDetailingReceipts.data) setDetailingReceipts(resDetailingReceipts.data as DetailingReceipt[]);
+      if (resDetailingPayments?.data) setDetailingPayments(resDetailingPayments.data as DetailingPayment[]);
     } catch (err) {
       console.warn('Conexión con Supabase en curso o tablas aún vacías:', err);
     }
@@ -918,13 +980,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ============================================================================
 
   // Tarifario
-  const updateDetailingTariff = (id: string, prices: DetailingTariffPrices, isActive?: boolean) => {
+  const updateDetailingTariff = (id: string, pricesOrUpdates: DetailingTariffPrices | Partial<DetailingTariff>, isActive?: boolean) => {
     setDetailingTariffs((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, prices, isActive: isActive !== undefined ? isActive : t.isActive } : t))
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        if ('chico' in pricesOrUpdates) {
+          return { ...t, prices: pricesOrUpdates as DetailingTariffPrices, isActive: isActive !== undefined ? isActive : t.isActive };
+        }
+        return { ...t, ...(pricesOrUpdates as Partial<DetailingTariff>), isActive: isActive !== undefined ? isActive : t.isActive };
+      })
     );
     const updated = detailingTariffs.find((t) => t.id === id);
     if (updated) {
-      syncSupabase('detailing_tariffs', 'upsert', { ...updated, prices, isActive: isActive !== undefined ? isActive : updated.isActive });
+      const payload = 'chico' in pricesOrUpdates
+        ? { ...updated, prices: pricesOrUpdates, isActive: isActive !== undefined ? isActive : updated.isActive }
+        : { ...updated, ...pricesOrUpdates, isActive: isActive !== undefined ? isActive : updated.isActive };
+      syncSupabase('detailing_tariffs', 'upsert', payload);
     }
     logActivity('cotizacion_detailing', id, 'update', { action: 'Actualización de tarifario' });
   };
@@ -978,7 +1049,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateDetailingConfig = (config: Partial<DetailingConfig>) => {
     setDetailingConfig((prev) => {
       const updated = { ...prev, ...config };
-      syncSupabase('detailing_configs', 'upsert', { empresa_id: 'carvlak', ...updated });
+      syncSupabase('detailing_configs', 'upsert', {
+        id: 'default',
+        config: updated,
+        updated_at: new Date().toISOString(),
+        updated_by: profile?.id
+      });
       return updated;
     });
     logActivity('configuracion', 'detailing_config', 'update', config);
@@ -989,7 +1065,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     newStatus: DetailingQuoteStatus,
     appointmentDetails?: { date: string; assigned_to?: string; work_bay_id?: string }
   ) => {
-    const currentQuote = detailingQuotes.find((q) => q.id === id);
+    const currentQuote = detailingQuotesRef.current.find((q) => q.id === id) || detailingQuotes.find((q) => q.id === id);
     if (!currentQuote) return;
 
     const nowIso = new Date().toISOString();
@@ -1068,8 +1144,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    // 2. Al pasar a "Entregado y cobrado" (o "Trabajo Completado"):
-    if (newStatus === 'Entregado y cobrado' || newStatus === 'Trabajo Completado') {
+    // 2. Al pasar a "Entregado" (o "Entregado y cobrado" / "Trabajo Completado"):
+    if (newStatus === 'Entregado' || newStatus === 'Entregado y cobrado' || newStatus === 'Trabajo Completado') {
       // Historial en Vehículo
       if (currentQuote.vehicle_id) {
         addVehicleHistory(
@@ -1080,63 +1156,85 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       }
 
-      // Consumo de insumos por receta (si aún no se descontaron)
+      // Consumo de insumos por receta (agrupando cantidades ANTES de descontar)
       if (!currentQuote.materials_consumed || currentQuote.materials_consumed.length === 0) {
         const recipes = detailingConfig.recipes_by_service || {};
         const cat = currentQuote.vehicle_category || 'Mediano';
-        const consumedList: any[] = [];
-        let calculatedCost = 0;
+        const neededByItem: Record<string, number> = {};
 
         currentQuote.selected_services.forEach((srv) => {
           const srvRecipe = recipes[srv.serviceId];
           if (srvRecipe && srvRecipe[cat]) {
             srvRecipe[cat].forEach((recipeItem) => {
-              const item = stockItems.find((s) => s.id === recipeItem.stock_item_id);
-              if (item) {
-                const itemCost = Math.round((item.unit_cost || 0) * recipeItem.quantity);
-                calculatedCost += itemCost;
-                consumedList.push({
-                  stock_item_id: item.id,
-                  item_name: item.name,
-                  quantity: recipeItem.quantity,
-                  unit: item.unit,
-                  unit_cost: item.unit_cost || 0,
-                  total_cost: itemCost
-                });
-
-                // Descontar de stock
-                const newQty = Math.max(0, item.quantity - recipeItem.quantity);
-                setStockItems((prev) =>
-                  prev.map((s) => (s.id === item.id ? { ...s, quantity: newQty } : s))
-                );
-                syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', item.id);
-              }
+              neededByItem[recipeItem.stock_item_id] = (neededByItem[recipeItem.stock_item_id] || 0) + recipeItem.quantity;
             });
           }
         });
 
-        if (consumedList.length > 0) {
-          updatedFields.materials_cost = calculatedCost;
-          updatedFields.materials_consumed = consumedList;
+        const itemIds = Object.keys(neededByItem);
+        if (itemIds.length > 0) {
+          const consumedList: any[] = [];
+          let calculatedCost = 0;
+          const warnings: string[] = [];
+
+          setStockItems((prevStock) => {
+            return prevStock.map((item) => {
+              const neededQty = neededByItem[item.id];
+              if (!neededQty) return item;
+
+              if (item.quantity < neededQty) {
+                warnings.push(`Stock insuficiente de ${item.name}: requerido ${neededQty} ${item.unit || ''}, disponible ${item.quantity}. Se descontó dejando stock en 0.`);
+              }
+
+              const actualDeducted = neededQty;
+              const newQty = Math.max(0, item.quantity - neededQty);
+              const itemCost = Math.round((item.unit_cost || 0) * actualDeducted);
+              calculatedCost += itemCost;
+
+              consumedList.push({
+                stock_item_id: item.id,
+                item_name: item.name,
+                quantity: actualDeducted,
+                unit: item.unit,
+                unit_cost: item.unit_cost || 0,
+                total_cost: itemCost
+              });
+
+              syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', item.id);
+              return { ...item, quantity: newQty };
+            });
+          });
+
+          if (consumedList.length > 0) {
+            updatedFields.materials_cost = calculatedCost;
+            updatedFields.materials_consumed = consumedList;
+          }
+
+          if (warnings.length > 0) {
+            warnings.forEach((warn) => {
+              updatedFields.history = [
+                ...(updatedFields.history || currentQuote.history || []),
+                {
+                  timestamp: nowIso,
+                  from_status: currentQuote.status,
+                  to_status: newStatus,
+                  user_id: profile?.id,
+                  user_name: 'Sistema Stock',
+                  note: `⚠️ ${warn}`
+                }
+              ];
+            });
+          }
         }
       }
 
-      // Generar comisión dinámica y configurable (RECIÉN AL ENTREGAR Y COBRAR)
+      // Generar comisión dinámica y configurable
       const newComms = calculateCommissionsForQuote(currentQuote, updatedFields.materials_cost);
       if (newComms.length > 0) {
         setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), ...newComms]);
         newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
       }
-
-      // Generar automáticamente el comprobante oficial de DetailVlak
-      try {
-        setTimeout(() => {
-          generateDetailingReceipt(currentQuote.id);
-        }, 50);
-      } catch (err) {
-        console.warn('Auto-comprobante Detailing error:', err);
-      }
-    } else if (currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
+    } else if (currentQuote.status === 'Entregado' || currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
       // Reversión: si el trabajo vuelve atrás o se cancela, se elimina la comisión generada
       setCommissions((prev) => prev.filter((c) => c.quote_id !== currentQuote.id));
       syncSupabase('commissions', 'delete', undefined, 'quote_id', currentQuote.id);
@@ -1217,30 +1315,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // PARTE 3 & 4: ANULAR TRABAJOS EN CASCADA
   const voidDetailingQuote = (id: string, reason: string) => {
-    const currentQuote = detailingQuotes.find((q) => q.id === id);
+    const currentQuote = detailingQuotesRef.current.find((q) => q.id === id) || detailingQuotes.find((q) => q.id === id);
     if (!currentQuote) return;
 
     const nowIso = new Date().toISOString();
     const historyEntry = {
       timestamp: nowIso,
       from_status: currentQuote.status,
-      to_status: 'Anulado',
+      to_status: 'Anulado' as DetailingQuoteStatus,
       user_id: profile?.id,
       user_name: profile?.full_name || 'Operador',
       note: `Anulación: ${reason}`
     };
 
-    // 1. Revertir insumos consumidos al stock
+    // 1. Revertir insumos consumidos al stock (agrupados por item)
     if (currentQuote.materials_consumed && currentQuote.materials_consumed.length > 0) {
+      const toRestore: Record<string, number> = {};
       currentQuote.materials_consumed.forEach((c) => {
-        setStockItems((prev) =>
-          prev.map((s) => (s.id === c.stock_item_id ? { ...s, quantity: s.quantity + c.quantity } : s))
-        );
-        const target = stockItems.find((s) => s.id === c.stock_item_id);
-        if (target) {
-          syncSupabase('stock_items', 'update', { quantity: target.quantity + c.quantity, updated_at: nowIso }, 'id', target.id);
-        }
+        toRestore[c.stock_item_id] = (toRestore[c.stock_item_id] || 0) + c.quantity;
       });
+      setStockItems((prev) =>
+        prev.map((s) => {
+          const add = toRestore[s.id];
+          if (!add) return s;
+          const newQty = s.quantity + add;
+          syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', s.id);
+          return { ...s, quantity: newQty };
+        })
+      );
     }
 
     // 2. Eliminar comisión en cascada
@@ -1261,6 +1363,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // 4. Anular cobros asociados
     const voidedPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: true }));
+    setDetailingPayments((prev) => prev.map((p) => p.quote_id === id ? { ...p, is_voided: true } : p));
+    syncSupabase('detailing_payments', 'update', { is_voided: true }, 'quote_id', id);
 
     // 5. Anular comprobante asociado en cascada
     setDetailingReceipts((prev) =>
@@ -1295,7 +1399,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // RESTAURAR TRABAJO ANULADO
   const restoreDetailingQuote = (id: string) => {
-    const currentQuote = detailingQuotes.find((q) => q.id === id);
+    const currentQuote = detailingQuotesRef.current.find((q) => q.id === id) || detailingQuotes.find((q) => q.id === id);
     if (!currentQuote) return;
 
     const nowIso = new Date().toISOString();
@@ -1309,6 +1413,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const restoredPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: false }));
+    setDetailingPayments((prev) => prev.map((p) => p.quote_id === id ? { ...p, is_voided: false } : p));
+    syncSupabase('detailing_payments', 'update', { is_voided: false }, 'quote_id', id);
 
     if (currentQuote.appointment_id) {
       setAppointments((prev) =>
@@ -1321,18 +1427,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       syncSupabase('appointments', 'update', { voided_at: null, voided_by: null, void_reason: null, status: 'Confirmado' }, 'id', currentQuote.appointment_id);
     }
 
-    // Si estaba entregado y cobrado, re-descontar stock y re-crear comisiones dinámicamente
-    if (currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
+    // Si estaba entregado, re-descontar stock y re-crear comisiones dinámicamente
+    if (currentQuote.status === 'Entregado' || currentQuote.status === 'Entregado y cobrado' || currentQuote.status === 'Trabajo Completado') {
       if (currentQuote.materials_consumed && currentQuote.materials_consumed.length > 0) {
+        const toDeduct: Record<string, number> = {};
         currentQuote.materials_consumed.forEach((c) => {
-          setStockItems((prev) =>
-            prev.map((s) => (s.id === c.stock_item_id ? { ...s, quantity: Math.max(0, s.quantity - c.quantity) } : s))
-          );
-          const target = stockItems.find((s) => s.id === c.stock_item_id);
-          if (target) {
-            syncSupabase('stock_items', 'update', { quantity: Math.max(0, target.quantity - c.quantity), updated_at: nowIso }, 'id', target.id);
-          }
+          toDeduct[c.stock_item_id] = (toDeduct[c.stock_item_id] || 0) + c.quantity;
         });
+        setStockItems((prev) =>
+          prev.map((s) => {
+            const deduct = toDeduct[s.id];
+            if (!deduct) return s;
+            const newQty = Math.max(0, s.quantity - deduct);
+            syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', s.id);
+            return { ...s, quantity: newQty };
+          })
+        );
       }
 
       const newComms = calculateCommissionsForQuote(currentQuote);
@@ -1378,7 +1488,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Solo los administradores pueden borrar definitivamente');
       return;
     }
-    const q = detailingQuotes.find((item) => item.id === id);
+    const q = detailingQuotesRef.current.find((item) => item.id === id) || detailingQuotes.find((item) => item.id === id);
+    if (q?.materials_consumed && q.materials_consumed.length > 0 && !q.is_voided) {
+      const toRestore: Record<string, number> = {};
+      q.materials_consumed.forEach((c) => {
+        toRestore[c.stock_item_id] = (toRestore[c.stock_item_id] || 0) + c.quantity;
+      });
+      const nowIso = new Date().toISOString();
+      setStockItems((prev) =>
+        prev.map((s) => {
+          const add = toRestore[s.id];
+          if (!add) return s;
+          const newQty = s.quantity + add;
+          syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', s.id);
+          return { ...s, quantity: newQty };
+        })
+      );
+    }
+
     setDetailingQuotes((prev) => prev.filter((item) => item.id !== id));
     if (q?.appointment_id) {
       setAppointments((prev) => prev.filter((a) => a.id !== q.appointment_id));
@@ -1389,6 +1516,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setDetailingReceipts((prev) => prev.filter((r) => r.quote_id !== id));
     syncSupabase('detailing_receipts', 'delete', undefined, 'quote_id', id);
+
+    setDetailingPayments((prev) => prev.filter((p) => p.quote_id !== id));
+    syncSupabase('detailing_payments', 'delete', undefined, 'quote_id', id);
 
     syncSupabase('detailing_quotes', 'delete', undefined, 'id', id);
     logActivity('cotizacion_detailing', id, 'archive', { permanent_deleted: true });
@@ -1404,14 +1534,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // GENERAR COMPROBANTE OFICIAL DE SERVICIO DETAILVLAK
-  const generateDetailingReceipt = (
+  const generateDetailingReceipt = async (
     quoteId: string,
     options?: { includePhotos?: boolean; version?: number }
-  ): DetailingReceipt | null => {
-    const quote = detailingQuotes.find((q) => q.id === quoteId);
+  ): Promise<DetailingReceipt | null> => {
+    const quote = detailingQuotesRef.current.find((q) => q.id === quoteId) || detailingQuotes.find((q) => q.id === quoteId);
     if (!quote) return null;
 
-    const receiptCfg = detailingConfig?.receipt_config || INITIAL_DETAILING_CONFIG.receipt_config!;
+    const currentCfg = detailingConfigRef.current || detailingConfig;
+    const receiptCfg = currentCfg?.receipt_config;
+
+    // Validación estricta de datos de empresa: no permitir generar si faltan
+    if (!receiptCfg?.company_rut || !receiptCfg?.company_trade_name || !receiptCfg?.company_address || !receiptCfg?.company_phone) {
+      console.warn('Completá los datos de la empresa en Configuración antes de emitir comprobantes');
+      return null;
+    }
+
     const nowIso = new Date().toISOString();
     const todayStr = getLocalDateString();
 
@@ -1420,43 +1558,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let version = options?.version || (existingReceipt ? existingReceipt.version + 1 : 1);
 
     if (!receiptNum) {
-      const nextNum = receiptCfg.next_number || 1;
-      receiptNum = `${receiptCfg.prefix || 'DV-'}${String(nextNum).padStart(6, '0')}`;
-
-      // Incrementar correlativo en la configuración
-      const updatedConfig: DetailingConfig = {
-        ...detailingConfig,
-        receipt_config: {
-          ...receiptCfg,
-          next_number: nextNum + 1
+      try {
+        const { data: numData, error: numErr } = await supabase.rpc('next_detailing_receipt_number');
+        if (!numErr && numData) {
+          receiptNum = numData;
         }
-      };
-      setDetailingConfig(updatedConfig);
-      syncSupabase('detailing_configs', 'update', { receipt_config: updatedConfig.receipt_config }, 'empresa_id', updatedConfig.empresa_id);
+      } catch (err) {
+        console.warn('Error fetching atomic receipt number:', err);
+      }
+      if (!receiptNum) {
+        const nextNum = receiptCfg.next_number || 1;
+        receiptNum = `${receiptCfg.prefix || 'DV-'}${String(nextNum).padStart(6, '0')}`;
+      }
     }
 
-    // Cuidados posteriores automáticos por servicio
-    const warranties = receiptCfg.service_care_warranties || {};
+    // Cuidados posteriores automáticos por servicio (desde campo care_text del tarifario)
     const careList: string[] = [];
     (quote.selected_services || []).forEach((s) => {
-      const sId = (s.serviceId || '').toLowerCase();
-      const sName = (s.serviceName || '').toLowerCase();
-      if (sId.includes('ceram') || sName.includes('cerám')) {
-        if (warranties['ceramico'] && !careList.includes(warranties['ceramico'])) {
-          careList.push(warranties['ceramico']);
-        }
-      } else if (sId.includes('puli') || sName.includes('pulid')) {
-        if (warranties['pulido'] && !careList.includes(warranties['pulido'])) {
-          careList.push(warranties['pulido']);
-        }
-      } else if (sId.includes('inter') || sName.includes('tapiz')) {
-        if (warranties['interior'] && !careList.includes(warranties['interior'])) {
-          careList.push(warranties['interior']);
-        }
+      const tariff = detailingTariffs.find((t) => t.id === s.serviceId);
+      if (tariff?.care_text && tariff.care_text.trim()) {
+        careList.push(tariff.care_text.trim());
       }
     });
-    if (careList.length === 0 && warranties['default']) {
-      careList.push(warranties['default']);
+    if (careList.length === 0 && receiptCfg.service_care_warranties?.default) {
+      careList.push(receiptCfg.service_care_warranties.default);
     }
 
     const totalPaid = (quote.payments || [])
@@ -1476,13 +1601,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       service_date: quote.appointment_date ? quote.appointment_date.split('T')[0] : todayStr,
       token: existingReceipt?.token || `tk_${crypto.randomUUID().replace(/-/g, '')}`,
 
-      company_trade_name: receiptCfg.company_trade_name || 'CARVLAK DetailVlak',
-      company_legal_name: receiptCfg.company_legal_name || 'CARVLAK GROUP S.A.S.',
-      company_rut: receiptCfg.company_rut || '219988770014',
-      company_address: receiptCfg.company_address || 'Av. Giannattasio & Calcagno, Shangrilá, Canelones',
-      company_phone: receiptCfg.company_phone || '+598 99 267 964',
-      company_instagram: receiptCfg.company_instagram || '@car.vlak',
-      company_logo_url: receiptCfg.company_logo_url || '/carvlak-logo-negro.png',
+      company_trade_name: receiptCfg.company_trade_name,
+      company_legal_name: receiptCfg.company_legal_name || receiptCfg.company_trade_name,
+      company_rut: receiptCfg.company_rut,
+      company_address: receiptCfg.company_address,
+      company_phone: receiptCfg.company_phone,
+      company_instagram: receiptCfg.company_instagram || '',
+      company_logo_url: receiptCfg.company_logo_url || '',
 
       client_id: quote.client_id,
       client_name: quote.client_name,
@@ -1503,7 +1628,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })),
       subtotal: quote.subtotal,
       discount_amount: quote.discount_amount || 0,
-      discount_label: quote.discount_type === 'none' ? undefined : quote.discount_type,
+      discount_label: getDiscountLabel(quote.discount_type, currentCfg?.discounts),
       surcharge_amount: quote.extreme_dirt_surcharge || 0,
       total_amount: quote.total_amount,
       deposit_amount: totalPaid,
@@ -1602,7 +1727,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logActivity('comision', commissionId, 'update', { action: 'manual_adjustment', newAmount, reason });
   };
 
-  // LIMPIEZA DE DATOS DE PRUEBA DE DETAILVLAK (SOLO ADMIN, CON RESPALDO Y PROTECCIÓN)
+  // LIMPIEZA DE DATOS DE PRUEBA DE DETAILVLAK (SOLO ADMIN, CON RESPALDO Y PROTECCIÓN SEGURA)
   const cleanDetailingTestData = async (
     selection: DetailingCleanSelection
   ): Promise<{ success: boolean; counts: Record<string, number> }> => {
@@ -1618,13 +1743,49 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       vehicles: 0
     };
 
+    const nowIso = new Date().toISOString();
+
+    // 0. Devolver stock descontado por los trabajos de prueba
+    if (selection.restore_stock !== false) {
+      const toRestore: Record<string, number> = {};
+      detailingQuotes.forEach((q) => {
+        if (q.materials_consumed && !q.is_voided) {
+          q.materials_consumed.forEach((c) => {
+            toRestore[c.stock_item_id] = (toRestore[c.stock_item_id] || 0) + c.quantity;
+          });
+        }
+      });
+      if (Object.keys(toRestore).length > 0) {
+        setStockItems((prev) =>
+          prev.map((s) => {
+            const add = toRestore[s.id];
+            if (!add) return s;
+            const newQty = s.quantity + add;
+            syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', s.id);
+            return { ...s, quantity: newQty };
+          })
+        );
+      }
+    }
+
+    // Reiniciar secuencia de comprobantes si fue marcado
+    if (selection.reset_receipt_seq) {
+      try {
+        await supabase.rpc('set_detailing_receipt_seq', { p_val: 1 });
+      } catch (e) {
+        console.warn('Error reiniciando secuencia de comprobantes:', e);
+      }
+    }
+
     // 1. Cotizaciones y turnos de Detailing
     if (selection.quotes) {
       counts.quotes = detailingQuotes.length;
       detailingQuotes.forEach((q) => {
         syncSupabase('detailing_quotes', 'delete', undefined, 'id', q.id);
+        syncSupabase('detailing_payments', 'delete', undefined, 'quote_id', q.id);
       });
       setDetailingQuotes([]);
+      setDetailingPayments([]);
 
       const detailingAppts = appointments.filter((a) => a.business === 'detailing');
       counts.appointments = detailingAppts.length;
@@ -1660,48 +1821,64 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setExpenses((prev) => prev.filter((e) => e.business !== 'detailing'));
     }
 
-    // 4. Clientes y vehículos EXCLUSIVOS de Detailing (nunca los vinculados a automotora o Carbusters)
+    // 4. Clientes y vehículos EXCLUSIVOS de Detailing (NUNCA vinculados a automotora o Carbusters)
     if (selection.only_detailing_clients_vehicles) {
-      const dealershipClientIds = new Set(dealershipInquiries.map((i) => i.client_id).filter(Boolean));
+      const detailingClientIds = new Set(detailingQuotes.map((q) => q.client_id).filter(Boolean));
+      const dealershipBuyerIds = new Set(dealershipVehicles.map((v) => v.buyer_client_id).filter(Boolean));
+      const dealershipInquiryIds = new Set(dealershipInquiries.map((i) => i.client_id).filter(Boolean));
       const inspectionClientIds = new Set(inspections.map((i) => i.client_id).filter(Boolean));
 
       const clientsToDelete = clients.filter(
-        (c) => !dealershipClientIds.has(c.id) && !inspectionClientIds.has(c.id)
+        (c) =>
+          detailingClientIds.has(c.id) &&
+          !dealershipBuyerIds.has(c.id) &&
+          !dealershipInquiryIds.has(c.id) &&
+          !inspectionClientIds.has(c.id)
       );
       counts.clients = clientsToDelete.length;
       clientsToDelete.forEach((c) => {
         syncSupabase('clients', 'delete', undefined, 'id', c.id);
       });
-      setClients((prev) => prev.filter((c) => dealershipClientIds.has(c.id) || inspectionClientIds.has(c.id)));
+      setClients((prev) => prev.filter((c) => !clientsToDelete.some((del) => del.id === c.id)));
 
-      const dealershipVehiclePlates = new Set(dealershipVehicles.map((v) => normalizePlate(v.plate)).filter(Boolean));
-      const inspectionPlates = new Set(inspections.map((i) => normalizePlate(i.vehicle_plate)).filter(Boolean));
+      const detailingVehicleIds = new Set(detailingQuotes.map((q) => q.vehicle_id).filter(Boolean));
+      const dealershipVehicleIds = new Set(dealershipVehicles.map((v) => v.id));
+      const inspectionVehicleIds = new Set(inspections.map((i) => i.vehicle_id).filter(Boolean));
 
       const vehiclesToDelete = vehicles.filter(
-        (v) => !dealershipVehiclePlates.has(normalizePlate(v.plate)) && !inspectionPlates.has(normalizePlate(v.plate))
+        (v) =>
+          detailingVehicleIds.has(v.id) &&
+          !dealershipVehicleIds.has(v.id) &&
+          !inspectionVehicleIds.has(v.id)
       );
       counts.vehicles = vehiclesToDelete.length;
       vehiclesToDelete.forEach((v) => {
         syncSupabase('vehicles', 'delete', undefined, 'id', v.id);
       });
-      setVehicles((prev) => prev.filter((v) => dealershipVehiclePlates.has(normalizePlate(v.plate)) || inspectionPlates.has(normalizePlate(v.plate))));
+      setVehicles((prev) => prev.filter((v) => !vehiclesToDelete.some((del) => del.id === v.id)));
     }
 
     logActivity('sistema', 'limpieza_detailing', 'archive', { selection, counts });
     return { success: true, counts };
   };
 
-
   // REGISTRO DE COBROS, CHECK-IN, CONTROL DE CALIDAD Y WHATSAPP LOG
   const recordDetailingPayment = (quoteId: string, paymentData: Omit<DetailingPayment, 'id'>) => {
-    const q = detailingQuotes.find((item) => item.id === quoteId);
+    const q = detailingQuotesRef.current.find((item) => item.id === quoteId) || detailingQuotes.find((item) => item.id === quoteId);
     if (!q) return;
+    const nowIso = new Date().toISOString();
     const newPayment: DetailingPayment = {
       ...paymentData,
-      id: `pay-${crypto.randomUUID()}`
+      id: `pay-${crypto.randomUUID()}`,
+      quote_id: quoteId,
+      created_by: profile?.id,
+      is_voided: false,
+      created_at: nowIso
     };
     const updatedPayments = [...(q.payments || []), newPayment];
     updateDetailingQuote(quoteId, { payments: updatedPayments });
+    setDetailingPayments((prev) => [newPayment, ...prev]);
+    syncSupabase('detailing_payments', 'insert', newPayment);
   };
 
   const recordDetailingCheckin = (quoteId: string, checkin: DetailingCheckinData) => {
@@ -1909,9 +2086,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteExpense = (id: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
-    logActivity('gasto', id, 'archive', { deleted: true });
-    syncSupabase('expenses', 'update', { is_archived: true }, 'id', id);
+    voidExpense(id, 'Eliminado');
   };
 
   // Comisiones
@@ -1978,7 +2153,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const newVehRes = addVehicle({
               brand: l.vehicle.split(' ')[0] || 'Vehículo',
               model: l.vehicle.split(' ').slice(1).join(' ') || 'Detailing',
-              plate: plateCandidate || `UY-${Math.floor(1000 + Math.random() * 9000)}`,
+              plate: plateCandidate || 'S/M',
               category: (l.category === 'pickup' ? 'Pick-up' : l.category === 'suv' ? 'SUV/Rural' : l.category === 'mediano' ? 'Mediano' : l.category === 'moto' ? 'Moto' : 'Chico'),
               ownership: 'client',
               client_id: clientId,
@@ -3523,6 +3698,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     deleteDetailingQuotePermanent,
     bulkVoidDetailingQuotes,
     bulkDeleteDetailingQuotes,
+    detailingPayments,
     recordDetailingPayment,
     recordDetailingCheckin,
     recordDetailingQualityControl,
@@ -3620,6 +3796,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     activeExpenses,
     expenses,
     detailingCashClosures,
+    detailingPayments,
     commissions,
     whatsappTemplates,
     activeInspections,

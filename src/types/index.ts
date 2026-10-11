@@ -162,25 +162,30 @@ export interface DetailingTariff {
   durationHours: number;
   prices: DetailingTariffPrices;
   isActive?: boolean;
+  care_text?: string; // Cuidados posteriores y recomendaciones por servicio
 }
 
 export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed' | string;
 
 export type DetailingQuoteStatus = 
+  | 'Presupuesto' 
+  | 'Agendado' 
+  | 'En taller' 
+  | 'Listo para retirar' 
+  | 'Entregado' 
+  | 'Cancelado' 
+  | 'No vino' 
+  | 'Anulado'
+  // Compatibilidad con registros previos:
   | 'Por Cotizar' 
   | 'Presupuesto Enviado' 
   | 'Turno Confirmado' 
-  | 'Agendado'
-  | 'Confirmado'
-  | 'Recibido'
-  | 'En proceso'
-  | 'Control de calidad'
-  | 'Listo para retirar'
-  | 'Entregado y cobrado'
+  | 'Confirmado' 
+  | 'Recibido' 
+  | 'En proceso' 
+  | 'Control de calidad' 
   | 'Trabajo Completado' 
-  | 'Cancelado'
-  | 'No vino'
-  | 'Anulado';
+  | 'Entregado y cobrado';
 
 export interface DetailingQuoteServiceItem {
   serviceId: string;
@@ -191,13 +196,17 @@ export interface DetailingQuoteServiceItem {
 
 export interface DetailingPayment {
   id: string;
+  quote_id?: string;
   date: string; // YYYY-MM-DD
   amount: number;
-  payment_method: string;
+  method?: string;
+  payment_method?: string; // compatibilidad
   type: 'seña' | 'saldo' | 'total';
   notes?: string;
   registered_by?: string;
+  created_by?: string;
   is_voided?: boolean;
+  created_at?: string;
 }
 
 export interface DetailingCheckinData {
@@ -259,6 +268,8 @@ export interface DetailingQuote {
   notes?: string;
   priority_zones?: string;
   status: DetailingQuoteStatus;
+  quote_sent_at?: string; // Fecha y hora en que se envió el presupuesto
+  confirmed_at?: string; // Fecha y hora de confirmación del cliente
   appointment_id?: string; // Id del turno creado en la Agenda
   appointment_date?: string; // ISO string de cuando se agendó
   work_bay_id?: string; // Box o puesto de trabajo asignado
@@ -274,6 +285,7 @@ export interface DetailingQuote {
   voided_at?: string;
   voided_by?: string;
   void_reason?: string;
+  is_voided?: boolean;
   photos_before?: string[];
   photos_after?: string[];
   is_archived?: boolean;
@@ -769,6 +781,7 @@ export interface DealershipVehicle {
   // Reserva y Venta
   reservation?: DealershipReservation;
   sale_record?: DealershipSaleRecord;
+  buyer_client_id?: string;
 
   // Historial de Cambios / Auditoría
   history?: DealershipVehicleHistoryEntry[];
@@ -1199,6 +1212,7 @@ export interface DetailingConfig {
   recurring_expenses: DetailingRecurringExpense[];
   monthly_budgets: Record<string, number>; // categoría -> monto UYU
   discounts_available: DetailingDiscountConfig[];
+  discounts?: DetailingDiscountConfig[];
   extreme_dirt_surcharge_amount: number;
   expense_categories: string[];
   payment_methods: string[];
@@ -1208,6 +1222,12 @@ export interface DetailingConfig {
   client_origins?: string[];
   commission_config?: DetailingCommissionGlobalConfig;
   receipt_config?: DetailingReceiptConfig;
+  require_checkin?: boolean; // Pedir check-in al ingresar: sí/no (por defecto false)
+  require_quality_control?: boolean; // Pedir control de calidad al terminar: sí/no (por defecto false)
+  auto_ingreso_enabled?: boolean; // Pasar a 'En taller' automáticamente a la hora del turno (por defecto true)
+  auto_ingreso_tolerance_minutes?: number; // Minutos de tolerancia para ingreso automático (por defecto 0)
+  no_show_window_hours?: number; // Horas para mostrar botón "No vino" (por defecto 3)
+  default_services?: string[]; // IDs de servicios preseleccionados por defecto (por defecto vacío [])
 }
 
 export interface DetailingCleanSelection {
@@ -1218,6 +1238,8 @@ export interface DetailingCleanSelection {
   expenses: boolean;
   stock_movements: boolean;
   only_detailing_clients_vehicles: boolean;
+  reset_receipt_seq?: boolean;
+  restore_stock?: boolean;
 }
 
 export const isActiveJob = (job?: { voided_at?: string | null; is_voided?: boolean; status?: string; is_archived?: boolean } | null): boolean => {
