@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import { Shield, ArrowRight, Lock, Mail } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -57,12 +58,12 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Acceso rápido por empleado (Modo Demo / Equipo - Solo en Desarrollo) */}
-        {import.meta.env.DEV && (
+        {/* Acceso rápido por empleado */}
+        {(!isSupabaseConfigured || import.meta.env.DEV) && (
           <>
             <div className="space-y-2">
               <div className="text-[11px] font-semibold text-[#6B6B6B]">
-                Ingreso rápido de equipo (Solo Desarrollo)
+                Ingreso rápido de equipo
               </div>
               <div className="grid grid-cols-1 gap-2">
                 {availableProfiles.map((p) => (

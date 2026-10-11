@@ -71,7 +71,7 @@ import {
   INITIAL_DETAILING_CONFIG
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense } from '../lib/formatters';
-import { supabase, isSupabaseConfigured, isDemoModeAllowed } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
 
@@ -260,55 +260,36 @@ const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) 
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, availableProfiles } = useAuth();
-  const isLocalOrDemo = Boolean(import.meta.env.DEV || isDemoModeAllowed());
 
-  // Estados con carga inicial desde localStorage o seed (en DEV o modo demo)
+  // Estados con carga inicial desde localStorage o seed
   const [clients, setClients] = useState<Client[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_clients');
-      return s ? JSON.parse(s) : INITIAL_CLIENTS;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_clients');
+    return s ? JSON.parse(s) : INITIAL_CLIENTS;
   });
 
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_vehicles');
-      return s ? JSON.parse(s) : INITIAL_VEHICLES;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_vehicles');
+    return s ? JSON.parse(s) : INITIAL_VEHICLES;
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_appointments');
-      return s ? JSON.parse(s) : INITIAL_APPOINTMENTS;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_appointments');
+    return s ? JSON.parse(s) : INITIAL_APPOINTMENTS;
   });
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_tasks');
-      return s ? JSON.parse(s) : INITIAL_TASKS;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_tasks');
+    return s ? JSON.parse(s) : INITIAL_TASKS;
   });
 
   const [vehicleHistory, setVehicleHistory] = useState<VehicleHistoryEvent[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_vehicle_history');
-      return s ? JSON.parse(s) : INITIAL_VEHICLE_HISTORY;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_vehicle_history');
+    return s ? JSON.parse(s) : INITIAL_VEHICLE_HISTORY;
   });
 
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_activity_logs');
-      return s ? JSON.parse(s) : INITIAL_ACTIVITY_LOGS;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_activity_logs');
+    return s ? JSON.parse(s) : INITIAL_ACTIVITY_LOGS;
   });
 
   // FASE 2: Estados Detailing, Stock, Gastos, Comisiones y WhatsApp
@@ -318,35 +299,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [detailingQuotes, setDetailingQuotes] = useState<DetailingQuote[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_detailing_quotes');
-      return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_detailing_quotes');
+    return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
   });
 
   const [stockItems, setStockItems] = useState<StockItem[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_stock_items');
-      return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_stock_items');
+    return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_expenses');
-      return s ? JSON.parse(s) : INITIAL_EXPENSES;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_expenses');
+    return s ? JSON.parse(s) : INITIAL_EXPENSES;
   });
 
   const [commissions, setCommissions] = useState<CommissionRecord[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_commissions');
-      return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_commissions');
+    return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
   });
 
   const [whatsappTemplates, setWhatsappTemplates] = useState<WhatsAppTemplate[]>(() => {
@@ -395,13 +364,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // FASE 3: Estados Inspecciones Vehiculares (Peritaje Carbusters)
   const [inspections, setInspections] = useState<VehicleInspection[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_inspections');
-      const raw: VehicleInspection[] = s ? JSON.parse(s) : INITIAL_INSPECTIONS;
-      // Las inspecciones internas que ya existen no se borran: marcarlas como archivadas y guardarlas para migrarlas después
-      return raw.map((i) => (i.type === 'interna' && !i.is_archived ? { ...i, is_archived: true } : i));
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_inspections');
+    const raw: VehicleInspection[] = s ? JSON.parse(s) : INITIAL_INSPECTIONS;
+    // Las inspecciones internas que ya existen no se borran: marcarlas como archivadas y guardarlas para migrarlas después
+    return raw.map((i) => (i.type === 'interna' && !i.is_archived ? { ...i, is_archived: true } : i));
   });
 
   const [inspectionTariffs, setInspectionTariffs] = useState<InspectionTariffConfig>(() => {
@@ -456,14 +422,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const [dealershipInquiries, setDealershipInquiries] = useState<DealershipInquiry[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_dealership_inquiries');
-      return s ? JSON.parse(s) : INITIAL_DEALERSHIP_INQUIRIES;
-    }
-    return [];
+    const s = localStorage.getItem('carvlak_dealership_inquiries');
+    return s ? JSON.parse(s) : INITIAL_DEALERSHIP_INQUIRIES;
   });
 
-  const [dealershipConfig, setDealershipConfig] = useState<DealershipConfig>(() => {
+  const [dealershipConfig, setDealershipConfig] = useState<DetailingConfig | any>(() => {
     const s = localStorage.getItem('carvlak_dealership_config');
     if (s) {
       try {
@@ -478,16 +441,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // FASE 5: Estados Redes Sociales & Marketing Studio
   const [socialMediaPosts, setSocialMediaPosts] = useState<SocialMediaPostRecord[]>(() => {
-    if (isLocalOrDemo) {
-      const s = localStorage.getItem('carvlak_social_media_posts');
-      if (s) {
-        try {
-          return JSON.parse(s);
-        } catch (e) {}
-      }
-      return INITIAL_SOCIAL_MEDIA_POSTS;
+    const s = localStorage.getItem('carvlak_social_media_posts');
+    if (s) {
+      try {
+        return JSON.parse(s);
+      } catch (e) {}
     }
-    return [];
+    return INITIAL_SOCIAL_MEDIA_POSTS;
   });
 
   const [socialMediaConfig, setSocialMediaConfig] = useState<SocialMediaConfig>(() => {

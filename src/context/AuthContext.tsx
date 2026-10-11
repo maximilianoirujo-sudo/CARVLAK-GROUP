@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Profile, Role } from '../types';
 import { INITIAL_PROFILES } from '../lib/mockData';
-import { supabase, isSupabaseConfigured, isDemoModeAllowed } from '../lib/supabase';
-import { SupabaseSetupScreen } from '../components/common/SupabaseSetupScreen';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface AuthContextType {
   profile: Profile | null;
@@ -21,49 +20,38 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isDemo = Boolean(!isSupabaseConfigured || isDemoModeAllowed());
+  const isDemo = !isSupabaseConfigured;
 
-  // En producción sin Supabase configurado y sin modo demo activado, mostrar pantalla de configuración
-  if (!import.meta.env.DEV && !isSupabaseConfigured && !isDemoModeAllowed()) {
-    return <SupabaseSetupScreen />;
-  }
-
-  // En producción, los perfiles se leen de Supabase a menos que esté en DEV o modo demo
+  // Los perfiles se leen de localStorage o mockData por defecto, y si Supabase está conectado se sincronizan de la nube
   const [profiles, setProfiles] = useState<Profile[]>(() => {
-    if (import.meta.env.DEV || isDemoModeAllowed()) {
-      const saved = localStorage.getItem('carvlak_profiles');
-      return saved ? JSON.parse(saved) : INITIAL_PROFILES;
-    }
-    return [];
+    const saved = localStorage.getItem('carvlak_profiles');
+    return saved ? JSON.parse(saved) : INITIAL_PROFILES;
   });
 
   const [profile, setProfile] = useState<Profile | null>(() => {
-    if (import.meta.env.DEV || isDemoModeAllowed()) {
-      const savedId = localStorage.getItem('carvlak_active_user_id');
-      const found = profiles.find((p) => p.id === savedId);
-      return found || profiles[0] || null;
-    }
-    return null;
+    const savedId = localStorage.getItem('carvlak_active_user_id');
+    const found = profiles.find((p) => p.id === savedId);
+    return found || profiles[0] || INITIAL_PROFILES[0];
   });
 
-  const [loading, setLoading] = useState<boolean>(Boolean(isSupabaseConfigured && !isDemoModeAllowed() && !import.meta.env.DEV));
+  const [loading, setLoading] = useState<boolean>(false);
   const isDemoMode = isDemo;
 
-  // Persistir en localStorage en desarrollo o modo demo
+  // Persistir en localStorage
   useEffect(() => {
-    if (import.meta.env.DEV || isDemoModeAllowed()) {
+    try {
       localStorage.setItem('carvlak_profiles', JSON.stringify(profiles));
-    }
+    } catch {}
   }, [profiles]);
 
   useEffect(() => {
-    if (import.meta.env.DEV || isDemoModeAllowed()) {
+    try {
       if (profile) {
         localStorage.setItem('carvlak_active_user_id', profile.id);
       } else {
         localStorage.removeItem('carvlak_active_user_id');
       }
-    }
+    } catch {}
   }, [profile]);
 
   const fetchProfiles = async () => {
@@ -74,11 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .order('full_name', { ascending: true });
 
-      if (data && !error) {
+      if (data && !error && data.length > 0) {
         setProfiles(data as Profile[]);
       }
     } catch (e) {
-      console.error('Error al cargar perfiles desde Supabase:', e);
+      console.warn('Error al cargar perfiles desde Supabase:', e);
     }
   };
 
@@ -96,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchProfiles();
       }
     } catch (e) {
-      console.error('Error fetching profile from Supabase:', e);
+      console.warn('Error fetching profile from Supabase:', e);
     } finally {
       setLoading(false);
     }
@@ -118,10 +106,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           fetchSupabaseProfile(session.user.id);
         } else {
-          setProfile(null);
-          if (!import.meta.env.DEV && !isDemoModeAllowed()) {
-            setProfiles([]);
-          }
           setLoading(false);
         }
       });
@@ -131,31 +115,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password?: string): Promise<{ error?: string }> => {
-    // Si Supabase está configurado y hay contraseña, autenticación real
     if (isSupabaseConfigured && supabase && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       return {};
     }
 
-    // Modo Demo / Fallback local para desarrollo o prueba
-    if (import.meta.env.DEV || isDemoModeAllowed()) {
-      const found = profiles.find((p) => p.email?.toLowerCase() === email.toLowerCase());
-      if (found) {
-        if (!found.is_active) {
-          return { error: 'Este usuario se encuentra inactivo. Contacte al administrador.' };
-        }
-        setProfile(found);
-        return {};
+    const found = profiles.find((p) => p.email?.toLowerCase() === email.toLowerCase());
+    if (found) {
+      if (!found.is_active) {
+        return { error: 'Este usuario se encuentra inactivo. Contacte al administrador.' };
       }
-      return { error: 'Usuario no encontrado en los perfiles de demostración.' };
+      setProfile(found);
+      return {};
     }
 
-    if (!password) {
-      return { error: 'Debe ingresar una contraseña.' };
-    }
-
-    return { error: 'Autenticación con Supabase requerida en este entorno.' };
+    return { error: 'Usuario no encontrado en el sistema.' };
   };
 
   const logout = async () => {
@@ -163,16 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     }
     setProfile(null);
-    if (!import.meta.env.DEV && !isDemoModeAllowed()) {
-      setProfiles([]);
-    }
   };
 
   const switchProfile = (profileId: string) => {
-    if (!import.meta.env.DEV && !isDemoModeAllowed()) {
-      console.warn('El cambio directo de perfil está deshabilitado en producción con Supabase.');
-      return;
-    }
     const found = profiles.find((p) => p.id === profileId);
     if (found) {
       setProfile(found);
@@ -199,10 +167,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .eq('id', profileId);
 
         if (error) {
-          console.error('Error al persistir comisiones de perfil en Supabase:', error.message);
+          console.warn('Error al persistir comisiones de perfil en Supabase:', error.message);
         }
       } catch (err) {
-        console.error('Fallo en updateProfileCommissions:', err);
+        console.warn('Fallo en updateProfileCommissions:', err);
       }
     }
   };
@@ -222,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { error } = await supabase.from('profiles').upsert(createdProfile);
         if (error) {
-          console.error('Error insert profile Supabase:', error.message);
+          console.warn('Error insert profile Supabase:', error.message);
           return { error: error.message };
         }
       } catch (err: any) {

@@ -74,11 +74,19 @@ export const DealershipPublicCatalogPage: React.FC<DealershipPublicCatalogPagePr
         }
       }
 
-      // Fallback local solo en DEV
-      if (import.meta.env.DEV && isMounted) {
-        setPublishedVehicles(
-          INITIAL_DEALERSHIP_VEHICLES.filter((v) => v.status === 'publicado' && !v.is_archived)
-        );
+      // Fallback cuando Supabase no esté configurado o no tenga datos
+      if (isMounted) {
+        try {
+          const stored = localStorage.getItem('carvlak_dealership_vehicles_v3');
+          const list = stored ? JSON.parse(stored) : INITIAL_DEALERSHIP_VEHICLES;
+          setPublishedVehicles(
+            list.filter((v: DealershipVehicle) => v.status === 'publicado' && !v.is_archived)
+          );
+        } catch {
+          setPublishedVehicles(
+            INITIAL_DEALERSHIP_VEHICLES.filter((v) => v.status === 'publicado' && !v.is_archived)
+          );
+        }
       }
     }
 

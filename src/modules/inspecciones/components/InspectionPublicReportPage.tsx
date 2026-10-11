@@ -39,11 +39,16 @@ export const InspectionPublicReportPage: React.FC<InspectionPublicReportPageProp
         }
       }
 
-      // Fallback para modo local / DEV
-      if (import.meta.env.DEV) {
-        const found = INITIAL_INSPECTIONS.find((i) => i.token === token && i.status === 'Completada');
-        if (found && isMounted) {
-          setInspection(found);
+      // Fallback para cuando Supabase no esté configurado o no devuelva informe
+      if (isMounted) {
+        try {
+          const stored = localStorage.getItem('carvlak_inspections');
+          const list: VehicleInspection[] = stored ? JSON.parse(stored) : INITIAL_INSPECTIONS;
+          const found = list.find((i) => i.token === token && i.status === 'Completada');
+          if (found) setInspection(found);
+        } catch {
+          const found = INITIAL_INSPECTIONS.find((i) => i.token === token && i.status === 'Completada');
+          if (found) setInspection(found);
         }
       }
 

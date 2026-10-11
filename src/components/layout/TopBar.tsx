@@ -11,6 +11,7 @@ import {
   Share2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import { isEncargado } from '../../lib/permissions';
 
 interface TopBarProps {
@@ -72,10 +73,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenQuickSearch, onSelectTab }
           {/* Menú de Roles & Cerrar Sesión */}
           {showRoleSwitcher && (
             <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-[#E5E5E3] shadow-lg p-2 z-50 animate-fade-in">
-              {import.meta.env.DEV && (
+              {(!isSupabaseConfigured || import.meta.env.DEV) && (
                 <>
                   <div className="px-3 py-1.5 border-b border-[#E5E5E3] text-[11px] font-semibold text-[#6B6B6B] tracking-wider">
-                    Simular empleado / rol (Solo Dev)
+                    Cambiar empleado / rol
                   </div>
                   <div className="py-1 space-y-1">
                     {availableProfiles.map((p) => {
