@@ -5,26 +5,21 @@ import {
   Car,
   User,
   Phone,
-  Clock,
   DollarSign,
   Calendar,
-  AlertTriangle,
-  Camera,
   Plus,
-  MessageCircle,
-  Save,
-  CheckCircle2,
-  Search,
+  ChevronDown,
+  ChevronUp,
+  Share2,
   Check,
-  ChevronRight
+  Search,
+  AlertCircle
 } from 'lucide-react';
 import {
   DetailingQuote,
-  DetailingQuoteStatus,
-  DetailingDiscountType,
   VehicleCategory,
   ClientOrigin,
-  DetailingWorkBay
+  DetailingPayment
 } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -32,14 +27,10 @@ import { useToast } from '../../../context/ToastContext';
 import {
   formatCurrency,
   normalizePlate,
-  combineLocalDateAndTime,
-  getLocalDateString,
-  addMinutesToIso,
-  timeStringToMinutes,
-  minutesToTimeString,
-  getDayOfWeekKey
+  getLocalDateString
 } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
+import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
 
 interface DetailingQuoterModalProps {
   isOpen: boolean;
@@ -47,8 +38,6 @@ interface DetailingQuoterModalProps {
   quoteToEdit?: DetailingQuote | null;
   onOpenWhatsApp?: (quote: DetailingQuote) => void;
   initialDate?: string;
-  initialTime?: string;
-  initialBayId?: string;
 }
 
 export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
@@ -56,172 +45,168 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   onClose,
   quoteToEdit,
   onOpenWhatsApp,
-  initialDate,
-  initialTime,
-  initialBayId
+  initialDate
 }) => {
   const {
     clients,
     vehicles,
     detailingTariffs,
-    appointments,
     addDetailingQuote,
     updateDetailingQuote,
-    updateDetailingQuoteStatus,
-    updateAppointment,
-    addAppointment,
     addClient,
     addVehicle,
-    detailingConfig
+    detailingConfig,
+    generateDetailingReceipt,
+    recordDetailingPayment
   } = useData();
 
   const { profile, availableProfiles } = useAuth();
   const { showToast } = useToast();
 
-  // Escuchar tecla Escape para cerrar
+  const detailerProfiles = useMemo(() => {
+    return availableProfiles.filter(
+      (p) => p.is_active && p.businesses?.includes('detailing')
+    );
+  }, [availableProfiles]);
+
+  const defaultProfileId = useMemo(() => {
+    const romina = detailerProfiles.find((p) => p.full_name.toLowerCase().includes('romina'));
+    if (romina) return romina.id;
+    return profile?.id || detailerProfiles[0]?.id || '';
+  }, [detailerProfiles, profile]);
+
+  // Client State
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
+
+  // Vehicle State
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+  const [isCreatingVehicle, setIsCreatingVehicle] = useState(false);
+  const [newVehicleBrand, setNewVehicleBrand] = useState('');
+  const [newVehicleModel, setNewVehicleModel] = useState('');
+  const [newVehiclePlate, setNewVehiclePlate] = useState('');
+  const [newVehicleCategory, setNewVehicleCategory] = useState<VehicleCategory>('Mediano');
+
+  // Work Date State
+  const todayUY = getLocalDateString();
+  const tomorrowUY = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return getLocalDateString(d);
+  }, []);
+  const [workDate, setWorkDate] = useState<string>(todayUY);
+
+  // Services State (NO PRESELECTED SERVICES)
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+
+  // Origin State (MANDATORY & NO PRESELECTED)
+  const [origin, setOrigin] = useState<string>('');
+
+  // More Options State
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [discountType, setDiscountType] = useState<string>('none');
+  const [customDiscountAmount, setCustomDiscountAmount] = useState<number>(0);
+  const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
+  const [assignedTo, setAssignedTo] = useState<string>('');
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+
+  // Payment State ("¿Ya cobraste?")
+  const [paymentOption, setPaymentOption] = useState<'none' | 'full' | 'partial'>('none');
+  const [partialAmount, setPartialAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<string>('Efectivo');
+  const [isSplitPayment, setIsSplitPayment] = useState(false);
+  const [splitMethod2, setSplitMethod2] = useState<string>('Transferencia');
+  const [splitAmount1, setSplitAmount1] = useState<number>(0);
+  const [splitAmount2, setSplitAmount2] = useState<number>(0);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Escape listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    if (isOpen) window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Estados de Formulario - Cliente
-  const [clientSearchTerm, setClientSearchTerm] = useState('');
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
-  const [isNewClientMode, setIsNewClientMode] = useState(false);
-  const [newClientName, setNewClientName] = useState('');
-  const [newClientPhone, setNewClientPhone] = useState('');
-  const [newClientNotes, setNewClientNotes] = useState('');
-
-  // Estados de Formulario - Vehículo
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
-  const [isNewVehicleMode, setIsNewVehicleMode] = useState(false);
-  const [newVehicleBrand, setNewVehicleBrand] = useState('');
-  const [newVehicleModel, setNewVehicleModel] = useState('');
-  const [newVehiclePlate, setNewVehiclePlate] = useState('');
-  const [newVehicleCategory, setNewVehicleCategory] = useState<VehicleCategory>('Chico');
-
-  // Selección de servicios y montos
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-  const [customServices, setCustomServices] = useState<{ id: string; name: string; price: number; durationHours: number }[]>([]);
-  const [isAddingCustomService, setIsAddingCustomService] = useState(false);
-  const [customName, setCustomName] = useState('');
-  const [customPrice, setCustomPrice] = useState<number>(1500);
-  const [customHours, setCustomHours] = useState<number>(2);
-
-  const [discountType, setDiscountType] = useState<DetailingDiscountType>('none');
-  const [fixedDiscountAmount, setFixedDiscountAmount] = useState<number>(0);
-  const [hasExtremeDirt, setHasExtremeDirt] = useState(false);
-  const [extremeDirtSurcharge, setExtremeDirtSurcharge] = useState<number>(1500);
-
-  // Duración en minutos (con ajuste rápido)
-  const [durationMinutes, setDurationMinutes] = useState<number>(180);
-
-  // Metadatos
-  const defaultProfileId = profile?.id || availableProfiles[0]?.id || '';
-  const clientOrigins = detailingConfig?.client_origins || [
-    'Presencial',
-    'WhatsApp',
-    'Instagram orgánico',
-    'Anuncios pagos',
-    'Referido',
-    'Formulario web',
-    'Llamada'
-  ];
-  const [origin, setOrigin] = useState<string>('WhatsApp');
-  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
-  const [assignedTo, setAssignedTo] = useState<string>(defaultProfileId);
-  const [notes, setNotes] = useState('');
-  const [priorityZones, setPriorityZones] = useState('');
-
-  // Agenda y Turno
-  const [scheduleActive, setScheduleActive] = useState(false);
-  const [appointmentDate, setAppointmentDate] = useState<string>('');
-  const [workBayId, setWorkBayId] = useState<string>('box-1');
-
-  // Fotos
-  const [photosBefore, setPhotosBefore] = useState<string[]>([]);
-  const [photosAfter, setPhotosAfter] = useState<string[]>([]);
-
-  // Cargar datos al abrir o editar
+  // Init form
   useEffect(() => {
     if (quoteToEdit) {
       setSelectedClientId(quoteToEdit.client_id || '');
       setSelectedVehicleId(quoteToEdit.vehicle_id || '');
+      setWorkDate(quoteToEdit.work_date || todayUY);
       setSelectedServiceIds(quoteToEdit.selected_services.map((s) => s.serviceId));
+      setOrigin(quoteToEdit.origin || '');
       setDiscountType(quoteToEdit.discount_type || 'none');
-      setFixedDiscountAmount(quoteToEdit.discount_amount || 0);
-      setHasExtremeDirt((quoteToEdit.extreme_dirt_surcharge || 0) > 0);
-      setExtremeDirtSurcharge(quoteToEdit.extreme_dirt_surcharge || 1500);
-      setOrigin(quoteToEdit.origin || 'WhatsApp');
-      setWorkBayId(quoteToEdit.work_bay_id || initialBayId || 'box-1');
+      setCustomDiscountAmount(quoteToEdit.discount_amount || 0);
+      setSurchargeAmount(quoteToEdit.extreme_dirt_surcharge || 0);
+      setAssignedTo(quoteToEdit.assigned_to || defaultProfileId);
+      setNotes(quoteToEdit.notes || '');
 
       if (quoteToEdit.commission_participants && quoteToEdit.commission_participants.length > 0) {
         setSelectedParticipantIds(quoteToEdit.commission_participants.map((p) => p.employee_id));
       } else {
         const defaults = detailingConfig?.commission_config?.default_participants || [];
-        setSelectedParticipantIds(defaults.length > 0 ? defaults : (quoteToEdit.assigned_to ? [quoteToEdit.assigned_to] : []));
+        setSelectedParticipantIds(defaults.length > 0 ? defaults : [defaultProfileId]);
       }
 
-      setAssignedTo(quoteToEdit.assigned_to || defaultProfileId);
-      setAppointmentDate(quoteToEdit.appointment_date || '');
-      setScheduleActive(!!quoteToEdit.appointment_date || quoteToEdit.status === 'Agendado' || quoteToEdit.status === 'Turno Confirmado');
-      setNotes(quoteToEdit.notes || '');
-      setPriorityZones(quoteToEdit.priority_zones || '');
-      setPhotosBefore(quoteToEdit.photos_before || []);
-      setPhotosAfter(quoteToEdit.photos_after || []);
-      setIsNewClientMode(false);
-      setIsNewVehicleMode(false);
+      setPaymentOption('none');
+      setIsCreatingClient(false);
+      setIsCreatingVehicle(false);
+      setShowMoreOptions(false);
     } else {
       setSelectedClientId('');
       setSelectedVehicleId('');
-      setSelectedServiceIds(detailingConfig?.default_services && detailingConfig.default_services.length > 0 ? detailingConfig.default_services : []);
-      setCustomServices([]);
+      setWorkDate(initialDate || todayUY);
+      setSelectedServiceIds([]); // No preselected
+      setOrigin(''); // Mandatory & no preselected
       setDiscountType('none');
-      setFixedDiscountAmount(0);
-      setHasExtremeDirt(false);
-      setExtremeDirtSurcharge(1500);
-      setOrigin('');
-      setWorkBayId(initialBayId || 'box-1');
-
-      const defaults = detailingConfig?.commission_config?.default_participants || [];
-      setSelectedParticipantIds(defaults.length > 0 ? defaults : (defaultProfileId ? [defaultProfileId] : []));
+      setCustomDiscountAmount(0);
+      setSurchargeAmount(0);
       setAssignedTo(defaultProfileId);
 
-      const defaultTimePart = initialTime || '09:00';
-      const defaultDate = initialDate 
-        ? `${initialDate}T${defaultTimePart}` 
-        : `${getLocalDateString(new Date(Date.now() + 86400000))}T09:00`;
-      setAppointmentDate(defaultDate);
-      setScheduleActive(!!(initialDate || initialBayId));
+      const defaults = detailingConfig?.commission_config?.default_participants || [];
+      setSelectedParticipantIds(defaults.length > 0 ? defaults : [defaultProfileId]);
       setNotes('');
-      setPriorityZones('');
-      setPhotosBefore([]);
-      setPhotosAfter([]);
-      setIsNewClientMode(false);
-      setIsNewVehicleMode(false);
-    }
-  }, [quoteToEdit, profile, isOpen, detailingConfig, initialDate, initialTime, initialBayId]);
 
-  // Lista de vehículos del cliente seleccionado
+      const lastMethod = localStorage.getItem('carvlak_last_detailing_payment_method') || 'Efectivo';
+      setPaymentMethod(lastMethod);
+      setPaymentOption('none');
+      setIsSplitPayment(false);
+      setIsCreatingClient(false);
+      setIsCreatingVehicle(false);
+      setShowMoreOptions(false);
+    }
+  }, [quoteToEdit, isOpen, initialDate, defaultProfileId, detailingConfig]);
+
+  // Client's vehicles
   const clientVehicles = useMemo(() => {
     if (!selectedClientId) return [];
     return vehicles.filter((v) => v.client_id === selectedClientId && !v.is_archived);
   }, [vehicles, selectedClientId]);
 
-  // Categoría activa de vehículo
-  const activeCategory: VehicleCategory = useMemo(() => {
-    const veh = vehicles.find((v) => v.id === selectedVehicleId);
-    if (veh) return veh.category;
-    if (isNewVehicleMode) return newVehicleCategory;
-    return 'Mediano';
-  }, [vehicles, selectedVehicleId, isNewVehicleMode, newVehicleCategory]);
+  // Preselect client's vehicle if available
+  useEffect(() => {
+    if (selectedClientId && !selectedVehicleId && !isCreatingVehicle) {
+      if (clientVehicles.length > 0) {
+        setSelectedVehicleId(clientVehicles[0].id);
+      }
+    }
+  }, [selectedClientId, selectedVehicleId, clientVehicles, isCreatingVehicle]);
 
-  const categoryKey = useMemo(() => {
+  // Active Vehicle Category
+  const activeCategory: VehicleCategory = useMemo(() => {
+    if (isCreatingVehicle) return newVehicleCategory;
+    const veh = vehicles.find((v) => v.id === selectedVehicleId);
+    return veh?.category || 'Mediano';
+  }, [vehicles, selectedVehicleId, isCreatingVehicle, newVehicleCategory]);
+
+  const categoryPriceKey = useMemo(() => {
     switch (activeCategory) {
       case 'Mediano': return 'mediano';
       case 'SUV/Rural': return 'suv';
@@ -231,918 +216,1001 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     }
   }, [activeCategory]);
 
-  // Cálculo de duración sugerida por servicios
-  useEffect(() => {
-    let totalMins = 0;
-    selectedServiceIds.forEach((sid) => {
-      const tariff = detailingTariffs.find((t) => t.id === sid);
-      if (tariff?.durationHours) {
-        totalMins += Math.round(tariff.durationHours * 60);
-      }
-    });
-    customServices.forEach((cs) => {
-      totalMins += Math.round((cs.durationHours || 2) * 60);
-    });
-    if (totalMins > 0) {
-      setDurationMinutes(totalMins);
-    }
-  }, [selectedServiceIds, customServices, detailingTariffs]);
-
-  // Cálculo en tiempo real de Subtotal, Descuentos y Total
-  const { subtotal, discountAmount, calculatedTotal, selectedServiceObjects } = useMemo(() => {
-    const serviceObjs: { serviceId: string; serviceName: string; price: number; description?: string }[] = [];
-
-    selectedServiceIds.forEach((id) => {
-      const tariff = detailingTariffs.find((t) => t.id === id);
-      const price = tariff ? tariff.prices[categoryKey] || 0 : 0;
-      serviceObjs.push({
-        serviceId: id,
-        serviceName: tariff?.name || tariff?.shortName || id,
-        price,
-        description: tariff?.description
-      });
-    });
-
-    customServices.forEach((cs) => {
-      serviceObjs.push({
-        serviceId: cs.id,
-        serviceName: cs.name,
-        price: cs.price
-      });
-    });
-
-    const sub = serviceObjs.reduce((acc, curr) => acc + curr.price, 0);
-
-    let disc = 0;
-    if (discountType === 'combo_10') {
-      disc = Math.round(sub * 0.1);
-    } else if (discountType === 'special_15') {
-      disc = Math.round(sub * 0.15);
-    } else if (discountType === 'fixed') {
-      disc = fixedDiscountAmount;
-    }
-
-    const surcharge = hasExtremeDirt ? extremeDirtSurcharge : 0;
-    const total = Math.max(0, sub - disc + surcharge);
-
-    return {
-      subtotal: sub,
-      discountAmount: disc,
-      calculatedTotal: total,
-      selectedServiceObjects: serviceObjs
-    };
-  }, [selectedServiceIds, customServices, detailingTariffs, categoryKey, discountType, fixedDiscountAmount, hasExtremeDirt, extremeDirtSurcharge]);
-
-  // Filtro de clientes para el buscador inline
+  // Client search results
   const filteredClients = useMemo(() => {
     if (!clientSearchTerm.trim()) return [];
     const term = clientSearchTerm.toLowerCase();
-    return clients
-      .filter((c) => !c.is_archived && (c.full_name.toLowerCase().includes(term) || (c.phone && c.phone.includes(term))))
-      .slice(0, 5);
-  }, [clients, clientSearchTerm]);
-
-  const selectedClient = useMemo(() => {
-    return clients.find((c) => c.id === selectedClientId);
-  }, [clients, selectedClientId]);
-
-  // Próximos 3 huecos libres disponibles
-  const suggestedSlots = useMemo(() => {
-    if (!isOpen) return [];
-    const slots: { label: string; dateIso: string }[] = [];
-    const today = new Date();
-
-    for (let dayOffset = 0; dayOffset <= 4 && slots.length < 3; dayOffset++) {
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + dayOffset);
-      const dateStr = getLocalDateString(targetDate);
-      const dayKey = getDayOfWeekKey(dateStr);
-      const schedule = (detailingConfig?.schedule?.[dayKey] as any);
-
-      if (!schedule || !schedule.is_open) continue;
-
-      const openMin = timeStringToMinutes(schedule.open_time || '08:30');
-      const closeMin = timeStringToMinutes(schedule.close_time || '18:30');
-      const dayAppts = appointments.filter(
-        (a) => a.business === 'detailing' && !a.voided_at && a.status !== 'Cancelado' && a.start_time.startsWith(dateStr)
+    return clients.filter((c) => {
+      const matchName = c.full_name.toLowerCase().includes(term);
+      const matchPhone = (c.phone || '').includes(term);
+      const matchVehPlate = vehicles.some(
+        (v) => v.client_id === c.id && v.plate.toLowerCase().includes(term)
       );
+      return matchName || matchPhone || matchVehPlate;
+    }).slice(0, 5);
+  }, [clients, vehicles, clientSearchTerm]);
 
-      // Evaluar horas típicas (09:00, 13:00, 15:00)
-      const testTimes = ['09:00', '13:30', '15:00'];
-      for (const timeStr of testTimes) {
-        if (slots.length >= 3) break;
-        const startMin = timeStringToMinutes(timeStr);
-        if (startMin < openMin || startMin + durationMinutes > closeMin) continue;
+  // Calculate pricing
+  const subtotal = useMemo(() => {
+    return selectedServiceIds.reduce((sum, sid) => {
+      const tariff = detailingTariffs.find((t) => t.id === sid);
+      if (!tariff) return sum;
+      const price = tariff.prices[categoryPriceKey] || tariff.prices.chico || 0;
+      return sum + price;
+    }, 0);
+  }, [selectedServiceIds, detailingTariffs, categoryPriceKey]);
 
-        // Verificar si algún box está disponible
-        const availableBays = (detailingConfig?.work_bays || [{ id: 'box-1', name: 'Box 1', is_active: true }])
-          .filter((b) => b.is_active);
-
-        const hasFreeBay = availableBays.some((bay) => {
-          const conflict = dayAppts.some((app) => {
-            if (app.work_bay_id !== bay.id) return false;
-            const appStart = timeStringToMinutes(app.start_time.split('T')[1]?.slice(0, 5) || '00:00');
-            const appEnd = appStart + (app.duration_minutes || 60);
-            return startMin < appEnd && startMin + durationMinutes > appStart;
-          });
-          return !conflict;
-        });
-
-        if (hasFreeBay) {
-          const dayLabel = dayOffset === 0 ? 'Hoy' : dayOffset === 1 ? 'Mañana' : dateStr.slice(5);
-          slots.push({
-            label: `${dayLabel} ${timeStr}`,
-            dateIso: `${dateStr}T${timeStr}`
-          });
-        }
+  const discountValue = useMemo(() => {
+    if (discountType === 'none') return 0;
+    const cfgDisc = detailingConfig?.discounts?.find((d) => d.id === discountType);
+    if (cfgDisc) {
+      if (cfgDisc.percentage > 0) {
+        return Math.round(subtotal * (cfgDisc.percentage / 100));
       }
+      return cfgDisc.amount || 0;
     }
-    return slots;
-  }, [isOpen, appointments, detailingConfig, durationMinutes]);
+    return customDiscountAmount;
+  }, [discountType, detailingConfig, subtotal, customDiscountAmount]);
 
-  if (!isOpen) return null;
+  const totalAmount = useMemo(() => {
+    return Math.max(0, subtotal - discountValue + surchargeAmount);
+  }, [subtotal, discountValue, surchargeAmount]);
 
-  const toggleService = (serviceId: string) => {
+  // Keep split payment amounts updated
+  useEffect(() => {
+    if (paymentOption === 'full') {
+      if (isSplitPayment) {
+        const half = Math.round(totalAmount / 2);
+        setSplitAmount1(half);
+        setSplitAmount2(totalAmount - half);
+      }
+    } else if (paymentOption === 'partial') {
+      if (partialAmount > totalAmount) setPartialAmount(totalAmount);
+    }
+  }, [paymentOption, isSplitPayment, totalAmount]);
+
+  // Commission preview per participant based on origin
+  const commissionPreview = useMemo(() => {
+    if (!origin) return [];
+    const originNorm = origin.trim().toLowerCase();
+    const isAds = originNorm.includes('anuncio') || originNorm.includes('anuncios pagos');
+
+    return selectedParticipantIds.map((pid) => {
+      const p = availableProfiles.find((prof) => prof.id === pid);
+      const name = p ? p.full_name.split(' ')[0] : 'Colaborador';
+      let pct = 30;
+      if (p?.full_name.toLowerCase().includes('maxi') && isAds) {
+        pct = 12.5;
+      }
+      const amt = Math.round(totalAmount * (pct / 100));
+      return { id: pid, name, pct, amt };
+    });
+  }, [origin, selectedParticipantIds, availableProfiles, totalAmount]);
+
+  // Available origins from config
+  const availableOrigins: ClientOrigin[] = (detailingConfig?.client_origins || detailingConfig?.origins) && (detailingConfig?.client_origins || detailingConfig?.origins)!.length > 0
+    ? (detailingConfig.client_origins || detailingConfig.origins)! as ClientOrigin[]
+    : ['WhatsApp', 'Instagram', 'Referido', 'Presencial', 'Anuncios pagos', 'Google Form'];
+
+  // Available payment methods from config
+  const availableMethods = detailingConfig?.payment_methods || [
+    'Efectivo',
+    'Transferencia Bancaria',
+    'Mercado Pago',
+    'Tarjeta de Débito',
+    'Tarjeta de Crédito'
+  ];
+
+  const handleToggleService = (sid: string) => {
     setSelectedServiceIds((prev) =>
-      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
+      prev.includes(sid) ? prev.filter((id) => id !== sid) : [...prev, sid]
     );
   };
 
-  const handleAddCustomService = () => {
-    if (!customName.trim()) return;
-    const newCS = {
-      id: `cs-${Date.now()}`,
-      name: customName.trim(),
-      price: customPrice || 0,
-      durationHours: customHours || 2
-    };
-    setCustomServices((prev) => [...prev, newCS]);
-    setCustomName('');
-    setIsAddingCustomService(false);
-  };
+  const handleSave = async (andShareReceipt = false) => {
+    if (isSubmitting) return;
 
-  const handleSave = (mode: 'quote_only' | 'schedule', openWhatsApp = false) => {
     // 1. Validar Cliente
     let finalClientId = selectedClientId;
     let finalClientName = '';
     let finalClientPhone = '';
 
-    if (isNewClientMode) {
+    if (isCreatingClient) {
       if (!newClientName.trim() || !newClientPhone.trim()) {
-        showToast('Ingresá el nombre y teléfono del nuevo cliente', 'error');
+        showToast('Completá el nombre y teléfono del cliente', 'error');
         return;
       }
-      const res = addClient({
+      const createdClient = addClient({
         full_name: newClientName.trim(),
         phone: newClientPhone.trim(),
-        origin: origin as any,
-        notes: newClientNotes.trim() || 'Creado desde Cotizador Detailing'
+        origin: (origin as ClientOrigin) || 'WhatsApp'
       });
-      finalClientId = res.client.id;
-      finalClientName = res.client.full_name;
-      finalClientPhone = res.client.phone;
+      finalClientId = createdClient.client.id;
+      finalClientName = createdClient.client.full_name;
+      finalClientPhone = createdClient.client.phone;
     } else {
-      const cli = clients.find((c) => c.id === selectedClientId);
-      if (!cli) {
-        showToast('Seleccioná un cliente o creá uno nuevo', 'error');
+      const c = clients.find((client) => client.id === selectedClientId);
+      if (!c) {
+        showToast('Seleccioná o creá un cliente', 'error');
         return;
       }
-      finalClientId = cli.id;
-      finalClientName = cli.full_name;
-      finalClientPhone = cli.phone;
+      finalClientId = c.id;
+      finalClientName = c.full_name;
+      finalClientPhone = c.phone;
     }
 
     // 2. Validar Vehículo
     let finalVehicleId = selectedVehicleId;
     let finalVehicleInfo = '';
-    let finalPlate = '';
+    let finalVehiclePlate = '';
+    let finalCategory = activeCategory;
 
-    if (isNewVehicleMode) {
+    if (isCreatingVehicle) {
       if (!newVehicleBrand.trim() || !newVehicleModel.trim()) {
-        showToast('Ingresá la marca y modelo del vehículo', 'error');
+        showToast('Completá la marca y modelo del vehículo', 'error');
         return;
       }
-      const plate = newVehiclePlate.trim() ? normalizePlate(newVehiclePlate.trim()) : 'S/M';
-      const res = addVehicle({
+      const createdVeh = addVehicle({
         brand: newVehicleBrand.trim(),
         model: newVehicleModel.trim(),
-        plate,
+        plate: newVehiclePlate ? normalizePlate(newVehiclePlate) : '',
         category: newVehicleCategory,
         ownership: 'client',
         client_id: finalClientId,
-        photos: photosBefore
+        year: new Date().getFullYear(),
+        color: 'A definir',
+        mileage: 0,
+        photos: []
       });
-      finalVehicleId = res.vehicle.id;
-      finalVehicleInfo = `${res.vehicle.brand} ${res.vehicle.model}`;
-      finalPlate = res.vehicle.plate;
+      finalVehicleId = createdVeh.vehicle.id;
+      finalVehicleInfo = `${createdVeh.vehicle.brand} ${createdVeh.vehicle.model}`;
+      finalVehiclePlate = createdVeh.vehicle.plate || '';
+      finalCategory = createdVeh.vehicle.category;
     } else {
-      const veh = vehicles.find((v) => v.id === selectedVehicleId);
-      if (veh) {
-        finalVehicleId = veh.id;
-        finalVehicleInfo = `${veh.brand} ${veh.model}`;
-        finalPlate = veh.plate;
-      } else {
-        finalVehicleInfo = 'Vehículo a confirmar';
-        finalPlate = 'S/M';
+      const v = vehicles.find((veh) => veh.id === selectedVehicleId);
+      if (!v) {
+        showToast('Seleccioná o agregá un vehículo', 'error');
+        return;
       }
+      finalVehicleId = v.id;
+      finalVehicleInfo = `${v.brand} ${v.model}`;
+      finalVehiclePlate = v.plate || '';
+      finalCategory = v.category;
     }
 
-    if (selectedServiceObjects.length === 0) {
+    // 3. Validar Servicios
+    if (selectedServiceIds.length === 0) {
       showToast('Seleccioná al menos un servicio del tarifario', 'error');
       return;
     }
 
+    // 4. Validar Origen (OBLIGATORIO)
     if (!origin) {
-      showToast('Seleccioná el origen del contacto para las métricas', 'error');
+      showToast('El origen del cliente es obligatorio', 'error');
       return;
     }
 
-    const participants = selectedParticipantIds.map((empId) => {
-      const p = availableProfiles.find((ap) => ap.id === empId);
-      const rule = detailingConfig?.commission_config?.employee_rules?.find((r) => r.employee_id === empId);
-      const originRule = rule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === origin.trim().toLowerCase());
-      const rate = originRule ? originRule.percentage : (rule?.base_percentage ?? (p?.commissions?.detailing ?? 0));
+    // Preparar servicios formateados
+    const selectedServicesFormatted = selectedServiceIds.map((sid) => {
+      const tariff = detailingTariffs.find((t) => t.id === sid);
+      const price = tariff?.prices[categoryPriceKey] || tariff?.prices.chico || 0;
       return {
-        employee_id: empId,
-        employee_name: p?.full_name || rule?.employee_name || 'Colaborador',
-        rate
+        serviceId: sid,
+        serviceName: tariff?.name || 'Servicio',
+        name: tariff?.name || 'Servicio',
+        category: finalCategory,
+        price
       };
     });
 
-    const targetStatus: DetailingQuoteStatus = mode === 'schedule' ? 'Agendado' : (quoteToEdit ? quoteToEdit.status : 'Presupuesto');
-    const [aDate, aTime] = appointmentDate.split('T');
-    const finalAppointmentDate = aDate && aTime ? combineLocalDateAndTime(aDate, aTime) : appointmentDate;
+    // Preparar pagos iniciales si se cargaron en el formulario
+    const nowIso = new Date().toISOString();
+    const initialPayments: DetailingPayment[] = [];
 
-    let savedQuote: DetailingQuote;
-
-    if (quoteToEdit) {
-      updateDetailingQuote(quoteToEdit.id, {
-        client_id: finalClientId,
-        client_name: finalClientName,
-        client_phone: finalClientPhone,
-        vehicle_id: finalVehicleId,
-        vehicle_info: finalVehicleInfo,
-        vehicle_plate: finalPlate,
-        vehicle_category: activeCategory,
-        selected_services: selectedServiceObjects,
-        subtotal,
-        discount_type: discountType,
-        discount_amount: discountAmount,
-        extreme_dirt_surcharge: hasExtremeDirt ? extremeDirtSurcharge : 0,
-        total_amount: calculatedTotal,
-        estimated_time: `${Math.round(durationMinutes / 60)}h`,
-        assigned_to: assignedTo,
-        work_bay_id: workBayId,
-        appointment_date: mode === 'schedule' ? finalAppointmentDate : quoteToEdit.appointment_date,
-        commission_participants: participants,
-        origin,
-        notes,
-        priority_zones: priorityZones,
-        photos_before: photosBefore,
-        photos_after: photosAfter
+    if (paymentOption === 'full') {
+      if (isSplitPayment) {
+        if (splitAmount1 > 0) {
+          initialPayments.push({
+            id: `pay-${crypto.randomUUID()}`,
+            quote_id: quoteToEdit?.id || '',
+            amount: splitAmount1,
+            method: paymentMethod,
+            date: workDate,
+            created_at: nowIso,
+            is_voided: false
+          });
+        }
+        if (splitAmount2 > 0) {
+          initialPayments.push({
+            id: `pay-${crypto.randomUUID()}`,
+            quote_id: quoteToEdit?.id || '',
+            amount: splitAmount2,
+            method: splitMethod2,
+            date: workDate,
+            created_at: nowIso,
+            is_voided: false
+          });
+        }
+      } else {
+        initialPayments.push({
+          id: `pay-${crypto.randomUUID()}`,
+          quote_id: quoteToEdit?.id || '',
+          amount: totalAmount,
+          method: paymentMethod,
+          date: workDate,
+          created_at: nowIso,
+          is_voided: false
+        });
+      }
+      localStorage.setItem('carvlak_last_detailing_payment_method', paymentMethod);
+    } else if (paymentOption === 'partial' && partialAmount > 0) {
+      initialPayments.push({
+        id: `pay-${crypto.randomUUID()}`,
+        quote_id: quoteToEdit?.id || '',
+        amount: partialAmount,
+        method: paymentMethod,
+        date: workDate,
+        created_at: nowIso,
+        is_voided: false
       });
-
-      if (quoteToEdit.appointment_id) {
-        updateAppointment(quoteToEdit.appointment_id, {
-          start_time: finalAppointmentDate,
-          duration_minutes: durationMinutes,
-          work_bay_id: workBayId,
-          assigned_to: assignedTo,
-          stage: targetStatus,
-          status: targetStatus === 'Cancelado' || targetStatus === 'No vino' ? 'Cancelado' : 'Confirmado'
-        });
-      } else if (mode === 'schedule') {
-        const newAppt = addAppointment({
-          business: 'detailing',
-          client_id: finalClientId,
-          vehicle_id: finalVehicleId,
-          assigned_to: assignedTo,
-          start_time: finalAppointmentDate,
-          duration_minutes: durationMinutes,
-          status: 'Confirmado',
-          stage: 'Agendado',
-          work_bay_id: workBayId,
-          quote_id: quoteToEdit.id,
-          title: `Detailing: ${selectedServiceObjects.map((s) => s.serviceName).join(' + ')}`,
-          notes: `Origen: ${origin}. ${notes}`,
-          price_amount: calculatedTotal,
-          price_currency: 'UYU'
-        });
-        updateDetailingQuote(quoteToEdit.id, { appointment_id: newAppt.id });
-      }
-
-      if (quoteToEdit.status !== targetStatus) {
-        updateDetailingQuoteStatus(quoteToEdit.id, targetStatus, {
-          date: finalAppointmentDate,
-          assigned_to: assignedTo,
-          work_bay_id: workBayId
-        });
-      }
-
-      savedQuote = {
-        ...quoteToEdit,
-        client_name: finalClientName,
-        client_phone: finalClientPhone,
-        vehicle_info: finalVehicleInfo,
-        total_amount: calculatedTotal,
-        selected_services: selectedServiceObjects,
-        status: targetStatus
-      };
-      showToast('Trabajo actualizado con éxito', 'success');
-    } else {
-      savedQuote = addDetailingQuote({
-        client_id: finalClientId,
-        client_name: finalClientName,
-        client_phone: finalClientPhone,
-        vehicle_id: finalVehicleId,
-        vehicle_info: finalVehicleInfo,
-        vehicle_plate: finalPlate,
-        vehicle_category: activeCategory,
-        selected_services: selectedServiceObjects,
-        subtotal,
-        discount_type: discountType,
-        discount_amount: discountAmount,
-        extreme_dirt_surcharge: hasExtremeDirt ? extremeDirtSurcharge : 0,
-        total_amount: calculatedTotal,
-        estimated_time: `${Math.round(durationMinutes / 60)}h`,
-        assigned_to: assignedTo,
-        work_bay_id: workBayId,
-        appointment_date: mode === 'schedule' ? finalAppointmentDate : undefined,
-        commission_participants: participants,
-        origin,
-        status: targetStatus,
-        notes,
-        priority_zones: priorityZones,
-        photos_before: photosBefore,
-        photos_after: photosAfter
-      });
-
-      if (mode === 'schedule') {
-        const newAppt = addAppointment({
-          business: 'detailing',
-          client_id: finalClientId,
-          vehicle_id: finalVehicleId,
-          assigned_to: assignedTo,
-          start_time: finalAppointmentDate,
-          duration_minutes: durationMinutes,
-          status: 'Confirmado',
-          stage: 'Agendado',
-          work_bay_id: workBayId,
-          quote_id: savedQuote.id,
-          title: `Detailing: ${selectedServiceObjects.map((s) => s.serviceName).join(' + ')}`,
-          notes: `Origen: ${origin}. ${notes}`,
-          price_amount: calculatedTotal,
-          price_currency: 'UYU'
-        });
-        updateDetailingQuote(savedQuote.id, { appointment_id: newAppt.id });
-      }
-      showToast(mode === 'schedule' ? 'Turno agendado en el taller' : 'Presupuesto creado con éxito', 'success');
+      localStorage.setItem('carvlak_last_detailing_payment_method', paymentMethod);
     }
 
-    if (openWhatsApp && onOpenWhatsApp) {
-      onOpenWhatsApp(savedQuote);
+    const payload: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'> = {
+      work_date: workDate,
+      client_id: finalClientId,
+      client_name: finalClientName,
+      client_phone: finalClientPhone,
+      vehicle_id: finalVehicleId,
+      vehicle_info: finalVehicleInfo,
+      vehicle_plate: finalVehiclePlate,
+      vehicle_category: finalCategory,
+      selected_services: selectedServicesFormatted,
+      subtotal: subtotal,
+      discount_type: discountType as any,
+      discount_amount: discountValue,
+      extreme_dirt_surcharge: surchargeAmount,
+      total_amount: totalAmount,
+      origin: origin as ClientOrigin,
+      assigned_to: assignedTo || defaultProfileId,
+      commission_participants: selectedParticipantIds.map((pid) => {
+        const p = availableProfiles.find((prof) => prof.id === pid);
+        return {
+          employee_id: pid,
+          employee_name: p ? p.full_name : 'Colaborador',
+          rate: origin.toLowerCase().includes('anuncio') && p?.full_name.toLowerCase().includes('maxi')
+            ? 12.5
+            : 30
+        };
+      }),
+      notes: notes.trim(),
+      payments: quoteToEdit ? [...(quoteToEdit.payments || []), ...initialPayments] : initialPayments
+    };
+
+    try {
+      setIsSubmitting(true);
+      let savedQuote: DetailingQuote;
+
+      if (quoteToEdit) {
+        updateDetailingQuote(quoteToEdit.id, payload);
+        savedQuote = { ...quoteToEdit, ...payload };
+        showToast('Trabajo actualizado correctamente', 'success');
+      } else {
+        savedQuote = addDetailingQuote(payload);
+        showToast('Trabajo registrado con éxito', 'success');
+      }
+
+      // Si se indicó "Guardar y enviar comprobante"
+      if (andShareReceipt) {
+        const rcpt = await generateDetailingReceipt(savedQuote.id);
+        if (rcpt && onOpenWhatsApp) {
+          onOpenWhatsApp(savedQuote);
+        }
+      }
+
+      onClose();
+    } catch (err: any) {
+      showToast(err?.message || 'Error al guardar el trabajo', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
-  const activeBays = (detailingConfig?.work_bays || [
-    { id: 'box-1', name: 'Box 1', is_active: true },
-    { id: 'box-2', name: 'Box 2', is_active: true }
-  ]).filter((b) => b.is_active);
+  const isFullyPaidNow = paymentOption === 'full' || (quoteToEdit && (quoteToEdit.payments || []).reduce((acc, p) => acc + (p.amount || 0), 0) >= totalAmount);
+
+  if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[94vh]">
-        {/* Cabecera */}
-        <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#FDF2F2] border border-[#D7141A]/20 text-[#D7141A] flex items-center justify-center">
-              <Sparkles className="w-5 h-5" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl my-auto">
+        {/* Header */}
+        <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4]">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center text-[#D7141A]">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#161616] font-display">
-                {quoteToEdit ? 'Editar trabajo o presupuesto' : 'Nuevo trabajo DetailVlak'}
+              <h3 className="text-sm font-bold text-[#161616]">
+                {quoteToEdit ? 'Editar trabajo' : 'Nuevo trabajo'}
               </h3>
-              <p className="text-[11px] text-[#6B6B6B]">
-                Carga rápida pensada para taller • Tarifas oficiales en $UYU
-              </p>
+              <p className="text-[11px] text-[#6B6B6B]">Registro contable de trabajo confirmado</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Cerrar modal"
-            className="w-8 h-8 rounded-lg bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] flex items-center justify-center transition-colors"
+            className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Cuerpo con scroll */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs">
-          {/* PASO 1: CLIENTE */}
-          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+        {/* Content */}
+        <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+          {/* 1. CLIENTE */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-[#D7141A]" />
-                <span>1. Cliente</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsNewClientMode(!isNewClientMode);
-                  setSelectedClientId('');
-                }}
-                className="text-xs font-semibold text-[#D7141A] hover:underline"
-              >
-                {isNewClientMode ? 'Buscar existente' : '+ Nuevo cliente'}
-              </button>
-            </div>
-
-            {isNewClientMode ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 animate-fade-in">
-                <input
-                  type="text"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                  placeholder="Nombre y apellido *"
-                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
-                />
-                <input
-                  type="text"
-                  value={newClientPhone}
-                  onChange={(e) => setNewClientPhone(e.target.value)}
-                  placeholder="Teléfono / WhatsApp (09X...) *"
-                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
-                />
-              </div>
-            ) : selectedClient ? (
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-[#161616] text-white flex items-center justify-center font-bold text-xs">
-                    {selectedClient.full_name.charAt(0)}
-                  </div>
-                  <div>
-                    <span className="font-bold text-[#161616] block">{selectedClient.full_name}</span>
-                    <span className="text-[11px] text-[#6B6B6B]">{selectedClient.phone || 'Sin teléfono'}</span>
-                  </div>
-                </div>
+                1. Cliente
+              </span>
+              {!isCreatingClient && (
                 <button
                   type="button"
                   onClick={() => {
+                    setIsCreatingClient(true);
                     setSelectedClientId('');
-                    setSelectedVehicleId('');
                   }}
-                  className="text-xs text-[#6B6B6B] hover:text-[#D7141A] font-semibold"
+                  className="text-[11px] font-bold text-[#D7141A] hover:underline cursor-pointer"
                 >
-                  Cambiar
+                  + Crear cliente
                 </button>
+              )}
+            </label>
+
+            {isCreatingClient ? (
+              <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#161616]">Nuevo cliente</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingClient(false)}
+                    className="text-[11px] text-[#6B6B6B] hover:underline cursor-pointer"
+                  >
+                    Buscar existente
+                  </button>
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Nombre completo *"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-3 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    placeholder="Teléfono / WhatsApp *"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-3 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                    required
+                  />
+                </div>
               </div>
             ) : (
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#6B6B6B] pointer-events-none" />
-                <input
-                  type="text"
-                  value={clientSearchTerm}
-                  onChange={(e) => setClientSearchTerm(e.target.value)}
-                  placeholder="Escribí nombre o celular del cliente..."
-                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg pl-9 pr-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
-                />
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#9A9A9A]" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre, teléfono o matrícula..."
+                    value={clientSearchTerm}
+                    onChange={(e) => setClientSearchTerm(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-xl pl-8 pr-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:border-[#D7141A] focus:outline-none"
+                  />
+                </div>
+
                 {filteredClients.length > 0 && (
-                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-[#E5E5E3] rounded-xl shadow-lg overflow-hidden divide-y divide-[#E5E5E3]">
-                    {filteredClients.map((cli) => (
+                  <div className="border border-[#E5E5E3] rounded-xl overflow-hidden divide-y divide-[#E5E5E3] bg-white shadow-xs">
+                    {filteredClients.map((c) => (
                       <button
-                        key={cli.id}
+                        key={c.id}
                         type="button"
                         onClick={() => {
-                          setSelectedClientId(cli.id);
+                          setSelectedClientId(c.id);
                           setClientSearchTerm('');
-                          const vList = vehicles.filter((v) => v.client_id === cli.id && !v.is_archived);
-                          if (vList.length > 0) setSelectedVehicleId(vList[0].id);
                         }}
-                        className="w-full text-left p-2.5 hover:bg-[#F5F5F4] transition-colors flex items-center justify-between"
+                        className={`w-full p-2 text-left flex items-center justify-between transition-colors cursor-pointer ${
+                          selectedClientId === c.id ? 'bg-red-50' : 'hover:bg-[#F5F5F4]'
+                        }`}
                       >
-                        <span className="font-semibold text-[#161616]">{cli.full_name}</span>
-                        <span className="text-[11px] text-[#6B6B6B]">{cli.phone}</span>
+                        <div>
+                          <p className="font-bold text-[#161616]">{c.full_name}</p>
+                          <p className="text-[10px] text-[#6B6B6B]">{c.phone}</p>
+                        </div>
+                        {selectedClientId === c.id && <Check className="w-4 h-4 text-[#D7141A]" />}
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {selectedClientId && (
+                  <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-emerald-900">
+                        {clients.find((c) => c.id === selectedClientId)?.full_name}
+                      </p>
+                      <p className="text-[10px] text-emerald-700">
+                        {clients.find((c) => c.id === selectedClientId)?.phone}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedClientId('')}
+                      className="text-[10px] text-emerald-800 font-bold hover:underline cursor-pointer"
+                    >
+                      Cambiar
+                    </button>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* PASO 2: VEHÍCULO */}
-          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
+          {/* 2. AUTO */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
                 <Car className="w-3.5 h-3.5 text-[#D7141A]" />
-                <span>2. Vehículo y Categoría</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsNewVehicleMode(!isNewVehicleMode)}
-                className="text-xs font-semibold text-[#D7141A] hover:underline"
-              >
-                {isNewVehicleMode ? 'Elegir cargado' : '+ Cargar otro auto'}
-              </button>
-            </div>
+                2. Auto del cliente
+              </span>
+              {!isCreatingVehicle && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingVehicle(true);
+                    setSelectedVehicleId('');
+                  }}
+                  className="text-[11px] font-bold text-[#D7141A] hover:underline cursor-pointer"
+                >
+                  + Cargar otro auto
+                </button>
+              )}
+            </label>
 
-            {/* Píldoras de vehículos del cliente si existen */}
-            {!isNewVehicleMode && clientVehicles.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="text-[11px] text-[#6B6B6B]">Vehículos de este cliente (1 toque):</span>
-                <div className="flex flex-wrap gap-2">
-                  {clientVehicles.map((veh) => {
-                    const isSelected = selectedVehicleId === veh.id;
-                    return (
-                      <button
-                        key={veh.id}
-                        type="button"
-                        onClick={() => setSelectedVehicleId(veh.id)}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
-                            : 'bg-[#F5F5F4] text-[#161616] border-[#E5E5E3] hover:border-[#D0D0CD]'
-                        }`}
-                      >
-                        <Car className="w-3.5 h-3.5" />
-                        <span>{veh.brand} {veh.model}</span>
-                        {veh.plate && <span className="font-mono text-[10px] opacity-80">[{normalizePlate(veh.plate)}]</span>}
-                        <span className="text-[10px] px-1 py-0.2 rounded bg-white/20">{veh.category}</span>
-                      </button>
-                    );
-                  })}
+            {isCreatingVehicle ? (
+              <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#161616]">Nuevo auto</span>
+                  {clientVehicles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingVehicle(false)}
+                      className="text-[11px] text-[#6B6B6B] hover:underline cursor-pointer"
+                    >
+                      Elegir del cliente
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Marca *"
+                    value={newVehicleBrand}
+                    onChange={(e) => setNewVehicleBrand(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Modelo *"
+                    value={newVehicleModel}
+                    onChange={(e) => setNewVehicleModel(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Matrícula (opcional)"
+                    value={newVehiclePlate}
+                    onChange={(e) => setNewVehiclePlate(e.target.value.toUpperCase())}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs uppercase font-mono text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  />
+                  <select
+                    value={newVehicleCategory}
+                    onChange={(e) => setNewVehicleCategory(e.target.value as VehicleCategory)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  >
+                    <option value="Chico">Chico</option>
+                    <option value="Mediano">Mediano</option>
+                    <option value="SUV/Rural">SUV/Rural</option>
+                    <option value="Pick-up">Pick-up</option>
+                    <option value="Moto">Moto</option>
+                  </select>
                 </div>
               </div>
-            )}
-
-            {/* Formulario nuevo vehículo */}
-            {isNewVehicleMode || (!selectedVehicleId && clientVehicles.length === 0) ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 animate-fade-in">
-                <input
-                  type="text"
-                  value={newVehicleBrand}
-                  onChange={(e) => setNewVehicleBrand(e.target.value)}
-                  placeholder="Marca (ej. Toyota) *"
-                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
-                />
-                <input
-                  type="text"
-                  value={newVehicleModel}
-                  onChange={(e) => setNewVehicleModel(e.target.value)}
-                  placeholder="Modelo (ej. Corolla) *"
-                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] focus:bg-white focus:border-[#D7141A] focus:outline-none"
-                />
-                <input
-                  type="text"
-                  value={newVehiclePlate}
-                  onChange={(e) => setNewVehiclePlate(e.target.value)}
-                  placeholder="Matrícula (o S/M)"
-                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] font-mono uppercase focus:bg-white focus:border-[#D7141A] focus:outline-none"
-                />
-                <select
-                  value={newVehicleCategory}
-                  onChange={(e) => setNewVehicleCategory(e.target.value as VehicleCategory)}
-                  className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] font-bold focus:bg-white focus:border-[#D7141A] focus:outline-none cursor-pointer"
-                >
-                  <option value="Chico">Chico / Hatchback</option>
-                  <option value="Mediano">Mediano / Sedán</option>
-                  <option value="SUV/Rural">SUV / Rural</option>
-                  <option value="Pick-up">Pick-up / Camioneta</option>
-                  <option value="Moto">Moto</option>
-                </select>
+            ) : (
+              <div>
+                {clientVehicles.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {clientVehicles.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setSelectedVehicleId(v.id)}
+                        className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                          selectedVehicleId === v.id
+                            ? 'bg-red-50 border-[#D7141A] text-[#D7141A]'
+                            : 'bg-white border-[#E5E5E3] text-[#161616] hover:border-[#161616]'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-bold">{v.brand} {v.model}</p>
+                          <p className="text-[10px] text-[#6B6B6B]">{v.category}</p>
+                        </div>
+                        {v.plate ? (
+                          <UruguayanPlate plate={v.plate} size="sm" />
+                        ) : (
+                          <span className="text-[10px] text-[#6B6B6B] italic">Sin chapa</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-[#F5F5F4] rounded-xl border border-dashed border-[#E5E5E3] text-center">
+                    <p className="text-xs text-[#6B6B6B] mb-1.5">El cliente no tiene autos guardados</p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      onClick={() => setIsCreatingVehicle(true)}
+                    >
+                      + Cargar auto
+                    </Button>
+                  </div>
+                )}
               </div>
-            ) : null}
+            )}
           </div>
 
-          {/* PASO 3: SERVICIOS */}
-          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
-                  <span>3. Servicios ({activeCategory})</span>
-                </label>
-                <span className="text-[11px] text-[#6B6B6B]">Precios directos según la categoría elegida</span>
+          {/* 3. FECHA DEL TRABAJO */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
+              3. Fecha del trabajo
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setWorkDate(todayUY)}
+                className={`py-2 px-3 rounded-xl font-bold border text-xs transition-colors cursor-pointer ${
+                  workDate === todayUY
+                    ? 'bg-[#161616] text-white border-[#161616]'
+                    : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                }`}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                onClick={() => setWorkDate(tomorrowUY)}
+                className={`py-2 px-3 rounded-xl font-bold border text-xs transition-colors cursor-pointer ${
+                  workDate === tomorrowUY
+                    ? 'bg-[#161616] text-white border-[#161616]'
+                    : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                }`}
+              >
+                Mañana
+              </button>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={workDate}
+                  onChange={(e) => setWorkDate(e.target.value)}
+                  className={`w-full py-1.5 px-2 rounded-xl font-mono text-xs border text-center cursor-pointer focus:outline-none ${
+                    workDate !== todayUY && workDate !== tomorrowUY
+                      ? 'bg-red-50 border-[#D7141A] text-[#D7141A] font-bold'
+                      : 'bg-white border-[#E5E5E3] text-[#161616]'
+                  }`}
+                />
               </div>
-              <span className="text-sm font-bold font-mono text-[#161616]">
-                Subtotal: {formatCurrency(subtotal, 'UYU')}
-              </span>
             </div>
+            {workDate > todayUY && (
+              <span className="inline-block text-[10px] bg-gray-200 text-gray-700 font-semibold px-2 py-0.5 rounded-full">
+                Programado (fecha futura)
+              </span>
+            )}
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {detailingTariffs.filter((t) => t.isActive !== false).map((t) => {
+          {/* 4. SERVICIOS (Chips con precio según categoría) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
+                4. Servicios ({activeCategory})
+              </span>
+              <span className="text-[11px] font-bold text-[#D7141A]">
+                {formatCurrency(subtotal)}
+              </span>
+            </label>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              {detailingTariffs.map((t) => {
                 const isSelected = selectedServiceIds.includes(t.id);
-                const price = t.prices[categoryKey] || 0;
+                const price = t.prices[categoryPriceKey] || t.prices.chico || 0;
                 return (
-                  <div
+                  <button
                     key={t.id}
-                    onClick={() => toggleService(t.id)}
-                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
+                    type="button"
+                    onClick={() => handleToggleService(t.id)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-[#FDF2F2] border-[#D7141A] text-[#161616] shadow-xs'
-                        : 'bg-white border-[#E5E5E3] hover:border-[#D0D0CD] text-[#161616]'
+                        ? 'bg-red-50 border-[#D7141A] text-[#161616]'
+                        : 'bg-white border-[#E5E5E3] text-[#161616] hover:border-[#161616]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${
-                        isSelected ? 'bg-[#D7141A] border-[#D7141A] text-white' : 'border-[#E5E5E3] bg-white'
-                      }`}>
-                        {isSelected && <Check className="w-3.5 h-3.5" />}
-                      </div>
-                      <div>
-                        <span className="font-bold text-xs block">{t.name}</span>
-                        <span className="text-[10px] text-[#6B6B6B]">{t.durationHours || 2}h estimadas</span>
-                      </div>
-                    </div>
-                    <span className="font-mono font-bold text-xs">
-                      {formatCurrency(price, 'UYU')}
+                    <span className="font-bold leading-tight">{t.name}</span>
+                    <span className={`text-[11px] font-mono mt-1 ${isSelected ? 'font-bold text-[#D7141A]' : 'text-[#6B6B6B]'}`}>
+                      {formatCurrency(price)}
                     </span>
-                  </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 5. ORIGEN DEL CLIENTE (Obligatorio, sin valor previo, con preview de comisión) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
+              <span>5. Origen del cliente *</span>
+              {!origin && <span className="text-[10px] text-[#D7141A] font-bold">Obligatorio</span>}
+            </label>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {availableOrigins.map((orig) => {
+                const isSelected = origin === orig;
+                const isAds = orig.toLowerCase().includes('anuncio');
+                return (
+                  <button
+                    key={orig}
+                    type="button"
+                    onClick={() => setOrigin(orig)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                        : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                    }`}
+                  >
+                    <p className="font-bold text-xs">{orig}</p>
+                    <p className={`text-[10px] mt-0.5 ${isSelected ? 'text-gray-300' : 'text-[#6B6B6B]'}`}>
+                      {isAds ? 'Romina 30% · Maxi 12.5%' : 'Romina 30% · Maxi 30%'}
+                    </p>
+                  </button>
                 );
               })}
             </div>
 
-            {/* Servicio personalizado opcional */}
-            {isAddingCustomService ? (
-              <div className="p-3 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl grid grid-cols-1 sm:grid-cols-4 gap-2 animate-fade-in">
-                <input
-                  type="text"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="Nombre del servicio"
-                  className="sm:col-span-2 bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616]"
-                />
-                <input
-                  type="number"
-                  value={customPrice}
-                  onChange={(e) => setCustomPrice(parseFloat(e.target.value) || 0)}
-                  placeholder="Precio $"
-                  className="bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616]"
-                />
-                <Button size="sm" variant="primary" onClick={handleAddCustomService}>
-                  Agregar
-                </Button>
+            {/* Preview de comisiones */}
+            {origin && commissionPreview.length > 0 && (
+              <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+                <span className="font-medium text-emerald-900">Comisiones estimadas:</span>
+                <div className="flex items-center gap-2 font-mono">
+                  {commissionPreview.map((c) => (
+                    <span key={c.id} className="text-emerald-800 font-bold">
+                      {c.name}: {c.pct}% ({formatCurrency(c.amt)})
+                    </span>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsAddingCustomService(true)}
-                className="text-xs text-[#6B6B6B] hover:text-[#161616] font-semibold flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Agregar servicio personalizado</span>
-              </button>
             )}
           </div>
 
-          {/* PASO 4: DURACIÓN Y AJUSTES */}
-          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#D7141A]" />
-                <span>4. Duración Estimada</span>
-              </label>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setDurationMinutes(Math.max(30, durationMinutes - 30))}
-                  className="w-7 h-7 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] font-bold text-[#161616] hover:bg-gray-200"
-                >
-                  -30m
-                </button>
-                <span className="font-mono font-bold text-xs px-2.5 py-1 rounded bg-[#F5F5F4] border border-[#E5E5E3]">
-                  {Math.floor(durationMinutes / 60)}h {durationMinutes % 60 > 0 ? `${durationMinutes % 60}m` : ''}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setDurationMinutes(durationMinutes + 30)}
-                  className="w-7 h-7 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3] font-bold text-[#161616] hover:bg-gray-200"
-                >
-                  +30m
-                </button>
-              </div>
-            </div>
+          {/* 6. MÁS OPCIONES (Desplegable) */}
+          <div className="border border-[#E5E5E3] rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowMoreOptions(!showMoreOptions)}
+              className="w-full p-3 bg-[#F5F5F4] flex items-center justify-between font-bold text-xs text-[#161616] hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <span>6. Más opciones (descuentos, recargos, responsable, notas)</span>
+              {showMoreOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
 
-            {/* Descuentos y Suciedad Extrema */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-[#E5E5E3]">
-              <div>
-                <label className="text-[11px] font-semibold text-[#161616] block mb-1">Descuento aplicado</label>
-                <select
-                  value={discountType}
-                  onChange={(e) => setDiscountType(e.target.value as DetailingDiscountType)}
-                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs text-[#161616]"
-                >
-                  <option value="none">Sin descuento</option>
-                  <option value="combo_10">Combo 2 o más servicios (10%)</option>
-                  <option value="special_15">Promo Especial (15%)</option>
-                  <option value="fixed">Monto fijo en pesos</option>
-                </select>
-                {discountType === 'fixed' && (
-                  <input
-                    type="number"
-                    value={fixedDiscountAmount}
-                    onChange={(e) => setFixedDiscountAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="Monto de descuento $"
-                    className="mt-1 w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1 text-xs"
-                  />
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 pt-4">
-                <input
-                  type="checkbox"
-                  id="dirt_check"
-                  checked={hasExtremeDirt}
-                  onChange={(e) => setHasExtremeDirt(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#D7141A] accent-[#D7141A]"
-                />
-                <label htmlFor="dirt_check" className="text-xs text-[#161616] font-medium cursor-pointer">
-                  Recargo por suciedad extrema (+{formatCurrency(extremeDirtSurcharge, 'UYU')})
-                </label>
-              </div>
-            </div>
-          </div>
-
-            {/* PASO 5: ORIGEN Y RESPONSABLE */}
-            <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
-              <div>
-                <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center justify-between mb-1">
-                  <span>4. Origen del Contacto (Obligatorio) *</span>
-                  {!origin && <span className="text-[10px] text-[#D7141A] font-semibold">Elegí una opción</span>}
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                  {clientOrigins.map((ori) => {
-                    const isSelected = origin === ori;
-                    return (
-                      <button
-                        key={ori}
-                        type="button"
-                        onClick={() => setOrigin(ori)}
-                        className={`p-2.5 rounded-xl border text-xs font-bold text-left transition-all ${
-                          isSelected
-                            ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
-                            : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-gray-400'
-                        }`}
-                      >
-                        <div>{ori}</div>
-                        {ori === 'Anuncios pagos' && (
-                          <div className={`text-[10px] font-normal mt-0.5 ${isSelected ? 'text-amber-300' : 'text-amber-700'}`}>
-                            Romina 30% · Maxi 12.5%
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-[#6B6B6B] block mb-1">Detailer responsable asignado</label>
-                <select
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs font-semibold text-[#161616]"
-                >
-                  {availableProfiles
-                    .filter((p) => p.is_active && (p.businesses?.includes('detailing') || p.roles.includes('detailer') || p.roles.includes('admin')))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.full_name} {p.roles.includes('detailer') ? '(Detailer)' : ''}
+            {showMoreOptions && (
+              <div className="p-3 bg-white space-y-3 border-t border-[#E5E5E3]">
+                {/* Descuentos */}
+                <div>
+                  <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                    Descuento
+                  </label>
+                  <select
+                    value={discountType}
+                    onChange={(e) => setDiscountType(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  >
+                    <option value="none">Sin descuento</option>
+                    {(detailingConfig?.discounts || []).map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label || d.name} {d.percentage > 0 ? `(${d.percentage}%)` : d.amount ? `($${d.amount})` : ''}
                       </option>
                     ))}
-                </select>
-              </div>
-            </div>
+                  </select>
+                </div>
 
-          {/* PASO 6: AGENDAR O PRESUPUESTAR */}
-          <div className="bg-white border border-[#E5E5E3] rounded-xl p-3.5 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-[#161616] uppercase font-display tracking-wider flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
-                <span>6. Agendar Turno en Taller</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={scheduleActive}
-                  onChange={(e) => setScheduleActive(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#D7141A] accent-[#D7141A]"
-                />
-                <span className="text-xs font-bold text-[#161616]">Fijar fecha y box ahora</span>
-              </label>
-            </div>
+                {/* Recargo */}
+                <div>
+                  <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                    Recargo por suciedad extrema o adicional ($UYU)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={surchargeAmount || ''}
+                    onChange={(e) => setSurchargeAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1.5 text-xs font-mono text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  />
+                </div>
 
-            {scheduleActive && (
-              <div className="space-y-3 pt-2 border-t border-[#E5E5E3] animate-fade-in">
-                {/* Sugerencias de huecos libres */}
-                {suggestedSlots.length > 0 && (
-                  <div>
-                    <span className="text-[11px] text-[#6B6B6B] block mb-1">Próximos huecos libres disponibles:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedSlots.map((slot) => (
+                {/* Quién lo hizo */}
+                <div>
+                  <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                    ¿Quién realizó o realiza el trabajo?
+                  </label>
+                  <select
+                    value={assignedTo}
+                    onChange={(e) => setAssignedTo(e.target.value)}
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  >
+                    {detailerProfiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.full_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Participantes de comisión */}
+                <div>
+                  <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                    Participantes de comisión
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {detailerProfiles.map((p) => {
+                      const isPart = selectedParticipantIds.includes(p.id);
+                      return (
                         <button
-                          key={slot.dateIso}
+                          key={p.id}
                           type="button"
-                          onClick={() => setAppointmentDate(slot.dateIso)}
-                          className={`px-3 py-1 rounded-xl border text-xs font-semibold transition-all ${
-                            appointmentDate === slot.dateIso
-                              ? 'bg-[#161616] text-white border-[#161616]'
-                              : 'bg-[#F5F5F4] text-[#161616] border-[#E5E5E3] hover:border-[#D0D0CD]'
+                          onClick={() => {
+                            setSelectedParticipantIds((prev) =>
+                              prev.includes(p.id) ? prev.filter((id) => id !== p.id) : [...prev, p.id]
+                            );
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            isPart
+                              ? 'bg-red-50 border-[#D7141A] text-[#D7141A]'
+                              : 'bg-white border-[#E5E5E3] text-[#6B6B6B]'
                           }`}
                         >
-                          {slot.label}
+                          {p.full_name.split(' ')[0]}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Notas */}
+                <div>
+                  <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                    Notas adicionales
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Detalles específicos..."
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg p-2 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 7. COBRO (Opcional en el mismo paso) */}
+          <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-[#D7141A]" />
+                7. ¿Ya cobraste?
+              </span>
+              <span className="text-xs font-bold font-mono text-[#161616]">
+                Total: {formatCurrency(totalAmount)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentOption('full')}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                  paymentOption === 'full'
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                }`}
+              >
+                Sí, total
+                <span className="block text-[10px] font-normal opacity-90">{formatCurrency(totalAmount)}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentOption('partial');
+                  setPartialAmount(Math.round(totalAmount / 2));
+                }}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                  paymentOption === 'partial'
+                    ? 'bg-[#161616] text-white border-[#161616]'
+                    : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                }`}
+              >
+                Parcial
+                <span className="block text-[10px] font-normal opacity-90">Seña</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentOption('none')}
+                className={`py-2 px-1 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                  paymentOption === 'none'
+                    ? 'bg-[#161616] text-white border-[#161616]'
+                    : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                }`}
+              >
+                Todavía no
+                <span className="block text-[10px] font-normal opacity-90">Pendiente</span>
+              </button>
+            </div>
+
+            {/* Opciones cuando se cobra */}
+            {paymentOption !== 'none' && (
+              <div className="p-3 bg-white rounded-lg border border-[#E5E5E3] space-y-2 mt-2">
+                {paymentOption === 'partial' && (
+                  <div>
+                    <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                      Monto cobrado ($UYU)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalAmount}
+                      value={partialAmount || ''}
+                      onChange={(e) => setPartialAmount(Number(e.target.value))}
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-xs font-mono text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                    />
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[11px] text-[#6B6B6B] block mb-1">Fecha y hora de inicio</label>
-                    <input
-                      type="datetime-local"
-                      value={appointmentDate}
-                      onChange={(e) => setAppointmentDate(e.target.value)}
-                      className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs font-bold text-[#161616]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] text-[#6B6B6B] block mb-1">Puesto de trabajo (Box)</label>
-                    <select
-                      value={workBayId}
-                      onChange={(e) => setWorkBayId(e.target.value)}
-                      className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs font-bold text-[#161616]"
+                {paymentOption === 'full' && (
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-[11px] text-[#6B6B6B]">¿Pago dividido?</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSplitPayment(!isSplitPayment)}
+                      className="text-xs font-bold text-[#D7141A] hover:underline cursor-pointer"
                     >
-                      {activeBays.map((bay) => (
-                        <option key={bay.id} value={bay.id}>
-                          {bay.name}
-                        </option>
+                      {isSplitPayment ? 'Pago simple' : '+ Dividir en 2 medios'}
+                    </button>
+                  </div>
+                )}
+
+                {!isSplitPayment ? (
+                  <div>
+                    <label className="text-[11px] font-medium text-[#161616] block mb-1">
+                      Medio de pago
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                    >
+                      {availableMethods.map((m) => (
+                        <option key={m} value={m}>{m}</option>
                       ))}
                     </select>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2 pt-1 border-t border-[#E5E5E3]">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-[#6B6B6B] block">Monto 1</label>
+                        <input
+                          type="number"
+                          value={splitAmount1 || ''}
+                          onChange={(e) => setSplitAmount1(Number(e.target.value))}
+                          className="w-full border border-[#E5E5E3] rounded-lg px-2 py-1 text-xs font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#6B6B6B] block">Medio 1</label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-full border border-[#E5E5E3] rounded-lg px-1 py-1 text-xs"
+                        >
+                          {availableMethods.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-[#6B6B6B] block">Monto 2</label>
+                        <input
+                          type="number"
+                          value={splitAmount2 || ''}
+                          onChange={(e) => setSplitAmount2(Number(e.target.value))}
+                          className="w-full border border-[#E5E5E3] rounded-lg px-2 py-1 text-xs font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#6B6B6B] block">Medio 2</label>
+                        <select
+                          value={splitMethod2}
+                          onChange={(e) => setSplitMethod2(e.target.value)}
+                          className="w-full border border-[#E5E5E3] rounded-lg px-1 py-1 text-xs"
+                        >
+                          {availableMethods.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-
-          {/* TOTAL FINAL */}
-          <div className="bg-[#161616] text-white rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <span className="text-[11px] text-gray-400 block font-medium">TOTAL A COBRAR</span>
-              <span className="text-2xl font-bold font-mono tracking-tight text-white mt-0.5 block">
-                {formatCurrency(calculatedTotal, 'UYU')}
-              </span>
-              {discountAmount > 0 && (
-                <span className="text-[11px] text-red-400">
-                  Descuento: -{formatCurrency(discountAmount, 'UYU')}
-                </span>
-              )}
-            </div>
-            <div className="text-right text-[11px] text-gray-300">
-              <div>Servicios: <strong className="text-white">{selectedServiceObjects.length}</strong></div>
-              <div>Duración: <strong className="text-white">{Math.round(durationMinutes / 60)}h</strong></div>
-            </div>
-          </div>
         </div>
 
-        {/* Botones de Acción (2 caminos claros) */}
-        <div className="p-4 border-t border-[#E5E5E3] bg-white flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} className="w-full sm:w-auto">
+        {/* Footer Actions */}
+        <div className="p-4 border-t border-[#E5E5E3] bg-[#F5F5F4] flex items-center justify-between gap-2">
+          <Button variant="secondary" size="md" type="button" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Camino 1: Solo Presupuesto */}
+          <div className="flex items-center gap-2">
             <Button
+              variant={isFullyPaidNow ? 'secondary' : 'primary'}
+              size="md"
               type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => handleSave('quote_only', false)}
-              className="flex-1 sm:flex-none border-[#E5E5E3]"
+              onClick={() => handleSave(false)}
+              disabled={isSubmitting}
             >
-              <Save className="w-4 h-4 mr-1 text-[#6B6B6B]" />
-              <span>Solo Presupuesto</span>
+              {isSubmitting ? 'Guardando...' : 'Guardar'}
             </Button>
 
-            {/* Camino 2: Agendar Turno (Acción principal roja) */}
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => handleSave(scheduleActive ? 'schedule' : 'quote_only', false)}
-              className="flex-1 sm:flex-none bg-[#D7141A] hover:bg-[#B80E14] text-white font-bold"
-            >
-              <Calendar className="w-4 h-4 mr-1" />
-              <span>{scheduleActive ? 'Agendar Turno' : 'Guardar Trabajo'}</span>
-            </Button>
+            {isFullyPaidNow && (
+              <Button
+                variant="primary"
+                size="md"
+                type="button"
+                onClick={() => handleSave(true)}
+                disabled={isSubmitting}
+                className="bg-[#D7141A] hover:bg-[#b01015]"
+              >
+                <Share2 className="w-3.5 h-3.5 mr-1" />
+                Guardar y comprobante
+              </Button>
+            )}
           </div>
         </div>
       </div>

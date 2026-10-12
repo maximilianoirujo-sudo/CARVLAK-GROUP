@@ -421,5 +421,39 @@ export function getDiscountLabel(discountType?: string, discountsConfig?: { id: 
   return discountType;
 }
 
+/**
+ * Calcula el estado de cobro automático de un trabajo:
+ * "Cobrado" (pagado >= total), "Cobro parcial" (pagado > 0 y < total), "Pendiente de cobro" (pagado == 0)
+ */
+export function getDetailingPaymentStatus(quote: { total_amount: number; payments?: { amount: number; is_voided?: boolean }[] }): 'Cobrado' | 'Cobro parcial' | 'Pendiente de cobro' {
+  if (!quote) return 'Pendiente de cobro';
+  const total = Number(quote.total_amount) || 0;
+  const paid = (quote.payments || [])
+    .filter((p) => !p.is_voided)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  if (paid >= total && total > 0) return 'Cobrado';
+  if (paid > 0) return 'Cobro parcial';
+  return 'Pendiente de cobro';
+}
+
+/**
+ * Devuelve el total efectivamente cobrado (no anulado) de un trabajo
+ */
+export function getDetailingPaidAmount(quote: { payments?: { amount: number; is_voided?: boolean }[] }): number {
+  if (!quote?.payments) return 0;
+  return quote.payments
+    .filter((p) => !p.is_voided)
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+}
+
+/**
+ * Verifica si un trabajo tiene fecha futura respecto al día de hoy en Uruguay
+ */
+export function isJobScheduled(workDate?: string): boolean {
+  if (!workDate) return false;
+  const today = getLocalDateString();
+  return workDate.slice(0, 10) > today;
+}
+
 
 

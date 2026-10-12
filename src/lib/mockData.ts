@@ -665,84 +665,7 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
     }
   };
 
-export const INITIAL_STOCK_ITEMS: StockItem[] = [
-  {
-    id: 'stk-1',
-    business: 'detailing',
-    name: 'Shampoo pH Neutro Concentrado',
-    category: 'Químicos',
-    unit: 'litros',
-    quantity: 4.5,
-    min_stock: 2.0,
-    unit_cost: 850,
-    supplier: 'Detailing Pro UY',
-    updated_at: '2026-09-24T10:00:00Z',
-    movements: [
-      {
-        id: 'mov-1',
-        stock_item_id: 'stk-1',
-        type: 'Entrada',
-        quantity: 5.0,
-        unit_cost: 850,
-        operator_name: 'Maximiliano Irujo',
-        notes: 'Compra bidón 5L',
-        created_at: '2026-09-20T10:00:00Z'
-      }
-    ]
-  },
-  {
-    id: 'stk-2',
-    business: 'detailing',
-    name: 'APC Limpiador Multiuso (Interior/Motor)',
-    category: 'Químicos',
-    unit: 'litros',
-    quantity: 1.5,
-    min_stock: 2.0, // Alerta stock bajo
-    unit_cost: 790,
-    supplier: 'Detailing Pro UY',
-    updated_at: '2026-09-24T10:00:00Z',
-    movements: []
-  },
-  {
-    id: 'stk-3',
-    business: 'detailing',
-    name: 'Coating Cerámico 9H (Frasco 30ml)',
-    category: 'Selladores',
-    unit: 'unidades',
-    quantity: 1, // Alerta stock bajo
-    min_stock: 2,
-    unit_cost: 2400,
-    supplier: 'Importador CarCare',
-    updated_at: '2026-09-24T10:00:00Z',
-    movements: []
-  },
-  {
-    id: 'stk-4',
-    business: 'detailing',
-    name: 'Paños Microfibra Sin Costura 40x40 (400gsm)',
-    category: 'Paños/Microfibras',
-    unit: 'unidades',
-    quantity: 18,
-    min_stock: 10,
-    unit_cost: 190,
-    supplier: 'Detailing Pro UY',
-    updated_at: '2026-09-24T10:00:00Z',
-    movements: []
-  },
-  {
-    id: 'stk-5',
-    business: 'detailing',
-    name: 'Pads de Corte Pesado Cordero / Espuma 5.5"',
-    category: 'Pads',
-    unit: 'unidades',
-    quantity: 4,
-    min_stock: 3,
-    unit_cost: 650,
-    supplier: 'Koch Chemie UY',
-    updated_at: '2026-09-24T10:00:00Z',
-    movements: []
-  }
-];
+export const INITIAL_STOCK_ITEMS: StockItem[] = [];
 
 export const INITIAL_EXPENSES: Expense[] = [
   {
@@ -793,6 +716,7 @@ export const INITIAL_DETAILING_QUOTES: DetailingQuote[] = [
     vehicle_info: 'BMW 320i M-Sport (2021)',
     vehicle_plate: 'SBX 1234',
     vehicle_category: 'Mediano',
+    work_date: '2026-09-24',
     selected_services: [
       { serviceId: 'ceramico', serviceName: 'Sellado Cerámico / Acrílico', price: 9800 },
       { serviceId: 'interior', serviceName: 'Limpieza profunda de interior', price: 4200 }
@@ -823,6 +747,7 @@ export const INITIAL_DETAILING_QUOTES: DetailingQuote[] = [
     vehicle_info: 'Toyota Hilux SRV 4x4 (2023)',
     vehicle_plate: 'AAT 8920',
     vehicle_category: 'Pick-up',
+    work_date: '2026-09-24',
     selected_services: [
       { serviceId: 'lavado_exterior', serviceName: 'Lavado al detalle exterior', price: 3200 },
       { serviceId: 'interior', serviceName: 'Limpieza profunda de interior', price: 5800 }
@@ -851,6 +776,7 @@ export const INITIAL_DETAILING_QUOTES: DetailingQuote[] = [
     vehicle_info: 'Volkswagen Golf GTI Mk7 (2018)',
     vehicle_plate: 'SCA 4321',
     vehicle_category: 'Chico',
+    work_date: '2026-09-22',
     selected_services: [
       { serviceId: 'pulido', serviceName: 'Corrección de pintura / Pulido', price: 6800 },
       { serviceId: 'opticas', serviceName: 'Restauración de ópticas', price: 2000 }

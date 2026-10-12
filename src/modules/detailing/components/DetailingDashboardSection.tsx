@@ -5,12 +5,19 @@ import {
   Calendar,
   Sparkles,
   Users,
-  ArrowUpRight,
-  Layers
+  Layers,
+  CheckCircle2,
+  Package,
+  AlertTriangle
 } from 'lucide-react';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
-import { formatCurrency, getLocalMonthString, isActiveJob, isActiveExpense } from '../../../lib/formatters';
+import {
+  formatCurrency,
+  getLocalMonthString,
+  getDetailingPaidAmount,
+  getDetailingPaymentStatus
+} from '../../../lib/formatters';
 
 export const DetailingDashboardSection: React.FC = () => {
   const { detailingQuotes, expenses, commissions, stockItems } = useData();
@@ -18,160 +25,160 @@ export const DetailingDashboardSection: React.FC = () => {
 
   const [selectedMonth, setSelectedMonth] = useState<string>(() => getLocalMonthString()); // YYYY-MM
 
-  // Cotizaciones activas del mes
+  // Trabajos activos del mes basados en work_date y excluyendo anulados
   const monthQuotes = useMemo(() => {
-    return detailingQuotes.filter((q) => isActiveJob(q) && q.created_at.startsWith(selectedMonth));
+    return detailingQuotes.filter((q) => {
+      const d = q.work_date || q.created_at.slice(0, 10);
+      return d.startsWith(selectedMonth) && !q.is_voided;
+    });
   }, [detailingQuotes, selectedMonth]);
 
-  // Trabajos completados o entregados del mes
-  const completedQuotes = useMemo(() => {
-    return monthQuotes.filter((q) => q.status === 'Trabajo Completado' || q.status === 'Entregado y cobrado');
+  // 1. Ingresos brutos facturados
+  const grossIncome = useMemo(() => {
+    return monthQuotes.reduce((acc, curr) => acc + (curr.total_amount || 0), 0);
   }, [monthQuotes]);
 
-  // 1. Ingresos brutos por trabajos completados
-  const grossIncome = useMemo(() => {
-    return completedQuotes.reduce((acc, curr) => acc + curr.total_amount, 0);
-  }, [completedQuotes]);
+  // 2. Cobros reales ingresados
+  const totalCollected = useMemo(() => {
+    return monthQuotes.reduce((acc, curr) => acc + getDetailingPaidAmount(curr), 0);
+  }, [monthQuotes]);
 
-  // 2. Gastos operativos del mes (Detailing + General)
+  // 3. Gastos operativos del mes
   const monthExpenses = useMemo(() => {
     return expenses
-      .filter((e) => isActiveExpense(e) && (e.business === 'detailing' || e.business === 'general') && e.date.startsWith(selectedMonth))
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .filter((e) => !e.voided_at && e.business === 'detailing' && e.date.startsWith(selectedMonth))
+      .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   }, [expenses, selectedMonth]);
 
-  // 3. Comisiones devengadas del mes
+  // 4. Comisiones del mes
   const monthCommissions = useMemo(() => {
     return commissions
       .filter((c) => c.business === 'detailing' && c.created_at.startsWith(selectedMonth))
-      .reduce((acc, curr) => acc + curr.commission_amount, 0);
+      .reduce((acc, curr) => acc + (Number(curr.commission_amount) || 0), 0);
   }, [commissions, selectedMonth]);
 
-  // 4. Resultado Neto
+  // 5. Resultado Neto estimado
   const netProfit = grossIncome - monthExpenses - monthCommissions;
 
-  // 5. Ticket promedio
-  const averageTicket = completedQuotes.length > 0 ? Math.round(grossIncome / completedQuotes.length) : 0;
+  // 6. Ticket promedio por trabajo
+  const averageTicket = monthQuotes.length > 0 ? Math.round(grossIncome / monthQuotes.length) : 0;
 
-  // 6. Tasa de conversión: Cotizaciones -> Trabajos Completados
-  const conversionRate = monthQuotes.length > 0 ? Math.round((completedQuotes.length / monthQuotes.length) * 100) : 0;
-
-  // 7. Servicios más vendidos
-  const topServices = useMemo(() => {
-    const counts: Record<string, { name: string; count: number; total: number }> = {};
-    completedQuotes.forEach((q) => {
-      q.selected_services.forEach((s) => {
-        if (!counts[s.serviceName]) {
-          counts[s.serviceName] = { name: s.serviceName, count: 0, total: 0 };
-        }
-        counts[s.serviceName].count += 1;
-        counts[s.serviceName].total += s.price;
-      });
-    });
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [completedQuotes]);
-
-  // 8. Trabajos por empleado
-  const jobsByEmployee = useMemo(() => {
-    const counts: Record<string, { name: string; count: number; billed: number }> = {};
-    completedQuotes.forEach((q) => {
-      const found = availableProfiles.find((p) => p.id === q.assigned_to);
-      const empName = found ? found.full_name : (q.assigned_to || 'Sin asignar');
-      if (!counts[empName]) {
-        counts[empName] = { name: empName, count: 0, billed: 0 };
-      }
-      counts[empName].count += 1;
-      counts[empName].billed += q.total_amount;
-    });
-    return Object.values(counts);
-  }, [completedQuotes, availableProfiles]);
-
-  // Insumos con stock crítico
+  // 7. Productos con bajo stock
   const lowStock = useMemo(() => {
-    return stockItems.filter((s) => (s.business === 'detailing' || s.business === 'general') && s.quantity <= s.min_stock);
+    return stockItems.filter((s) => !s.is_archived && s.business === 'detailing' && s.quantity <= s.min_stock);
   }, [stockItems]);
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      
-      {/* Selector de Mes y Título */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h3 className="text-base font-bold text-[#161616] flex items-center gap-2">
-            <span>Balance financiero y métricas DetailVlak</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F5F4] border border-[#E5E5E3] text-[#6B6B6B] font-medium">
-              Solo admin
-            </span>
-          </h3>
-          <p className="text-xs text-[#6B6B6B]">
-            Resumen de rentabilidad, ticket promedio y conversión del taller de Shangrilá.
-          </p>
-        </div>
+  // 8. Servicios más vendidos
+  const topServices = useMemo(() => {
+    const counts: Record<string, { name: string; count: number; total: number }> = {};
+    monthQuotes.forEach((q) => {
+      (q.selected_services || []).forEach((s) => {
+        const sName = s.serviceName || s.name || 'Servicio';
+        if (!counts[sName]) {
+          counts[sName] = { name: sName, count: 0, total: 0 };
+        }
+        counts[sName].count += 1;
+        counts[sName].total += s.price || 0;
+      });
+    });
 
-        <div className="flex items-center gap-2 bg-white border border-[#E5E5E3] rounded-xl px-3 py-1.5 text-xs text-[#161616] self-start sm:self-auto shadow-xs">
-          <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
+    return Object.values(counts)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [monthQuotes]);
+
+  // 9. Rendimiento por detailer
+  const jobsByEmployee = useMemo(() => {
+    const empMap: Record<string, { name: string; count: number; billed: number }> = {};
+    monthQuotes.forEach((q) => {
+      const empId = q.assigned_to || 'unassigned';
+      const empName = availableProfiles.find((p) => p.id === empId)?.full_name || 'Sin asignar';
+      if (!empMap[empId]) {
+        empMap[empId] = { name: empName, count: 0, billed: 0 };
+      }
+      empMap[empId].count += 1;
+      empMap[empId].billed += q.total_amount || 0;
+    });
+
+    return Object.values(empMap).sort((a, b) => b.billed - a.billed);
+  }, [monthQuotes, availableProfiles]);
+
+  return (
+    <div className="space-y-4">
+      {/* Selector de Mes */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
+        <div>
+          <h3 className="text-sm sm:text-base font-bold text-[#161616]">Métricas Contables del Mes</h3>
+          <p className="text-xs text-[#6B6B6B]">Rendimiento financiero y operativo de DetailVlak</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#D7141A]" />
           <input
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-transparent text-[#161616] font-medium focus:outline-none"
+            className="px-3 py-1.5 rounded-xl border border-[#E5E5E3] text-xs font-medium text-[#161616] bg-[#F5F5F4] focus:outline-none focus:border-[#D7141A]"
           />
         </div>
       </div>
 
-      {/* 4 Métricas Financieras Principales */}
+      {/* Tarjetas Principales de Ingresos y Márgenes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Ingresos */}
+        {/* Facturado */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B] flex items-center justify-between">
-            <span>Ingresos (trabajos)</span>
-            <ArrowUpRight className="w-4 h-4 text-[#1E6B43]" />
+            <span>Total Facturado</span>
+            <DollarSign className="w-4 h-4 text-[#D7141A]" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-[#161616] font-mono">
             {formatCurrency(grossIncome, 'UYU')}
           </div>
-          <p className="text-[11px] text-[#6B6B6B]">{completedQuotes.length} autos entregados</p>
+          <p className="text-[11px] text-[#6B6B6B]">{monthQuotes.length} trabajos confirmados</p>
         </div>
 
-        {/* Gastos */}
+        {/* Cobrado Real */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B] flex items-center justify-between">
-            <span>Gastos operativos</span>
-            <DollarSign className="w-4 h-4 text-[#D7141A]" />
+            <span>Cobros Ingresados</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-[#D7141A] font-mono">
-            -{formatCurrency(monthExpenses, 'UYU')}
+          <div className="text-xl sm:text-2xl font-bold text-emerald-600 font-mono">
+            {formatCurrency(totalCollected, 'UYU')}
           </div>
-          <p className="text-[11px] text-[#6B6B6B]">Insumos y servicios</p>
+          <p className="text-[11px] text-[#6B6B6B]">
+            Pendiente: {formatCurrency(Math.max(0, grossIncome - totalCollected))}
+          </p>
         </div>
 
-        {/* Comisiones */}
+        {/* Gastos y Comisiones */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B] flex items-center justify-between">
-            <span>Comisiones devengadas</span>
-            <TrendingUp className="w-4 h-4 text-[#D7141A]" />
+            <span>Egresos y Comisiones</span>
+            <TrendingUp className="w-4 h-4 text-rose-600" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-[#D7141A] font-mono">
-            -{formatCurrency(monthCommissions, 'UYU')}
+          <div className="text-xl sm:text-2xl font-bold text-rose-600 font-mono">
+            -{formatCurrency(monthExpenses + monthCommissions, 'UYU')}
           </div>
-          <p className="text-[11px] text-[#6B6B6B]">Devengadas del mes</p>
+          <p className="text-[11px] text-[#6B6B6B]">
+            Gastos: {formatCurrency(monthExpenses)} · Comis: {formatCurrency(monthCommissions)}
+          </p>
         </div>
 
         {/* Margen Neto */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B] flex items-center justify-between">
-            <span>Resultado neto</span>
+            <span>Resultado Neto</span>
             <Sparkles className="w-4 h-4 text-[#161616]" />
           </div>
-          <div className={`text-xl sm:text-2xl font-bold font-mono ${netProfit >= 0 ? 'text-[#161616]' : 'text-[#D7141A]'}`}>
+          <div className={`text-xl sm:text-2xl font-bold font-mono ${netProfit >= 0 ? 'text-emerald-700' : 'text-[#D7141A]'}`}>
             {formatCurrency(netProfit, 'UYU')}
           </div>
-          <p className="text-[11px] text-[#6B6B6B]">Ingresos - gastos - comisiones</p>
+          <p className="text-[11px] text-[#6B6B6B]">Facturado - Gastos - Comisiones</p>
         </div>
       </div>
 
       {/* Métricas Operativas Clave */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
           <div className="text-[11px] font-medium text-[#6B6B6B]">Ticket promedio</div>
           <div className="text-lg sm:text-xl font-bold text-[#161616] font-mono mt-1">
@@ -181,29 +188,19 @@ export const DetailingDashboardSection: React.FC = () => {
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
-          <div className="text-[11px] font-medium text-[#6B6B6B]">Tasa de conversión</div>
-          <div className="text-lg sm:text-xl font-bold text-[#161616] mt-1">
-            {conversionRate}%
-          </div>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-            {completedQuotes.length} de {monthQuotes.length} cotizaciones
-          </p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
-          <div className="text-[11px] font-medium text-[#6B6B6B]">Total cotizaciones</div>
-          <div className="text-lg sm:text-xl font-bold text-[#161616] mt-1">
+          <div className="text-[11px] font-medium text-[#6B6B6B]">Total trabajos</div>
+          <div className="text-lg sm:text-xl font-bold text-[#161616] mt-1 font-mono">
             {monthQuotes.length}
           </div>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">Recibidas en el mes</p>
+          <p className="text-[11px] text-[#6B6B6B] mt-0.5">En el mes {selectedMonth}</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
-          <div className="text-[11px] font-medium text-[#6B6B6B]">Stock crítico</div>
-          <div className={`text-lg sm:text-xl font-bold mt-1 ${lowStock.length > 0 ? 'text-[#D7141A]' : 'text-[#161616]'}`}>
+        <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs col-span-2 sm:col-span-1">
+          <div className="text-[11px] font-medium text-[#6B6B6B]">Insumos bajo mínimo</div>
+          <div className={`text-lg sm:text-xl font-bold mt-1 font-mono ${lowStock.length > 0 ? 'text-[#D7141A]' : 'text-emerald-600'}`}>
             {lowStock.length}
           </div>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">Productos por debajo del mín.</p>
+          <p className="text-[11px] text-[#6B6B6B] mt-0.5">Requieren reposición</p>
         </div>
       </div>
 
@@ -217,7 +214,7 @@ export const DetailingDashboardSection: React.FC = () => {
           </h4>
 
           {topServices.length === 0 ? (
-            <p className="text-xs text-[#6B6B6B]">Sin trabajos completados en este mes</p>
+            <p className="text-xs text-[#6B6B6B]">Sin trabajos registrados en este mes</p>
           ) : (
             <div className="space-y-2.5">
               {topServices.map((serv, index) => (
@@ -240,7 +237,7 @@ export const DetailingDashboardSection: React.FC = () => {
           )}
         </div>
 
-        {/* Trabajos por Empleado */}
+        {/* Trabajos por Detailer */}
         <div className="p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-xs">
           <h4 className="text-xs font-bold text-[#161616] flex items-center gap-2">
             <Users className="w-4 h-4 text-[#D7141A]" />
@@ -255,7 +252,7 @@ export const DetailingDashboardSection: React.FC = () => {
                 <div key={emp.name} className="p-3 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] flex items-center justify-between text-xs">
                   <div>
                     <div className="font-semibold text-[#161616]">{emp.name}</div>
-                    <div className="text-[11px] text-[#6B6B6B]">{emp.count} trabajos completados</div>
+                    <div className="text-[11px] text-[#6B6B6B]">{emp.count} trabajos realizados</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] text-[#6B6B6B] font-medium">Total facturado</div>
@@ -269,7 +266,6 @@ export const DetailingDashboardSection: React.FC = () => {
           )}
         </div>
       </div>
-
     </div>
   );
 };

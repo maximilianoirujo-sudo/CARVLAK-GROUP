@@ -128,7 +128,7 @@ export interface DataContextType {
   bulkVoidDetailingQuotes: (ids: string[], reason: string) => void;
   bulkDeleteDetailingQuotes: (ids: string[]) => void;
   detailingPayments: DetailingPayment[];
-  recordDetailingPayment: (quoteId: string, payment: Omit<DetailingPayment, 'id'>) => void;
+  recordDetailingPayment: (quoteId: string, payment: Omit<DetailingPayment, 'id'>) => Promise<void> | void;
   recordDetailingCheckin: (quoteId: string, checkin: DetailingCheckinData) => void;
   recordDetailingQualityControl: (quoteId: string, qc: DetailingQualityControlData) => void;
   logDetailingWhatsAppSent: (targetId: string, templateKey: string, phone: string) => void;
@@ -138,6 +138,7 @@ export interface DataContextType {
   addStockItem: (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>) => StockItem;
   updateStockItem: (id: string, data: Partial<StockItem>) => void;
   archiveStockItem: (id: string) => void;
+  deleteStockItemPermanent: (id: string) => void;
   recordStockMovement: (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense?: boolean) => void;
 
   expenses: Expense[];
@@ -235,6 +236,11 @@ export interface DataContextType {
   updateClientConsent: (clientId: string, consent: boolean) => void;
   toggleVehicleFlyerImage: (vehicleId: string, imageUrl: string) => void;
   applyStyleToAllTemplates: (sourceTemplateId: string) => void;
+
+  // Sincronización en tiempo real y remota
+  refreshData: () => Promise<void>;
+  isSyncing: boolean;
+  lastSyncedAt: string | null;
 }
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -373,6 +379,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
   useDebouncedLocalStorage('carvlak_detailing_payments', detailingPayments, 500);
+
+  // Estados de Sincronización en la nube (Web & Móvil)
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   const detailingQuotesRef = useRef(detailingQuotes);
   detailingQuotesRef.current = detailingQuotes;
@@ -539,17 +549,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ) => {
     if (!isSupabaseConfigured || !supabase) return;
     try {
+      // Sanitizar payload para asegurar que no se envíen campos virtuales de TypeScript que no son columnas SQL
+      let cleanPayload = payload;
+      if (table === 'detailing_quotes' && payload) {
+        const { client, vehicle, assignee, ...rest } = payload;
+        cleanPayload = rest;
+      } else if (table === 'clients' && payload) {
+        const { vehicles, appointments, ...rest } = payload;
+        cleanPayload = rest;
+      } else if (table === 'vehicles' && payload) {
+        const { client, ...rest } = payload;
+        cleanPayload = rest;
+      }
+
       let error: any = null;
       if (action === 'insert') {
-        const res = await supabase.from(table).insert(payload);
+        const res = await supabase.from(table).insert(cleanPayload);
         error = res.error;
       } else if (action === 'update') {
         const field = matchField || 'id';
-        const val = matchValue ?? payload?.[field];
-        const res = await supabase.from(table).update(payload).eq(field, val);
+        const val = matchValue ?? cleanPayload?.[field];
+        const res = await supabase.from(table).update(cleanPayload).eq(field, val);
         error = res.error;
       } else if (action === 'upsert') {
-        const res = await supabase.from(table).upsert(payload);
+        const res = await supabase.from(table).upsert(cleanPayload);
         error = res.error;
       } else if (action === 'delete') {
         const field = matchField || 'id';
@@ -560,7 +583,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.warn(`Supabase sync warning (${table}.${action}):`, error.message);
-        enqueueSync({ table, action, payload, matchField, matchValue });
+        enqueueSync({ table, action, payload: cleanPayload, matchField, matchValue });
       }
     } catch (err) {
       console.warn(`Excepción de red en Supabase sync (${table}.${action}):`, err);
@@ -608,7 +631,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_quotes' }, () => {
           loadSupabaseData();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_payments' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_receipts' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_configs' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => {
           loadSupabaseData();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'commissions' }, () => {
@@ -620,23 +655,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_items' }, () => {
           loadSupabaseData();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_receipts' }, () => {
-          loadSupabaseData();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_configs' }, () => {
-          loadSupabaseData();
-        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_cash_closures' }, () => {
           loadSupabaseData();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_payments' }, () => {
-          loadSupabaseData();
-        })
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[Realtime] Canal conectado con éxito');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('[Realtime] Estado del canal:', status);
+          }
+        });
 
       // Reconexión y cambio de pestaña
       const handleSyncOnVisible = () => {
         loadSupabaseData();
+        processSyncQueue();
       };
       window.addEventListener('focus', handleSyncOnVisible);
       window.addEventListener('online', handleSyncOnVisible);
@@ -645,45 +678,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       document.addEventListener('visibilitychange', handleVisChange);
 
+      // Polling de respaldo cada 30 segundos si la pestaña está visible (salvaguarda si el móvil duerme el WebSocket)
+      const pollInterval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible' && (typeof navigator === 'undefined' || navigator.onLine)) {
+          loadSupabaseData();
+        }
+      }, 30000);
+
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(pollInterval);
         window.removeEventListener('focus', handleSyncOnVisible);
         window.removeEventListener('online', handleSyncOnVisible);
         document.removeEventListener('visibilitychange', handleVisChange);
       };
     }
-  }, []);
-
-  // Timer de auto-ingreso a "En taller" (fallback en cliente cada 60 segundos)
-  useEffect(() => {
-    if (!detailingConfig.auto_ingreso_enabled || detailingConfig.require_checkin) return;
-
-    const checkAutoIngreso = () => {
-      const toleranceMin = detailingConfig.auto_ingreso_tolerance_minutes || 0;
-      const nowMs = Date.now();
-
-      detailingQuotesRef.current.forEach((quote) => {
-        if (
-          (quote.status === 'Agendado' || quote.status === 'Turno Confirmado') &&
-          quote.appointment_date &&
-          !quote.is_voided &&
-          !quote.is_archived
-        ) {
-          const apptTime = new Date(quote.appointment_date).getTime();
-          if (!isNaN(apptTime) && nowMs >= apptTime + toleranceMin * 60 * 1000) {
-            updateDetailingQuoteStatus(quote.id, 'En taller');
-          }
-        }
-      });
-    };
-
-    const interval = setInterval(checkAutoIngreso, 60000);
-    checkAutoIngreso();
-    return () => clearInterval(interval);
-  }, [detailingConfig.auto_ingreso_enabled, detailingConfig.require_checkin, detailingConfig.auto_ingreso_tolerance_minutes]);
+  }, [profile?.id]);
 
   const loadSupabaseData = async () => {
     if (!supabase || !isSupabaseConfigured) return;
+    setIsSyncing(true);
     try {
       const isAdmin = profile?.roles?.includes('admin');
       const vehicleTable = isAdmin ? 'dealership_vehicles' : 'dealership_vehicles_staff';
@@ -749,10 +763,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resDealershipConfig.data) setDealershipConfig((prev) => ({ ...prev, ...resDealershipConfig.data }));
       if (resDetailingTariffs.data) setDetailingTariffs(resDetailingTariffs.data as DetailingTariff[]);
       if (resDetailingQuotes.data) {
-        const mapped = (resDetailingQuotes.data as DetailingQuote[]).map((q) => ({
-          ...q,
-          status: mapOldStatusToNew(q.status) as DetailingQuoteStatus
-        }));
+        const paymentsList = (resDetailingPayments?.data as DetailingPayment[]) || [];
+        const paymentsByQuote = paymentsList.reduce((acc: Record<string, DetailingPayment[]>, p: DetailingPayment) => {
+          if (!acc[p.quote_id]) acc[p.quote_id] = [];
+          acc[p.quote_id].push(p);
+          return acc;
+        }, {});
+
+        const mapped = (resDetailingQuotes.data as DetailingQuote[]).map((q) => {
+          const tablePayments = paymentsByQuote[q.id] || [];
+          const mergedPayments = tablePayments.length > 0 ? tablePayments : (q.payments || []);
+          return {
+            ...q,
+            payments: mergedPayments,
+            status: mapOldStatusToNew(q.status) as DetailingQuoteStatus
+          };
+        });
         setDetailingQuotes(mapped);
       }
       if (resStockItems.data) setStockItems(resStockItems.data as StockItem[]);
@@ -770,8 +796,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resDetailingCashClosures.data) setDetailingCashClosures(resDetailingCashClosures.data as DetailingCashClosure[]);
       if (resDetailingReceipts.data) setDetailingReceipts(resDetailingReceipts.data as DetailingReceipt[]);
       if (resDetailingPayments?.data) setDetailingPayments(resDetailingPayments.data as DetailingPayment[]);
+      setLastSyncedAt(new Date().toISOString());
     } catch (err) {
       console.warn('Conexión con Supabase en curso o tablas aún vacías:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const refreshData = async () => {
+    setIsSyncing(true);
+    try {
+      await processSyncQueue();
+      await loadSupabaseData();
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1010,31 +1049,75 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newTariff;
   };
 
-  // Cotizaciones / Trabajos
+  // Trabajos de Detailing (Registro Contable)
   const addDetailingQuote = (quoteData: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'>): DetailingQuote => {
+    const todayUY = getLocalDateString();
+    const nowIso = new Date().toISOString();
     const newQuote: DetailingQuote = {
       ...quoteData,
       id: `quote-${crypto.randomUUID()}`,
+      work_date: quoteData.work_date || todayUY,
       created_by: profile?.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      created_at: nowIso,
+      updated_at: nowIso
     };
     setDetailingQuotes((prev) => [newQuote, ...prev]);
     logActivity('cotizacion_detailing', newQuote.id, 'create', {
       client: newQuote.client_name,
       total: newQuote.total_amount,
-      status: newQuote.status
+      work_date: newQuote.work_date
     });
     syncSupabase('detailing_quotes', 'insert', newQuote);
+
+    // Si viene con pagos registrados:
+    if (newQuote.payments && newQuote.payments.length > 0) {
+      newQuote.payments.forEach((p) => {
+        syncSupabase('detailing_payments', 'insert', { ...p, quote_id: newQuote.id });
+      });
+      setDetailingPayments((prev) => [...(newQuote.payments || []), ...prev]);
+
+      const totalPaid = newQuote.payments
+        .filter((p) => !p.is_voided)
+        .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+
+      // Si quedó cobrado:
+      if (totalPaid >= newQuote.total_amount && newQuote.total_amount > 0) {
+        const comms = calculateCommissionsForQuote(newQuote);
+        if (comms.length > 0) {
+          setCommissions((prev) => [...prev, ...comms]);
+          comms.forEach((c) => syncSupabase('commissions', 'insert', c));
+        }
+      }
+    }
+
     return newQuote;
   };
 
   const updateDetailingQuote = (id: string, data: Partial<DetailingQuote>) => {
+    const nowIso = new Date().toISOString();
     setDetailingQuotes((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, ...data, updated_at: new Date().toISOString() } : q))
+      prev.map((q) => {
+        if (q.id !== id) return q;
+        const updated = { ...q, ...data, updated_at: nowIso };
+
+        // Si cambian precio, origen o participantes y la comisión no está pagada, se recalcula sola:
+        const hasPriceChanged = data.total_amount !== undefined && data.total_amount !== q.total_amount;
+        const hasOriginChanged = data.origin !== undefined && data.origin !== q.origin;
+        const hasParticipantsChanged = data.commission_participants !== undefined;
+
+        if (hasPriceChanged || hasOriginChanged || hasParticipantsChanged) {
+          const pendingComms = commissions.filter((c) => c.quote_id === id && c.status === 'Pendiente');
+          if (pendingComms.length > 0) {
+            const newComms = calculateCommissionsForQuote(updated);
+            setCommissions((prevC) => [...prevC.filter((c) => c.quote_id !== id || c.status === 'Pagada'), ...newComms]);
+            newComms.forEach((c) => syncSupabase('commissions', 'upsert', c));
+          }
+        }
+        return updated;
+      })
     );
     logActivity('cotizacion_detailing', id, 'update', data);
-    syncSupabase('detailing_quotes', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('detailing_quotes', 'update', { ...data, updated_at: nowIso }, 'id', id);
   };
 
   const archiveDetailingQuote = (id: string) => {
@@ -1247,7 +1330,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     syncSupabase('detailing_quotes', 'update', updatedFields, 'id', id);
   };
 
-  // Cálculo dinámico de comisiones por participante y reglas de origen
+  // Cálculo dinámico de comisiones por participante y reglas de origen (Sin inventar perfiles)
   const calculateCommissionsForQuote = (
     quote: DetailingQuote,
     materialsCost?: number
@@ -1263,39 +1346,61 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       baseAmount = Math.max(0, quote.total_amount - matCost);
     }
 
-    const defaultIds = commissionConfig?.default_participants || [];
+    const defaultIds = commissionConfig?.default_participants && commissionConfig.default_participants.length > 0
+      ? commissionConfig.default_participants
+      : ['user-romina', 'user-maxi'];
+
     const participantIds: string[] = quote.commission_participants && quote.commission_participants.length > 0
       ? quote.commission_participants.map((p) => p.employee_id)
-      : defaultIds.length > 0
-      ? defaultIds
-      : [quote.assigned_to || profile?.id || ''];
+      : defaultIds;
 
-    const allProfiles = availableProfiles && availableProfiles.length > 0 ? availableProfiles : INITIAL_PROFILES;
     const result: CommissionRecord[] = [];
     const nowIso = new Date().toISOString();
+    const originNorm = (quote.origin || '').trim().toLowerCase();
 
     participantIds.forEach((empId) => {
       if (!empId) return;
-      const empProfile = allProfiles.find((p) => p.id === empId);
+      const empProfile = availableProfiles.find((p) => p.id === empId);
       const empRule = commissionConfig?.employee_rules?.find((r) => r.employee_id === empId);
+
+      // Si no existe en perfiles ni reglas, no inventar datos
+      if (!empProfile && !empRule) {
+        console.warn(`Colaborador con ID ${empId} no encontrado en perfiles activos.`);
+        return;
+      }
 
       // Regla específica de origen del cliente si existe (ej. Anuncios pagos)
       const originRule = empRule?.origin_rules?.find(
-        (or) => or.origin?.trim().toLowerCase() === (quote.origin || '').trim().toLowerCase()
+        (or) => or.origin?.trim().toLowerCase() === originNorm
       );
 
-      const rate = originRule
-        ? originRule.percentage
-        : (empRule ? empRule.base_percentage : (empProfile?.commissions?.detailing ?? 0));
+      let rate = 30; // base general por defecto (Romina 30%, Maxi 30%)
+      if (originRule) {
+        rate = originRule.percentage;
+      } else if (empRule && empRule.base_percentage !== undefined) {
+        rate = empRule.base_percentage;
+      } else if (empProfile?.commissions?.detailing !== undefined) {
+        rate = empProfile.commissions.detailing;
+      }
+
+      // Maximiliano con "Anuncios pagos" -> 12.5%
+      const isMaxi = empId === 'user-maxi' ||
+        (empProfile?.full_name || '').toLowerCase().includes('maxi') ||
+        (empRule?.employee_name || '').toLowerCase().includes('maxi');
+
+      if (isMaxi && originNorm.includes('anuncio')) {
+        rate = originRule ? originRule.percentage : 12.5;
+      }
 
       if (rate > 0) {
         const commAmount = Math.round(baseAmount * (rate / 100));
+        const empName = empProfile?.full_name || empRule?.employee_name || (isMaxi ? 'Maximiliano Irujo' : 'Romina');
         result.push({
           id: `comm-${crypto.randomUUID()}`,
           business: 'detailing',
           currency: 'UYU',
           employee_id: empId,
-          employee_name: empProfile?.full_name || empRule?.employee_name || 'Colaborador',
+          employee_name: empName,
           quote_id: quote.id,
           client_name: quote.client_name,
           vehicle_description: `${quote.vehicle_info}${quote.vehicle_plate ? ` (${quote.vehicle_plate})` : ''}`,
@@ -1598,7 +1703,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       receipt_number: receiptNum,
       version,
       issue_date: todayStr,
-      service_date: quote.appointment_date ? quote.appointment_date.split('T')[0] : todayStr,
+      service_date: quote.work_date || (quote.appointment_date ? quote.appointment_date.split('T')[0] : todayStr),
       token: existingReceipt?.token || `tk_${crypto.randomUUID().replace(/-/g, '')}`,
 
       company_trade_name: receiptCfg.company_trade_name,
@@ -1863,7 +1968,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // REGISTRO DE COBROS, CHECK-IN, CONTROL DE CALIDAD Y WHATSAPP LOG
-  const recordDetailingPayment = (quoteId: string, paymentData: Omit<DetailingPayment, 'id'>) => {
+  const recordDetailingPayment = async (quoteId: string, paymentData: Omit<DetailingPayment, 'id'>) => {
     const q = detailingQuotesRef.current.find((item) => item.id === quoteId) || detailingQuotes.find((item) => item.id === quoteId);
     if (!q) return;
     const nowIso = new Date().toISOString();
@@ -1876,9 +1981,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: nowIso
     };
     const updatedPayments = [...(q.payments || []), newPayment];
+    const totalPaid = updatedPayments
+      .filter((p) => !p.is_voided)
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+    const updatedQuote: DetailingQuote = {
+      ...q,
+      payments: updatedPayments,
+      updated_at: nowIso
+    };
+
     updateDetailingQuote(quoteId, { payments: updatedPayments });
     setDetailingPayments((prev) => [newPayment, ...prev]);
     syncSupabase('detailing_payments', 'insert', newPayment);
+
+    // Si queda Cobrado (totalPaid >= total_amount)
+    if (totalPaid >= q.total_amount && q.total_amount > 0) {
+      // 1. Generar comisiones si no existen
+      const existingComms = commissions.filter((c) => c.quote_id === quoteId);
+      if (existingComms.length === 0) {
+        const newComms = calculateCommissionsForQuote(updatedQuote);
+        if (newComms.length > 0) {
+          setCommissions((prev) => [...prev.filter((c) => c.quote_id !== quoteId), ...newComms]);
+          newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
+        }
+      }
+      // 2. Generar comprobante oficial o actualizarlo a Pagado
+      await generateDetailingReceipt(quoteId);
+    } else {
+      // Si ya existía comprobante, actualizarlo a versión siguiente con el nuevo saldo
+      const existingReceipt = detailingReceipts.find((r) => r.quote_id === quoteId);
+      if (existingReceipt) {
+        await generateDetailingReceipt(quoteId);
+      }
+    }
   };
 
   const recordDetailingCheckin = (quoteId: string, checkin: DetailingCheckinData) => {
@@ -2008,6 +2144,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
     logActivity('stock', id, 'archive', { is_archived: true });
     syncSupabase('stock_items', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
+  };
+
+  const deleteStockItemPermanent = (id: string) => {
+    setStockItems((prev) => prev.filter((s) => s.id !== id));
+    syncSupabase('stock_items', 'delete', undefined, 'id', id);
+    logActivity('stock', id, 'archive', { permanent_deleted: true });
   };
 
   const recordStockMovement = (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense = false) => {
@@ -3687,6 +3829,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     detailingTariffs,
     updateDetailingTariff,
     addDetailingTariff,
+    refreshData,
+    isSyncing,
+    lastSyncedAt,
     detailingQuotes: activeDetailingQuotes,
     allDetailingQuotes: detailingQuotes,
     addDetailingQuote,
@@ -3708,6 +3853,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addStockItem,
     updateStockItem,
     archiveStockItem,
+    deleteStockItemPermanent,
     recordStockMovement,
     expenses: activeExpenses,
     allExpenses: expenses,
@@ -3844,6 +3990,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addStockItem,
     updateStockItem,
     archiveStockItem,
+    deleteStockItemPermanent,
     recordStockMovement,
     addExpense,
     updateExpense,
@@ -3894,7 +4041,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     recalculateDetailingCommissions,
     adjustSingleCommission,
     generateDetailingReceipt,
-    cleanDetailingTestData
+    cleanDetailingTestData,
+    refreshData,
+    isSyncing,
+    lastSyncedAt
   ]);
 
   return (

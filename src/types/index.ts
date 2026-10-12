@@ -12,7 +12,7 @@ export type VehicleCategory = 'Chico' | 'Mediano' | 'SUV/Rural' | 'Pick-up' | 'M
 
 export type VehicleOwnership = 'client' | 'dealership';
 
-export type ClientOrigin = 'Presencial' | 'WhatsApp' | 'Instagram' | 'Referido' | 'Google Form';
+export type ClientOrigin = 'Presencial' | 'WhatsApp' | 'Instagram' | 'Referido' | 'Google Form' | 'Anuncios pagos' | string;
 
 export type AppointmentStatus = 'Pendiente' | 'Confirmado' | 'En curso' | 'Finalizado' | 'Cancelado' | 'confirmed' | 'completed' | 'cancelled';
 
@@ -187,9 +187,13 @@ export type DetailingQuoteStatus =
   | 'Trabajo Completado' 
   | 'Entregado y cobrado';
 
+export type DetailingPaymentStatus = 'Cobrado' | 'Cobro parcial' | 'Pendiente de cobro';
+
 export interface DetailingQuoteServiceItem {
   serviceId: string;
   serviceName: string;
+  name?: string;
+  category?: VehicleCategory;
   description?: string;
   price: number;
 }
@@ -201,7 +205,7 @@ export interface DetailingPayment {
   amount: number;
   method?: string;
   payment_method?: string; // compatibilidad
-  type: 'seña' | 'saldo' | 'total';
+  type?: 'seña' | 'saldo' | 'total' | string;
   notes?: string;
   registered_by?: string;
   created_by?: string;
@@ -247,9 +251,10 @@ export interface DetailingQuote {
   vehicle_info: string;
   vehicle_plate?: string;
   vehicle_category: VehicleCategory;
+  work_date?: string; // YYYY-MM-DD (fecha del trabajo; puede ser hoy o futura)
   selected_services: DetailingQuoteServiceItem[];
-  subtotal: number;
-  discount_type: DetailingDiscountType;
+  subtotal?: number;
+  discount_type?: DetailingDiscountType;
   discount_amount: number;
   extreme_dirt_surcharge: number;
   total_amount: number;
@@ -267,14 +272,14 @@ export interface DetailingQuote {
   origin: string; // Origen del cliente (obligatorio)
   notes?: string;
   priority_zones?: string;
-  status: DetailingQuoteStatus;
-  quote_sent_at?: string; // Fecha y hora en que se envió el presupuesto
-  confirmed_at?: string; // Fecha y hora de confirmación del cliente
-  appointment_id?: string; // Id del turno creado en la Agenda
-  appointment_date?: string; // ISO string de cuando se agendó
-  work_bay_id?: string; // Box o puesto de trabajo asignado
-  receipt_id?: string; // ID del comprobante oficial generado
-  receipt_number?: string; // Número correlativo (ej. DV-000001)
+  status?: DetailingQuoteStatus | string;
+  quote_sent_at?: string;
+  confirmed_at?: string;
+  appointment_id?: string;
+  appointment_date?: string;
+  work_bay_id?: string;
+  receipt_id?: string;
+  receipt_number?: string;
   payments?: DetailingPayment[];
   checkin_data?: DetailingCheckinData;
   quality_control_data?: DetailingQualityControlData;
@@ -1097,6 +1102,8 @@ export interface DetailingRecurringExpense {
 export interface DetailingDiscountConfig {
   id: string;
   label: string;
+  name?: string;
+  amount?: number;
   percentage: number;
 }
 
@@ -1214,12 +1221,15 @@ export interface DetailingConfig {
   discounts_available: DetailingDiscountConfig[];
   discounts?: DetailingDiscountConfig[];
   extreme_dirt_surcharge_amount: number;
+  extreme_dirt_surcharge_default?: number;
   expense_categories: string[];
   payment_methods: string[];
   suppliers: string[];
   stock_units: string[];
   void_reasons: string[];
   client_origins?: string[];
+  origins?: string[];
+  whatsapp_receipt_template?: string;
   commission_config?: DetailingCommissionGlobalConfig;
   receipt_config?: DetailingReceiptConfig;
   require_checkin?: boolean; // Pedir check-in al ingresar: sí/no (por defecto false)
