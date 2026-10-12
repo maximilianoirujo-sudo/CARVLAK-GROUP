@@ -32,3 +32,5 @@ dist-ssr
 *.zip
 carvlak*bundle*
 build_bundle.cjs
+
+.vercel

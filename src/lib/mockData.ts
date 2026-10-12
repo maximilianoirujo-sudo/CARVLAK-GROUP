@@ -65,17 +65,6 @@ export const INITIAL_PROFILES: Profile[] = [
     created_at: new Date().toISOString()
   },
   {
-    id: 'user-matias',
-    email: 'matias@detailvlak.com',
-    full_name: 'Matías Rodríguez',
-    phone: '098 765 432',
-    roles: ['detailer'],
-    businesses: ['detailing'],
-    is_active: true,
-    commissions: { automotora: 0, detailing: 0, inspeccion: 0 },
-    created_at: new Date().toISOString()
-  },
-  {
     id: 'user-diego',
     email: 'diego@carvlak.com',
     full_name: 'Diego Silva',
@@ -329,7 +318,7 @@ export const INITIAL_TASKS: Task[] = [
     title: 'Preparar productos cerámicos Gyeon y microfibras',
     description: 'Verificar stock de pads de pulido y sellador nanotecnológico para el BMW 320i.',
     business: 'detailing',
-    assigned_to: 'user-matias',
+    assigned_to: 'user-romina',
     due_date: todayIso,
     status: 'En curso',
     created_by: 'user-maxi',
@@ -623,6 +612,24 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
       'Formulario web',
       'Llamada'
     ],
+    origins: [
+      'Presencial',
+      'WhatsApp',
+      'Instagram orgánico',
+      'Anuncios pagos',
+      'Referido',
+      'Formulario web',
+      'Llamada'
+    ],
+    origin_commission_rules: [
+      { origin: 'Presencial', maxi_percentage: 30, romina_percentage: 30 },
+      { origin: 'WhatsApp', maxi_percentage: 30, romina_percentage: 30 },
+      { origin: 'Instagram orgánico', maxi_percentage: 30, romina_percentage: 30 },
+      { origin: 'Anuncios pagos', maxi_percentage: 12.5, romina_percentage: 30 },
+      { origin: 'Referido', maxi_percentage: 30, romina_percentage: 30 },
+      { origin: 'Formulario web', maxi_percentage: 30, romina_percentage: 30 },
+      { origin: 'Llamada', maxi_percentage: 30, romina_percentage: 30 }
+    ],
     commission_config: {
       calculation_base: 'total_after_discounts',
       default_participants: ['user-romina', 'user-maxi'],
@@ -758,7 +765,7 @@ export const INITIAL_DETAILING_QUOTES: DetailingQuote[] = [
     extreme_dirt_surcharge: 1500, // Suciedad de campo
     total_amount: 10500,
     estimated_time: '1 día',
-    assigned_to: 'user-matias',
+    assigned_to: 'user-romina',
     origin: 'Presencial',
     notes: 'Camioneta con barro seco en chasis y tapizados con tierra.',
     priority_zones: 'Tapizados de tela y chasis',

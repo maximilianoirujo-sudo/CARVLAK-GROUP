@@ -23,6 +23,7 @@ import {
 import {
   DetailingConfig,
   DetailingCommissionEmployeeRule,
+  DetailingOriginCommissionRule,
   DetailingTariff
 } from '../../../types';
 import { Button } from '../../../components/ui/Button';
@@ -74,15 +75,27 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
   const [formData, setFormData] = useState<DetailingConfig>(() => {
     const copy = JSON.parse(JSON.stringify(config)) as DetailingConfig;
     if (!copy.origins || copy.origins.length === 0) {
-      copy.origins = [
-        'WhatsApp',
-        'Instagram',
+      copy.origins = copy.client_origins && copy.client_origins.length > 0 ? copy.client_origins : [
         'Presencial',
+        'WhatsApp',
+        'Instagram orgánico',
         'Anuncios pagos',
         'Referido',
-        'Google Form'
+        'Formulario web',
+        'Llamada'
       ];
     }
+    copy.client_origins = copy.origins;
+    const existingRules = copy.origin_commission_rules || [];
+    copy.origin_commission_rules = copy.origins.map((orig) => {
+      const found = existingRules.find((r) => r.origin.trim().toLowerCase() === orig.trim().toLowerCase());
+      if (found) return found;
+      return {
+        origin: orig,
+        maxi_percentage: orig.toLowerCase().includes('anuncio') ? 12.5 : 30,
+        romina_percentage: 30
+      };
+    });
     if (!copy.payment_methods || copy.payment_methods.length === 0) {
       copy.payment_methods = [
         'Efectivo',
@@ -161,12 +174,77 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
 
   const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
   const [newOriginText, setNewOriginText] = useState('');
+  const [newMaxiPct, setNewMaxiPct] = useState<number>(30);
+  const [newRominaPct, setNewRominaPct] = useState<number>(30);
   const [newPaymentMethodText, setNewPaymentMethodText] = useState('');
   const [newVoidReasonText, setNewVoidReasonText] = useState('');
   const [newExpenseCatText, setNewExpenseCatText] = useState('');
 
   // Sincronización de secuencia de comprobantes en DB
   const [isSettingSeq, setIsSettingSeq] = useState(false);
+
+  const handleUpdateOriginCommission = (originName: string, person: 'maxi' | 'romina', value: number) => {
+    setFormData((prev) => {
+      const currentRules = prev.origin_commission_rules || [];
+      const index = currentRules.findIndex(
+        (r) => r.origin.trim().toLowerCase() === originName.trim().toLowerCase()
+      );
+      let nextRules = [...currentRules];
+      if (index >= 0) {
+        nextRules[index] = {
+          ...nextRules[index],
+          [person === 'maxi' ? 'maxi_percentage' : 'romina_percentage']: value
+        };
+      } else {
+        nextRules.push({
+          origin: originName,
+          maxi_percentage: person === 'maxi' ? value : (originName.toLowerCase().includes('anuncio') ? 12.5 : 30),
+          romina_percentage: person === 'romina' ? value : 30
+        });
+      }
+      return {
+        ...prev,
+        origin_commission_rules: nextRules
+      };
+    });
+  };
+
+  const handleDeleteOrigin = (originToDelete: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      origins: (prev.origins || []).filter((o) => o !== originToDelete),
+      client_origins: (prev.client_origins || []).filter((o) => o !== originToDelete),
+      origin_commission_rules: (prev.origin_commission_rules || []).filter(
+        (r) => r.origin.trim().toLowerCase() !== originToDelete.trim().toLowerCase()
+      )
+    }));
+  };
+
+  const handleAddOrigin = () => {
+    if (!newOriginText.trim()) return;
+    const name = newOriginText.trim();
+    if ((formData.origins || []).some((o) => o.toLowerCase() === name.toLowerCase())) {
+      showToast('Este origen ya existe', 'error');
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      origins: [...(prev.origins || []), name],
+      client_origins: [...(prev.client_origins || []), name],
+      origin_commission_rules: [
+        ...(prev.origin_commission_rules || []),
+        {
+          origin: name,
+          maxi_percentage: newMaxiPct,
+          romina_percentage: newRominaPct
+        }
+      ]
+    }));
+    setNewOriginText('');
+    setNewMaxiPct(30);
+    setNewRominaPct(30);
+    showToast(`Origen "${name}" agregado correctamente`, 'success');
+  };
 
   const handleSetReceiptSeqInDb = async () => {
     const val = Number(formData.receipt_config?.next_number) || 1;
@@ -187,7 +265,39 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
   };
 
   const handleSave = () => {
-    onSaveConfig(formData);
+    const updatedRules = formData.origin_commission_rules || [];
+    const syncedEmployeeRules: DetailingCommissionEmployeeRule[] = [
+      {
+        employee_id: 'user-romina',
+        employee_name: 'Romina',
+        base_percentage: 30,
+        origin_rules: updatedRules.map((r) => ({ origin: r.origin, percentage: r.romina_percentage })),
+        is_default_participant: true
+      },
+      {
+        employee_id: 'user-maxi',
+        employee_name: 'Maximiliano',
+        base_percentage: 30,
+        origin_rules: updatedRules.map((r) => ({ origin: r.origin, percentage: r.maxi_percentage })),
+        is_default_participant: true
+      }
+    ];
+
+    const toSave: DetailingConfig = {
+      ...formData,
+      client_origins: formData.origins,
+      commission_config: {
+        ...(formData.commission_config || {
+          calculation_base: 'total_after_discounts',
+          default_participants: ['user-romina', 'user-maxi']
+        }),
+        calculation_base: formData.commission_config?.calculation_base || 'total_after_discounts',
+        default_participants: ['user-romina', 'user-maxi'],
+        employee_rules: syncedEmployeeRules
+      }
+    };
+
+    onSaveConfig(toSave);
     showToast('Configuración de DetailVlak guardada correctamente en Supabase', 'success');
   };
 
@@ -718,65 +828,136 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
           {activeSection === 'origins' && (
             <div className="space-y-4">
               <div>
-                <h4 className="text-sm font-bold text-[#161616]">Orígenes de Cliente</h4>
-                <p className="text-[#6B6B6B] mt-0.5">
-                  Canales de contacto obligatorios para registrar un trabajo y calcular comisiones.
+                <h4 className="text-sm font-bold text-[#161616]">Orígenes de Cliente y Comisiones</h4>
+                <p className="text-xs text-[#6B6B6B] mt-0.5">
+                  Configurá el porcentaje de comisión para Maximiliano y Romina según el canal de origen del cliente.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                {(formData.origins || []).map((orig, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] flex items-center justify-between"
-                  >
-                    <div>
-                      <span className="font-bold text-[#161616]">{orig}</span>
-                      <span className="text-[10px] text-[#6B6B6B] ml-2">
-                        {orig.toLowerCase().includes('anuncio')
-                          ? '(Aplica 12.5% Maxi · 30% Romina)'
-                          : '(Aplica 30% Maxi · 30% Romina)'}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          origins: (prev.origins || []).filter((_, i) => i !== idx)
-                        }))
-                      }
-                      className="text-[#6B6B6B] hover:text-[#D7141A] cursor-pointer"
+              <div className="space-y-2.5">
+                {(formData.origins || []).map((orig) => {
+                  const rule = (formData.origin_commission_rules || []).find(
+                    (r) => r.origin.trim().toLowerCase() === orig.trim().toLowerCase()
+                  ) || {
+                    origin: orig,
+                    maxi_percentage: orig.toLowerCase().includes('anuncio') ? 12.5 : 30,
+                    romina_percentage: 30
+                  };
+
+                  return (
+                    <div
+                      key={orig}
+                      className="p-3 bg-white rounded-xl border border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-bold text-xs text-[#161616] truncate">{orig}</span>
+                        {orig.toLowerCase().includes('anuncio') && (
+                          <span className="text-[10px] bg-red-50 text-[#D7141A] font-semibold px-2 py-0.5 rounded-full border border-red-100 shrink-0">
+                            Pauta / Ads
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        {/* Romina */}
+                        <div className="flex items-center gap-1.5 bg-[#F5F5F4] px-2.5 py-1.5 rounded-lg border border-[#E5E5E3]">
+                          <span className="text-[11px] font-bold text-[#161616]">Romina:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={rule.romina_percentage}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              handleUpdateOriginCommission(orig, 'romina', val);
+                            }}
+                            className="w-14 bg-white border border-[#E5E5E3] rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616] focus:outline-hidden focus:border-[#161616]"
+                          />
+                          <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                        </div>
+
+                        {/* Maxi */}
+                        <div className="flex items-center gap-1.5 bg-[#F5F5F4] px-2.5 py-1.5 rounded-lg border border-[#E5E5E3]">
+                          <span className="text-[11px] font-bold text-[#161616]">Maxi:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.5}
+                            value={rule.maxi_percentage}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              handleUpdateOriginCommission(orig, 'maxi', val);
+                            }}
+                            className="w-14 bg-white border border-[#E5E5E3] rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616] focus:outline-hidden focus:border-[#161616]"
+                          />
+                          <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                        </div>
+
+                        {/* Eliminar */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrigin(orig)}
+                          className="p-1.5 text-[#6B6B6B] hover:text-[#D7141A] hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar este origen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              <div className="flex gap-2 pt-2 border-t border-[#E5E5E3]">
-                <input
-                  type="text"
-                  placeholder="Nuevo origen de cliente..."
-                  value={newOriginText}
-                  onChange={(e) => setNewOriginText(e.target.value)}
-                  className="flex-1 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs"
-                />
+              {/* Agregar nuevo origen con sus comisiones */}
+              <div className="p-3.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-3">
+                <span className="font-bold text-xs text-[#161616] block">Agregar nuevo origen de cliente:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <div className="sm:col-span-6">
+                    <input
+                      type="text"
+                      placeholder="Nombre del canal (ej. TikTok, Referido...)"
+                      value={newOriginText}
+                      onChange={(e) => setNewOriginText(e.target.value)}
+                      className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs text-[#161616] focus:outline-hidden focus:border-[#161616]"
+                    />
+                  </div>
+                  <div className="sm:col-span-3 flex items-center justify-between sm:justify-start gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-[#E5E5E3]">
+                    <span className="text-[11px] font-bold text-[#161616]">Romina:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={newRominaPct}
+                      onChange={(e) => setNewRominaPct(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold text-[#161616] border border-[#E5E5E3] rounded px-1 py-0.5"
+                    />
+                    <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                  </div>
+                  <div className="sm:col-span-3 flex items-center justify-between sm:justify-start gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-[#E5E5E3]">
+                    <span className="text-[11px] font-bold text-[#161616]">Maxi:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={newMaxiPct}
+                      onChange={(e) => setNewMaxiPct(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold text-[#161616] border border-[#E5E5E3] rounded px-1 py-0.5"
+                    />
+                    <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                  </div>
+                </div>
                 <Button
                   variant="secondary"
                   size="sm"
                   type="button"
-                  onClick={() => {
-                    if (newOriginText.trim()) {
-                      setFormData((prev) => ({
-                        ...prev,
-                        origins: [...(prev.origins || []), newOriginText.trim() as any]
-                      }));
-                      setNewOriginText('');
-                    }
-                  }}
+                  className="w-full sm:w-auto"
+                  onClick={handleAddOrigin}
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" /> Agregar
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Agregar Origen y Comisiones
                 </Button>
               </div>
             </div>
@@ -937,21 +1118,39 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
                 </div>
 
                 <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
-                  <span className="font-bold text-xs text-[#161616] block">Valores predeterminados del equipo:</span>
-                  <div className="p-2.5 bg-white rounded-lg border border-[#E5E5E3] flex justify-between items-center">
-                    <div>
-                      <span className="font-bold">Romina</span>
-                      <span className="text-[10px] text-[#6B6B6B] block">Detailer de taller</span>
-                    </div>
-                    <span className="font-mono font-bold text-[#D7141A]">30% base</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-[#161616]">Porcentajes por integrante:</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection('origins')}
+                      className="text-[11px] text-[#D7141A] hover:underline font-bold cursor-pointer"
+                    >
+                      Configurar por canal →
+                    </button>
                   </div>
 
                   <div className="p-2.5 bg-white rounded-lg border border-[#E5E5E3] flex justify-between items-center">
                     <div>
-                      <span className="font-bold">Maximiliano</span>
+                      <span className="font-bold text-xs">Romina</span>
+                      <span className="text-[10px] text-[#6B6B6B] block">Detailer de taller</span>
+                    </div>
+                    <span className="text-xs font-semibold text-[#161616]">
+                      Configurada en Orígenes de Cliente
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-white rounded-lg border border-[#E5E5E3] flex justify-between items-center">
+                    <div>
+                      <span className="font-bold text-xs">Maximiliano</span>
                       <span className="text-[10px] text-[#6B6B6B] block">Dueño / Admin</span>
                     </div>
-                    <span className="font-mono font-bold text-[#D7141A]">30% (12.5% Anuncios pagos)</span>
+                    <span className="text-xs font-semibold text-[#161616]">
+                      Configurada en Orígenes de Cliente
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-900">
+                    💡 Para configurar cuánto se pone de comisión dependiendo del origen del cliente para Maximiliano y Romina, ingresá en la sección <strong>Orígenes de Cliente</strong>.
                   </div>
                 </div>
               </div>

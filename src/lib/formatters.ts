@@ -2,7 +2,7 @@
 // CARVLAK GROUP - FORMATEADORES & UTILIDADES
 // ==============================================================================
 
-import { Currency, Business } from '../types';
+import { Currency, Business, DetailingOriginCommissionRule, DetailingConfig } from '../types';
 
 /**
  * Formatea montos en Pesos Uruguayos ($UYU) con separadores de miles estándar uruguayo
@@ -453,6 +453,70 @@ export function isJobScheduled(workDate?: string): boolean {
   if (!workDate) return false;
   const today = getLocalDateString();
   return workDate.slice(0, 10) > today;
+}
+
+/**
+ * Obtiene los porcentajes de comisión para Maximiliano y Romina según el origen del cliente.
+ * Lee primero de `origin_commission_rules` en la configuración de detailing,
+ * luego de las reglas de empleados en `commission_config.employee_rules`,
+ * y finalmente aplica los valores por defecto (Romina 30%, Maxi 30% o 12.5% para Anuncios pagos).
+ */
+export function getOriginCommissionRates(
+  config?: DetailingConfig | {
+    origin_commission_rules?: DetailingOriginCommissionRule[];
+    commission_config?: {
+      employee_rules?: {
+        employee_id: string;
+        employee_name?: string;
+        base_percentage?: number;
+        origin_rules?: { origin: string; percentage: number }[];
+      }[];
+    };
+  } | null,
+  origin?: string | null
+): { maxi: number; romina: number } {
+  if (!origin) return { maxi: 30, romina: 30 };
+  const originNorm = origin.trim().toLowerCase();
+
+  // 1. Buscar en origin_commission_rules directa
+  if (config?.origin_commission_rules && config.origin_commission_rules.length > 0) {
+    const found = config.origin_commission_rules.find(
+      (r) => r.origin.trim().toLowerCase() === originNorm
+    );
+    if (found) {
+      return {
+        maxi: typeof found.maxi_percentage === 'number' ? found.maxi_percentage : (Number(found.maxi_percentage) || 30),
+        romina: typeof found.romina_percentage === 'number' ? found.romina_percentage : (Number(found.romina_percentage) || 30)
+      };
+    }
+  }
+
+  // 2. Buscar en employee_rules si existe
+  if (config?.commission_config?.employee_rules) {
+    const maxiRule = config.commission_config.employee_rules.find(
+      (r) => r.employee_id === 'user-maxi' || (r.employee_name || '').toLowerCase().includes('maxi')
+    );
+    const rominaRule = config.commission_config.employee_rules.find(
+      (r) => r.employee_id === 'user-romina' || (r.employee_name || '').toLowerCase().includes('romina')
+    );
+
+    const maxiOriginRule = maxiRule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === originNorm);
+    const rominaOriginRule = rominaRule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === originNorm);
+
+    if (maxiOriginRule || rominaOriginRule) {
+      return {
+        maxi: maxiOriginRule ? Number(maxiOriginRule.percentage) : (maxiRule?.base_percentage ?? 30),
+        romina: rominaOriginRule ? Number(rominaOriginRule.percentage) : (rominaRule?.base_percentage ?? 30)
+      };
+    }
+  }
+
+  // 3. Fallback inteligente
+  const isAds = originNorm.includes('anuncio');
+  return {
+    maxi: isAds ? 12.5 : 30,
+    romina: 30
+  };
 }
 
 

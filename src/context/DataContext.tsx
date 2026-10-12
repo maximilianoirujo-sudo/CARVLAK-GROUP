@@ -70,7 +70,7 @@ import {
   INITIAL_SOCIAL_MEDIA_POSTS,
   INITIAL_DETAILING_CONFIG
 } from '../lib/mockData';
-import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, mapOldStatusToNew, getDiscountLabel } from '../lib/formatters';
+import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
@@ -1358,6 +1358,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nowIso = new Date().toISOString();
     const originNorm = (quote.origin || '').trim().toLowerCase();
 
+    const originRates = getOriginCommissionRates(detailingConfig, quote.origin);
+
     participantIds.forEach((empId) => {
       if (!empId) return;
       const empProfile = availableProfiles.find((p) => p.id === empId);
@@ -1369,27 +1371,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Regla específica de origen del cliente si existe (ej. Anuncios pagos)
-      const originRule = empRule?.origin_rules?.find(
-        (or) => or.origin?.trim().toLowerCase() === originNorm
-      );
-
-      let rate = 30; // base general por defecto (Romina 30%, Maxi 30%)
-      if (originRule) {
-        rate = originRule.percentage;
-      } else if (empRule && empRule.base_percentage !== undefined) {
-        rate = empRule.base_percentage;
-      } else if (empProfile?.commissions?.detailing !== undefined) {
-        rate = empProfile.commissions.detailing;
-      }
-
-      // Maximiliano con "Anuncios pagos" -> 12.5%
       const isMaxi = empId === 'user-maxi' ||
         (empProfile?.full_name || '').toLowerCase().includes('maxi') ||
         (empRule?.employee_name || '').toLowerCase().includes('maxi');
+      const isRomina = empId === 'user-romina' ||
+        (empProfile?.full_name || '').toLowerCase().includes('romina') ||
+        (empRule?.employee_name || '').toLowerCase().includes('romina');
 
-      if (isMaxi && originNorm.includes('anuncio')) {
-        rate = originRule ? originRule.percentage : 12.5;
+      // Tasa calculada según origen del cliente (configurable por origen para Maxi y Romina)
+      let rate = isMaxi ? originRates.maxi : isRomina ? originRates.romina : 30;
+
+      // Regla específica si el empleado tiene regla propia
+      const originRule = empRule?.origin_rules?.find(
+        (or) => or.origin?.trim().toLowerCase() === originNorm
+      );
+      if (originRule) {
+        rate = originRule.percentage;
+      } else if (!isMaxi && !isRomina) {
+        if (empRule && empRule.base_percentage !== undefined) {
+          rate = empRule.base_percentage;
+        } else if (empProfile?.commissions?.detailing !== undefined) {
+          rate = empProfile.commissions.detailing;
+        }
       }
 
       if (rate > 0) {
@@ -3205,7 +3208,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         extreme_dirt_surcharge: 0,
         total_amount: detailingCost,
         estimated_time: '1 día',
-        assigned_to: 'user-matias',
+        assigned_to: 'user-romina',
         origin: 'Presencial',
         notes: `Alistamiento interno para showroom de Automotora: ${current.plate}`,
         priority_zones: 'Todo el habitáculo y vano motor',
@@ -3225,7 +3228,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addTask({
         title: `Sesión de fotos HD para catálogo web: ${current.brand} ${current.model} (${current.plate || 'sin matrícula'})`,
         business: 'automotora',
-        assigned_to: 'user-matias',
+        assigned_to: 'user-romina',
         due_date: getLocalDateString(new Date(Date.now() + 259200000)),
         status: 'Pendiente'
       });

@@ -1107,6 +1107,12 @@ export interface DetailingDiscountConfig {
   percentage: number;
 }
 
+export interface DetailingOriginCommissionRule {
+  origin: string; // ej. 'Anuncios pagos', 'WhatsApp'
+  maxi_percentage: number; // ej. 12.5 o 30
+  romina_percentage: number; // ej. 30
+}
+
 export interface DetailingCommissionOriginRule {
   origin: string; // ej. 'Anuncios pagos'
   percentage: number; // ej. 12.5
@@ -1229,6 +1235,7 @@ export interface DetailingConfig {
   void_reasons: string[];
   client_origins?: string[];
   origins?: string[];
+  origin_commission_rules?: DetailingOriginCommissionRule[];
   whatsapp_receipt_template?: string;
   commission_config?: DetailingCommissionGlobalConfig;
   receipt_config?: DetailingReceiptConfig;

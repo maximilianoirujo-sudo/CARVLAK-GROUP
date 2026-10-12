@@ -25,12 +25,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Los perfiles se leen de localStorage o mockData por defecto, y si Supabase está conectado se sincronizan de la nube
   const [profiles, setProfiles] = useState<Profile[]>(() => {
     const saved = localStorage.getItem('carvlak_profiles');
-    return saved ? JSON.parse(saved) : INITIAL_PROFILES;
+    const parsed: Profile[] = saved ? JSON.parse(saved) : INITIAL_PROFILES;
+    return parsed.filter((p) => p.id !== 'user-matias' && !p.full_name?.toLowerCase().includes('matias'));
   });
 
   const [profile, setProfile] = useState<Profile | null>(() => {
     const savedId = localStorage.getItem('carvlak_active_user_id');
-    const found = profiles.find((p) => p.id === savedId);
+    const found = profiles.find((p) => p.id === savedId && p.id !== 'user-matias' && !p.full_name?.toLowerCase().includes('matias'));
     return found || profiles[0] || INITIAL_PROFILES[0];
   });
 
@@ -63,7 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .order('full_name', { ascending: true });
 
       if (data && !error && data.length > 0) {
-        setProfiles(data as Profile[]);
+        const clean = (data as Profile[]).filter((p) => p.id !== 'user-matias' && !p.full_name?.toLowerCase().includes('matias'));
+        setProfiles(clean);
       }
     } catch (e) {
       console.warn('Error al cargar perfiles desde Supabase:', e);
@@ -80,7 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (data && !error) {
-        setProfile(data as Profile);
+        if (data.id === 'user-matias' || data.full_name?.toLowerCase().includes('matias')) {
+          setProfile(INITIAL_PROFILES[0]);
+        } else {
+          setProfile(data as Profile);
+        }
         await fetchProfiles();
       }
     } catch (e) {

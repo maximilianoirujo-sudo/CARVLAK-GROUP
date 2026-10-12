@@ -27,7 +27,8 @@ import { useToast } from '../../../context/ToastContext';
 import {
   formatCurrency,
   normalizePlate,
-  getLocalDateString
+  getLocalDateString,
+  getOriginCommissionRates
 } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
@@ -272,20 +273,18 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   // Commission preview per participant based on origin
   const commissionPreview = useMemo(() => {
     if (!origin) return [];
-    const originNorm = origin.trim().toLowerCase();
-    const isAds = originNorm.includes('anuncio') || originNorm.includes('anuncios pagos');
+    const rates = getOriginCommissionRates(detailingConfig, origin);
 
     return selectedParticipantIds.map((pid) => {
       const p = availableProfiles.find((prof) => prof.id === pid);
       const name = p ? p.full_name.split(' ')[0] : 'Colaborador';
-      let pct = 30;
-      if (p?.full_name.toLowerCase().includes('maxi') && isAds) {
-        pct = 12.5;
-      }
+      const isMaxi = pid === 'user-maxi' || (p?.full_name || '').toLowerCase().includes('maxi');
+      const isRomina = pid === 'user-romina' || (p?.full_name || '').toLowerCase().includes('romina');
+      const pct = isMaxi ? rates.maxi : isRomina ? rates.romina : 30;
       const amt = Math.round(totalAmount * (pct / 100));
       return { id: pid, name, pct, amt };
     });
-  }, [origin, selectedParticipantIds, availableProfiles, totalAmount]);
+  }, [origin, selectedParticipantIds, availableProfiles, totalAmount, detailingConfig]);
 
   // Available origins from config
   const availableOrigins: ClientOrigin[] = (detailingConfig?.client_origins || detailingConfig?.origins) && (detailingConfig?.client_origins || detailingConfig?.origins)!.length > 0
@@ -475,12 +474,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       assigned_to: assignedTo || defaultProfileId,
       commission_participants: selectedParticipantIds.map((pid) => {
         const p = availableProfiles.find((prof) => prof.id === pid);
+        const rates = getOriginCommissionRates(detailingConfig, origin);
+        const isMaxi = pid === 'user-maxi' || (p?.full_name || '').toLowerCase().includes('maxi');
+        const isRomina = pid === 'user-romina' || (p?.full_name || '').toLowerCase().includes('romina');
+        const rate = isMaxi ? rates.maxi : isRomina ? rates.romina : 30;
         return {
           employee_id: pid,
           employee_name: p ? p.full_name : 'Colaborador',
-          rate: origin.toLowerCase().includes('anuncio') && p?.full_name.toLowerCase().includes('maxi')
-            ? 12.5
-            : 30
+          rate
         };
       }),
       notes: notes.trim(),
@@ -876,7 +877,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {availableOrigins.map((orig) => {
                 const isSelected = origin === orig;
-                const isAds = orig.toLowerCase().includes('anuncio');
+                const rates = getOriginCommissionRates(detailingConfig, orig);
                 return (
                   <button
                     key={orig}
@@ -890,7 +891,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                   >
                     <p className="font-bold text-xs">{orig}</p>
                     <p className={`text-[10px] mt-0.5 ${isSelected ? 'text-gray-300' : 'text-[#6B6B6B]'}`}>
-                      {isAds ? 'Romina 30% · Maxi 12.5%' : 'Romina 30% · Maxi 30%'}
+                      {`Romina ${rates.romina}% · Maxi ${rates.maxi}%`}
                     </p>
                   </button>
                 );
