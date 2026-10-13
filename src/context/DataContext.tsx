@@ -245,7 +245,7 @@ export interface DataContextType {
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Hook para persistencia diferida en localStorage (500 ms de demora para evitar bloqueos del hilo principal)
+// Hook para persistencia diferida en localStorage y nube vía /api/sync (multi-dispositivo)
 const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) => {
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -256,6 +256,16 @@ const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) 
     const timer = setTimeout(() => {
       try {
         localStorage.setItem(key, JSON.stringify(value));
+
+        // Sincronización en la nube vía /api/sync (Upstash / Vercel KV) para PC y Celulares
+        if (key.startsWith('carvlak_')) {
+          const cleanKey = key.replace('carvlak_', '');
+          fetch('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: cleanKey, data: value })
+          }).catch(() => {});
+        }
       } catch (err) {
         console.warn(`Error al guardar ${key} en localStorage:`, err);
       }
@@ -695,6 +705,76 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [profile?.id]);
 
+  // Sincronización en la nube vía /api/sync (Upstash / Vercel KV) para computadoras y celulares
+  const syncFromCloud = async () => {
+    try {
+      const res = await fetch('/api/sync');
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json?.success || !json?.data) return;
+
+      const d = json.data;
+      if (Array.isArray(d.detailing_quotes) && d.detailing_quotes.length > 0) {
+        setDetailingQuotes(d.detailing_quotes);
+        localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(d.detailing_quotes));
+      }
+      if (Array.isArray(d.detailing_payments)) {
+        setDetailingPayments(d.detailing_payments);
+        localStorage.setItem('carvlak_detailing_payments', JSON.stringify(d.detailing_payments));
+      }
+      if (d.detailing_config && typeof d.detailing_config === 'object') {
+        setDetailingConfig(d.detailing_config);
+        localStorage.setItem('carvlak_detailing_config', JSON.stringify(d.detailing_config));
+      }
+      if (Array.isArray(d.commissions)) {
+        setCommissions(d.commissions);
+        localStorage.setItem('carvlak_commissions', JSON.stringify(d.commissions));
+      }
+      if (Array.isArray(d.clients) && d.clients.length > 0) {
+        setClients(d.clients);
+        localStorage.setItem('carvlak_clients', JSON.stringify(d.clients));
+      }
+      if (Array.isArray(d.vehicles) && d.vehicles.length > 0) {
+        setVehicles(d.vehicles);
+        localStorage.setItem('carvlak_vehicles', JSON.stringify(d.vehicles));
+      }
+      if (Array.isArray(d.expenses) && d.expenses.length > 0) {
+        setExpenses(d.expenses);
+        localStorage.setItem('carvlak_expenses', JSON.stringify(d.expenses));
+      }
+    } catch (e) {
+      // offline o sin conexión
+    }
+  };
+
+  useEffect(() => {
+    syncFromCloud();
+
+    const onVisibleOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud();
+      }
+    };
+
+    window.addEventListener('focus', onVisibleOrFocus);
+    window.addEventListener('online', onVisibleOrFocus);
+    document.addEventListener('visibilitychange', onVisibleOrFocus);
+
+    // Sondeo suave cada 20s para mantener actualizados celulares en tiempo real
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud();
+      }
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('focus', onVisibleOrFocus);
+      window.removeEventListener('online', onVisibleOrFocus);
+      document.removeEventListener('visibilitychange', onVisibleOrFocus);
+      clearInterval(pollInterval);
+    };
+  }, []);
+
   const loadSupabaseData = async () => {
     if (!supabase || !isSupabaseConfigured) return;
     setIsSyncing(true);
@@ -809,6 +889,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await processSyncQueue();
       await loadSupabaseData();
+      await syncFromCloud();
+      setLastSyncedAt(new Date().toISOString());
     } finally {
       setIsSyncing(false);
     }
@@ -1381,17 +1463,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Tasa calculada según origen del cliente (configurable por origen para Maxi y Romina)
       let rate = isMaxi ? originRates.maxi : isRomina ? originRates.romina : 30;
 
-      // Regla específica si el empleado tiene regla propia
-      const originRule = empRule?.origin_rules?.find(
-        (or) => or.origin?.trim().toLowerCase() === originNorm
-      );
-      if (originRule) {
-        rate = originRule.percentage;
-      } else if (!isMaxi && !isRomina) {
-        if (empRule && empRule.base_percentage !== undefined) {
-          rate = empRule.base_percentage;
-        } else if (empProfile?.commissions?.detailing !== undefined) {
-          rate = empProfile.commissions.detailing;
+      // Si el trabajo trajo una tasa específica elegida para este participante en la cotización:
+      const customPart = quote.commission_participants?.find((p) => p.employee_id === empId);
+      if (customPart && typeof customPart.rate === 'number' && !isNaN(customPart.rate) && customPart.rate > 0) {
+        rate = customPart.rate;
+      } else {
+        // Regla específica si el empleado tiene regla propia
+        const originRule = empRule?.origin_rules?.find(
+          (or) => or.origin?.trim().toLowerCase() === originNorm
+        );
+        if (originRule) {
+          rate = originRule.percentage;
+        } else if (!isMaxi && !isRomina) {
+          if (empRule && empRule.base_percentage !== undefined) {
+            rate = empRule.base_percentage;
+          } else if (empProfile?.commissions?.detailing !== undefined) {
+            rate = empProfile.commissions.detailing;
+          }
         }
       }
 

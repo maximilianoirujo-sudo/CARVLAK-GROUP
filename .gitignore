@@ -34,3 +34,4 @@ carvlak*bundle*
 build_bundle.cjs
 
 .vercel
+.env*

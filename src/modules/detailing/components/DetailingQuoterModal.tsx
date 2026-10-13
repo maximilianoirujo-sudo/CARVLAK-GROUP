@@ -113,6 +113,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
   const [assignedTo, setAssignedTo] = useState<string>('');
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
+  const [rominaCommissionOverride, setRominaCommissionOverride] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
 
   // Payment State ("¿Ya cobraste?")
@@ -151,9 +152,18 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
       if (quoteToEdit.commission_participants && quoteToEdit.commission_participants.length > 0) {
         setSelectedParticipantIds(quoteToEdit.commission_participants.map((p) => p.employee_id));
+        const rominaPart = quoteToEdit.commission_participants.find(
+          (p) => p.employee_id === 'user-romina' || (p.employee_name || '').toLowerCase().includes('romina')
+        );
+        if (rominaPart && typeof rominaPart.rate === 'number') {
+          setRominaCommissionOverride(rominaPart.rate);
+        } else {
+          setRominaCommissionOverride(null);
+        }
       } else {
         const defaults = detailingConfig?.commission_config?.default_participants || [];
         setSelectedParticipantIds(defaults.length > 0 ? defaults : [defaultProfileId]);
+        setRominaCommissionOverride(null);
       }
 
       setPaymentOption('none');
@@ -173,6 +183,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
       const defaults = detailingConfig?.commission_config?.default_participants || [];
       setSelectedParticipantIds(defaults.length > 0 ? defaults : [defaultProfileId]);
+      setRominaCommissionOverride(null);
       setNotes('');
 
       const lastMethod = localStorage.getItem('carvlak_last_detailing_payment_method') || 'Efectivo';
@@ -270,6 +281,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     }
   }, [paymentOption, isSplitPayment, totalAmount]);
 
+  const defaultRominaRate = useMemo(() => {
+    if (!origin) return 30;
+    return getOriginCommissionRates(detailingConfig, origin).romina;
+  }, [detailingConfig, origin]);
+
+  const activeRominaRate = rominaCommissionOverride !== null ? rominaCommissionOverride : defaultRominaRate;
+
   // Commission preview per participant based on origin
   const commissionPreview = useMemo(() => {
     if (!origin) return [];
@@ -280,11 +298,11 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       const name = p ? p.full_name.split(' ')[0] : 'Colaborador';
       const isMaxi = pid === 'user-maxi' || (p?.full_name || '').toLowerCase().includes('maxi');
       const isRomina = pid === 'user-romina' || (p?.full_name || '').toLowerCase().includes('romina');
-      const pct = isMaxi ? rates.maxi : isRomina ? rates.romina : 30;
+      const pct = isMaxi ? rates.maxi : isRomina ? activeRominaRate : 30;
       const amt = Math.round(totalAmount * (pct / 100));
       return { id: pid, name, pct, amt };
     });
-  }, [origin, selectedParticipantIds, availableProfiles, totalAmount, detailingConfig]);
+  }, [origin, selectedParticipantIds, availableProfiles, totalAmount, detailingConfig, activeRominaRate]);
 
   // Available origins from config
   const availableOrigins: ClientOrigin[] = (detailingConfig?.client_origins || detailingConfig?.origins) && (detailingConfig?.client_origins || detailingConfig?.origins)!.length > 0
@@ -477,7 +495,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         const rates = getOriginCommissionRates(detailingConfig, origin);
         const isMaxi = pid === 'user-maxi' || (p?.full_name || '').toLowerCase().includes('maxi');
         const isRomina = pid === 'user-romina' || (p?.full_name || '').toLowerCase().includes('romina');
-        const rate = isMaxi ? rates.maxi : isRomina ? rates.romina : 30;
+        const rate = isMaxi ? rates.maxi : isRomina ? activeRominaRate : 30;
         return {
           employee_id: pid,
           employee_name: p ? p.full_name : 'Colaborador',
@@ -908,6 +926,57 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                       {c.name}: {c.pct}% ({formatCurrency(c.amt)})
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* 5.1 SELECCIÓN DE COMISIÓN DE ROMINA (30% vs 12.5%) */}
+            {origin && (
+              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#161616]">
+                    Comisión de Romina para este trabajo:
+                  </span>
+                  <span className="text-xs font-black text-[#D7141A] font-mono">
+                    {activeRominaRate}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRominaCommissionOverride(30)}
+                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                      activeRominaRate === 30
+                        ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                        : 'bg-white text-stone-800 border-[#E5E5E3] hover:border-stone-400'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between">
+                      <span>30% — Venta Propia</span>
+                      {activeRominaRate === 30 && <span className="text-[10px] text-emerald-400 font-bold">✓ Activo</span>}
+                    </div>
+                    <div className={`text-[10px] mt-0.5 leading-tight ${activeRominaRate === 30 ? 'text-stone-300' : 'text-[#6B6B6B]'}`}>
+                      Consigue y vende por fuera de los anuncios
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRominaCommissionOverride(12.5)}
+                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                      activeRominaRate === 12.5
+                        ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                        : 'bg-white text-stone-800 border-[#E5E5E3] hover:border-stone-400'
+                    }`}
+                  >
+                    <div className="font-bold text-xs flex items-center justify-between">
+                      <span>12.5% — Anuncios / Taller</span>
+                      {activeRominaRate === 12.5 && <span className="text-[10px] text-emerald-400 font-bold">✓ Activo</span>}
+                    </div>
+                    <div className={`text-[10px] mt-0.5 leading-tight ${activeRominaRate === 12.5 ? 'text-stone-300' : 'text-[#6B6B6B]'}`}>
+                      Venta por anuncios o mano de obra
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
