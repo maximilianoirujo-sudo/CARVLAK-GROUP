@@ -34,7 +34,10 @@ import {
   getLocalDateString,
   getDetailingPaymentStatus,
   getDetailingPaidAmount,
-  isJobScheduled
+  isJobScheduled,
+  isActiveJob,
+  isActiveExpense,
+  isActivePayment
 } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
@@ -69,6 +72,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [detailerFilter, setDetailerFilter] = useState<string>('all');
   const [originFilter, setOriginFilter] = useState<string>('all');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<'all' | 'particular' | 'empresa'>('all');
 
   // Selección múltiple para anular
   const [selectedQuoteIds, setSelectedQuoteIds] = useState<string[]>([]);
@@ -118,7 +122,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
 
   // Trabajos activos (no anulados) del mes
   const activeMonthQuotes = useMemo(() => {
-    return monthQuotes.filter((q) => !q.is_voided);
+    return monthQuotes.filter(isActiveJob);
   }, [monthQuotes]);
 
   // Tarjetas de Resumen
@@ -136,15 +140,22 @@ export const DetailingMonthJobsSection: React.FC = () => {
 
   const totalExpenses = useMemo(() => {
     return expenses
-      .filter((e) => e.business === 'detailing' && !e.voided_at && e.date.startsWith(selectedMonth))
+      .filter((e) => e.business === 'detailing' && isActiveExpense(e) && e.date.startsWith(selectedMonth))
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   }, [expenses, selectedMonth]);
 
   const totalCommissions = useMemo(() => {
     return commissions
-      .filter((c) => c.business === 'detailing' && c.created_at.startsWith(selectedMonth))
+      .filter((c) => {
+        if (c.business !== 'detailing' || !c.created_at.startsWith(selectedMonth)) return false;
+        if (c.quote_id) {
+          const rel = detailingQuotes.find((q) => q.id === c.quote_id);
+          if (rel && !isActiveJob(rel)) return false;
+        }
+        return true;
+      })
       .reduce((sum, c) => sum + (Number(c.commission_amount) || 0), 0);
-  }, [commissions, selectedMonth]);
+  }, [commissions, detailingQuotes, selectedMonth]);
 
   const netResult = totalBilled - totalExpenses - totalCommissions;
 
@@ -176,9 +187,16 @@ export const DetailingMonthJobsSection: React.FC = () => {
         if (q.origin !== originFilter) return false;
       }
 
+      // Tipo de cliente (Particular vs Empresas)
+      if (customerTypeFilter === 'particular') {
+        if (q.customer_type === 'empresa' || q.company_id) return false;
+      } else if (customerTypeFilter === 'empresa') {
+        if (q.customer_type !== 'empresa' && !q.company_id) return false;
+      }
+
       return true;
     });
-  }, [monthQuotes, searchTerm, paymentStatusFilter, detailerFilter, originFilter]);
+  }, [monthQuotes, searchTerm, paymentStatusFilter, detailerFilter, originFilter, customerTypeFilter]);
 
   // Agrupados por día (ordenados más nuevos arriba)
   const groupedByDay = useMemo(() => {
@@ -410,6 +428,17 @@ export const DetailingMonthJobsSection: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {/* Tipo de cliente */}
+            <select
+              value={customerTypeFilter}
+              onChange={(e) => setCustomerTypeFilter(e.target.value as any)}
+              className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-2.5 py-2 text-xs text-[#161616] font-medium focus:border-[#D7141A] focus:outline-none shrink-0"
+            >
+              <option value="all">Tipo: Todos</option>
+              <option value="particular">Particular</option>
+              <option value="empresa">Empresas</option>
+            </select>
+
             {/* Estado de cobro */}
             <select
               value={paymentStatusFilter}
@@ -587,6 +616,11 @@ export const DetailingMonthJobsSection: React.FC = () => {
                               {q.vehicle_plate ? (
                                 <UruguayanPlate plate={q.vehicle_plate} size="sm" />
                               ) : null}
+                              {q.customer_type === 'empresa' && (
+                                <span className="text-[9px] bg-red-100 text-[#D7141A] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                  EMPRESA · {q.company_name || 'Empresa'}
+                                </span>
+                              )}
                               {isScheduledFuture && (
                                 <span className="text-[9px] bg-gray-100 text-gray-600 font-medium px-1.5 py-0.5 rounded">
                                   Programado
@@ -600,7 +634,9 @@ export const DetailingMonthJobsSection: React.FC = () => {
                             </div>
 
                             <p className="text-[11px] text-[#6B6B6B] truncate mt-0.5">
-                              <span className="font-medium text-[#161616]">{q.client_name}</span>
+                              <span className="font-medium text-[#161616]">
+                                {q.customer_type === 'empresa' ? (q.company_name || q.client_name) : q.client_name}
+                              </span>
                               <span className="mx-1">·</span>
                               <span>{(q.selected_services || []).map((s) => s.serviceName || s.name).join(', ')}</span>
                             </p>

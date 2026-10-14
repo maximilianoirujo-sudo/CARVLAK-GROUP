@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { DetailingReceipt } from '../../../../types';
 import { UruguayanPlate } from '../../../../components/ui/UruguayanPlate';
-import { formatCurrency } from '../../../../lib/formatters';
+import { formatCurrency, isActivePayment } from '../../../../lib/formatters';
 import { Button } from '../../../../components/ui/Button';
 import { useToast } from '../../../../context/ToastContext';
 
@@ -288,9 +288,9 @@ Podés ver e imprimir tu comprobante aquí:
               <span className="font-bold text-[#161616] uppercase tracking-wider block">
                 Historial de Pagos y Cancelación
               </span>
-              {receipt.payments && receipt.payments.length > 0 ? (
+              {receipt.payments && receipt.payments.filter(isActivePayment).length > 0 ? (
                 <div className="space-y-1.5">
-                  {receipt.payments.map((p, pIdx) => (
+                  {receipt.payments.filter(isActivePayment).map((p, pIdx) => (
                     <div key={pIdx} className="flex items-center justify-between p-2 rounded-lg bg-[#F5F5F4] border border-[#E5E5E3]">
                       <div>
                         <span className="font-medium text-[#161616]">{p.payment_method}</span>

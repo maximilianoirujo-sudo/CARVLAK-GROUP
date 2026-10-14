@@ -26,8 +26,10 @@ import {
   SocialMediaConfig,
   SocialMediaPostRecord,
   GeneralConfig,
-  DetailingConfig
+  DetailingConfig,
+  DetailingCompany
 } from '../types';
+import { DEFAULT_PREVENTA_TARIFF, DEFAULT_COMPANY_SPECIAL_SERVICES } from '../modules/detailing/lib/companyTariffUtils';
 import { getLocalDateString } from './formatters';
 
 export const INITIAL_PROFILES: Profile[] = [
@@ -610,7 +612,8 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
       'Anuncios pagos',
       'Referido',
       'Formulario web',
-      'Llamada'
+      'Llamada',
+      'Empresa'
     ],
     origins: [
       'Presencial',
@@ -619,7 +622,8 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
       'Anuncios pagos',
       'Referido',
       'Formulario web',
-      'Llamada'
+      'Llamada',
+      'Empresa'
     ],
     origin_commission_rules: [
       { origin: 'Presencial', maxi_percentage: 30, romina_percentage: 30 },
@@ -628,8 +632,11 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
       { origin: 'Anuncios pagos', maxi_percentage: 12.5, romina_percentage: 30 },
       { origin: 'Referido', maxi_percentage: 30, romina_percentage: 30 },
       { origin: 'Formulario web', maxi_percentage: 30, romina_percentage: 30 },
-      { origin: 'Llamada', maxi_percentage: 30, romina_percentage: 30 }
+      { origin: 'Llamada', maxi_percentage: 30, romina_percentage: 30 },
+      { origin: 'Empresa', maxi_percentage: 30, romina_percentage: 30 }
     ],
+    preventa_tariff: DEFAULT_PREVENTA_TARIFF,
+    company_special_services: DEFAULT_COMPANY_SPECIAL_SERVICES,
     commission_config: {
       calculation_base: 'total_after_discounts',
       default_participants: ['user-romina', 'user-maxi'],
@@ -671,6 +678,8 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
       }
     }
   };
+
+export const INITIAL_DETAILING_COMPANIES: DetailingCompany[] = [];
 
 export const INITIAL_STOCK_ITEMS: StockItem[] = [];
 

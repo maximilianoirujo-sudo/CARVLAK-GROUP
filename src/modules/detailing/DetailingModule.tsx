@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Sparkles,
   Calendar,
+  Building2,
   FileText,
   Package,
   Award,
@@ -9,7 +10,9 @@ import {
   TrendingUp,
   Settings,
   Plus,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  Car
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -18,6 +21,8 @@ import { useToast } from '../../context/ToastContext';
 // Componentes de las secciones
 import { DetailingMonthJobsSection } from './components/DetailingMonthJobsSection';
 import { DetailingCalendarView } from './components/agenda/DetailingCalendarView';
+import { DetailingCompaniesSection } from './components/DetailingCompaniesSection';
+import { DetailingCompanyJobModal } from './components/DetailingCompanyJobModal';
 import { DetailingReceiptsSection } from './components/receipts/DetailingReceiptsSection';
 import { DetailingStockSection } from './components/DetailingStockSection';
 import { DetailingCommissionsSection } from './components/DetailingCommissionsSection';
@@ -39,10 +44,12 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
 
   // Pestaña inicial: 'jobs' (Trabajos del mes)
   const [activeTab, setActiveTab] = useState<
-    'jobs' | 'calendar' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'config'
+    'jobs' | 'calendar' | 'companies' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'config'
   >('jobs');
 
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
+  const [isCompanyJobModalOpen, setIsCompanyJobModalOpen] = useState(false);
+  const [showNewJobMenu, setShowNewJobMenu] = useState(false);
 
   const handleManualSync = async () => {
     try {
@@ -93,13 +100,58 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
               <span className="text-[11px] font-semibold">{isSyncing ? 'Sincronizando...' : 'Sincronizar'}</span>
             </button>
 
-            <button
-              onClick={() => setIsQuoterModalOpen(true)}
-              className="bg-[#D7141A] hover:bg-[#b01015] text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer min-h-[38px]"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Nuevo trabajo</span>
-            </button>
+            {/* Selector de Nuevo Trabajo: Particular o Empresa */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowNewJobMenu(!showNewJobMenu)}
+                className="bg-[#D7141A] hover:bg-[#b01015] text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer min-h-[38px]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Nuevo trabajo</span>
+                <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
+              </button>
+
+              {showNewJobMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowNewJobMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-1 w-52 bg-white border border-[#E5E5E3] rounded-xl shadow-lg z-30 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewJobMenu(false);
+                        setIsQuoterModalOpen(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors"
+                    >
+                      <Car className="w-4 h-4 text-neutral-500" />
+                      <div>
+                        <div className="text-neutral-900">Particular</div>
+                        <div className="text-[10px] text-neutral-400 font-normal">Cotizador y cliente estándar</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewJobMenu(false);
+                        setIsCompanyJobModalOpen(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-neutral-800 hover:bg-red-50 flex items-center gap-2.5 transition-colors border-t border-neutral-100"
+                    >
+                      <Building2 className="w-4 h-4 text-[#D7141A]" />
+                      <div>
+                        <div className="text-[#D7141A]">Empresa</div>
+                        <div className="text-[10px] text-neutral-500 font-normal">Preparación preventa y tarifas</div>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -129,6 +181,19 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
           >
             <Calendar className="w-3.5 h-3.5" />
             <span>Calendario</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('companies')}
+            className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
+              activeTab === 'companies'
+                ? 'bg-[#161616] text-white shadow-xs'
+                : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Empresas</span>
           </button>
 
           <button
@@ -220,6 +285,8 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
 
       {activeTab === 'calendar' && <DetailingCalendarView />}
 
+      {activeTab === 'companies' && <DetailingCompaniesSection />}
+
       {activeTab === 'receipts' && <DetailingReceiptsSection />}
 
       {activeTab === 'stock' && <DetailingStockSection />}
@@ -237,11 +304,19 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
         />
       )}
 
-      {/* Modal Nuevo Trabajo */}
+      {/* Modal Nuevo Trabajo Particular */}
       {isQuoterModalOpen && (
         <DetailingQuoterModal
           isOpen={isQuoterModalOpen}
           onClose={() => setIsQuoterModalOpen(false)}
+        />
+      )}
+
+      {/* Modal Nuevo Trabajo Empresa */}
+      {isCompanyJobModalOpen && (
+        <DetailingCompanyJobModal
+          isOpen={isCompanyJobModalOpen}
+          onClose={() => setIsCompanyJobModalOpen(false)}
         />
       )}
     </div>

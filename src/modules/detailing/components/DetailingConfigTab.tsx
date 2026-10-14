@@ -33,6 +33,8 @@ import { useData } from '../../../context/DataContext';
 import { supabase } from '../../../lib/supabase';
 import { formatCurrency } from '../../../lib/formatters';
 import { DetailingCleanTestDataModal } from './DetailingCleanTestDataModal';
+import { DetailingPreventaTariffConfigSection } from './config/DetailingPreventaTariffConfigSection';
+import { DetailingCompanySpecialServicesConfigSection } from './config/DetailingCompanySpecialServicesConfigSection';
 
 interface DetailingConfigTabProps {
   config: DetailingConfig;
@@ -59,6 +61,8 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
 
   const [activeSection, setActiveSection] = useState<
     | 'company'
+    | 'tarifa_empresas'
+    | 'servicios_empresas'
     | 'receipts'
     | 'tariffs'
     | 'discounts'
@@ -82,8 +86,12 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
         'Anuncios pagos',
         'Referido',
         'Formulario web',
-        'Llamada'
+        'Llamada',
+        'Empresa'
       ];
+    }
+    if (!copy.origins.includes('Empresa')) {
+      copy.origins.push('Empresa');
     }
     copy.client_origins = copy.origins;
     const existingRules = copy.origin_commission_rules || [];
@@ -349,6 +357,8 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
 
   const navItems = [
     { id: 'company', label: 'Empresa y Logo', icon: Building2 },
+    { id: 'tarifa_empresas', label: 'Tarifa Empresas (Preventa)', icon: ShieldCheck },
+    { id: 'servicios_empresas', label: 'Servicios Especiales Empresas', icon: Sparkles },
     { id: 'receipts', label: 'Comprobantes y Numeración', icon: FileText },
     { id: 'tariffs', label: 'Tarifario y Cuidados', icon: Sparkles },
     { id: 'discounts', label: 'Descuentos y Recargo', icon: Percent },
@@ -536,6 +546,23 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TARIFA PREVENTA EMPRESAS (SOLO ADMIN) */}
+          {activeSection === 'tarifa_empresas' && (
+            <div className="space-y-4">
+              <DetailingPreventaTariffConfigSection
+                tariff={formData.preventa_tariff}
+                onChange={(updated) => setFormData((prev) => ({ ...prev, preventa_tariff: updated }))}
+              />
+            </div>
+          )}
+
+          {/* SERVICIOS ESPECIALES EMPRESAS (SOLO ADMIN) */}
+          {activeSection === 'servicios_empresas' && (
+            <div className="space-y-4">
+              <DetailingCompanySpecialServicesConfigSection />
             </div>
           )}
 

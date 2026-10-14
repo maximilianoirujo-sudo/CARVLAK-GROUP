@@ -21,7 +21,9 @@ import {
   getLocalDateString,
   getDetailingPaymentStatus,
   getDetailingPaidAmount,
-  isJobScheduled
+  isJobScheduled,
+  isActiveJob,
+  isActivePayment
 } from '../../../../lib/formatters';
 import { Button } from '../../../../components/ui/Button';
 import { UruguayanPlate } from '../../../../components/ui/UruguayanPlate';
@@ -41,11 +43,25 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
 
   const [selectedDate, setSelectedDate] = useState<string>(todayUY);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<'all' | 'particular' | 'empresa'>('all');
 
   // Modales
   const [isQuoterOpen, setIsQuoterOpen] = useState(false);
   const [quoteToEdit, setQuoteToEdit] = useState<DetailingQuote | null>(null);
   const [quoteForPayment, setQuoteForPayment] = useState<DetailingQuote | null>(null);
+
+  // Filtrado por Particular / Empresa / Todos
+  const filteredDetailingQuotes = useMemo(() => {
+    return detailingQuotes.filter((q) => {
+      if (customerTypeFilter === 'particular') {
+        return q.customer_type !== 'empresa' && !q.company_id;
+      }
+      if (customerTypeFilter === 'empresa') {
+        return q.customer_type === 'empresa' || !!q.company_id;
+      }
+      return true;
+    });
+  }, [detailingQuotes, customerTypeFilter]);
 
   // Navegación de mes
   const handlePrevMonth = () => {
@@ -76,11 +92,11 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
 
   // Trabajos del mes actual (excluyendo anulados para cálculos)
   const monthQuotes = useMemo(() => {
-    return detailingQuotes.filter((q) => {
-      const d = q.work_date || q.created_at.slice(0, 10);
-      return d.startsWith(currentMonthKey) && !q.is_voided;
+    return filteredDetailingQuotes.filter((q) => {
+      const d = q.work_date || (q.created_at ? q.created_at.slice(0, 10) : '');
+      return d.startsWith(currentMonthKey) && isActiveJob(q);
     });
-  }, [detailingQuotes, currentMonthKey]);
+  }, [filteredDetailingQuotes, currentMonthKey]);
 
   // Total facturado este mes
   const monthTotalBilled = useMemo(() => {
@@ -91,9 +107,9 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
   const prevMonthStats = useMemo(() => {
     const prevDate = new Date(currentYear, currentMonth - 2, 15);
     const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-    const prevQuotes = detailingQuotes.filter((q) => {
-      const d = q.work_date || q.created_at.slice(0, 10);
-      return d.startsWith(prevKey) && !q.is_voided;
+    const prevQuotes = filteredDetailingQuotes.filter((q) => {
+      const d = q.work_date || (q.created_at ? q.created_at.slice(0, 10) : '');
+      return d.startsWith(prevKey) && isActiveJob(q);
     });
     const prevTotal = prevQuotes.reduce((sum, q) => sum + (q.total_amount || 0), 0);
 
@@ -103,7 +119,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
     }
 
     return { prevTotal, diffPct };
-  }, [currentYear, currentMonth, detailingQuotes, monthTotalBilled]);
+  }, [currentYear, currentMonth, filteredDetailingQuotes, monthTotalBilled]);
 
   // Día con mayor facturación del mes
   const topDayStats = useMemo(() => {
@@ -161,9 +177,9 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
     // Días del mes actual
     for (let i = 1; i <= totalDaysInMonth; i++) {
       const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      const dayJobs = detailingQuotes.filter((q) => {
-        const d = q.work_date || q.created_at.slice(0, 10);
-        return d === dateStr && !q.is_voided;
+      const dayJobs = filteredDetailingQuotes.filter((q) => {
+        const d = q.work_date || (q.created_at ? q.created_at.slice(0, 10) : '');
+        return d === dateStr && isActiveJob(q);
       });
       const dayTotal = dayJobs.reduce((sum, q) => sum + (q.total_amount || 0), 0);
       days.push({
@@ -198,7 +214,7 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
       weeks.push(days.slice(i, i + 7));
     }
     return weeks;
-  }, [currentYear, currentMonth, detailingQuotes]);
+  }, [currentYear, currentMonth, filteredDetailingQuotes]);
 
   // Máxima facturación de un día del mes para calcular el mapa de calor
   const maxDayBillingInMonth = useMemo(() => {
@@ -215,11 +231,11 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
 
   // Trabajos del día seleccionado
   const selectedDayJobs = useMemo(() => {
-    return detailingQuotes.filter((q) => {
+    return filteredDetailingQuotes.filter((q) => {
       const d = q.work_date || q.created_at.slice(0, 10);
       return d === selectedDate;
     });
-  }, [detailingQuotes, selectedDate]);
+  }, [filteredDetailingQuotes, selectedDate]);
 
   // Días para la vista "Semana" en celular
   const weekDaysForMobile = useMemo(() => {
@@ -290,23 +306,62 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
       </div>
 
       {/* 2. Barra de Control de Navegación y Vistas */}
-      <div className="bg-white border border-[#E5E5E3] rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-xs">
-        <button
-          onClick={handlePrevMonth}
-          className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
-          title="Mes anterior"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevMonth}
+            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
+            title="Mes anterior"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
 
-        <div className="text-center">
-          <h2 className="text-base sm:text-lg font-bold font-display text-[#161616] flex items-center gap-2 justify-center">
+          <h2 className="text-base sm:text-lg font-bold font-display text-[#161616] flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-[#D7141A]" />
             {monthLabel}
           </h2>
+
+          <button
+            onClick={handleNextMonth}
+            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
+            title="Mes siguiente"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
 
+        {/* Filtro Particular / Empresas / Todos */}
         <div className="flex items-center gap-2">
+          <div className="flex bg-[#F5F5F4] p-0.5 rounded-xl border border-[#E5E5E3] text-xs">
+            <button
+              type="button"
+              onClick={() => setCustomerTypeFilter('all')}
+              className={`px-2.5 py-1 font-bold rounded-lg transition-colors cursor-pointer ${
+                customerTypeFilter === 'all' ? 'bg-white text-[#161616] shadow-xs' : 'text-[#6B6B6B]'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={() => setCustomerTypeFilter('particular')}
+              className={`px-2.5 py-1 font-bold rounded-lg transition-colors cursor-pointer ${
+                customerTypeFilter === 'particular' ? 'bg-white text-[#161616] shadow-xs' : 'text-[#6B6B6B]'
+              }`}
+            >
+              Particular
+            </button>
+            <button
+              type="button"
+              onClick={() => setCustomerTypeFilter('empresa')}
+              className={`px-2.5 py-1 font-bold rounded-lg transition-colors cursor-pointer ${
+                customerTypeFilter === 'empresa' ? 'bg-white text-[#D7141A] shadow-xs' : 'text-[#6B6B6B]'
+              }`}
+            >
+              Empresas
+            </button>
+          </div>
+
           {/* Toggle Vista en Celular */}
           <div className="sm:hidden flex bg-[#F5F5F4] p-0.5 rounded-xl border border-[#E5E5E3]">
             <button
@@ -326,14 +381,6 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
               Semana
             </button>
           </div>
-
-          <button
-            onClick={handleNextMonth}
-            className="p-2 rounded-xl text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
-            title="Mes siguiente"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
@@ -511,9 +558,14 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
                   className="py-3 flex items-center justify-between gap-3 text-xs"
                 >
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-[#161616]">{q.vehicle_info}</span>
                       {q.vehicle_plate && <UruguayanPlate plate={q.vehicle_plate} size="sm" />}
+                      {q.customer_type === 'empresa' && (
+                        <span className="text-[9px] bg-red-100 text-[#D7141A] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          EMPRESA · {q.company_name || 'Empresa'}
+                        </span>
+                      )}
                       {q.is_voided && (
                         <span className="text-[9px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded">
                           ANULADO
@@ -521,7 +573,9 @@ export const DetailingCalendarView: React.FC<DetailingCalendarViewProps> = () =>
                       )}
                     </div>
                     <p className="text-[#6B6B6B] mt-0.5">
-                      <span className="font-medium text-[#161616]">{q.client_name}</span> ·{' '}
+                      <span className="font-medium text-[#161616]">
+                        {q.customer_type === 'empresa' ? (q.company_name || q.client_name) : q.client_name}
+                      </span> ·{' '}
                       {(q.selected_services || []).map((s) => s.serviceName || s.name).join(', ')}
                     </p>
                   </div>

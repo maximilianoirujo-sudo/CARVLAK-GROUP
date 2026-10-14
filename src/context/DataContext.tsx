@@ -43,8 +43,14 @@ import {
   DetailingQualityControlData,
   DetailingCashClosure,
   DetailingReceipt,
-  DetailingCleanSelection
+  DetailingCleanSelection,
+  DetailingCompany,
+  DetailingCompanySpecialService
 } from '../types';
+import {
+  DEFAULT_COMPANY_SPECIAL_SERVICES,
+  DEFAULT_PREVENTA_TARIFF
+} from '../modules/detailing/lib/companyTariffUtils';
 import {
   INITIAL_CLIENTS,
   INITIAL_VEHICLES,
@@ -68,12 +74,14 @@ import {
   INITIAL_GENERAL_CONFIG,
   INITIAL_SOCIAL_MEDIA_CONFIG,
   INITIAL_SOCIAL_MEDIA_POSTS,
-  INITIAL_DETAILING_CONFIG
+  INITIAL_DETAILING_CONFIG,
+  INITIAL_DETAILING_COMPANIES
 } from '../lib/mockData';
-import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates } from '../lib/formatters';
+import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, isActivePayment, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 
 export interface DataContextType {
   clients: Client[];
@@ -129,10 +137,24 @@ export interface DataContextType {
   bulkDeleteDetailingQuotes: (ids: string[]) => void;
   detailingPayments: DetailingPayment[];
   recordDetailingPayment: (quoteId: string, payment: Omit<DetailingPayment, 'id'>) => Promise<void> | void;
+  voidDetailingPayment: (quoteId: string, paymentId: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
+  deleteDetailingPayment: (quoteId: string, paymentId: string) => Promise<{ success: boolean; error?: string }>;
   recordDetailingCheckin: (quoteId: string, checkin: DetailingCheckinData) => void;
   recordDetailingQualityControl: (quoteId: string, qc: DetailingQualityControlData) => void;
   logDetailingWhatsAppSent: (targetId: string, templateKey: string, phone: string) => void;
   voidAppointment: (id: string, reason: string) => void;
+
+  // EMPRESAS (DETAILVLAK B2B)
+  detailingCompanies: DetailingCompany[];
+  addDetailingCompany: (companyData: Omit<DetailingCompany, 'id' | 'created_at' | 'updated_at'>) => DetailingCompany;
+  updateDetailingCompany: (id: string, data: Partial<DetailingCompany>) => void;
+  toggleDetailingCompanyActive: (id: string) => void;
+  deleteDetailingCompanyPermanent: (id: string) => { success: boolean; error?: string };
+  detailingCompanyServices: DetailingCompanySpecialService[];
+  addDetailingCompanyService: (serviceData: Omit<DetailingCompanySpecialService, 'created_at'>) => Promise<DetailingCompanySpecialService | null>;
+  updateDetailingCompanyService: (id: string, data: Partial<DetailingCompanySpecialService>) => Promise<void>;
+  deleteDetailingCompanyServicePermanent: (id: string) => Promise<{ success: boolean; error?: string }>;
+  reorderDetailingCompanyServices: (updatedServices: DetailingCompanySpecialService[]) => Promise<void>;
 
   stockItems: StockItem[];
   addStockItem: (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>) => StockItem;
@@ -277,6 +299,7 @@ const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) 
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, availableProfiles } = useAuth();
+  const { showToast } = useToast();
 
   // Estados con carga inicial desde localStorage o seed
   const [clients, setClients] = useState<Client[]>(() => {
@@ -389,6 +412,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [];
   });
   useDebouncedLocalStorage('carvlak_detailing_payments', detailingPayments, 500);
+
+  const [detailingCompanies, setDetailingCompanies] = useState<DetailingCompany[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_companies');
+    if (s) {
+      try {
+        return JSON.parse(s);
+      } catch {}
+    }
+    return INITIAL_DETAILING_COMPANIES;
+  });
+  useDebouncedLocalStorage('carvlak_detailing_companies', detailingCompanies, 500);
+
+  const [detailingCompanyServices, setDetailingCompanyServices] = useState<DetailingCompanySpecialService[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_company_services');
+    if (s) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return DEFAULT_COMPANY_SPECIAL_SERVICES;
+  });
+  useDebouncedLocalStorage('carvlak_detailing_company_services', detailingCompanyServices, 500);
 
   // Estados de Sincronización en la nube (Web & Móvil)
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -593,6 +639,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.warn(`Supabase sync warning (${table}.${action}):`, error.message);
+        const errMsg = String(error.message || '').toLowerCase();
+        const errCode = String(error.code || '');
+        if (
+          errCode === '42501' ||
+          errCode === 'PGRST301' ||
+          errMsg.includes('row-level security') ||
+          errMsg.includes('permission denied') ||
+          errMsg.includes('violates row-level security') ||
+          errMsg.includes('not authorized')
+        ) {
+          showToast('No tenés permisos para realizar esta acción', 'error');
+        } else {
+          showToast('No se pudo guardar, reintentá', 'error');
+        }
         enqueueSync({ table, action, payload: cleanPayload, matchField, matchValue });
       }
     } catch (err) {
@@ -668,6 +728,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_cash_closures' }, () => {
           loadSupabaseData();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_companies' }, () => {
+          loadSupabaseData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_company_services' }, () => {
+          loadSupabaseData();
+        })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             console.log('[Realtime] Canal conectado con éxito');
@@ -714,13 +780,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!json?.success || !json?.data) return;
 
       const d = json.data;
-      if (Array.isArray(d.detailing_quotes) && d.detailing_quotes.length > 0) {
-        setDetailingQuotes(d.detailing_quotes);
-        localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(d.detailing_quotes));
+      let rawQuotes = d.detailing_quotes;
+      while (typeof rawQuotes === 'string') {
+        try { rawQuotes = JSON.parse(rawQuotes); } catch { break; }
       }
-      if (Array.isArray(d.detailing_payments)) {
-        setDetailingPayments(d.detailing_payments);
-        localStorage.setItem('carvlak_detailing_payments', JSON.stringify(d.detailing_payments));
+      if (Array.isArray(rawQuotes) && rawQuotes.length > 0) {
+        setDetailingQuotes(rawQuotes);
+        detailingQuotesRef.current = rawQuotes;
+        localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(rawQuotes));
+      }
+      let rawPayments = d.detailing_payments;
+      while (typeof rawPayments === 'string') {
+        try { rawPayments = JSON.parse(rawPayments); } catch { break; }
+      }
+      if (Array.isArray(rawPayments)) {
+        setDetailingPayments(rawPayments);
+        localStorage.setItem('carvlak_detailing_payments', JSON.stringify(rawPayments));
       }
       if (d.detailing_config && typeof d.detailing_config === 'object') {
         setDetailingConfig(d.detailing_config);
@@ -741,6 +816,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (Array.isArray(d.expenses) && d.expenses.length > 0) {
         setExpenses(d.expenses);
         localStorage.setItem('carvlak_expenses', JSON.stringify(d.expenses));
+      }
+      if (Array.isArray(d.detailing_companies)) {
+        setDetailingCompanies(d.detailing_companies);
+        localStorage.setItem('carvlak_detailing_companies', JSON.stringify(d.detailing_companies));
+      }
+      if (Array.isArray(d.detailing_company_services) && d.detailing_company_services.length > 0) {
+        setDetailingCompanyServices(d.detailing_company_services);
+        localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(d.detailing_company_services));
       }
     } catch (e) {
       // offline o sin conexión
@@ -805,7 +888,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resDetailingConfig,
         resDetailingCashClosures,
         resDetailingReceipts,
-        resDetailingPayments
+        resDetailingPayments,
+        resDetailingCompanies,
+        resDetailingCompanyServices
       ] = await Promise.all([
         supabase.from('general_configs').select('*').limit(1).maybeSingle(),
         supabase.from('clients').select('*').eq('is_archived', false),
@@ -829,7 +914,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supabase.from('detailing_configs').select('*').limit(1).maybeSingle(),
         supabase.from('detailing_cash_closures').select('*'),
         supabase.from('detailing_receipts').select('*'),
-        supabase.from('detailing_payments').select('*')
+        supabase.from('detailing_payments').select('*'),
+        supabase.from('detailing_companies').select('*'),
+        supabase.from('detailing_company_services').select('*').order('sort_order', { ascending: true })
       ]);
 
       if (resGeneralConfig.data) setGeneralConfig((prev) => ({ ...prev, ...resGeneralConfig.data }));
@@ -845,14 +932,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resDetailingQuotes.data) {
         const paymentsList = (resDetailingPayments?.data as DetailingPayment[]) || [];
         const paymentsByQuote = paymentsList.reduce((acc: Record<string, DetailingPayment[]>, p: DetailingPayment) => {
+          if (!p.quote_id) return acc;
           if (!acc[p.quote_id]) acc[p.quote_id] = [];
           acc[p.quote_id].push(p);
           return acc;
         }, {});
 
         const mapped = (resDetailingQuotes.data as DetailingQuote[]).map((q) => {
-          const tablePayments = paymentsByQuote[q.id] || [];
-          const mergedPayments = tablePayments.length > 0 ? tablePayments : (q.payments || []);
+          const tablePayments = (paymentsByQuote[q.id] || []).filter(isActivePayment);
+          const rawQuotePayments = (q.payments || []).filter(isActivePayment);
+          const mergedPayments = (paymentsByQuote[q.id] !== undefined && paymentsByQuote[q.id].length > 0)
+            ? tablePayments
+            : rawQuotePayments;
+
           return {
             ...q,
             payments: mergedPayments,
@@ -860,6 +952,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         });
         setDetailingQuotes(mapped);
+        detailingQuotesRef.current = mapped;
       }
       if (resStockItems.data) setStockItems(resStockItems.data as StockItem[]);
       if (resExpenses.data) setExpenses(resExpenses.data as Expense[]);
@@ -871,11 +964,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resSocialConfig.data) setSocialMediaConfig((prev) => ({ ...prev, ...resSocialConfig.data }));
       if (resDetailingConfig.data) {
         const cfg = resDetailingConfig.data.config || resDetailingConfig.data;
-        setDetailingConfig({ ...INITIAL_DETAILING_CONFIG, ...cfg });
+        const companyPricing = cfg.company_pricing || cfg.preventa_tariff || DEFAULT_PREVENTA_TARIFF;
+        setDetailingConfig({
+          ...INITIAL_DETAILING_CONFIG,
+          ...cfg,
+          company_pricing: companyPricing,
+          preventa_tariff: companyPricing
+        });
       }
       if (resDetailingCashClosures.data) setDetailingCashClosures(resDetailingCashClosures.data as DetailingCashClosure[]);
       if (resDetailingReceipts.data) setDetailingReceipts(resDetailingReceipts.data as DetailingReceipt[]);
-      if (resDetailingPayments?.data) setDetailingPayments(resDetailingPayments.data as DetailingPayment[]);
+      if (resDetailingPayments?.data) {
+        const activePayments = (resDetailingPayments.data as DetailingPayment[]).filter(isActivePayment);
+        setDetailingPayments(activePayments);
+      }
+      if (resDetailingCompanies?.data) setDetailingCompanies(resDetailingCompanies.data as DetailingCompany[]);
+      if (resDetailingCompanyServices?.data && resDetailingCompanyServices.data.length > 0) {
+        setDetailingCompanyServices(resDetailingCompanyServices.data as DetailingCompanySpecialService[]);
+      }
       setLastSyncedAt(new Date().toISOString());
     } catch (err) {
       console.warn('Conexión con Supabase en curso o tablas aún vacías:', err);
@@ -1213,7 +1319,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // FASE DETAILVLAK: Configuración
   const updateDetailingConfig = (config: Partial<DetailingConfig>) => {
     setDetailingConfig((prev) => {
-      const updated = { ...prev, ...config };
+      const companyPricing = config.company_pricing || config.preventa_tariff || prev.company_pricing || prev.preventa_tariff || DEFAULT_PREVENTA_TARIFF;
+      const updated = {
+        ...prev,
+        ...config,
+        company_pricing: companyPricing,
+        preventa_tariff: companyPricing
+      };
       syncSupabase('detailing_configs', 'upsert', {
         id: 'default',
         config: updated,
@@ -2073,7 +2185,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     const updatedPayments = [...(q.payments || []), newPayment];
     const totalPaid = updatedPayments
-      .filter((p) => !p.is_voided)
+      .filter(isActivePayment)
       .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
     const updatedQuote: DetailingQuote = {
@@ -2082,8 +2194,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updated_at: nowIso
     };
 
+    // Actualizar inmediatamente la referencia síncrona para llamadas consecutivas
+    detailingQuotesRef.current = detailingQuotesRef.current.map((item) =>
+      item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item
+    );
+
     updateDetailingQuote(quoteId, { payments: updatedPayments });
     setDetailingPayments((prev) => [newPayment, ...prev]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error: payErr } = await supabase.from('detailing_payments').insert(newPayment);
+        const { error: quoteErr } = await supabase.from('detailing_quotes').update({
+          payments: updatedPayments,
+          updated_at: nowIso
+        }).eq('id', quoteId);
+
+        if (payErr || quoteErr) {
+          const errMsg = payErr?.message || quoteErr?.message || 'Error de permisos o base de datos';
+          console.error('Error guardando pago en Supabase:', errMsg);
+          showToast('No se pudo guardar, reintentá', 'error');
+        }
+      } catch (err: any) {
+        console.error('Excepción guardando pago:', err);
+        showToast('No se pudo guardar, reintentá', 'error');
+      }
+    }
     syncSupabase('detailing_payments', 'insert', newPayment);
 
     // Si queda Cobrado (totalPaid >= total_amount)
@@ -2106,6 +2242,122 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await generateDetailingReceipt(quoteId);
       }
     }
+  };
+
+  const voidDetailingPayment = async (quoteId: string, paymentId: string, reason: string = 'Anulado'): Promise<{ success: boolean; error?: string }> => {
+    const q = detailingQuotesRef.current.find((item) => item.id === quoteId) || detailingQuotes.find((item) => item.id === quoteId);
+    if (!q) return { success: false, error: 'Trabajo no encontrado' };
+
+    const nowIso = new Date().toISOString();
+    const updatedPayments = (q.payments || []).map((p) =>
+      p.id === paymentId
+        ? { ...p, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' }
+        : p
+    );
+
+    // Actualizar inmediatamente la referencia síncrona
+    detailingQuotesRef.current = detailingQuotesRef.current.map((item) =>
+      item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item
+    );
+
+    setDetailingQuotes((prev) =>
+      prev.map((item) => (item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item))
+    );
+
+    setDetailingPayments((prev) =>
+      prev.map((p) => (p.id === paymentId ? { ...p, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' } : p))
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error: payErr } = await supabase
+          .from('detailing_payments')
+          .update({ is_voided: true })
+          .eq('id', paymentId);
+
+        const { error: quoteErr } = await supabase
+          .from('detailing_quotes')
+          .update({ payments: updatedPayments, updated_at: nowIso })
+          .eq('id', quoteId);
+
+        if (payErr || quoteErr) {
+          const errMsg = payErr?.message || quoteErr?.message || 'Error de base de datos';
+          console.error('Error al anular cobro en Supabase:', errMsg);
+          showToast('No se pudo guardar, reintentá', 'error');
+          return { success: false, error: errMsg };
+        }
+      } catch (err: any) {
+        console.error('Excepción al anular cobro:', err);
+        showToast('No se pudo guardar, reintentá', 'error');
+        return { success: false, error: err?.message };
+      }
+    }
+
+    syncSupabase('detailing_payments', 'update', { is_voided: true }, 'id', paymentId);
+    syncSupabase('detailing_quotes', 'update', { payments: updatedPayments, updated_at: nowIso }, 'id', quoteId);
+
+    const existingReceipt = detailingReceipts.find((r) => r.quote_id === quoteId);
+    if (existingReceipt) {
+      await generateDetailingReceipt(quoteId);
+    }
+
+    showToast('Cobro anulado correctamente', 'info');
+    return { success: true };
+  };
+
+  const deleteDetailingPayment = async (quoteId: string, paymentId: string): Promise<{ success: boolean; error?: string }> => {
+    const q = detailingQuotesRef.current.find((item) => item.id === quoteId) || detailingQuotes.find((item) => item.id === quoteId);
+    if (!q) return { success: false, error: 'Trabajo no encontrado' };
+
+    const nowIso = new Date().toISOString();
+    const updatedPayments = (q.payments || []).filter((p) => p.id !== paymentId);
+
+    // Actualizar inmediatamente la referencia síncrona
+    detailingQuotesRef.current = detailingQuotesRef.current.map((item) =>
+      item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item
+    );
+
+    setDetailingQuotes((prev) =>
+      prev.map((item) => (item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item))
+    );
+
+    setDetailingPayments((prev) => prev.filter((p) => p.id !== paymentId));
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error: payErr } = await supabase
+          .from('detailing_payments')
+          .delete()
+          .eq('id', paymentId);
+
+        const { error: quoteErr } = await supabase
+          .from('detailing_quotes')
+          .update({ payments: updatedPayments, updated_at: nowIso })
+          .eq('id', quoteId);
+
+        if (payErr || quoteErr) {
+          const errMsg = payErr?.message || quoteErr?.message || 'Error de base de datos';
+          console.error('Error al eliminar cobro en Supabase:', errMsg);
+          showToast('No se pudo guardar, reintentá', 'error');
+          return { success: false, error: errMsg };
+        }
+      } catch (err: any) {
+        console.error('Excepción al eliminar cobro:', err);
+        showToast('No se pudo guardar, reintentá', 'error');
+        return { success: false, error: err?.message };
+      }
+    }
+
+    syncSupabase('detailing_payments', 'delete', undefined, 'id', paymentId);
+    syncSupabase('detailing_quotes', 'update', { payments: updatedPayments, updated_at: nowIso }, 'id', quoteId);
+
+    const existingReceipt = detailingReceipts.find((r) => r.quote_id === quoteId);
+    if (existingReceipt) {
+      await generateDetailingReceipt(quoteId);
+    }
+
+    showToast('Cobro eliminado correctamente', 'info');
+    return { success: true };
   };
 
   const recordDetailingCheckin = (quoteId: string, checkin: DetailingCheckinData) => {
@@ -2172,28 +2424,207 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const voidExpense = (id: string, reason: string) => {
+  // ==========================================
+  // EMPRESAS (DETAILVLAK B2B) HANDLERS
+  // ==========================================
+
+  const addDetailingCompany = (companyData: Omit<DetailingCompany, 'id' | 'created_at' | 'updated_at'>): DetailingCompany => {
+    const nowIso = new Date().toISOString();
+    const newCompany: DetailingCompany = {
+      ...companyData,
+      id: `comp-${crypto.randomUUID()}`,
+      is_active: companyData.is_active !== undefined ? companyData.is_active : true,
+      billing_mode: companyData.billing_mode || 'mensual',
+      created_by: profile?.id,
+      created_at: nowIso,
+      updated_at: nowIso
+    };
+    setDetailingCompanies((prev) => [newCompany, ...prev]);
+    logActivity('empresa_detailing' as any, newCompany.id, 'create', { name: newCompany.name });
+    syncSupabase('detailing_companies', 'insert', newCompany);
+    return newCompany;
+  };
+
+  const updateDetailingCompany = (id: string, data: Partial<DetailingCompany>) => {
+    const nowIso = new Date().toISOString();
+    setDetailingCompanies((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...data, updated_at: nowIso } : c))
+    );
+    logActivity('empresa_detailing' as any, id, 'update', data);
+    syncSupabase('detailing_companies', 'update', { ...data, updated_at: nowIso }, 'id', id);
+  };
+
+  const toggleDetailingCompanyActive = (id: string) => {
+    const nowIso = new Date().toISOString();
+    setDetailingCompanies((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active, updated_at: nowIso } : c))
+    );
+    const target = detailingCompanies.find((c) => c.id === id);
+    if (target) {
+      syncSupabase('detailing_companies', 'update', { is_active: !target.is_active, updated_at: nowIso }, 'id', id);
+    }
+  };
+
+  const deleteDetailingCompanyPermanent = (id: string): { success: boolean; error?: string } => {
+    if (!profile?.roles?.includes('admin')) {
+      return { success: false, error: 'Solo el administrador puede eliminar empresas' };
+    }
+    const hasJobs = detailingQuotes.some((q) => q.company_id === id);
+    if (hasJobs) {
+      return { success: false, error: 'No se puede eliminar la empresa porque tiene trabajos registrados. Podés desactivarla.' };
+    }
+    setDetailingCompanies((prev) => prev.filter((c) => c.id !== id));
+    syncSupabase('detailing_companies', 'delete', undefined, 'id', id);
+    logActivity('empresa_detailing' as any, id, 'archive', { permanent_deleted: true });
+    return { success: true };
+  };
+
+  const addDetailingCompanyService = async (serviceData: Omit<DetailingCompanySpecialService, 'created_at'>): Promise<DetailingCompanySpecialService | null> => {
+    if (!profile?.roles?.includes('admin')) {
+      showToast('Solo el administrador puede agregar servicios al catálogo', 'error');
+      return null;
+    }
+    const newService: DetailingCompanySpecialService = {
+      ...serviceData,
+      id: serviceData.id || `cs-${crypto.randomUUID()}`,
+      created_at: new Date().toISOString()
+    };
+    setDetailingCompanyServices((prev) => [...prev, newService]);
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('detailing_company_services').insert(newService);
+      if (error) {
+        console.error('Error insertando detailing_company_services:', error);
+        showToast('No se pudo guardar el servicio, reintentá', 'error');
+        enqueueSync({ table: 'detailing_company_services', action: 'insert', payload: newService });
+      }
+    }
+    return newService;
+  };
+
+  const updateDetailingCompanyService = async (id: string, data: Partial<DetailingCompanySpecialService>) => {
+    if (!profile?.roles?.includes('admin')) {
+      showToast('Solo el administrador puede modificar servicios del catálogo', 'error');
+      return;
+    }
+    setDetailingCompanyServices((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...data } : s))
+    );
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('detailing_company_services').update(data).eq('id', id);
+      if (error) {
+        console.error('Error actualizando detailing_company_services:', error);
+        showToast('No se pudo guardar el cambio, reintentá', 'error');
+        enqueueSync({ table: 'detailing_company_services', action: 'update', payload: data, matchField: 'id', matchValue: id });
+      }
+    }
+  };
+
+  const deleteDetailingCompanyServicePermanent = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    if (!profile?.roles?.includes('admin')) {
+      showToast('Solo el administrador puede eliminar servicios del catálogo', 'error');
+      return { success: false, error: 'Solo el administrador puede eliminar servicios' };
+    }
+    setDetailingCompanyServices((prev) => prev.filter((s) => s.id !== id));
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('detailing_company_services').delete().eq('id', id);
+      if (error) {
+        console.error('Error eliminando detailing_company_services:', error);
+        showToast('No se pudo eliminar el servicio, reintentá', 'error');
+        enqueueSync({ table: 'detailing_company_services', action: 'delete', payload: null, matchField: 'id', matchValue: id });
+        return { success: false, error: error.message };
+      }
+    }
+    return { success: true };
+  };
+
+  const reorderDetailingCompanyServices = async (updatedServices: DetailingCompanySpecialService[]) => {
+    if (!profile?.roles?.includes('admin')) {
+      showToast('Solo el administrador puede ordenar servicios', 'error');
+      return;
+    }
+    setDetailingCompanyServices(updatedServices);
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const updates = updatedServices.map((s, idx) => ({
+          ...s,
+          sort_order: idx + 1
+        }));
+        const { error } = await supabase.from('detailing_company_services').upsert(updates);
+        if (error) {
+          console.error('Error reordenando detailing_company_services:', error);
+          showToast('No se pudo guardar el orden, reintentá', 'error');
+        }
+      } catch (err) {
+        console.error('Excepción al reordenar servicios:', err);
+      }
+    }
+  };
+
+  const voidExpense = async (id: string, reason: string) => {
     const nowIso = new Date().toISOString();
     setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, voided_at: nowIso, voided_by: profile?.id, void_reason: reason } : e))
+      prev.map((e) => (e.id === id ? { ...e, voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Anulado' } : e))
     );
-    syncSupabase('expenses', 'update', { voided_at: nowIso, voided_by: profile?.id, void_reason: reason }, 'id', id);
     logActivity('gasto', id, 'status_change', { action: 'void', reason });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('expenses').update({
+          voided_at: nowIso,
+          voided_by: profile?.id,
+          void_reason: reason,
+          status: 'Anulado'
+        }).eq('id', id);
+
+        if (error) {
+          console.error('Error al anular gasto en Supabase:', error);
+          showToast('No se pudo guardar, reintentá', 'error');
+          return;
+        }
+      } catch (err: any) {
+        console.error('Excepción al anular gasto:', err);
+        showToast('No se pudo guardar, reintentá', 'error');
+      }
+    }
+
+    syncSupabase('expenses', 'update', { voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Anulado' }, 'id', id);
   };
 
   const restoreExpense = (id: string) => {
     setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, voided_at: undefined, voided_by: undefined, void_reason: undefined } : e))
+      prev.map((e) => (e.id === id ? { ...e, voided_at: undefined, voided_by: undefined, void_reason: undefined, status: 'Pagado' } : e))
     );
-    syncSupabase('expenses', 'update', { voided_at: null, voided_by: null, void_reason: null }, 'id', id);
+    syncSupabase('expenses', 'update', { voided_at: null, voided_by: null, void_reason: null, status: 'Pagado' }, 'id', id);
     logActivity('gasto', id, 'update', { action: 'restore' });
   };
 
-  const deleteExpensePermanent = (id: string) => {
-    if (!profile?.roles?.includes('admin')) return;
+  const deleteExpensePermanent = async (id: string) => {
+    if (!profile?.roles?.includes('admin')) {
+      showToast('Solo el administrador puede eliminar gastos', 'error');
+      return;
+    }
+    const previous = expenses;
     setExpenses((prev) => prev.filter((e) => e.id !== id));
-    syncSupabase('expenses', 'delete', undefined, 'id', id);
     logActivity('gasto', id, 'archive', { permanent_deleted: true });
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { error } = await supabase.from('expenses').delete().eq('id', id);
+        if (error) {
+          console.error('Error al eliminar gasto en Supabase:', error);
+          showToast('No se pudo guardar, reintentá', 'error');
+          setExpenses(previous);
+          return;
+        }
+      } catch (err: any) {
+        console.error('Excepción al eliminar gasto:', err);
+        showToast('No se pudo guardar, reintentá', 'error');
+        setExpenses(previous);
+        return;
+      }
+    }
+
+    syncSupabase('expenses', 'delete', undefined, 'id', id);
   };
 
   const saveDetailingCashClosure = (closureData: Omit<DetailingCashClosure, 'id' | 'created_at'>): DetailingCashClosure => {
@@ -3936,6 +4367,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bulkDeleteDetailingQuotes,
     detailingPayments,
     recordDetailingPayment,
+    voidDetailingPayment,
+    deleteDetailingPayment,
     recordDetailingCheckin,
     recordDetailingQualityControl,
     logDetailingWhatsAppSent,
@@ -3966,6 +4399,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     whatsappTemplates,
     updateWhatsAppTemplate,
     importDetailVlakData,
+
+    // EMPRESAS (DETAILVLAK B2B)
+    detailingCompanies,
+    addDetailingCompany,
+    updateDetailingCompany,
+    toggleDetailingCompanyActive,
+    deleteDetailingCompanyPermanent,
+    detailingCompanyServices,
+    addDetailingCompanyService,
+    updateDetailingCompanyService,
+    deleteDetailingCompanyServicePermanent,
+    reorderDetailingCompanyServices,
 
     // FASE 3: Inspecciones
     inspections: activeInspections,
@@ -4034,6 +4479,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     expenses,
     detailingCashClosures,
     detailingPayments,
+    detailingCompanies,
+    detailingCompanyServices,
     commissions,
     whatsappTemplates,
     activeInspections,

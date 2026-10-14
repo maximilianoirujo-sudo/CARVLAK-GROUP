@@ -15,7 +15,9 @@ const KEY_MAP = {
   commissions: 'carvlak:commissions',
   clients: 'carvlak:clients',
   vehicles: 'carvlak:vehicles',
-  expenses: 'carvlak:expenses'
+  expenses: 'carvlak:expenses',
+  detailing_companies: 'carvlak:detailing_companies',
+  detailing_company_services: 'carvlak:detailing_company_services'
 };
 
 async function kvGet(key) {
@@ -26,8 +28,16 @@ async function kvGet(key) {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    if (!data.result) return null;
-    return typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+    if (data.result === undefined || data.result === null) return null;
+    let parsed = data.result;
+    while (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        break;
+      }
+    }
+    return parsed;
   } catch (err) {
     console.error(`KV GET error for ${key}:`, err);
     return null;

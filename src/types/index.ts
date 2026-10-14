@@ -210,6 +210,11 @@ export interface DetailingPayment {
   registered_by?: string;
   created_by?: string;
   is_voided?: boolean;
+  voided_at?: string;
+  void_reason?: string;
+  is_archived?: boolean;
+  status?: string;
+  payment_group_id?: string;
   created_at?: string;
 }
 
@@ -251,6 +256,10 @@ export interface DetailingQuote {
   vehicle_info: string;
   vehicle_plate?: string;
   vehicle_category: VehicleCategory;
+  customer_type?: 'particular' | 'empresa';
+  company_id?: string;
+  company_name?: string;
+  vehicle_size?: 1 | 2 | 3 | 4;
   work_date?: string; // YYYY-MM-DD (fecha del trabajo; puede ser hoy o futura)
   selected_services: DetailingQuoteServiceItem[];
   subtotal?: number;
@@ -382,7 +391,7 @@ export interface Expense {
     due_day: number;
     recurring_expense_id?: string;
   };
-  status?: 'Pendiente' | 'Pagado';
+  status?: 'Pendiente' | 'Pagado' | 'Anulado';
   payment_date?: string;
   voided_at?: string;
   voided_by?: string;
@@ -1187,7 +1196,7 @@ export interface DetailingReceipt {
   total_amount: number;
   deposit_amount: number;
   balance_pending: number;
-  payments: { amount: number; payment_method: string; date: string; notes?: string }[];
+  payments: { amount: number; payment_method: string; date: string; notes?: string; is_voided?: boolean; voided_at?: string; is_archived?: boolean; status?: string }[];
   status: 'Pagado' | 'Saldo pendiente' | 'Anulado';
 
   care_instructions: string;
@@ -1245,6 +1254,80 @@ export interface DetailingConfig {
   auto_ingreso_tolerance_minutes?: number; // Minutos de tolerancia para ingreso automático (por defecto 0)
   no_show_window_hours?: number; // Horas para mostrar botón "No vino" (por defecto 3)
   default_services?: string[]; // IDs de servicios preseleccionados por defecto (por defecto vacío [])
+  company_pricing?: DetailingPreventaTariff; // Guardado en detailing_configs.config -> company_pricing
+  preventa_tariff?: DetailingPreventaTariff; // Alias para compatibilidad
+  company_special_services?: DetailingCompanySpecialService[];
+}
+
+// ==========================================
+// EMPRESAS / B2B DETAILVLAK (PREVENTA & AUTOMOTORAS)
+// ==========================================
+
+export type CompanyBillingMode = 'por trabajo' | 'mensual';
+export type PreventaCalculationMode = 'acumulado' | 'sobre_la_base';
+export type PreventaRounding = 'none' | '10' | '50' | '100';
+
+export interface PreventaSizeConfig {
+  size: 1 | 2 | 3 | 4;
+  name: string;
+  examples: string;
+  manual_price_override?: number | null;
+}
+
+export interface DetailingPreventaTariff {
+  base_price_size_1: number; // Por defecto $6.000 UYU
+  increase_percentage: number; // Por defecto 15%
+  calculation_mode: PreventaCalculationMode; // 'acumulado' (default) o 'sobre_la_base'
+  rounding: PreventaRounding; // 'none' (default) | '10' | '50' | '100'
+  sizes: PreventaSizeConfig[];
+  category_mapping?: Record<string, 1 | 2 | 3 | 4>; // Chico->1, Mediano->2, SUV/Rural->3, Pick-up->4
+}
+
+export type SpecialServicePriceMode = 'unique' | 'per_size' | 'percentage_size' | 'por_tamaño' | 'unico' | 'porcentaje';
+
+export interface DetailingCompanySpecialService {
+  id: string;
+  name: string;
+  description?: string;
+  price_mode?: SpecialServicePriceMode;
+  pricing_mode?: 'por_tamaño' | 'unico' | 'porcentaje' | string;
+  unique_price?: number;
+  prices?: Record<1 | 2 | 3 | 4, number>;
+  prices_per_size?: Record<1 | 2 | 3 | 4, number>;
+  prices_by_size?: Record<1 | 2 | 3 | 4, number>;
+  base_price?: number;
+  is_active: boolean;
+  order?: number;
+  sort_order?: number;
+  created_at?: string;
+}
+
+export interface CompanyPricingOverride {
+  preventa_tariff?: Partial<DetailingPreventaTariff>;
+  special_services?: Record<string, {
+    price_mode?: SpecialServicePriceMode;
+    unique_price?: number;
+    prices_per_size?: Record<number, number>;
+    base_price?: number;
+  }>;
+}
+
+export interface DetailingCompany {
+  id: string;
+  name: string;
+  rut?: string;
+  legal_name?: string;
+  contact_name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+  billing_mode: CompanyBillingMode;
+  pricing_override?: CompanyPricingOverride;
+  is_active: boolean;
+  created_at: string;
+  created_by?: string;
+  updated_at?: string;
 }
 
 export interface DetailingCleanSelection {
