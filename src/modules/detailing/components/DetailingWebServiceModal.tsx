@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Plus,
@@ -325,20 +326,20 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black/85 backdrop-blur-xs sm:items-center sm:justify-center sm:p-4 overflow-hidden animate-fade-in">
-      <div className="bg-[#161616] w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-3xl sm:rounded-2xl sm:border sm:border-[#2D2D2D] text-white shadow-2xl flex flex-col overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-hidden animate-fade-in">
+      <div className="bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-3xl sm:rounded-2xl border border-[#E5E5E3] text-[#161616] shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-[#2D2D2D] bg-[#1A1A1A] shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-[#E5E5E3] bg-[#F5F5F4] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0066FF]/20 border border-[#0066FF]/40 flex items-center justify-center text-[#3B82F6] shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-[#D7141A] shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
+              <h2 className="text-base sm:text-lg font-bold font-display text-[#161616] tracking-wide">
                 {isEditing ? 'Editar Servicio Web' : 'Nuevo Servicio Web'}
               </h2>
-              <p className="text-[11px] sm:text-xs text-neutral-400">
+              <p className="text-[11px] sm:text-xs text-[#6B6B6B]">
                 Se mostrará en el armador de presupuestos online DetailVlak
               </p>
             </div>
@@ -346,7 +347,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+            className="p-2 text-[#6B6B6B] hover:text-[#161616] rounded-lg hover:bg-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -355,18 +356,18 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
         {/* Form Container */}
         <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden min-h-0">
           {/* Scrollable Form Body */}
-          <div className="overflow-y-auto p-4 sm:p-6 space-y-6 flex-1 text-sm">
+          <div className="overflow-y-auto p-4 sm:p-6 space-y-6 flex-1 text-xs sm:text-sm">
             {/* 1. Información Principal */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                <Sparkles className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                <Sparkles className="w-4 h-4 text-[#D7141A]" />
                 <span>1. Información Principal</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2 space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
-                    Nombre del servicio (largo / completo) <span className="text-red-500">*</span>
+                  <label className="text-xs font-semibold text-[#161616]">
+                    Nombre del servicio (largo / completo) <span className="text-[#D7141A]">*</span>
                   </label>
                   <input
                     type="text"
@@ -374,12 +375,12 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     placeholder="Ej: Limpieza profunda integral de interiores a vapor"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
+                  <label className="text-xs font-semibold text-[#161616]">
                     Nombre corto (para tarjetas y chips)
                   </label>
                   <input
@@ -387,7 +388,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     placeholder="Ej: Interior integral"
                     value={shortName}
                     onChange={(e) => setShortName(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                 </div>
               </div>
@@ -395,14 +396,14 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
               {/* Categoría y Etiqueta (Badge) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 text-neutral-400" />
+                  <label className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-[#6B6B6B]" />
                     <span>Categoría del Servicio</span>
                   </label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors cursor-pointer"
                   >
                     <option value="Interior">Interior (Tapizados & Habitáculo)</option>
                     <option value="Exterior">Exterior (Lavado técnico & Descontaminado)</option>
@@ -414,14 +415,14 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 text-amber-400" />
+                  <label className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-amber-500" />
                     <span>Etiqueta Opcional (Badge visual)</span>
                   </label>
                   <select
                     value={badge}
                     onChange={(e) => setBadge(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors cursor-pointer"
                   >
                     <option value="">Ninguna</option>
                     <option value="Más elegido">Más elegido 🔥</option>
@@ -434,7 +435,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-3 space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
+                  <label className="text-xs font-semibold text-[#161616]">
                     Descripción para el cliente
                   </label>
                   <textarea
@@ -442,13 +443,13 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     placeholder="Explicá de forma atractiva qué resultado logra este tratamiento..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl p-3 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                  <label className="text-xs font-semibold text-[#161616] flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-[#6B6B6B]" />
                     <span>Duración (hs)</span>
                   </label>
                   <input
@@ -457,13 +458,13 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     min="0.5"
                     value={durationHours}
                     onChange={(e) => setDurationHours(Number(e.target.value))}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white font-mono focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] font-mono font-bold focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-neutral-300">
+                <label className="text-xs font-semibold text-[#161616]">
                   Cuidados posteriores & recomendación (visible en comprobante y PDF)
                 </label>
                 <textarea
@@ -471,27 +472,27 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                   placeholder="Ej: No mojar en las primeras 48hs. Lavar solo con shampoo pH neutro."
                   value={careText}
                   onChange={(e) => setCareText(e.target.value)}
-                  className="w-full bg-[#202020] border border-[#333] rounded-xl p-3 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-3 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                 />
               </div>
             </div>
 
             {/* 2. Tipo de Precio & Promoción */}
-            <div className="space-y-3 pt-2 border-t border-[#2D2D2D]">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                <DollarSign className="w-4 h-4" />
+            <div className="space-y-3 pt-4 border-t border-[#E5E5E3]">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                <DollarSign className="w-4 h-4 text-[#D7141A]" />
                 <span>2. Modalidad de Precio & Oferta</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
+                  <label className="text-xs font-semibold text-[#161616]">
                     Tipo de precio
                   </label>
                   <select
                     value={priceType}
                     onChange={(e) => setPriceType(e.target.value as any)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors cursor-pointer"
                   >
                     <option value="fixed">Precio Fijo exacto</option>
                     <option value="from">Precio "Desde $X"</option>
@@ -500,8 +501,8 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1">
-                    <Percent className="w-3.5 h-3.5 text-emerald-400" />
+                  <label className="text-xs font-semibold text-[#161616] flex items-center gap-1">
+                    <Percent className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Precio Promocional tachado ($ UYU)</span>
                   </label>
                   <input
@@ -509,98 +510,98 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     placeholder="Ej: 2800 (opcional)"
                     value={promoPrice}
                     onChange={(e) => setPromoPrice(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white font-mono focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] font-mono font-bold focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
+                  <label className="text-xs font-semibold text-[#161616]">
                     Fecha vencimiento de promo
                   </label>
                   <input
                     type="date"
                     value={promoExpiresAt}
                     onChange={(e) => setPromoExpiresAt(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-xs text-[#161616] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors cursor-pointer"
                   />
                 </div>
               </div>
             </div>
 
             {/* 3. Precios por Tamaño de Auto */}
-            <div className="space-y-3 pt-2 border-t border-[#2D2D2D]">
+            <div className="space-y-3 pt-4 border-t border-[#E5E5E3]">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                  <DollarSign className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                  <DollarSign className="w-4 h-4 text-[#D7141A]" />
                   <span>Precios en Pesos Uruguayos ($UYU) por Tamaño</span>
                 </div>
-                <span className="text-[11px] text-neutral-400">
+                <span className="text-[11px] text-[#6B6B6B]">
                   Misma lista de precios para todo el taller
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                <div className="bg-[#202020] p-3 rounded-xl border border-[#333]">
-                  <span className="text-[11px] font-semibold text-neutral-400 block mb-1">Chico</span>
+                <div className="bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
+                  <span className="text-[11px] font-semibold text-[#6B6B6B] block mb-1">Chico</span>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-xs font-bold">$</span>
                     <input
                       type="number"
                       value={priceChico}
                       onChange={(e) => setPriceChico(Number(e.target.value))}
-                      className="w-full bg-[#161616] border border-[#444] rounded-lg pl-6 pr-2 py-1.5 text-white font-mono text-sm focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-6 pr-2 py-1.5 text-[#161616] font-mono font-bold text-sm focus:outline-none focus:border-[#D7141A]"
                     />
                   </div>
                 </div>
 
-                <div className="bg-[#202020] p-3 rounded-xl border border-[#333]">
-                  <span className="text-[11px] font-semibold text-neutral-400 block mb-1">Mediano</span>
+                <div className="bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
+                  <span className="text-[11px] font-semibold text-[#6B6B6B] block mb-1">Mediano</span>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-xs font-bold">$</span>
                     <input
                       type="number"
                       value={priceMediano}
                       onChange={(e) => setPriceMediano(Number(e.target.value))}
-                      className="w-full bg-[#161616] border border-[#444] rounded-lg pl-6 pr-2 py-1.5 text-white font-mono text-sm focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-6 pr-2 py-1.5 text-[#161616] font-mono font-bold text-sm focus:outline-none focus:border-[#D7141A]"
                     />
                   </div>
                 </div>
 
-                <div className="bg-[#202020] p-3 rounded-xl border border-[#333]">
-                  <span className="text-[11px] font-semibold text-neutral-400 block mb-1">SUV / Rural</span>
+                <div className="bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
+                  <span className="text-[11px] font-semibold text-[#6B6B6B] block mb-1">SUV / Rural</span>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-xs font-bold">$</span>
                     <input
                       type="number"
                       value={priceSuv}
                       onChange={(e) => setPriceSuv(Number(e.target.value))}
-                      className="w-full bg-[#161616] border border-[#444] rounded-lg pl-6 pr-2 py-1.5 text-white font-mono text-sm focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-6 pr-2 py-1.5 text-[#161616] font-mono font-bold text-sm focus:outline-none focus:border-[#D7141A]"
                     />
                   </div>
                 </div>
 
-                <div className="bg-[#202020] p-3 rounded-xl border border-[#333]">
-                  <span className="text-[11px] font-semibold text-neutral-400 block mb-1">Pick-up</span>
+                <div className="bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
+                  <span className="text-[11px] font-semibold text-[#6B6B6B] block mb-1">Pick-up</span>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-xs font-bold">$</span>
                     <input
                       type="number"
                       value={pricePickup}
                       onChange={(e) => setPricePickup(Number(e.target.value))}
-                      className="w-full bg-[#161616] border border-[#444] rounded-lg pl-6 pr-2 py-1.5 text-white font-mono text-sm focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-6 pr-2 py-1.5 text-[#161616] font-mono font-bold text-sm focus:outline-none focus:border-[#D7141A]"
                     />
                   </div>
                 </div>
 
-                <div className="bg-[#202020] p-3 rounded-xl border border-[#333] col-span-2 sm:col-span-1">
-                  <span className="text-[11px] font-semibold text-neutral-400 block mb-1">Moto</span>
+                <div className="bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3] col-span-2 sm:col-span-1">
+                  <span className="text-[11px] font-semibold text-[#6B6B6B] block mb-1">Moto</span>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 text-xs">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-xs font-bold">$</span>
                     <input
                       type="number"
                       value={priceMoto}
                       onChange={(e) => setPriceMoto(Number(e.target.value))}
-                      className="w-full bg-[#161616] border border-[#444] rounded-lg pl-6 pr-2 py-1.5 text-white font-mono text-sm focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-6 pr-2 py-1.5 text-[#161616] font-mono font-bold text-sm focus:outline-none focus:border-[#D7141A]"
                     />
                   </div>
                 </div>
@@ -608,23 +609,23 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
             </div>
 
             {/* 4. Video Time-Lapse (Subida o Link) */}
-            <div className="space-y-4 pt-2 border-t border-[#2D2D2D]">
+            <div className="space-y-4 pt-4 border-t border-[#E5E5E3]">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                  <Video className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                  <Video className="w-4 h-4 text-[#D7141A]" />
                   <span>4. Video Time-Lapse Vertical</span>
                 </div>
-                <span className="text-[11px] text-neutral-400">
+                <span className="text-[11px] text-[#6B6B6B]">
                   Subí archivo MP4 o pegá un enlace
                 </span>
               </div>
 
               {/* Contenedor de Subida de Video */}
-              <div className="p-4 rounded-xl bg-[#202020] border border-[#333] space-y-3">
+              <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold text-white block">Subir archivo de video (vertical para celular)</span>
-                    <span className="text-[11px] text-neutral-400">
+                    <span className="text-xs font-bold text-[#161616] block">Subir archivo de video (vertical para celular)</span>
+                    <span className="text-[11px] text-[#6B6B6B]">
                       Límite máximo 50MB (Recomendado &lt; 25MB para reproducción instantánea).
                     </span>
                   </div>
@@ -641,23 +642,23 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     type="button"
                     disabled={isUploadingVideo}
                     onClick={() => videoFileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
+                    className="px-4 py-2 rounded-xl bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
                   >
                     <Upload className="w-4 h-4" />
-                    <span>{isUploadingVideo ? 'Subiendo video...' : 'Subir video desde mi celular / compu'}</span>
+                    <span>{isUploadingVideo ? 'Subiendo video...' : 'Subir video desde celular / compu'}</span>
                   </button>
                 </div>
 
                 {/* Barra de progreso si está subiendo */}
                 {isUploadingVideo && (
                   <div className="space-y-1.5 pt-2">
-                    <div className="flex justify-between text-xs text-neutral-300">
+                    <div className="flex justify-between text-xs text-[#161616]">
                       <span>Subiendo a Supabase Storage...</span>
-                      <span className="font-mono">{videoUploadProgress || 20}%</span>
+                      <span className="font-mono font-bold">{videoUploadProgress || 20}%</span>
                     </div>
-                    <div className="w-full bg-[#333] h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-[#E5E5E3] h-2 rounded-full overflow-hidden">
                       <div
-                        className="bg-[#0066FF] h-full transition-all duration-300"
+                        className="bg-[#D7141A] h-full transition-all duration-300"
                         style={{ width: `${videoUploadProgress || 20}%` }}
                       />
                     </div>
@@ -665,15 +666,15 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 )}
 
                 {videoWarning && (
-                  <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-600/40 text-amber-200 text-xs flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
                     <span>{videoWarning}</span>
                   </div>
                 )}
 
                 {/* Alternativa URL directa */}
-                <div className="pt-2 border-t border-[#2D2D2D] space-y-1">
-                  <label className="text-[11px] text-neutral-400">O pegar link de YouTube / Shorts / Instagram Reel:</label>
+                <div className="pt-2 border-t border-[#E5E5E3] space-y-1">
+                  <label className="text-[11px] text-[#6B6B6B]">O pegar link de YouTube / Shorts / Instagram Reel:</label>
                   <input
                     type="url"
                     placeholder="https://www.youtube.com/watch?v=... o https://instagram.com/reel/..."
@@ -682,16 +683,16 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                       setVideoUrl(e.target.value);
                       setIsVideoUploaded(false);
                     }}
-                    className="w-full bg-[#161616] border border-[#333] rounded-lg px-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-white border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
                   />
                 </div>
 
                 {/* Vista previa en vivo del video */}
                 {videoUrl && (
-                  <div className="mt-3 p-3 bg-[#161616] rounded-xl border border-[#2D2D2D] space-y-2">
-                    <div className="flex items-center justify-between text-xs text-neutral-300">
+                  <div className="mt-3 p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
+                    <div className="flex items-center justify-between text-xs text-[#161616]">
                       <span className="font-semibold flex items-center gap-1.5">
-                        <Eye className="w-3.5 h-3.5 text-[#3B82F6]" />
+                        <Eye className="w-3.5 h-3.5 text-[#D7141A]" />
                         <span>Vista previa del video:</span>
                       </span>
                       <button
@@ -700,13 +701,13 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                           setVideoUrl('');
                           setIsVideoUploaded(false);
                         }}
-                        className="text-neutral-400 hover:text-red-400 text-xs"
+                        className="text-[#6B6B6B] hover:text-[#D7141A] text-xs cursor-pointer"
                       >
                         Quitar video
                       </button>
                     </div>
 
-                    <div className="max-w-xs mx-auto rounded-xl overflow-hidden border border-[#333]">
+                    <div className="max-w-xs mx-auto rounded-xl overflow-hidden border border-[#E5E5E3]">
                       {videoUrl.includes('.mp4') || videoUrl.includes('supabase.co/storage') ? (
                         <video
                           src={videoUrl}
@@ -723,11 +724,11 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
               </div>
 
               {/* Foto de Portada con Subida */}
-              <div className="p-4 rounded-xl bg-[#202020] border border-[#333] space-y-3">
+              <div className="p-4 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold text-white block">Foto de Portada del Servicio</span>
-                    <span className="text-[11px] text-neutral-400">
+                    <span className="text-xs font-bold text-[#161616] block">Foto de Portada del Servicio</span>
+                    <span className="text-[11px] text-[#6B6B6B]">
                       Se muestra en la tarjeta del catálogo antes de reproducir el video.
                     </span>
                   </div>
@@ -744,9 +745,9 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     type="button"
                     disabled={isUploadingCover}
                     onClick={() => coverFileInputRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-[#282828] hover:bg-[#333] text-neutral-200 text-xs font-bold flex items-center gap-2 cursor-pointer border border-[#444] transition-colors"
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] text-xs font-bold flex items-center gap-2 cursor-pointer border border-[#E5E5E3] transition-colors shadow-xs"
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload className="w-4 h-4 text-[#D7141A]" />
                     <span>{isUploadingCover ? 'Subiendo...' : 'Subir foto desde celular / compu'}</span>
                   </button>
                 </div>
@@ -757,13 +758,13 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                     placeholder="O pegar URL de imagen: https://..."
                     value={coverImageUrl}
                     onChange={(e) => setCoverImageUrl(e.target.value)}
-                    className="flex-1 bg-[#161616] border border-[#333] rounded-lg px-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="flex-1 bg-white border border-[#E5E5E3] rounded-lg px-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
                   />
                   {coverImageUrl && (
                     <button
                       type="button"
                       onClick={() => setCoverImageUrl('')}
-                      className="px-2.5 py-1.5 text-xs text-neutral-400 hover:text-red-400"
+                      className="px-2.5 py-1.5 text-xs text-[#6B6B6B] hover:text-[#D7141A] cursor-pointer"
                     >
                       Quitar
                     </button>
@@ -771,7 +772,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 </div>
 
                 {coverImageUrl && (
-                  <div className="w-32 h-20 rounded-lg overflow-hidden border border-[#444]">
+                  <div className="w-32 h-20 rounded-lg overflow-hidden border border-[#E5E5E3] shadow-xs">
                     <img src={coverImageUrl} alt="Portada" className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -779,30 +780,30 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
             </div>
 
             {/* 5. Fotos Antes / Después */}
-            <div className="space-y-3 pt-2 border-t border-[#2D2D2D]">
+            <div className="space-y-3 pt-4 border-t border-[#E5E5E3]">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                  <ImageIcon className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                  <ImageIcon className="w-4 h-4 text-[#D7141A]" />
                   <span>5. Fotos Antes / Después (Resultados Reales)</span>
                 </div>
-                <span className="text-[11px] text-neutral-400">{beforeAfterImages.length} comparaciones</span>
+                <span className="text-[11px] text-[#6B6B6B]">{beforeAfterImages.length} comparaciones</span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#202020] border border-[#333] space-y-3">
+              <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                   <input
                     type="url"
                     placeholder="URL foto ANTES: https://..."
                     value={beforeInputUrl}
                     onChange={(e) => setBeforeInputUrl(e.target.value)}
-                    className="bg-[#161616] border border-[#333] rounded-lg px-3 py-2 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="bg-white border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
                   />
                   <input
                     type="url"
                     placeholder="URL foto DESPUÉS: https://..."
                     value={afterInputUrl}
                     onChange={(e) => setAfterInputUrl(e.target.value)}
-                    className="bg-[#161616] border border-[#333] rounded-lg px-3 py-2 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="bg-white border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
                   />
                   <div className="flex gap-2">
                     <input
@@ -810,12 +811,12 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                       placeholder="Etiqueta (ej. Butaca)"
                       value={beforeAfterLabel}
                       onChange={(e) => setBeforeAfterLabel(e.target.value)}
-                      className="flex-1 bg-[#161616] border border-[#333] rounded-lg px-3 py-2 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                      className="flex-1 bg-white border border-[#E5E5E3] rounded-lg px-3 py-2 text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
                     />
                     <button
                       type="button"
                       onClick={handleAddBeforeAfterPair}
-                      className="px-3 py-2 bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold rounded-lg cursor-pointer"
+                      className="px-3 py-2 bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold rounded-lg cursor-pointer shadow-xs transition-colors"
                     >
                       + Sumar
                     </button>
@@ -825,17 +826,17 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 {beforeAfterImages.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                     {beforeAfterImages.map((ba, idx) => (
-                      <div key={idx} className="p-2.5 bg-[#161616] rounded-xl border border-[#333] flex items-center justify-between gap-3 text-xs">
+                      <div key={idx} className="p-2.5 bg-white rounded-xl border border-[#E5E5E3] flex items-center justify-between gap-3 text-xs shadow-xs">
                         <div className="flex items-center gap-2">
-                          <img src={ba.before_url} alt="Antes" className="w-12 h-12 rounded object-cover border border-red-500/40" />
-                          <ArrowRight className="w-3.5 h-3.5 text-neutral-500" />
-                          <img src={ba.after_url} alt="Después" className="w-12 h-12 rounded object-cover border border-emerald-500/40" />
-                          {ba.label && <span className="font-semibold text-neutral-300 ml-1">{ba.label}</span>}
+                          <img src={ba.before_url} alt="Antes" className="w-12 h-12 rounded object-cover border border-red-300" />
+                          <ArrowRight className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                          <img src={ba.after_url} alt="Después" className="w-12 h-12 rounded object-cover border border-emerald-300" />
+                          {ba.label && <span className="font-semibold text-[#161616] ml-1">{ba.label}</span>}
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveBeforeAfter(idx)}
-                          className="p-1 text-neutral-400 hover:text-red-400"
+                          className="p-1 text-[#9A9A9A] hover:text-[#D7141A] cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -847,15 +848,15 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
             </div>
 
             {/* 6. Pasos y Productos */}
-            <div className="space-y-4 pt-2 border-t border-[#2D2D2D]">
+            <div className="space-y-4 pt-4 border-t border-[#E5E5E3]">
               {/* Pasos */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                    <ListOrdered className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                    <ListOrdered className="w-4 h-4 text-[#D7141A]" />
                     <span>6. Qué Incluye (Pasos detallados)</span>
                   </div>
-                  <span className="text-[11px] text-neutral-400">{steps.length} pasos añadidos</span>
+                  <span className="text-[11px] text-[#6B6B6B]">{steps.length} pasos añadidos</span>
                 </div>
 
                 <div className="flex gap-2">
@@ -870,12 +871,12 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                         handleAddStep();
                       }
                     }}
-                    className="flex-1 bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="flex-1 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                   <button
                     type="button"
                     onClick={handleAddStep}
-                    className="px-4 py-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-medium rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                    className="px-4 py-2 bg-[#D7141A] hover:bg-[#b01015] text-white font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer text-xs shadow-xs"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Agregar</span>
@@ -883,22 +884,22 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 </div>
 
                 {steps.length > 0 && (
-                  <div className="space-y-1.5 bg-[#1F1F1F] p-3 rounded-xl border border-[#2D2D2D] max-h-48 overflow-y-auto">
+                  <div className="space-y-1.5 bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3] max-h-48 overflow-y-auto">
                     {steps.map((st, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between gap-2 p-2 bg-[#252525] rounded-lg border border-[#333] text-xs"
+                        className="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-[#E5E5E3] text-xs shadow-xs"
                       >
                         <div className="flex items-start gap-2 flex-1 min-w-0">
-                          <span className="w-5 h-5 rounded-full bg-[#0066FF]/20 text-[#3B82F6] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                          <span className="w-5 h-5 rounded-full bg-red-50 text-[#D7141A] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 border border-red-200">
                             {idx + 1}
                           </span>
-                          <span className="text-neutral-200 break-words">{st}</span>
+                          <span className="text-[#161616] break-words">{st}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveStep(idx)}
-                          className="p-1 text-neutral-400 hover:text-red-400 rounded-md hover:bg-neutral-800 transition-colors shrink-0"
+                          className="p-1 text-[#9A9A9A] hover:text-[#D7141A] rounded-md hover:bg-red-50 transition-colors shrink-0 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -911,11 +912,11 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
               {/* Productos */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                    <Package className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                    <Package className="w-4 h-4 text-[#D7141A]" />
                     <span>Productos & Insumos Utilizados</span>
                   </div>
-                  <span className="text-[11px] text-neutral-400">{products.length} productos</span>
+                  <span className="text-[11px] text-[#6B6B6B]">{products.length} productos</span>
                 </div>
 
                 <div className="flex gap-2">
@@ -930,12 +931,12 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                         handleAddProduct();
                       }
                     }}
-                    className="flex-1 bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2 text-white placeholder-neutral-500 focus:outline-hidden focus:border-[#0066FF]"
+                    className="flex-1 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A] focus:bg-white transition-colors"
                   />
                   <button
                     type="button"
                     onClick={handleAddProduct}
-                    className="px-4 py-2 bg-[#0066FF] hover:bg-[#0055DD] text-white font-medium rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                    className="px-4 py-2 bg-[#D7141A] hover:bg-[#b01015] text-white font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer text-xs shadow-xs"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Agregar</span>
@@ -943,17 +944,17 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 </div>
 
                 {products.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 bg-[#1F1F1F] p-3 rounded-xl border border-[#2D2D2D]">
+                  <div className="flex flex-wrap gap-1.5 bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3]">
                     {products.map((p, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#282828] border border-[#3A3A3A] text-neutral-200 text-xs"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#E5E5E3] text-[#161616] text-xs font-medium shadow-xs"
                       >
                         <span>{p}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveProduct(idx)}
-                          className="text-neutral-400 hover:text-red-400 transition-colors ml-0.5"
+                          className="text-[#9A9A9A] hover:text-[#D7141A] transition-colors ml-0.5 cursor-pointer"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -965,19 +966,19 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
             </div>
 
             {/* 7. "Sumale también…" (Cross-sell) */}
-            <div className="space-y-3 pt-2 border-t border-[#2D2D2D]">
+            <div className="space-y-3 pt-4 border-t border-[#E5E5E3]">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                  <Sparkles className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                  <Sparkles className="w-4 h-4 text-[#D7141A]" />
                   <span>7. "Sumale también…" (Sugerencias al agregar)</span>
                 </div>
-                <span className="text-[11px] text-neutral-400">{suggestedServiceIds.length} sugeridos</span>
+                <span className="text-[11px] text-[#6B6B6B]">{suggestedServiceIds.length} sugeridos</span>
               </div>
-              <p className="text-[11px] text-neutral-400 leading-normal">
+              <p className="text-[11px] text-[#6B6B6B] leading-normal">
                 Elegí qué tratamientos se le sugerirán al cliente cuando seleccione este servicio en el armador.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#202020] p-3 rounded-xl border border-[#333] max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#F5F5F4] p-3 rounded-xl border border-[#E5E5E3] max-h-48 overflow-y-auto">
                 {detailingTariffs
                   .filter((t) => !service || t.id !== service.id)
                   .map((t) => {
@@ -986,7 +987,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                       <label
                         key={t.id}
                         className={`flex items-center gap-2.5 p-2 rounded-lg border cursor-pointer text-xs transition-colors ${
-                          isChecked ? 'bg-[#0066FF]/15 border-[#0066FF] text-white' : 'bg-[#181818] border-[#2E2E2E] text-neutral-300'
+                          isChecked ? 'bg-red-50 border-red-300 text-[#161616] font-semibold' : 'bg-white border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616]'
                         }`}
                       >
                         <input
@@ -999,7 +1000,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                               setSuggestedServiceIds((prev) => prev.filter((id) => id !== t.id));
                             }
                           }}
-                          className="rounded text-[#0066FF] focus:ring-0"
+                          className="rounded text-[#D7141A] focus:ring-[#D7141A]"
                         />
                         <span className="truncate">{t.shortName || t.name}</span>
                       </label>
@@ -1009,9 +1010,9 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
             </div>
 
             {/* 8. Opciones de Publicación & Destacado */}
-            <div className="space-y-3 pt-2 border-t border-[#2D2D2D]">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
-                <Sparkles className="w-4 h-4" />
+            <div className="space-y-3 pt-4 border-t border-[#E5E5E3]">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">
+                <Sparkles className="w-4 h-4 text-[#D7141A]" />
                 <span>8. Estado de Publicación</span>
               </div>
 
@@ -1021,21 +1022,21 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                   onClick={() => setIsActive(!isActive)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                     isActive
-                      ? 'bg-emerald-950/20 border-emerald-800/60'
-                      : 'bg-[#202020] border-[#333] opacity-70'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B] opacity-75'
                   }`}
                 >
                   <div>
-                    <span className="font-semibold text-xs block text-white">
+                    <span className="font-semibold text-xs block text-[#161616]">
                       {isActive ? 'Servicio Activo' : 'Servicio Pausado'}
                     </span>
-                    <span className="text-[11px] text-neutral-400">
+                    <span className="text-[11px] text-[#6B6B6B]">
                       {isActive ? 'Visible en el armador público' : 'Oculto para los clientes'}
                     </span>
                   </div>
                   <div
                     className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                      isActive ? 'bg-emerald-600 text-white' : 'bg-neutral-700 text-neutral-400'
+                      isActive ? 'bg-emerald-600 text-white' : 'bg-gray-300 text-gray-500'
                     }`}
                   >
                     {isActive ? <Check className="w-3.5 h-3.5" /> : null}
@@ -1047,22 +1048,22 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                   onClick={() => setIsFeatured(!isFeatured)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                     isFeatured
-                      ? 'bg-amber-950/20 border-amber-800/60'
-                      : 'bg-[#202020] border-[#333]'
+                      ? 'bg-amber-50 border-amber-300 text-amber-900'
+                      : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B]'
                   }`}
                 >
                   <div>
-                    <span className="font-semibold text-xs block text-white flex items-center gap-1.5">
-                      <Star className={`w-3.5 h-3.5 ${isFeatured ? 'text-amber-400 fill-amber-400' : 'text-neutral-500'}`} />
+                    <span className="font-semibold text-xs block text-[#161616] flex items-center gap-1.5">
+                      <Star className={`w-3.5 h-3.5 ${isFeatured ? 'text-amber-500 fill-amber-500' : 'text-[#6B6B6B]'}`} />
                       <span>Marcar como Destacado</span>
                     </span>
-                    <span className="text-[11px] text-neutral-400">
+                    <span className="text-[11px] text-[#6B6B6B]">
                       Resalta con insignia en el armador
                     </span>
                   </div>
                   <div
                     className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                      isFeatured ? 'bg-amber-600 text-white' : 'bg-neutral-700 text-neutral-400'
+                      isFeatured ? 'bg-amber-600 text-white' : 'bg-gray-300 text-gray-500'
                     }`}
                   >
                     {isFeatured ? <Check className="w-3.5 h-3.5" /> : null}
@@ -1073,17 +1074,17 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
           </div>
 
           {/* Footer Buttons - Siempre visibles en celular y desktop */}
-          <div className="shrink-0 p-3.5 sm:p-4 border-t border-[#2D2D2D] bg-[#1A1A1A] flex items-center justify-end gap-2.5 safe-bottom z-10 shadow-lg">
+          <div className="shrink-0 p-3.5 sm:p-4 border-t border-[#E5E5E3] bg-white flex items-center justify-end gap-2.5 safe-bottom z-20 sticky bottom-0 shadow-xs">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-[#252525] hover:bg-[#303030] text-neutral-300 text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] text-xs font-semibold transition-colors cursor-pointer shadow-xs"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold transition-all shadow-lg shadow-[#0066FF]/20 flex items-center gap-2 cursor-pointer active:scale-95"
+              className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <Check className="w-4 h-4" />
               <span>{isEditing ? 'Guardar Cambios' : 'Crear Servicio'}</span>
@@ -1091,6 +1092,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

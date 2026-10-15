@@ -296,40 +296,41 @@ export const DetailingWebRequestsSection: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. Header con Toggle de Vistas: Bandeja vs Métricas */}
-      <div className="bg-[#161616] border border-[#262626] rounded-2xl p-5 text-white shadow-md">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#0066FF]/20 border border-[#0066FF]/30 flex items-center justify-center text-[#3B82F6]">
-                <Inbox className="w-5 h-5" />
-              </div>
-              <h2 className="text-lg font-bold tracking-tight">Seguimiento de Solicitudes Web</h2>
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="text-xs uppercase tracking-wider text-[#6B6B6B] font-medium block">
+              DetailVlak • Solicitudes Online
+            </span>
+            <h2 className="text-lg sm:text-xl font-bold font-display text-[#161616] flex items-center gap-2">
+              <Inbox className="w-5 h-5 text-[#D7141A]" />
+              Bandeja de Solicitudes Web
               {newCount > 0 && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066FF] text-white animate-pulse">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#D7141A] text-white">
                   {newCount} nueva{newCount > 1 ? 's' : ''}
                 </span>
               )}
               {incompleteCount > 0 && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-black">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
                   {incompleteCount} para recuperar
                 </span>
               )}
-            </div>
-            <p className="text-xs text-neutral-400">
-              Gestión de clientes, historial de contacto, recupero de leads y métricas de conversión comercial.
+            </h2>
+            <p className="text-xs text-[#6B6B6B] mt-0.5">
+              Gestión de presupuestos recibidos, seguimiento por WhatsApp y conversión a trabajos en taller.
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             {/* Toggle de Vista */}
-            <div className="bg-[#222] p-1 rounded-xl border border-[#333] flex items-center gap-1 text-xs">
+            <div className="bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3] flex items-center gap-1 text-xs">
               <button
                 type="button"
                 onClick={() => setActiveMainView('solicitudes')}
                 className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
                   activeMainView === 'solicitudes'
-                    ? 'bg-[#0066FF] text-white shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'text-[#6B6B6B] hover:text-[#161616]'
                 }`}
               >
                 <Inbox className="w-3.5 h-3.5" />
@@ -340,8 +341,8 @@ export const DetailingWebRequestsSection: React.FC = () => {
                 onClick={() => setActiveMainView('metricas')}
                 className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
                   activeMainView === 'metricas'
-                    ? 'bg-[#0066FF] text-white shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'text-[#6B6B6B] hover:text-[#161616]'
                 }`}
               >
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -353,29 +354,30 @@ export const DetailingWebRequestsSection: React.FC = () => {
               href="/presupuesto"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-[#222] hover:bg-[#2A2A2A] text-neutral-300 hover:text-white border border-[#333] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer hidden sm:flex"
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer hidden sm:flex shadow-xs"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5 text-[#6B6B6B]" />
               <span>Ver Armador</span>
             </a>
           </div>
         </div>
 
-        {/* Badges de Resumen */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 mt-5 pt-4 border-t border-[#262626]">
+        {/* Badges / Tarjetas de Resumen en el formato de Trabajos del mes */}
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 pt-3 border-t border-[#E5E5E3]">
           <div
             onClick={() => {
               setActiveMainView('solicitudes');
               setStatusFilter('all');
             }}
-            className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+            className={`p-3 rounded-xl border cursor-pointer transition-all ${
               statusFilter === 'all' && activeMainView === 'solicitudes'
-                ? 'bg-[#222] border-[#444] text-white'
-                : 'bg-[#1A1A1A] border-[#262626] text-neutral-400 hover:text-white'
+                ? 'bg-[#161616] text-white border-[#161616]'
+                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold text-neutral-500 block">Total</span>
-            <span className="text-lg font-bold text-white">{totalCount}</span>
+            <span className={`text-[10px] uppercase font-bold block ${statusFilter === 'all' && activeMainView === 'solicitudes' ? 'text-neutral-400' : 'text-[#6B6B6B]'}`}>Total</span>
+            <span className="text-lg font-bold font-mono">{totalCount}</span>
+            <span className={`text-[10px] block ${statusFilter === 'all' && activeMainView === 'solicitudes' ? 'text-neutral-400' : 'text-[#6B6B6B]'}`}>solicitudes</span>
           </div>
 
           <div
@@ -383,16 +385,17 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('nueva');
             }}
-            className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+            className={`p-3 rounded-xl border cursor-pointer transition-all ${
               statusFilter === 'nueva' && activeMainView === 'solicitudes'
-                ? 'bg-[#0066FF]/20 border-[#0066FF] text-white'
-                : 'bg-[#1A1A1A] border-[#262626] text-neutral-400 hover:text-white'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold text-[#3B82F6] block flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF]" /> Nuevas
+            <span className={`text-[10px] uppercase font-bold block flex items-center gap-1 ${statusFilter === 'nueva' && activeMainView === 'solicitudes' ? 'text-blue-100' : 'text-blue-600'}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> Nuevas
             </span>
-            <span className="text-lg font-bold text-[#3B82F6]">{newCount}</span>
+            <span className={`text-lg font-bold font-mono ${statusFilter === 'nueva' && activeMainView === 'solicitudes' ? 'text-white' : 'text-blue-600'}`}>{newCount}</span>
+            <span className={`text-[10px] block ${statusFilter === 'nueva' && activeMainView === 'solicitudes' ? 'text-blue-100' : 'text-[#6B6B6B]'}`}>sin contactar</span>
           </div>
 
           <div
@@ -400,16 +403,17 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('incompleta');
             }}
-            className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+            className={`p-3 rounded-xl border cursor-pointer transition-all ${
               statusFilter === 'incompleta' && activeMainView === 'solicitudes'
-                ? 'bg-amber-500/20 border-amber-500 text-white'
-                : 'bg-[#1A1A1A] border-[#262626] text-neutral-400 hover:text-white'
+                ? 'bg-amber-500 text-white border-amber-500'
+                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold text-amber-400 block flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-amber-400" /> Incompletas
+            <span className={`text-[10px] uppercase font-bold block flex items-center gap-1 ${statusFilter === 'incompleta' && activeMainView === 'solicitudes' ? 'text-amber-100' : 'text-amber-600'}`}>
+              <AlertTriangle className="w-3 h-3" /> Incompletas
             </span>
-            <span className="text-lg font-bold text-amber-400">{incompleteCount}</span>
+            <span className={`text-lg font-bold font-mono ${statusFilter === 'incompleta' && activeMainView === 'solicitudes' ? 'text-white' : 'text-amber-600'}`}>{incompleteCount}</span>
+            <span className={`text-[10px] block ${statusFilter === 'incompleta' && activeMainView === 'solicitudes' ? 'text-amber-100' : 'text-[#6B6B6B]'}`}>recuperables</span>
           </div>
 
           <div
@@ -417,14 +421,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('contactado');
             }}
-            className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+            className={`p-3 rounded-xl border cursor-pointer transition-all ${
               statusFilter === 'contactado' && activeMainView === 'solicitudes'
-                ? 'bg-blue-950/40 border-blue-600/50 text-white'
-                : 'bg-[#1A1A1A] border-[#262626] text-neutral-400 hover:text-white'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold text-blue-400 block">Contactadas</span>
-            <span className="text-lg font-bold text-blue-300">{contactedCount}</span>
+            <span className={`text-[10px] uppercase font-bold block ${statusFilter === 'contactado' && activeMainView === 'solicitudes' ? 'text-indigo-100' : 'text-indigo-600'}`}>Contactadas</span>
+            <span className={`text-lg font-bold font-mono ${statusFilter === 'contactado' && activeMainView === 'solicitudes' ? 'text-white' : 'text-indigo-600'}`}>{contactedCount}</span>
+            <span className={`text-[10px] block ${statusFilter === 'contactado' && activeMainView === 'solicitudes' ? 'text-indigo-100' : 'text-[#6B6B6B]'}`}>en conversación</span>
           </div>
 
           <div
@@ -432,14 +437,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('confirmado');
             }}
-            className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+            className={`p-3 rounded-xl border cursor-pointer transition-all ${
               statusFilter === 'confirmado' && activeMainView === 'solicitudes'
-                ? 'bg-emerald-950/40 border-emerald-600/50 text-white'
-                : 'bg-[#1A1A1A] border-[#262626] text-neutral-400 hover:text-white'
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold text-emerald-400 block">Confirmadas</span>
-            <span className="text-lg font-bold text-emerald-300">{confirmedCount}</span>
+            <span className={`text-[10px] uppercase font-bold block ${statusFilter === 'confirmado' && activeMainView === 'solicitudes' ? 'text-emerald-100' : 'text-emerald-600'}`}>Confirmadas</span>
+            <span className={`text-lg font-bold font-mono ${statusFilter === 'confirmado' && activeMainView === 'solicitudes' ? 'text-white' : 'text-emerald-600'}`}>{confirmedCount}</span>
+            <span className={`text-[10px] block ${statusFilter === 'confirmado' && activeMainView === 'solicitudes' ? 'text-emerald-100' : 'text-[#6B6B6B]'}`}>pasadas a taller</span>
           </div>
 
           <div
@@ -447,16 +453,17 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setOriginFilter(originFilter === 'ads' ? 'all' : 'ads');
             }}
-            className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+            className={`p-3 rounded-xl border cursor-pointer transition-all ${
               originFilter === 'ads' && activeMainView === 'solicitudes'
-                ? 'bg-purple-950/40 border-purple-500 text-white'
-                : 'bg-[#1A1A1A] border-[#262626] text-neutral-400 hover:text-white'
+                ? 'bg-purple-600 text-white border-purple-600'
+                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
             }`}
           >
-            <span className="text-[10px] uppercase font-bold text-purple-400 block flex items-center gap-1">
+            <span className={`text-[10px] uppercase font-bold block flex items-center gap-1 ${originFilter === 'ads' && activeMainView === 'solicitudes' ? 'text-purple-100' : 'text-purple-600'}`}>
               <Megaphone className="w-3 h-3" /> De Anuncios
             </span>
-            <span className="text-lg font-bold text-purple-300">{adsCount}</span>
+            <span className={`text-lg font-bold font-mono ${originFilter === 'ads' && activeMainView === 'solicitudes' ? 'text-white' : 'text-purple-600'}`}>{adsCount}</span>
+            <span className={`text-[10px] block ${originFilter === 'ads' && activeMainView === 'solicitudes' ? 'text-purple-100' : 'text-[#6B6B6B]'}`}>comisión 12,5%</span>
           </div>
         </div>
       </div>
@@ -467,27 +474,27 @@ export const DetailingWebRequestsSection: React.FC = () => {
       {activeMainView === 'solicitudes' && (
         <div className="space-y-4">
           {/* Filtros y Búsqueda */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="bg-white border border-[#E5E5E3] p-3 rounded-2xl shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9A9A9A]" />
               <input
                 type="text"
                 placeholder="Buscar por cliente, teléfono, auto, matrícula o código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#161616] border border-neutral-300 dark:border-[#2D2D2D] rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-hidden focus:border-[#0066FF]"
+                className="w-full pl-10 pr-4 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
               />
             </div>
 
             <div className="flex items-center gap-1.5 text-xs flex-wrap">
-              <span className="text-[11px] text-neutral-500 font-medium hidden sm:inline">Origen:</span>
+              <span className="text-[11px] text-[#6B6B6B] font-medium hidden sm:inline">Origen:</span>
               <button
                 type="button"
                 onClick={() => setOriginFilter('all')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs ${
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs ${
                   originFilter === 'all'
-                    ? 'bg-[#161616] text-white dark:bg-white dark:text-black font-bold'
-                    : 'bg-neutral-200 dark:bg-[#202020] text-neutral-600 dark:text-neutral-400'
+                    ? 'bg-[#161616] text-white font-bold'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616]'
                 }`}
               >
                 Todos
@@ -495,10 +502,10 @@ export const DetailingWebRequestsSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setOriginFilter('ads')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 ${
                   originFilter === 'ads'
                     ? 'bg-purple-600 text-white font-bold'
-                    : 'bg-neutral-200 dark:bg-[#202020] text-neutral-600 dark:text-neutral-400'
+                    : 'bg-[#F5F5F4] text-purple-700 hover:bg-purple-50'
                 }`}
               >
                 <Megaphone className="w-3 h-3" />
@@ -507,10 +514,10 @@ export const DetailingWebRequestsSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setOriginFilter('direct')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 ${
                   originFilter === 'direct'
                     ? 'bg-emerald-600 text-white font-bold'
-                    : 'bg-neutral-200 dark:bg-[#202020] text-neutral-600 dark:text-neutral-400'
+                    : 'bg-[#F5F5F4] text-emerald-700 hover:bg-emerald-50'
                 }`}
               >
                 <Globe className="w-3 h-3" />
@@ -521,14 +528,14 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
           {/* Lista de Solicitudes */}
           {filteredRequests.length === 0 ? (
-            <div className="bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#2D2D2D] rounded-2xl p-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-neutral-100 dark:bg-[#222] text-neutral-400 flex items-center justify-center mx-auto">
+            <div className="bg-white border border-[#E5E5E3] rounded-2xl p-12 text-center space-y-3 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-[#F5F5F4] text-[#6B6B6B] flex items-center justify-center mx-auto">
                 <Inbox className="w-6 h-6" />
               </div>
-              <h3 className="font-bold text-neutral-900 dark:text-white text-base">
+              <h3 className="font-bold text-[#161616] text-base font-display">
                 No hay solicitudes que coincidan
               </h3>
-              <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+              <p className="text-xs text-[#6B6B6B] max-w-sm mx-auto">
                 {searchTerm || statusFilter !== 'all' || originFilter !== 'all'
                   ? 'Probá modificando los filtros para ver otras solicitudes.'
                   : 'Cuando los clientes armen su presupuesto en /presupuesto aparecerán automáticamente acá.'}
@@ -546,21 +553,21 @@ export const DetailingWebRequestsSection: React.FC = () => {
                 return (
                   <div
                     key={req.id}
-                    className={`bg-white dark:bg-[#161616] border rounded-2xl p-4 sm:p-5 transition-all shadow-xs space-y-4 ${
+                    className={`bg-white border rounded-2xl p-4 sm:p-5 transition-all shadow-xs space-y-4 ${
                       isIncomplete
-                        ? 'border-amber-400/80 dark:border-amber-500/50 bg-amber-50/20 dark:bg-amber-950/10'
+                        ? 'border-l-4 border-l-amber-500 border-[#E5E5E3]'
                         : req.status === 'nueva'
-                        ? 'border-[#0066FF]/60 dark:border-[#0066FF]/40 shadow-[#0066FF]/5 ring-1 ring-[#0066FF]/30'
+                        ? 'border-l-4 border-l-[#D7141A] border-[#E5E5E3]'
                         : req.status === 'confirmado'
-                        ? 'border-emerald-500/40 dark:border-emerald-600/30'
+                        ? 'border-l-4 border-l-emerald-600 border-[#E5E5E3]'
                         : req.status === 'descartado'
-                        ? 'border-neutral-300 dark:border-[#242424] opacity-70'
-                        : 'border-neutral-200 dark:border-[#262626]'
+                        ? 'border-[#E5E5E3] opacity-60'
+                        : 'border-[#E5E5E3]'
                     }`}
                   >
                     {/* Alerta si es incompleta (Recupero) */}
                     {isIncomplete && (
-                      <div className="p-2.5 rounded-xl bg-amber-100/80 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-xs text-amber-900">
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                           <span className="font-bold">
@@ -581,13 +588,13 @@ export const DetailingWebRequestsSection: React.FC = () => {
                     )}
 
                     {/* Fila Superior: Código, Fecha, Origen y Estado */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-neutral-100 dark:border-[#262626] pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#E5E5E3] pb-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-bold text-xs bg-neutral-100 dark:bg-[#222] text-neutral-800 dark:text-white px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#333]">
+                        <span className="font-mono font-bold text-xs bg-[#F5F5F4] text-[#161616] px-2.5 py-1 rounded-lg border border-[#E5E5E3]">
                           #{req.code}
                         </span>
 
-                        <span className="text-[11px] text-neutral-500 flex items-center gap-1 font-mono">
+                        <span className="text-[11px] text-[#6B6B6B] flex items-center gap-1 font-mono">
                           <Clock className="w-3 h-3" />
                           {new Date(req.created_at).toLocaleDateString('es-UY', {
                             day: '2-digit',
@@ -599,17 +606,17 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
                         {/* Origen Pill para Comisiones */}
                         {isAds ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                             <Megaphone className="w-3 h-3" /> Anuncio Pago • Comisión 12,5%
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <Globe className="w-3 h-3" /> Directo / Web • Comisión 30%
                           </span>
                         )}
 
                         {isConverted && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-[#3B82F6] border border-blue-500/30">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                             <Check className="w-3 h-3" /> Trabajo Agendado
                           </span>
                         )}
@@ -617,29 +624,29 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
                       {/* Selector de Estado */}
                       <div className="flex items-center gap-2 self-start sm:self-auto">
-                        <span className="text-[11px] text-neutral-400">Estado:</span>
+                        <span className="text-[11px] text-[#6B6B6B]">Estado:</span>
                         <select
                           value={req.status}
                           onChange={(e) =>
                             handleStatusChange(req.id, e.target.value as DetailingWebRequestStatus)
                           }
-                          className={`text-xs font-bold px-2.5 py-1 rounded-lg border focus:outline-hidden cursor-pointer ${
+                          className={`text-xs font-bold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${
                             req.status === 'incompleta'
-                              ? 'bg-amber-500 text-black border-amber-500 font-extrabold'
+                              ? 'bg-amber-100 text-amber-800 border-amber-300 font-extrabold'
                               : req.status === 'nueva'
-                              ? 'bg-[#0066FF] text-white border-[#0066FF]'
+                              ? 'bg-blue-100 text-blue-800 border-blue-300'
                               : req.status === 'contactado'
-                              ? 'bg-amber-500/20 text-amber-500 border-amber-500/40'
+                              ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
                               : req.status === 'confirmado'
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                              : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-300 dark:border-neutral-700'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-[#F5F5F4] text-[#6B6B6B] border-[#E5E5E3]'
                           }`}
                         >
-                          <option value="incompleta" className="bg-[#161616] text-white">Incompleta (Recupero)</option>
-                          <option value="nueva" className="bg-[#161616] text-white">Nueva</option>
-                          <option value="contactado" className="bg-[#161616] text-white">Contactado</option>
-                          <option value="confirmado" className="bg-[#161616] text-white">Confirmado</option>
-                          <option value="descartado" className="bg-[#161616] text-white">Descartado</option>
+                          <option value="incompleta">Incompleta (Recupero)</option>
+                          <option value="nueva">Nueva</option>
+                          <option value="contactado">Contactado</option>
+                          <option value="confirmado">Confirmado</option>
+                          <option value="descartado">Descartado</option>
                         </select>
                       </div>
                     </div>
@@ -647,12 +654,12 @@ export const DetailingWebRequestsSection: React.FC = () => {
                     {/* Cuerpo: Datos Cliente + Auto + Tratamientos */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                       {/* Columna 1: Cliente & Contacto */}
-                      <div className="space-y-1.5 bg-neutral-50 dark:bg-[#1A1A1A] p-3.5 rounded-xl border border-neutral-200 dark:border-[#282828]">
-                        <span className="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider">
+                      <div className="space-y-1.5 bg-[#F5F5F4] p-3.5 rounded-xl border border-[#E5E5E3]">
+                        <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block tracking-wider">
                           Cliente
                         </span>
-                        <div className="font-bold text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-[#0066FF]" />
+                        <div className="font-bold text-sm text-[#161616] flex items-center gap-1.5 font-display">
+                          <User className="w-3.5 h-3.5 text-[#D7141A]" />
                           <span>{req.client_name}</span>
                         </div>
 
@@ -671,14 +678,14 @@ export const DetailingWebRequestsSection: React.FC = () => {
                         </div>
 
                         {req.client_email && (
-                          <div className="text-[11px] text-neutral-500 truncate pt-0.5">
+                          <div className="text-[11px] text-[#6B6B6B] truncate pt-0.5">
                             Email: {req.client_email}
                           </div>
                         )}
 
                         {req.preferred_date && (
-                          <div className="text-[11px] text-neutral-600 dark:text-neutral-300 pt-1 flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-[#3B82F6]" />
+                          <div className="text-[11px] text-[#161616] pt-1 flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-[#D7141A]" />
                             <span>
                               Fecha deseada: <strong>{req.preferred_date}</strong>{' '}
                               {req.preferred_time_slot ? `(${req.preferred_time_slot})` : ''}
@@ -688,48 +695,48 @@ export const DetailingWebRequestsSection: React.FC = () => {
                       </div>
 
                       {/* Columna 2: Vehículo */}
-                      <div className="space-y-1.5 bg-neutral-50 dark:bg-[#1A1A1A] p-3.5 rounded-xl border border-neutral-200 dark:border-[#282828]">
-                        <span className="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider">
+                      <div className="space-y-1.5 bg-[#F5F5F4] p-3.5 rounded-xl border border-[#E5E5E3]">
+                        <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block tracking-wider">
                           Vehículo
                         </span>
-                        <div className="font-bold text-sm text-neutral-900 dark:text-white flex items-center gap-1.5">
-                          <Car className="w-3.5 h-3.5 text-[#0066FF]" />
+                        <div className="font-bold text-sm text-[#161616] flex items-center gap-1.5 font-display">
+                          <Car className="w-3.5 h-3.5 text-[#D7141A]" />
                           <span>
                             {req.vehicle_brand} {req.vehicle_model}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-[11px] text-neutral-500 pt-0.5">
-                          <span className="px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-[#252525] text-neutral-700 dark:text-neutral-300 font-bold">
+                        <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B] pt-0.5">
+                          <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E5E3] text-[#161616] font-bold">
                             {req.vehicle_category}
                           </span>
                           {req.vehicle_year && <span>Año {req.vehicle_year}</span>}
                         </div>
 
                         {req.vehicle_plate && (
-                          <div className="font-mono uppercase font-bold text-xs text-neutral-800 dark:text-neutral-200 pt-1">
+                          <div className="font-mono uppercase font-bold text-xs text-[#161616] pt-1">
                             Matrícula: {req.vehicle_plate}
                           </div>
                         )}
 
                         {req.comments && (
-                          <div className="text-[11px] text-neutral-500 italic pt-1 line-clamp-2">
+                          <div className="text-[11px] text-[#6B6B6B] italic pt-1 line-clamp-2">
                             "{req.comments}"
                           </div>
                         )}
                       </div>
 
                       {/* Columna 3: Tratamientos & Total */}
-                      <div className="space-y-2 bg-neutral-50 dark:bg-[#1A1A1A] p-3.5 rounded-xl border border-neutral-200 dark:border-[#282828] flex flex-col justify-between">
+                      <div className="space-y-2 bg-[#F5F5F4] p-3.5 rounded-xl border border-[#E5E5E3] flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-neutral-400 block tracking-wider mb-1">
+                          <span className="text-[10px] uppercase font-bold text-[#6B6B6B] block tracking-wider mb-1">
                             Tratamientos ({req.selected_services.length})
                           </span>
                           <div className="space-y-1 max-h-24 overflow-y-auto">
                             {req.selected_services.map((item, idx) => (
                               <div
                                 key={idx}
-                                className="flex items-center justify-between text-[11px] text-neutral-700 dark:text-neutral-300"
+                                className="flex items-center justify-between text-[11px] text-[#161616]"
                               >
                                 <span className="truncate pr-2">• {item.serviceName}</span>
                                 <span className="font-mono font-bold shrink-0">
@@ -742,7 +749,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                               req.selected_products.map((p, idx) => (
                                 <div
                                   key={`prod-${idx}`}
-                                  className="flex items-center justify-between text-[11px] text-neutral-500 italic"
+                                  className="flex items-center justify-between text-[11px] text-[#6B6B6B] italic"
                                 >
                                   <span className="truncate pr-2">+ {p.productName}</span>
                                   <span className="font-mono font-bold shrink-0">
@@ -753,20 +760,20 @@ export const DetailingWebRequestsSection: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="pt-2 border-t border-neutral-200 dark:border-[#2D2D2D] flex items-center justify-between">
-                          <span className="font-bold text-xs text-neutral-600 dark:text-neutral-400">
+                        <div className="pt-2 border-t border-[#E5E5E3] flex items-center justify-between">
+                          <span className="font-bold text-xs text-[#6B6B6B]">
                             TOTAL ESTIMADO:
                           </span>
-                          <span className="font-mono font-extrabold text-base text-[#0066FF] dark:text-[#3B82F6]">
+                          <span className="font-mono font-bold text-base text-[#161616]">
                             ${req.total_amount.toLocaleString('es-UY')}{' '}
-                            <span className="text-[10px] text-neutral-500 font-normal">UYU</span>
+                            <span className="text-[10px] text-[#6B6B6B] font-normal">UYU</span>
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Barra Inferior: Botonera de Acción */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-neutral-100 dark:border-[#242424]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-[#E5E5E3]">
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* Botón WhatsApp con Plantillas */}
                         <button
@@ -775,7 +782,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                             setTemplateModalRequest(req);
                             setSelectedTemplateKey(isIncomplete ? 'recupero' : 'presupuesto');
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-700 border border-[#E5E5E3] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                         >
                           <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Chat WhatsApp</span>
@@ -785,9 +792,9 @@ export const DetailingWebRequestsSection: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setPreviewPdfRequest(req)}
-                          className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-[#202020] hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                         >
-                          <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
+                          <FileText className="w-3.5 h-3.5 text-[#6B6B6B]" />
                           <span>Ver PDF</span>
                         </button>
 
@@ -795,7 +802,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setExpandedHistoryId(isHistoryOpen ? null : req.id)}
-                          className="px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-[#202020] hover:bg-neutral-200 text-neutral-600 dark:text-neutral-400 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3] text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
                         >
                           <History className="w-3 h-3" />
                           <span>Historial ({req.status_history?.length || 1})</span>
@@ -806,7 +813,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setExpandedNotesId(isNotesOpen ? null : req.id)}
-                          className="px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-[#202020] hover:bg-neutral-200 text-neutral-600 dark:text-neutral-400 text-xs font-medium flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] border border-[#E5E5E3] text-xs font-medium flex items-center gap-1 cursor-pointer shadow-xs"
                         >
                           <StickyNote className="w-3 h-3" />
                           <span>Notas ({req.internal_notes?.length || 0})</span>
@@ -825,13 +832,13 @@ export const DetailingWebRequestsSection: React.FC = () => {
                               setAssignedTo(profile?.id || 'user-maxi');
                               setWorkBayId('box-1');
                             }}
-                            className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-[#0066FF]/25 cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             <span>Pasar a trabajo</span>
                           </button>
                         ) : (
-                          <span className="text-xs text-emerald-500 font-bold flex items-center gap-1">
+                          <span className="text-xs text-emerald-600 font-bold flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
                             <Check className="w-4 h-4" />
                             <span>Convertido a Trabajo</span>
                           </span>
@@ -842,7 +849,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                           type="button"
                           onClick={() => handleDelete(req)}
                           title="Eliminar solicitud"
-                          className="p-2 rounded-xl bg-neutral-100 dark:bg-[#202020] hover:bg-red-50 dark:hover:bg-red-950/40 text-neutral-400 hover:text-red-500 transition-colors cursor-pointer"
+                          className="p-2 rounded-xl bg-white hover:bg-rose-50 text-[#6B6B6B] hover:text-[#D7141A] border border-[#E5E5E3] transition-colors cursor-pointer shadow-xs"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -851,8 +858,8 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
                     {/* Historial Desplegable */}
                     {isHistoryOpen && (
-                      <div className="p-3 bg-neutral-50 dark:bg-[#1A1A1A] rounded-xl border border-neutral-200 dark:border-[#262626] space-y-2 text-xs">
-                        <span className="font-bold text-[11px] text-neutral-500 uppercase tracking-wider block">
+                      <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-2 text-xs">
+                        <span className="font-bold text-[11px] text-[#6B6B6B] uppercase tracking-wider block">
                           Línea de tiempo de estados:
                         </span>
                         <div className="space-y-1.5">
@@ -866,15 +873,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
                               }
                             ]
                           ).map((h, i) => (
-                            <div key={i} className="flex items-center justify-between text-neutral-600 dark:text-neutral-300">
+                            <div key={i} className="flex items-center justify-between text-[#161616]">
                               <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                                <span className="font-bold uppercase text-[10px] bg-neutral-200 dark:bg-[#282828] px-1.5 py-0.5 rounded">
+                                <span className="w-2 h-2 rounded-full bg-[#D7141A]" />
+                                <span className="font-bold uppercase text-[10px] bg-white border border-[#E5E5E3] px-1.5 py-0.5 rounded">
                                   {h.status}
                                 </span>
                                 {h.note && <span>• {h.note}</span>}
                               </div>
-                              <span className="text-[10px] text-neutral-400 font-mono">
+                              <span className="text-[10px] text-[#6B6B6B] font-mono">
                                 {new Date(h.changed_at).toLocaleString('es-UY')} ({h.changed_by || 'Sistema'})
                               </span>
                             </div>
@@ -885,8 +892,8 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
                     {/* Notas Internas Desplegables */}
                     {isNotesOpen && (
-                      <div className="p-3 bg-neutral-50 dark:bg-[#1A1A1A] rounded-xl border border-neutral-200 dark:border-[#262626] space-y-3 text-xs">
-                        <span className="font-bold text-[11px] text-neutral-500 uppercase tracking-wider block">
+                      <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-3 text-xs">
+                        <span className="font-bold text-[11px] text-[#6B6B6B] uppercase tracking-wider block">
                           Notas del equipo sobre este cliente:
                         </span>
 
@@ -895,17 +902,17 @@ export const DetailingWebRequestsSection: React.FC = () => {
                             {req.internal_notes.map((note) => (
                               <div
                                 key={note.id}
-                                className="p-2.5 rounded-lg bg-white dark:bg-[#202020] border border-neutral-200 dark:border-[#2B2B2B] space-y-1"
+                                className="p-2.5 rounded-lg bg-white border border-[#E5E5E3] space-y-1 shadow-2xs"
                               >
-                                <p className="text-neutral-800 dark:text-neutral-200">{note.text}</p>
-                                <span className="text-[10px] text-neutral-400 block font-mono">
+                                <p className="text-[#161616]">{note.text}</p>
+                                <span className="text-[10px] text-[#6B6B6B] block font-mono">
                                   {new Date(note.created_at).toLocaleString('es-UY')} • Por {note.author}
                                 </span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-neutral-400 text-xs italic">No hay notas internas todavía.</p>
+                          <p className="text-[#6B6B6B] text-xs italic">No hay notas internas todavía.</p>
                         )}
 
                         {/* Input para agregar nota */}
@@ -920,12 +927,12 @@ export const DetailingWebRequestsSection: React.FC = () => {
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleAddNote(req.id);
                             }}
-                            className="flex-1 bg-white dark:bg-[#202020] border border-neutral-300 dark:border-[#333] rounded-xl px-3 py-1.5 text-xs text-neutral-900 dark:text-white focus:outline-hidden focus:border-[#0066FF]"
+                            className="flex-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-1.5 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
                           />
                           <button
                             type="button"
                             onClick={() => handleAddNote(req.id)}
-                            className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-black dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-black font-bold text-xs cursor-pointer flex items-center gap-1"
+                            className="px-3.5 py-1.5 rounded-xl bg-[#161616] hover:bg-black text-white font-bold text-xs cursor-pointer flex items-center gap-1"
                           >
                             <Send className="w-3 h-3" />
                             <span>Guardar</span>
@@ -945,67 +952,67 @@ export const DetailingWebRequestsSection: React.FC = () => {
       {/* VISTA 2: MÉTRICAS & CONVERSIÓN COMERCIAL                              */}
       {/* ===================================================================== */}
       {activeMainView === 'metricas' && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
           {/* 1. KPIs Principales */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-1 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+            <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#6B6B6B] block">
                 Presupuestos Armados
               </span>
-              <div className="text-2xl font-black text-neutral-900 dark:text-white">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-[#161616]">
                 {metrics.total}
               </div>
-              <span className="text-[10px] text-neutral-500 block">
-                Total de cotizaciones registradas
+              <span className="text-[10px] text-[#6B6B6B] block">
+                Total cotizaciones registradas
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-1 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 block">
+            <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-600 block">
                 Completadas vs Incompletas
               </span>
-              <div className="text-2xl font-black text-emerald-600">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-600">
                 {metrics.completionRate}%
               </div>
-              <span className="text-[10px] text-neutral-500 block">
+              <span className="text-[10px] text-[#6B6B6B] block">
                 {metrics.completedCount} completadas • {metrics.incompleteCount} abandonadas
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-1 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0066FF] block">
+            <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D7141A] block">
                 Tasa de Conversión a Trabajos
               </span>
-              <div className="text-2xl font-black text-[#0066FF]">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-[#D7141A]">
                 {metrics.conversionRate}%
               </div>
-              <span className="text-[10px] text-neutral-500 block">
+              <span className="text-[10px] text-[#6B6B6B] block">
                 {metrics.convertedCount} pasadas a trabajo real
               </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-1 shadow-2xs">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 block">
+            <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E5E5E3] space-y-1 shadow-xs">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-purple-700 block">
                 Ticket Promedio
               </span>
-              <div className="text-2xl font-black text-neutral-900 dark:text-white font-mono">
+              <div className="text-xl sm:text-2xl font-bold font-mono text-[#161616]">
                 ${metrics.averageTicket.toLocaleString('es-UY')}
               </div>
-              <span className="text-[10px] text-neutral-500 block font-mono">
+              <span className="text-[10px] text-[#6B6B6B] block">
                 Monto promedio por presupuesto
               </span>
             </div>
           </div>
 
           {/* 2. Comparativa de Canales de Origen (Anuncios vs Directo) */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-4 shadow-2xs">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <h3 className="font-extrabold text-sm text-neutral-900 dark:text-white flex items-center gap-2">
-                  <Megaphone className="w-4 h-4 text-[#0066FF]" />
+                <h3 className="font-bold text-sm text-[#161616] font-display flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 text-[#D7141A]" />
                   <span>Rendimiento por Canal de Adquisición (Comisiones)</span>
                 </h3>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-[#6B6B6B]">
                   Comisión diferenciada: 12,5% si proviene de publicidad paga y 30% si es orgánico/directo.
                 </p>
               </div>
@@ -1013,32 +1020,32 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Canal Anuncios Pagos */}
-              <div className="p-4 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 space-y-3">
+              <div className="p-4 rounded-xl bg-purple-50/60 border border-purple-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-                    <Megaphone className="w-3.5 h-3.5" /> Anuncios Pagos (Meta / Google)
+                  <span className="font-bold text-xs text-purple-900 flex items-center gap-1.5 font-display">
+                    <Megaphone className="w-3.5 h-3.5 text-purple-600" /> Anuncios Pagos (Meta / Google)
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-200">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-200 text-purple-900">
                     Comisión: 12,5%
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center pt-1">
                   <div>
-                    <span className="text-[10px] text-neutral-500 block">Solicitudes</span>
-                    <span className="font-extrabold text-base text-neutral-900 dark:text-white">
+                    <span className="text-[10px] text-[#6B6B6B] block">Solicitudes</span>
+                    <span className="font-bold font-mono text-base text-[#161616]">
                       {metrics.adsMetrics.count}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-neutral-500 block">Facturación Total</span>
-                    <span className="font-mono font-bold text-xs text-neutral-900 dark:text-white">
+                    <span className="text-[10px] text-[#6B6B6B] block">Facturación Total</span>
+                    <span className="font-mono font-bold text-xs text-[#161616]">
                       ${metrics.adsMetrics.totalAmount.toLocaleString('es-UY')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-neutral-500 block">Comisión Est.</span>
-                    <span className="font-mono font-bold text-xs text-purple-600 dark:text-purple-400">
+                    <span className="text-[10px] text-[#6B6B6B] block">Comisión Est.</span>
+                    <span className="font-mono font-bold text-xs text-purple-700">
                       ${metrics.adsMetrics.commission12.toLocaleString('es-UY')}
                     </span>
                   </div>
@@ -1046,32 +1053,32 @@ export const DetailingWebRequestsSection: React.FC = () => {
               </div>
 
               {/* Canal Directo / Web */}
-              <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 space-y-3">
+              <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5" /> Directo / Web / Referidos
+                  <span className="font-bold text-xs text-emerald-900 flex items-center gap-1.5 font-display">
+                    <Globe className="w-3.5 h-3.5 text-emerald-600" /> Directo / Web / Referidos
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200 text-emerald-900">
                     Comisión: 30%
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center pt-1">
                   <div>
-                    <span className="text-[10px] text-neutral-500 block">Solicitudes</span>
-                    <span className="font-extrabold text-base text-neutral-900 dark:text-white">
+                    <span className="text-[10px] text-[#6B6B6B] block">Solicitudes</span>
+                    <span className="font-bold font-mono text-base text-[#161616]">
                       {metrics.directMetrics.count}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-neutral-500 block">Facturación Total</span>
-                    <span className="font-mono font-bold text-xs text-neutral-900 dark:text-white">
+                    <span className="text-[10px] text-[#6B6B6B] block">Facturación Total</span>
+                    <span className="font-mono font-bold text-xs text-[#161616]">
                       ${metrics.directMetrics.totalAmount.toLocaleString('es-UY')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-neutral-500 block">Comisión Est.</span>
-                    <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                    <span className="text-[10px] text-[#6B6B6B] block">Comisión Est.</span>
+                    <span className="font-mono font-bold text-xs text-emerald-700">
                       ${metrics.directMetrics.commission30.toLocaleString('es-UY')}
                     </span>
                   </div>
@@ -1083,27 +1090,27 @@ export const DetailingWebRequestsSection: React.FC = () => {
           {/* 3. Ranking de Servicios y Distribución de Tamaños */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Tratamientos más pedidos */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-3 shadow-2xs">
-              <h3 className="font-extrabold text-sm text-neutral-900 dark:text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#0066FF]" />
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-xs">
+              <h3 className="font-bold text-sm text-[#161616] font-display flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-[#D7141A]" />
                 <span>Tratamientos Más Solicitados</span>
               </h3>
 
               {metrics.servicesRanking.length === 0 ? (
-                <p className="text-xs text-neutral-400 italic">Aún no hay servicios registrados.</p>
+                <p className="text-xs text-[#6B6B6B] italic">Aún no hay servicios registrados.</p>
               ) : (
                 <div className="space-y-2.5">
                   {metrics.servicesRanking.slice(0, 5).map((srv, idx) => (
                     <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
+                      <div className="flex items-center justify-between text-[#161616]">
                         <span className="font-semibold truncate">
                           {idx + 1}. {srv.name}
                         </span>
                         <span className="font-mono font-bold">{srv.count} veces</span>
                       </div>
-                      <div className="w-full bg-neutral-100 dark:bg-[#222] h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-[#F5F5F4] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#0066FF] h-full rounded-full"
+                          className="bg-[#D7141A] h-full rounded-full"
                           style={{
                             width: `${Math.min(100, Math.round((srv.count / (metrics.total || 1)) * 100))}%`
                           }}
@@ -1116,27 +1123,27 @@ export const DetailingWebRequestsSection: React.FC = () => {
             </div>
 
             {/* Distribución por Tamaños */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-[#161616] border border-neutral-200 dark:border-[#262626] space-y-3 shadow-2xs">
-              <h3 className="font-extrabold text-sm text-neutral-900 dark:text-white flex items-center gap-2">
-                <Car className="w-4 h-4 text-[#0066FF]" />
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-3 shadow-xs">
+              <h3 className="font-bold text-sm text-[#161616] font-display flex items-center gap-2">
+                <Car className="w-4 h-4 text-[#D7141A]" />
                 <span>Tamaños de Vehículos Cotizados</span>
               </h3>
 
               {metrics.sizesDistribution.length === 0 ? (
-                <p className="text-xs text-neutral-400 italic">Aún no hay categorías registradas.</p>
+                <p className="text-xs text-[#6B6B6B] italic">Aún no hay categorías registradas.</p>
               ) : (
                 <div className="space-y-2.5">
                   {metrics.sizesDistribution.map((sz, idx) => (
                     <div key={idx} className="space-y-1 text-xs">
-                      <div className="flex items-center justify-between text-neutral-800 dark:text-neutral-200">
+                      <div className="flex items-center justify-between text-[#161616]">
                         <span className="font-semibold">{sz.name}</span>
                         <span className="font-mono">
                           {sz.count} ({sz.percent}%)
                         </span>
                       </div>
-                      <div className="w-full bg-neutral-100 dark:bg-[#222] h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-[#F5F5F4] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-emerald-500 h-full rounded-full"
+                          className="bg-[#161616] h-full rounded-full"
                           style={{ width: `${sz.percent}%` }}
                         />
                       </div>
@@ -1153,16 +1160,18 @@ export const DetailingWebRequestsSection: React.FC = () => {
       {/* MODAL: CHAT DE WHATSAPP CON PLANTILLAS                                */}
       {/* ===================================================================== */}
       {templateModalRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-[#161616] border border-[#2D2D2D] rounded-2xl w-full max-w-lg p-6 text-white shadow-2xl space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-[#282828] pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg p-5 sm:p-6 text-[#161616] shadow-xl space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
                   <MessageCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base">Enviar WhatsApp a {templateModalRequest.client_name}</h3>
-                  <span className="text-xs text-neutral-400">
+                  <h3 className="font-bold text-base font-display text-[#161616]">
+                    Enviar WhatsApp a {templateModalRequest.client_name}
+                  </h3>
+                  <span className="text-xs text-[#6B6B6B]">
                     Celular: {templateModalRequest.client_phone} • Presupuesto #{templateModalRequest.code}
                   </span>
                 </div>
@@ -1170,7 +1179,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs">
-              <span className="font-bold text-neutral-300 block">Elegí la plantilla de mensaje:</span>
+              <span className="font-bold text-[#161616] block">Elegí la plantilla de mensaje:</span>
 
               <div className="space-y-2">
                 {[
@@ -1204,17 +1213,17 @@ export const DetailingWebRequestsSection: React.FC = () => {
                     onClick={() => setSelectedTemplateKey(tpl.key)}
                     className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedTemplateKey === tpl.key
-                        ? 'bg-emerald-950/40 border-emerald-500 text-white'
-                        : 'bg-[#202020] border-[#2D2D2D] text-neutral-300 hover:bg-[#252525]'
+                        ? 'bg-emerald-50 border-emerald-500 text-[#161616]'
+                        : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#161616] hover:bg-gray-200'
                     }`}
                   >
                     <div className="font-bold text-xs flex items-center justify-between">
                       <span>{tpl.title}</span>
                       {selectedTemplateKey === tpl.key && (
-                        <Check className="w-4 h-4 text-emerald-400" />
+                        <Check className="w-4 h-4 text-emerald-600" />
                       )}
                     </div>
-                    <p className="text-[11px] text-neutral-400 mt-1 line-clamp-2">
+                    <p className="text-[11px] text-[#6B6B6B] mt-1 line-clamp-2">
                       {tpl.preview}
                     </p>
                   </div>
@@ -1222,18 +1231,18 @@ export const DetailingWebRequestsSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#282828]">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E3]">
               <button
                 type="button"
                 onClick={() => setTemplateModalRequest(null)}
-                className="px-4 py-2 rounded-xl bg-[#252525] hover:bg-[#303030] text-neutral-300 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#F5F5F4] hover:bg-[#E5E5E3] text-[#161616] text-xs font-semibold cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={() => handleSendWhatsAppTemplate(templateModalRequest, selectedTemplateKey)}
-                className="px-5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#25D366]/20 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 <span>Abrir WhatsApp con esta plantilla</span>
@@ -1247,16 +1256,16 @@ export const DetailingWebRequestsSection: React.FC = () => {
       {/* MODAL: PASAR A TRABAJO EN CALENDARIO                                  */}
       {/* ===================================================================== */}
       {convertingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-          <div className="bg-[#161616] border border-[#2D2D2D] rounded-2xl w-full max-w-lg p-6 text-white shadow-2xl space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-[#282828] pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg p-5 sm:p-6 text-[#161616] shadow-xl space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#0066FF]/20 text-[#3B82F6] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-red-100 text-[#D7141A] flex items-center justify-center">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base">Pasar Solicitud a Trabajo Real</h3>
-                  <span className="text-xs text-neutral-400">
+                  <h3 className="font-bold text-base font-display text-[#161616]">Pasar Solicitud a Trabajo Real</h3>
+                  <span className="text-xs text-[#6B6B6B]">
                     Solicitud #{convertingRequest.code} de {convertingRequest.client_name}
                   </span>
                 </div>
@@ -1265,14 +1274,14 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
             <div className="space-y-4 text-xs">
               {/* Resumen */}
-              <div className="p-3.5 bg-[#1F1F1F] rounded-xl border border-[#2D2D2D] space-y-1.5">
-                <div className="flex items-center justify-between font-bold text-neutral-200">
+              <div className="p-3.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-1.5">
+                <div className="flex items-center justify-between font-bold text-[#161616]">
                   <span>{convertingRequest.vehicle_brand} {convertingRequest.vehicle_model}</span>
-                  <span className="text-[#3B82F6] font-mono">${convertingRequest.total_amount.toLocaleString('es-UY')} UYU</span>
+                  <span className="text-[#D7141A] font-mono">${convertingRequest.total_amount.toLocaleString('es-UY')} UYU</span>
                 </div>
-                <div className="text-neutral-400 text-[11px]">
+                <div className="text-[#6B6B6B] text-[11px]">
                   Origen:{' '}
-                  <strong className={convertingRequest.is_paid_ad ? 'text-purple-400' : 'text-emerald-400'}>
+                  <strong className={convertingRequest.is_paid_ad ? 'text-purple-700' : 'text-emerald-700'}>
                     {convertingRequest.is_paid_ad ? 'Anuncios pagos (12,5% comisión)' : 'Directo / Web (30% comisión)'}
                   </strong>
                 </div>
@@ -1280,31 +1289,31 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
               {/* Fecha de Trabajo */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-neutral-300 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <label className="font-semibold text-[#161616] flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-[#D7141A]" />
                   <span>Fecha de inicio en el taller</span>
                 </label>
                 <input
                   type="date"
                   value={appointmentDate}
                   onChange={(e) => setAppointmentDate(e.target.value)}
-                  className="w-full bg-[#222] border border-[#333] rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-hidden focus:border-[#0066FF]"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
                 />
               </div>
 
               {/* Asignado a */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-neutral-300 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <label className="font-semibold text-[#161616] flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#D7141A]" />
                   <span>Responsable / Detailer asignado</span>
                 </label>
                 <select
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full bg-[#222] border border-[#333] rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-hidden focus:border-[#0066FF]"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
                 >
                   {availableProfiles.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-[#161616]">
+                    <option key={p.id} value={p.id}>
                       {p.full_name} ({p.roles.join(', ')})
                     </option>
                   ))}
@@ -1313,18 +1322,18 @@ export const DetailingWebRequestsSection: React.FC = () => {
 
               {/* Box de trabajo */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-neutral-300">Box de trabajo</label>
+                <label className="font-semibold text-[#161616]">Box de trabajo</label>
                 <select
                   value={workBayId}
                   onChange={(e) => setWorkBayId(e.target.value)}
-                  className="w-full bg-[#222] border border-[#333] rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-hidden focus:border-[#0066FF]"
+                  className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3.5 py-2.5 text-[#161616] text-xs focus:outline-none focus:border-[#D7141A]"
                 >
                   {(detailingConfig?.work_bays || [
                     { id: 'box-1', name: 'Box 1 (Lavado & Prep)' },
                     { id: 'box-2', name: 'Box 2 (Pulido & Cerámico)' },
                     { id: 'box-3', name: 'Box 3 (Interiores & Detalle)' }
                   ]).map((box) => (
-                    <option key={box.id} value={box.id} className="bg-[#161616]">
+                    <option key={box.id} value={box.id}>
                       {box.name}
                     </option>
                   ))}
@@ -1333,18 +1342,18 @@ export const DetailingWebRequestsSection: React.FC = () => {
             </div>
 
             {/* Botones */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#282828]">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E3]">
               <button
                 type="button"
                 onClick={() => setConvertingRequest(null)}
-                className="px-4 py-2 rounded-xl bg-[#252525] hover:bg-[#303030] text-neutral-300 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#F5F5F4] hover:bg-[#E5E5E3] text-[#161616] text-xs font-semibold cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleConfirmConvertToJob}
-                className="px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#0066FF]/25 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>Confirmar y agendar en calendario</span>

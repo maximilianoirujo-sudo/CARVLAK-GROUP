@@ -125,6 +125,10 @@ input:focus, select:focus, textarea:focus {
 /* Ocultar botones flotantes y barras inferiores cuando un modal a pantalla completa esté activo */
 body.modal-open-hide-fab #floating-quick-actions-container,
 body.modal-open-hide-fab .floating-quick-actions-root,
-body.modal-open-hide-fab nav.safe-bottom {
+body.modal-open-hide-fab nav.safe-bottom,
+body.has-modal-open #floating-quick-actions-container,
+body.has-modal-open .floating-quick-actions-root,
+body.has-modal-open nav.safe-bottom {
   display: none !important;
 }
+

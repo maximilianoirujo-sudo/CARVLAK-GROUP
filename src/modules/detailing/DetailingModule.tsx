@@ -47,10 +47,19 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
   const isAdmin = profile?.roles.includes('admin');
   const newWebRequestsCount = (detailingWebRequests || []).filter((r) => r.status === 'nueva').length;
 
-  // Pestaña inicial: 'jobs' (Trabajos del mes)
+  // Pestaña inicial: soporta URL param ?sub=web-services o ?sub=web-requests
   const [activeTab, setActiveTab] = useState<
     'jobs' | 'calendar' | 'companies' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'web-services' | 'web-requests' | 'config'
-  >('jobs');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sub = params.get('sub') || params.get('section') || params.get('subtab');
+      if (sub && ['jobs', 'calendar', 'companies', 'receipts', 'stock', 'commissions', 'expenses', 'dashboard', 'web-services', 'web-requests', 'config'].includes(sub)) {
+        return sub as any;
+      }
+    }
+    return 'jobs';
+  });
 
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
   const [isCompanyJobModalOpen, setIsCompanyJobModalOpen] = useState(false);
@@ -273,7 +282,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
             onClick={() => setActiveTab('web-services')}
             className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
               activeTab === 'web-services'
-                ? 'bg-[#0066FF] text-white shadow-xs'
+                ? 'bg-[#161616] text-white shadow-xs'
                 : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
             }`}
           >
@@ -293,7 +302,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
             <Inbox className="w-3.5 h-3.5" />
             <span>Solicitudes web</span>
             {newWebRequestsCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-[#0066FF] text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full bg-[#D7141A] text-white text-[10px] font-bold flex items-center justify-center">
                 {newWebRequestsCount}
               </span>
             )}
