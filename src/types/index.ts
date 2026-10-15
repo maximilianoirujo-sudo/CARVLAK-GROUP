@@ -172,6 +172,37 @@ export interface DetailingTariff {
   order?: number; // Orden de visualización
 }
 
+export type DetailingWebRequestStatus = 'nueva' | 'contactado' | 'confirmado' | 'descartado';
+
+export interface DetailingWebRequest {
+  id: string;
+  code: string; // Ej: DV-26-8492
+  client_name: string;
+  client_phone: string;
+  client_email?: string;
+  vehicle_brand: string;
+  vehicle_model: string;
+  vehicle_year?: number | null;
+  vehicle_plate?: string;
+  vehicle_category: VehicleCategory;
+  preferred_date?: string;
+  comments?: string;
+  selected_services: Array<{
+    serviceId: string;
+    serviceName: string;
+    price: number;
+    durationHours?: number;
+  }>;
+  total_amount: number;
+  origin: string; // 'Anuncios pagos' | 'Directo / Web' | 'Instagram' | etc.
+  is_paid_ad: boolean; // true si vino de anuncio pago (comisión 12.5% vs 30%)
+  utm_params?: Record<string, string>;
+  status: DetailingWebRequestStatus;
+  created_at: string;
+  converted_to_quote_id?: string;
+  notes?: string;
+}
+
 export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed' | string;
 
 export type DetailingQuoteStatus = 

@@ -18,7 +18,8 @@ const KEY_MAP = {
   expenses: 'carvlak:expenses',
   detailing_companies: 'carvlak:detailing_companies',
   detailing_company_services: 'carvlak:detailing_company_services',
-  detailing_tariffs: 'carvlak:detailing_tariffs'
+  detailing_tariffs: 'carvlak:detailing_tariffs',
+  detailing_web_requests: 'carvlak:detailing_web_requests'
 };
 
 async function kvGet(key) {
