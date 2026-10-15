@@ -163,6 +163,13 @@ export interface DetailingTariff {
   prices: DetailingTariffPrices;
   isActive?: boolean;
   care_text?: string; // Cuidados posteriores y recomendaciones por servicio
+  // Campos para la página web / Armador de presupuestos público
+  included_steps?: string[]; // Qué incluye (lista de pasos)
+  products_used?: string[]; // Productos que usamos (lista)
+  video_url?: string; // Link de video (YouTube / Shorts / Instagram Reel / MP4)
+  cover_image_url?: string; // Foto de portada opcional
+  is_featured?: boolean; // Marcar como destacado
+  order?: number; // Orden de visualización
 }
 
 export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed' | string;

@@ -379,12 +379,28 @@ export const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [
 export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
   {
     id: 'interior',
-    name: 'Limpieza profunda de interiores (Tapizados, alfombras, techo, paneles y desinfección)',
+    name: 'Limpieza profunda integral de interiores (Tapizados, alfombras, techo, paneles y desinfección)',
     shortName: 'Limpieza profunda de interior',
-    description: 'Inyección y extracción de tapizados, limpieza profunda a vapor, techo, alfombras y desinfección total.',
+    description: 'Limpieza integral completa a vapor e inyección-extracción. Incluye butacas, alfombras, baúl, cielo raso/techo y desinfección total.',
     durationHours: 5,
     prices: { chico: 3500, mediano: 4200, suv: 4900, pickup: 5800, moto: 2000 },
-    isActive: true
+    isActive: true,
+    is_featured: true,
+    order: 1,
+    included_steps: [
+      'Aspirado minucioso de habitáculo, tapizados, alfombras y baúl',
+      'Limpieza y desinfección a vapor a 140°C para eliminar bacterias y olores',
+      'Inyección y extracción profunda de suciedad en todas las butacas',
+      'Limpieza técnica a mano de cielo raso / techo (sin descolgar tela)',
+      'Desengrasado y detallado de torpedo, consola central y paneles de puerta',
+      'Acondicionamiento mate antiestático con protección UV en plásticos'
+    ],
+    products_used: [
+      'Koch Chemie Pol Star (Limpiador textil pH neutro con conservador)',
+      'Tornador Classic & Inyector/Extractor Kärcher Pro',
+      'Gyeon Q²M VinylCleaner & InteriorDetailer',
+      'Acondicionador mate antiestático de grado profesional'
+    ]
   },
   {
     id: 'cuero',
@@ -393,7 +409,19 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     description: 'Limpieza técnica de poros y nutrición profunda con acondicionadores mate de pH neutro.',
     durationHours: 3,
     prices: { chico: 2200, mediano: 2600, suv: 3200, pickup: 3800, moto: 1500 },
-    isActive: true
+    isActive: true,
+    order: 2,
+    included_steps: [
+      'Limpieza técnica de poro abierto con cepillo de cerdas suaves de caballo',
+      'Remoción de grasitud corporal, brillo artificial y suciedad acumulada',
+      'Hidratación intensiva con aceites y ceras naturales para evitar grietas',
+      'Acabado mate original de fábrica, no grasoso y con aroma a cuero genuino'
+    ],
+    products_used: [
+      'Colourlock Leather Cleaner Mild/Strong',
+      'Gyeon Q² LeatherCoat / Koch Chemie Leather Star',
+      'Cepillos de cerda natural Colourlock'
+    ]
   },
   {
     id: 'motor',
@@ -402,7 +430,20 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     description: 'Limpieza técnica segura con vapor, desengrasante dieléctrico y acondicionamiento satinado de mangueras y plásticos.',
     durationHours: 2.5,
     prices: { chico: 1800, mediano: 1800, suv: 2000, pickup: 2200, moto: 1500 },
-    isActive: true
+    isActive: true,
+    order: 3,
+    included_steps: [
+      'Protección e impermeabilización de componentes eléctricos y alternador',
+      'Aplicación de desengrasante dieléctrico soluble que no daña gomas ni metales',
+      'Agitación manual con pinceles de detallado en rincones y mangueras',
+      'Limpieza a vapor controlado y secado neumático por aire comprimido',
+      'Acondicionador silicon-free termo-resistente en plásticos y mangueras'
+    ],
+    products_used: [
+      'Koch Chemie Green Star / Motorplast',
+      'Desengrasante dieléctrico de secado rápido',
+      'Pinceles de cerda natural anti-estática'
+    ]
   },
   {
     id: 'opticas',
@@ -411,7 +452,20 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     description: 'Lijado al agua en varios pasos, pulido de alta transparencia y sellado de protección contra rayos UV.',
     durationHours: 2,
     prices: { chico: 2000, mediano: 2000, suv: 2000, pickup: 2000, moto: 1200 },
-    isActive: true
+    isActive: true,
+    order: 4,
+    included_steps: [
+      'Enmascarado protector de carrocería y bordes de pintura circundantes',
+      'Lijado al agua micrograduado (granos 1000, 1500, 2000, 3000) para eliminar amarilleo y microfisuras',
+      'Pulido rotativo de corte con compuesto específico para policarbonato',
+      'Refinado de máxima transparencia óptica sin distorsión del haz de luz',
+      'Aplicación de sellador cerámico o laca protectora con filtro UV de larga duración'
+    ],
+    products_used: [
+      'Menzerna PlastX / Meguiars Headlight Restoration',
+      'Lijas al agua Kovax / 3M Trizact',
+      'Sellador cerámico Gyeon Q² CanCoat EVO con protección UV'
+    ]
   },
   {
     id: 'lavado_exterior',
@@ -420,7 +474,22 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     description: 'Lavado con guante de microfibra en 2 baldes, descontaminado químico y mecánico con clay bar.',
     durationHours: 2.5,
     prices: { chico: 1800, mediano: 2200, suv: 2600, pickup: 3200, moto: 1400 },
-    isActive: true
+    isActive: true,
+    order: 5,
+    included_steps: [
+      'Pre-lavado con cañón de espuma Snow Foam de pH neutro para encapsular mugre',
+      'Lavado técnico con método de los dos baldes y guantes de microfibra premium',
+      'Limpieza profunda de llantas, pasarruedas y calandras con pinceles suaves',
+      'Descontaminado químico férrico en llantas y paneles de carrocería',
+      'Pasaje de Clay Bar suave con lubricante específico para remover asperezas',
+      'Secado con toalla de microfibra de alta absorción y aire comprimido en ranuras'
+    ],
+    products_used: [
+      'Gyeon Q²M Foam & Bathe',
+      'Koch Chemie Reactive Rust Remover / Iron X',
+      'Bilt Hamber Clay Bar suave',
+      'Toallas de secado Twist Loop 1200 GSM'
+    ]
   },
   {
     id: 'pulido',
@@ -429,16 +498,47 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     description: 'Corte, pulido y abrillantado técnico para devolver el brillo espejo y eliminar marcas de lavado.',
     durationHours: 8,
     prices: { chico: 6800, mediano: 7900, suv: 9200, pickup: 10800, moto: 3800 },
-    isActive: true
+    isActive: true,
+    order: 6,
+    included_steps: [
+      'Medición de espesores de barniz con medidor digital micrométrico',
+      'Enmascarado exhaustivo de molduras, plásticos, burletes y emblemas',
+      'Paso 1: Corte pesado para eliminar entre el 70% y 85% de swirls y rayas superficiales',
+      'Paso 2: Pulido intermedio para recuperar claridad óptica de la pintura',
+      'Paso 3: Abrillantado o refinado final para un efecto mojado y brillo espejo sin hologramas',
+      'Desengrasado químico con alcohol isopropílico para verificar laca 100% limpia'
+    ],
+    products_used: [
+      'Pastas de pulir Koch Chemie H9.02 (Heavy Cut) y M3.02 (Micro Cut)',
+      'Pulidoras roto-orbitales Rupes BigFoot & Flex',
+      'Pads de microfibra y espuma alemana graduada',
+      'Gyeon Q²M Prep desengrasante de superficies'
+    ]
   },
   {
     id: 'ceramico',
-    name: 'Tratamiento Acrílico o Cerámico (Sellado de alto brillo y protección)',
+    name: 'Tratamiento Cerámico / Acrílico (Sellado de alto brillo y protección hidrofóbica)',
     shortName: 'Sellado Cerámico / Acrílico',
-    description: 'Protección hidrofóbica de larga duración contra rayos UV, lluvia ácida y contaminación.',
+    description: 'Protección hidrofóbica extrema de larga duración contra rayos UV, lluvia ácida, desechos de aves y contaminación ambiental.',
     durationHours: 8,
     prices: { chico: 8500, mediano: 9800, suv: 11500, pickup: 13200, moto: 4500 },
-    isActive: true
+    isActive: true,
+    is_featured: true,
+    order: 7,
+    included_steps: [
+      'Lavado técnico y descontaminado químico y mecánico completo',
+      'Corrección de laca en 2 pasos para lograr la máxima adherencia química',
+      'Desengrasado minucioso de barniz con solución de control de residuos',
+      'Aplicación manual cruzada de Coating Cerámico nanotecnológico 9H panel por panel',
+      'Nivelación y remoción de excesos con microfibras sin costuras bajo luces LED de inspección',
+      'Curado con calor por lámpara de infrarrojo de onda corta para máxima dureza inicial'
+    ],
+    products_used: [
+      'Gyeon Q² Syncro EVO / Pure EVO 9H Nano-Coating Cerámico',
+      'Koch Chemie Ceramic Allround C0.02',
+      'Lámparas de curado infrarrojo de onda corta',
+      'Microfibras láser-cut de 350 GSM'
+    ]
   },
   {
     id: 'llantas',
@@ -447,7 +547,20 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     description: 'Descontaminado férrico de llantas, limpieza de pasarruedas y sellado protector.',
     durationHours: 2,
     prices: { chico: 1600, mediano: 1800, suv: 2200, pickup: 2500, moto: 1200 },
-    isActive: true
+    isActive: true,
+    order: 8,
+    included_steps: [
+      'Descontaminado férrico activo de polvo de frenos en llantas y cálipers',
+      'Desengrasado y cepillado de pasarruedas y neumáticos con cepillos cilíndricos',
+      'Lavado de cara externa e interna de llanta a presión',
+      'Acondicionamiento mate o satinado resistente al agua en talones de cubiertas',
+      'Sellador sintético hidrofóbico sobre la laca de la llanta para repeler suciedad'
+    ],
+    products_used: [
+      'Bilt Hamber Auto-Wheel / Koch Chemie Felgenreiniger Kcu',
+      'Cepillos EZ Detail Wheel Brushes',
+      'Gyeon Q² Tire / Koch Chemie Plast Star'
+    ]
   }
 ];
 

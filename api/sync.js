@@ -17,7 +17,8 @@ const KEY_MAP = {
   vehicles: 'carvlak:vehicles',
   expenses: 'carvlak:expenses',
   detailing_companies: 'carvlak:detailing_companies',
-  detailing_company_services: 'carvlak:detailing_company_services'
+  detailing_company_services: 'carvlak:detailing_company_services',
+  detailing_tariffs: 'carvlak:detailing_tariffs'
 };
 
 async function kvGet(key) {

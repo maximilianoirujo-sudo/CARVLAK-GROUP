@@ -121,6 +121,8 @@ export interface DataContextType {
   detailingTariffs: DetailingTariff[];
   updateDetailingTariff: (id: string, pricesOrUpdates: DetailingTariffPrices | Partial<DetailingTariff>, isActive?: boolean) => void;
   addDetailingTariff: (tariff: Omit<DetailingTariff, 'id'>) => DetailingTariff;
+  deleteDetailingTariff: (id: string) => void;
+  reorderDetailingTariffs: (tariffs: DetailingTariff[]) => void;
 
   detailingQuotes: DetailingQuote[];
   allDetailingQuotes: DetailingQuote[];
@@ -825,6 +827,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingCompanyServices(d.detailing_company_services);
         localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(d.detailing_company_services));
       }
+      if (Array.isArray(d.detailing_tariffs) && d.detailing_tariffs.length > 0) {
+        setDetailingTariffs(d.detailing_tariffs);
+        localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(d.detailing_tariffs));
+      }
     } catch (e) {
       // offline o sin conexión
     }
@@ -1235,6 +1241,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDetailingTariffs((prev) => [...prev, newTariff]);
     syncSupabase('detailing_tariffs', 'insert', newTariff);
     return newTariff;
+  };
+
+  const deleteDetailingTariff = (id: string) => {
+    setDetailingTariffs((prev) => prev.filter((t) => t.id !== id));
+    syncSupabase('detailing_tariffs', 'delete', { id });
+    logActivity('cotizacion_detailing', id, 'archive', { action: 'Eliminación de servicio del tarifario' });
+  };
+
+  const reorderDetailingTariffs = (ordered: DetailingTariff[]) => {
+    setDetailingTariffs(ordered);
+    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(ordered));
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'detailing_tariffs', data: ordered })
+    }).catch(() => {});
   };
 
   // Trabajos de Detailing (Registro Contable)
@@ -4351,6 +4373,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     detailingTariffs,
     updateDetailingTariff,
     addDetailingTariff,
+    deleteDetailingTariff,
+    reorderDetailingTariffs,
     refreshData,
     isSyncing,
     lastSyncedAt,

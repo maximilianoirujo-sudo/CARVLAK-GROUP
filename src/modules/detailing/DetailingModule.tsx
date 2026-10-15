@@ -12,7 +12,8 @@ import {
   Plus,
   RefreshCw,
   ChevronDown,
-  Car
+  Car,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -30,6 +31,7 @@ import { DetailingExpensesSection } from './components/DetailingExpensesSection'
 import { DetailingDashboardSection } from './components/DetailingDashboardSection';
 import { DetailingConfigTab } from './components/DetailingConfigTab';
 import { DetailingQuoterModal } from './components/DetailingQuoterModal';
+import { DetailingWebServicesSection } from './components/DetailingWebServicesSection';
 
 interface DetailingModuleProps {
   onOpenPublicForm?: () => void;
@@ -44,7 +46,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
 
   // Pestaña inicial: 'jobs' (Trabajos del mes)
   const [activeTab, setActiveTab] = useState<
-    'jobs' | 'calendar' | 'companies' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'config'
+    'jobs' | 'calendar' | 'companies' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'web-services' | 'config'
   >('jobs');
 
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
@@ -263,6 +265,19 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
             <span>Métricas</span>
           </button>
 
+          <button
+            type="button"
+            onClick={() => setActiveTab('web-services')}
+            className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
+              activeTab === 'web-services'
+                ? 'bg-[#0066FF] text-white shadow-xs'
+                : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Servicios web</span>
+          </button>
+
           {isAdmin && (
             <button
               type="button"
@@ -296,6 +311,8 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
       {activeTab === 'expenses' && isAdmin && <DetailingExpensesSection />}
 
       {activeTab === 'dashboard' && <DetailingDashboardSection />}
+
+      {activeTab === 'web-services' && <DetailingWebServicesSection />}
 
       {activeTab === 'config' && isAdmin && (
         <DetailingConfigTab
