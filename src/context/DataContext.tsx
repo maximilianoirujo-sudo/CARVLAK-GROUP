@@ -758,6 +758,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_company_services' }, () => {
           loadSupabaseData();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'detailing_web_requests' }, () => {
+          loadSupabaseData();
+        })
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             console.log('[Realtime] Canal conectado con éxito');
@@ -922,7 +925,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resDetailingReceipts,
         resDetailingPayments,
         resDetailingCompanies,
-        resDetailingCompanyServices
+        resDetailingCompanyServices,
+        resDetailingWebRequests
       ] = await Promise.all([
         supabase.from('general_configs').select('*').limit(1).maybeSingle(),
         supabase.from('clients').select('*').eq('is_archived', false),
@@ -948,7 +952,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supabase.from('detailing_receipts').select('*'),
         supabase.from('detailing_payments').select('*'),
         supabase.from('detailing_companies').select('*'),
-        supabase.from('detailing_company_services').select('*').order('sort_order', { ascending: true })
+        supabase.from('detailing_company_services').select('*').order('sort_order', { ascending: true }),
+        supabase.from('detailing_web_requests').select('*').order('created_at', { ascending: false })
       ]);
 
       if (resGeneralConfig.data) setGeneralConfig((prev) => ({ ...prev, ...resGeneralConfig.data }));
@@ -1013,6 +1018,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (resDetailingCompanies?.data) setDetailingCompanies(resDetailingCompanies.data as DetailingCompany[]);
       if (resDetailingCompanyServices?.data && resDetailingCompanyServices.data.length > 0) {
         setDetailingCompanyServices(resDetailingCompanyServices.data as DetailingCompanySpecialService[]);
+      }
+      if (resDetailingWebRequests?.data && resDetailingWebRequests.data.length > 0) {
+        setDetailingWebRequests(resDetailingWebRequests.data as DetailingWebRequest[]);
+        localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(resDetailingWebRequests.data));
       }
       setLastSyncedAt(new Date().toISOString());
     } catch (err) {
@@ -1289,6 +1298,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addDetailingWebRequest = (req: DetailingWebRequest) => {
     setDetailingWebRequests((prev) => [req, ...prev]);
     logActivity('cotizacion_detailing', req.id, 'create', { action: 'Nueva solicitud web', client: req.client_name });
+    syncSupabase('detailing_web_requests', 'insert', req);
   };
 
   const updateDetailingWebRequestStatus = (id: string, status: DetailingWebRequestStatus, notes?: string) => {
@@ -1296,11 +1306,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((r) => (r.id === id ? { ...r, status, ...(notes !== undefined ? { notes } : {}) } : r))
     );
     logActivity('cotizacion_detailing', id, 'status_change', { new_status: status });
+    syncSupabase('detailing_web_requests', 'update', { status, ...(notes !== undefined ? { notes } : {}), updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const deleteDetailingWebRequest = (id: string) => {
     setDetailingWebRequests((prev) => prev.filter((r) => r.id !== id));
     logActivity('cotizacion_detailing', id, 'archive', { action: 'Eliminación de solicitud web' });
+    syncSupabase('detailing_web_requests', 'delete', null, 'id', id);
   };
 
   const convertWebRequestToQuote = (
