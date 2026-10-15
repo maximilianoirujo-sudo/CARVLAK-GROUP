@@ -790,6 +790,271 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
         'interior': 'Cuidado de interiores y tapizados: No aplicar siliconas aceitosas sobre torpedo ni asientos. Limpiar con microfibra húmeda y aspirar periódicamente.',
         'default': 'Recomendamos mantener el vehículo limpio, secar siempre a la sombra con microfibra suave y estacionar bajo techo cuando sea posible.'
       }
+    },
+    web_budget: {
+      packages: [
+        {
+          id: 'pkg-full-detail',
+          name: 'Combo Full Detail (Interior + Exterior)',
+          short_name: 'Full Detail',
+          description: 'El combo más elegido: limpieza integral a vapor profunda de butacas y cielo raso + abrillantado exterior con sellado cerámico.',
+          service_ids: ['det-serv-1', 'det-serv-2'],
+          prices: {
+            chico: 7500,
+            mediano: 8900,
+            suv: 10900,
+            pickup: 12900,
+            moto: 4900
+          },
+          badge: 'El más elegido',
+          is_active: true,
+          order: 1
+        },
+        {
+          id: 'pkg-proteccion-total',
+          name: 'Protección Cerámica Total 9H',
+          short_name: 'Protección 9H',
+          description: 'Corrección de pintura en 2 pasos de corte y brillo + Sellador cerámico 9H de 3 años de duración con máxima repelencia hidrofóbica.',
+          service_ids: ['det-serv-2', 'det-serv-3'],
+          prices: {
+            chico: 12500,
+            mediano: 14500,
+            suv: 16900,
+            pickup: 19500,
+            moto: 7900
+          },
+          badge: 'Máximo Ahorro',
+          is_active: true,
+          order: 2
+        }
+      ],
+      custom_sizes: [
+        {
+          key: 'Chico',
+          label: 'Chico',
+          sub: 'Hatch / Compacto',
+          examples: 'Gol, Onix, 208, Celerio',
+          icon: 'car',
+          is_active: true,
+          order: 1
+        },
+        {
+          key: 'Mediano',
+          label: 'Mediano',
+          sub: 'Sedán',
+          examples: 'Corolla, Cruze, Vento',
+          icon: 'car',
+          is_active: true,
+          order: 2
+        },
+        {
+          key: 'SUV/Rural',
+          label: 'SUV / Rural',
+          sub: 'Camioneta med.',
+          examples: 'Tracker, Compass, Taos',
+          icon: 'suv',
+          is_active: true,
+          order: 3
+        },
+        {
+          key: 'Pick-up',
+          label: 'Pick-up',
+          sub: 'Camioneta gde.',
+          examples: 'Hilux, Amarok, Ranger',
+          icon: 'truck',
+          is_active: true,
+          order: 4
+        },
+        {
+          key: 'Moto',
+          label: 'Moto',
+          sub: 'Motos & Cuadris',
+          examples: 'Street, Trail, Custom',
+          icon: 'bike',
+          is_active: true,
+          order: 5
+        }
+      ],
+      products: [
+        {
+          id: 'prod-shampoo-ph',
+          name: 'Shampoo PH Neutro Koch Chemie (1 Litro)',
+          price: 990,
+          short_description: 'Especial para vehículos con tratamiento o cera. No remueve protecciones y deja brillo sedoso.',
+          is_active: true,
+          order: 1
+        },
+        {
+          id: 'prod-toalla-secado',
+          name: 'Toalla Microfibra 1200 GSM Twist Loop',
+          price: 850,
+          short_description: 'Secado sin rayar ni dejar marcas de agua. Absorbe hasta 1.5 litros en una sola pasada.',
+          is_active: true,
+          order: 2
+        },
+        {
+          id: 'prod-quick-detailer',
+          name: 'Quick Detailer SiO2 con Brillo Espejo (500ml)',
+          price: 1200,
+          short_description: 'Mantenimiento rápido de brillo y repelencia hidrofóbica en minutos después de cada lavado.',
+          is_active: true,
+          order: 3
+        },
+        {
+          id: 'prod-aroma-cuero',
+          name: 'Aromatizador Prémium DetailVlak (Aroma Cuero)',
+          price: 450,
+          short_description: 'Esencia exclusiva que revive el aroma a auto nuevo y tapizado en cuero legítimo.',
+          is_active: true,
+          order: 4
+        }
+      ],
+      promotions: {
+        tiered_quantity_enabled: true,
+        tiered_quantity_rules: [
+          { min_services: 2, discount_percent: 5 },
+          { min_services: 3, discount_percent: 10 }
+        ],
+        product_upsell_discount_enabled: true,
+        product_upsell_discount_percent: 5,
+        coupons: [
+          {
+            id: 'cpn-1',
+            code: 'DETAIL10',
+            discount_type: 'percent',
+            discount_value: 10,
+            max_uses: 50,
+            current_uses: 12,
+            expires_at: '2026-12-31',
+            is_active: true
+          },
+          {
+            id: 'cpn-2',
+            code: 'BIENVENIDO',
+            discount_type: 'fixed',
+            discount_value: 1000,
+            max_uses: 20,
+            current_uses: 5,
+            expires_at: '2026-12-31',
+            is_active: true
+          }
+        ],
+        promo_days_enabled: true,
+        promo_days: [2, 3], // Martes y Miércoles
+        promo_days_discount_percent: 10,
+        next_service_coupon_enabled: true,
+        next_service_coupon_code: 'VUELVOADETAIL',
+        next_service_coupon_percent: 15,
+        next_service_coupon_valid_days: 60,
+        referrals_enabled: true,
+        referral_friend_discount_percent: 10,
+        referral_referrer_reward_amount: 1000,
+        max_accumulated_discount_percent: 25,
+        commission_base: 'final_price'
+      },
+      agenda: {
+        working_days: {
+          monday: { is_open: true, open: '08:30', close: '18:30' },
+          tuesday: { is_open: true, open: '08:30', close: '18:30' },
+          wednesday: { is_open: true, open: '08:30', close: '18:30' },
+          thursday: { is_open: true, open: '08:30', close: '18:30' },
+          friday: { is_open: true, open: '08:30', close: '18:30' },
+          saturday: { is_open: true, open: '09:00', close: '14:00' },
+          sunday: { is_open: false, open: '09:00', close: '13:00' }
+        },
+        max_vehicles_per_day: 2,
+        blocked_dates: ['2026-12-25', '2026-01-01'],
+        count_calendar_jobs_as_busy: true
+      },
+      content: {
+        hero_title: 'Armá tu presupuesto a medida en segundos',
+        hero_subtitle: 'Elegí el tamaño de tu vehículo, mirá cómo trabajamos en videos time-lapse y seleccioná los tratamientos que querés realizarle.',
+        hero_badge: 'DetailVlak Studio • Cotización transparente en vivo',
+        benefits: [
+          {
+            title: 'Videos Time-Lapse',
+            description: 'Mirá el paso a paso real y los productos alemanes que aplicamos.',
+            icon: 'play'
+          },
+          {
+            title: 'Tratamientos Integrales',
+            description: 'Limpieza profunda a vapor de butacas y techo con desinfección total.',
+            icon: 'shield'
+          },
+          {
+            title: 'Sin Sorpresas',
+            description: 'Precios claros y confirmación directa con nosotros por WhatsApp.',
+            icon: 'clock'
+          }
+        ],
+        estimated_price_disclaimer: 'Presupuesto estimado. El precio final y plazos se confirman al inspeccionar personalmente el vehículo en el taller.',
+        interior_quality_rule: 'En interiores únicamente realizamos limpieza profunda integral (incluye inyección/extracción de todas las butacas, alfombras, baúl y cielo raso a vapor). No realizamos lavados sueltos ni superficiales.',
+        faqs: [
+          {
+            question: '¿Cuánto tiempo demora un tratamiento?',
+            answer: 'La limpieza profunda integral de interiores toma de 4 a 6 horas. Un tratamiento cerámico de pintura suele requerir de 1 a 2 días completos para un correcto curado.'
+          },
+          {
+            question: '¿Qué productos utilizan en el taller?',
+            answer: 'Trabajamos con insumos importados de grado profesional como Koch Chemie (Alemania), Gyeon (Corea), Colourlock y 3M.'
+          },
+          {
+            question: '¿Cómo se confirma el turno agendado?',
+            answer: 'Una vez que envíes tu presupuesto por la web o WhatsApp, nos comunicamos en minutos para coordinar la hora exacta de ingreso.'
+          },
+          {
+            question: '¿Cuáles son las formas de pago aceptadas?',
+            answer: 'Aceptamos transferencias bancarias (BROU, Itaú, Santander), Mercado Pago, tarjetas de débito/crédito y efectivo.'
+          }
+        ],
+        warranty_text: 'Garantía de satisfacción DetailVlak: Si al retirar tu auto notas cualquier detalle que no haya quedado al 100%, lo repasamos y perfeccionamos en el momento sin costo alguno.',
+        company_phone: '59899267964',
+        address: 'Av. Giannattasio, Shangrilá, Canelones, Uruguay',
+        reviews: [
+          {
+            id: 'rev-1',
+            client_name: 'Santiago Méndez',
+            vehicle: 'Peugeot 208 GT',
+            rating: 5,
+            comment: 'Increíble cómo dejaron los tapizados y el techo a vapor. El auto volvió a oler a 0km real. Muy prolijos y puntuales.',
+            date: 'Hace 2 semanas'
+          },
+          {
+            id: 'rev-2',
+            client_name: 'Valeria Rossi',
+            vehicle: 'Jeep Compass',
+            rating: 5,
+            comment: 'El sellado cerámico es una locura, la pintura parece un espejo y el agua resbala sola cuando llueve. 100% recomendado.',
+            date: 'Hace 1 mes'
+          },
+          {
+            id: 'rev-3',
+            client_name: 'Federico Silva',
+            vehicle: 'Toyota Hilux SRX',
+            rating: 5,
+            comment: 'Tenía manchas difíciles en los asientos traseros por los chicos y quedaron impecables. La atención por WhatsApp fue rapidísima.',
+            date: 'Hace 3 semanas'
+          }
+        ],
+        gallery: []
+      },
+      appearance: {
+        primary_color: '#0066FF',
+        accent_color: '#0044CC',
+        font_family: 'Archivo Narrow',
+        card_style: 'compact',
+        section_order: ['hero', 'packages', 'sizes', 'services', 'products', 'reviews', 'faq']
+      },
+      settings: {
+        whatsapp_number: '59899267964',
+        whatsapp_message_template: '¡Hola DetailVlak! 👋 Acabo de armar mi presupuesto estimado en su web.\n\n📋 *Presupuesto #{codigo}*\n👤 *Cliente:* {nombre}\n📱 *Teléfono:* {telefono}\n🚗 *Vehículo:* {vehiculo} - *{tamano}*\n🛠️ *Tratamientos elegidos:*\n{servicios}\n{productos}\n💰 *TOTAL ESTIMADO:* ${total} UYU\n\n¿Tienen disponibilidad en esas fechas para coordinar la inspección?',
+        notify_owner_whatsapp: true,
+        owner_whatsapp_phone: '59899267964',
+        meta_pixel_id: '',
+        google_analytics_id: '',
+        is_maintenance_paused: false,
+        maintenance_message: 'Estamos actualizando los turnos y tratamientos en DetailVlak. ¡Volvemos en unos minutos!'
+      }
     }
   };
 

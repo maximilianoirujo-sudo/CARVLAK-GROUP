@@ -381,7 +381,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (s) {
       try {
         const parsed = JSON.parse(s);
-        return { ...INITIAL_DETAILING_CONFIG, ...parsed };
+        return {
+          ...INITIAL_DETAILING_CONFIG,
+          ...parsed,
+          web_budget: {
+            ...INITIAL_DETAILING_CONFIG.web_budget,
+            ...(parsed.web_budget || {})
+          }
+        };
       } catch {
         return INITIAL_DETAILING_CONFIG;
       }
@@ -825,8 +832,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('carvlak_detailing_payments', JSON.stringify(rawPayments));
       }
       if (d.detailing_config && typeof d.detailing_config === 'object') {
-        setDetailingConfig(d.detailing_config);
-        localStorage.setItem('carvlak_detailing_config', JSON.stringify(d.detailing_config));
+        const mergedCfg: DetailingConfig = {
+          ...INITIAL_DETAILING_CONFIG,
+          ...d.detailing_config,
+          web_budget: {
+            ...INITIAL_DETAILING_CONFIG.web_budget,
+            ...(d.detailing_config.web_budget || {})
+          }
+        };
+        setDetailingConfig(mergedCfg);
+        localStorage.setItem('carvlak_detailing_config', JSON.stringify(mergedCfg));
       }
       if (Array.isArray(d.commissions)) {
         setCommissions(d.commissions);
@@ -1005,6 +1020,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingConfig({
           ...INITIAL_DETAILING_CONFIG,
           ...cfg,
+          web_budget: {
+            ...INITIAL_DETAILING_CONFIG.web_budget,
+            ...(cfg.web_budget || {})
+          },
           company_pricing: companyPricing,
           preventa_tariff: companyPricing
         });

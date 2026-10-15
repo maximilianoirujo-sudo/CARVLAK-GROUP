@@ -154,6 +154,13 @@ export interface DetailingTariffPrices {
   moto: number;
 }
 
+export interface DetailingTariffBeforeAfter {
+  id?: string;
+  before_url: string;
+  after_url: string;
+  label?: string;
+}
+
 export interface DetailingTariff {
   id: string;
   name: string;
@@ -166,10 +173,157 @@ export interface DetailingTariff {
   // Campos para la página web / Armador de presupuestos público
   included_steps?: string[]; // Qué incluye (lista de pasos)
   products_used?: string[]; // Productos que usamos (lista)
-  video_url?: string; // Link de video (YouTube / Shorts / Instagram Reel / MP4)
-  cover_image_url?: string; // Foto de portada opcional
+  video_url?: string; // Link de video o URL de video subido
+  is_video_uploaded?: boolean; // Indica si el video fue subido como archivo a Supabase Storage
+  cover_image_url?: string; // Foto de portada
+  before_after_images?: DetailingTariffBeforeAfter[]; // Galería antes / después
   is_featured?: boolean; // Marcar como destacado
   order?: number; // Orden de visualización
+  // Nuevos campos Fase 3:
+  category?: 'Interior' | 'Exterior' | 'Motor' | 'Protección' | 'Pulido' | string;
+  badge?: 'Más elegido' | 'Nuevo' | 'Promo' | string;
+  price_type?: 'fixed' | 'from' | 'consult'; // 'fixed' = fijo, 'from' = desde, 'consult' = consultar
+  promo_price?: number; // Precio promocional por servicio (opcional)
+  promo_expires_at?: string; // Fecha de vencimiento promo YYYY-MM-DD
+  suggested_service_ids?: string[]; // "Sumale también..." IDs de servicios recomendados
+}
+
+export interface DetailingPackage {
+  id: string;
+  name: string;
+  short_name?: string;
+  description: string;
+  service_ids: string[];
+  prices: DetailingTariffPrices;
+  badge?: string; // Ej: "Ahorrás más", "El más completo"
+  is_active: boolean;
+  order?: number;
+}
+
+export interface DetailingVehicleSize {
+  key: VehicleCategory | string;
+  label: string;
+  sub: string;
+  examples: string;
+  icon: 'car' | 'truck' | 'bike' | 'suv' | string;
+  is_active: boolean;
+  order: number;
+}
+
+export interface DetailingUpsellProduct {
+  id: string;
+  name: string;
+  price: number;
+  image_url?: string;
+  short_description: string;
+  is_active: boolean;
+  order?: number;
+}
+
+export interface DetailingDiscountCoupon {
+  id: string;
+  code: string;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  max_uses?: number;
+  current_uses: number;
+  expires_at?: string;
+  is_active: boolean;
+}
+
+export interface DetailingPromotionRules {
+  // 1. Por cantidad de servicios (escalones)
+  tiered_quantity_enabled: boolean;
+  tiered_quantity_rules: Array<{ min_services: number; discount_percent: number }>;
+  
+  // 2. Por sumar un producto
+  product_upsell_discount_enabled: boolean;
+  product_upsell_discount_percent: number;
+  
+  // 3. Cupones de descuento
+  coupons: DetailingDiscountCoupon[];
+  
+  // 4. Días promo marcados en la agenda
+  promo_days_enabled: boolean;
+  promo_days: number[]; // 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles...
+  promo_days_discount_percent: number;
+  
+  // 5. Cupón para el próximo servicio
+  next_service_coupon_enabled: boolean;
+  next_service_coupon_code: string;
+  next_service_coupon_percent: number;
+  next_service_coupon_valid_days: number;
+  
+  // 6. Programa de referidos
+  referrals_enabled: boolean;
+  referral_friend_discount_percent: number;
+  referral_referrer_reward_amount: number;
+  
+  // 7. Límites y base de comisión
+  max_accumulated_discount_percent: number;
+  commission_base: 'final_price' | 'list_price';
+}
+
+export interface DetailingWebAgendaConfig {
+  working_days: Record<string, { is_open: boolean; open: string; close: string }>;
+  max_vehicles_per_day: number;
+  blocked_dates: string[];
+  count_calendar_jobs_as_busy: boolean;
+}
+
+export interface DetailingWebReview {
+  id: string;
+  client_name: string;
+  vehicle: string;
+  rating: number; // 1 a 5
+  comment: string;
+  date?: string;
+}
+
+export interface DetailingWebContentConfig {
+  hero_title: string;
+  hero_subtitle: string;
+  hero_badge: string;
+  benefits: Array<{ title: string; description: string; icon: string }>;
+  estimated_price_disclaimer: string;
+  interior_quality_rule: string;
+  faqs: Array<{ question: string; answer: string }>;
+  warranty_text: string;
+  company_phone: string;
+  address: string;
+  map_url?: string;
+  reviews: DetailingWebReview[];
+  gallery: Array<{ url: string; caption?: string }>;
+}
+
+export interface DetailingWebAppearanceConfig {
+  primary_color: string;
+  accent_color: string;
+  font_family: 'Archivo Narrow' | 'Inter' | 'Barlow Condensed';
+  card_style: 'compact' | 'large_photo';
+  section_order: string[];
+}
+
+export interface DetailingWebSettingsConfig {
+  whatsapp_number: string;
+  whatsapp_message_template: string;
+  notify_owner_whatsapp: boolean;
+  owner_whatsapp_phone: string;
+  meta_pixel_id?: string;
+  google_analytics_id?: string;
+  is_maintenance_paused: boolean;
+  maintenance_message?: string;
+}
+
+export interface DetailingWebBudgetConfig {
+  packages: DetailingPackage[];
+  custom_sizes: DetailingVehicleSize[];
+  products: DetailingUpsellProduct[];
+  promotions: DetailingPromotionRules;
+  agenda: DetailingWebAgendaConfig;
+  content: DetailingWebContentConfig;
+  appearance: DetailingWebAppearanceConfig;
+  settings: DetailingWebSettingsConfig;
 }
 
 export type DetailingWebRequestStatus = 'nueva' | 'contactado' | 'confirmado' | 'descartado';
@@ -1295,6 +1449,7 @@ export interface DetailingConfig {
   company_pricing?: DetailingPreventaTariff; // Guardado en detailing_configs.config -> company_pricing
   preventa_tariff?: DetailingPreventaTariff; // Alias para compatibilidad
   company_special_services?: DetailingCompanySpecialService[];
+  web_budget?: DetailingWebBudgetConfig; // Configuración completa del armador web y sus 8 subpaneles
 }
 
 // ==========================================

@@ -32,7 +32,7 @@ import { DetailingExpensesSection } from './components/DetailingExpensesSection'
 import { DetailingDashboardSection } from './components/DetailingDashboardSection';
 import { DetailingConfigTab } from './components/DetailingConfigTab';
 import { DetailingQuoterModal } from './components/DetailingQuoterModal';
-import { DetailingWebServicesSection } from './components/DetailingWebServicesSection';
+import { DetailingWebBudgetSection } from './components/DetailingWebBudgetSection';
 import { DetailingWebRequestsSection } from './components/DetailingWebRequestsSection';
 
 interface DetailingModuleProps {
@@ -278,7 +278,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Servicios web</span>
+            <span>Web de presupuestos</span>
           </button>
 
           <button
@@ -333,7 +333,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
 
       {activeTab === 'dashboard' && <DetailingDashboardSection />}
 
-      {activeTab === 'web-services' && <DetailingWebServicesSection />}
+      {activeTab === 'web-services' && <DetailingWebBudgetSection />}
 
       {activeTab === 'web-requests' && <DetailingWebRequestsSection />}
 

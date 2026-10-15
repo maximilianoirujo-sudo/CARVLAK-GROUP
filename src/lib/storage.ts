@@ -168,3 +168,57 @@ export async function uploadSocialImageToStorage(
   });
 }
 
+/**
+ * Sube un archivo de video vertical (time-lapse) a Supabase Storage con validación de peso y progreso.
+ * Límite recomendado: 25MB, límite máximo: 50MB.
+ */
+export async function uploadVideoToStorage(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+  if (file.size > MAX_SIZE_BYTES) {
+    throw new Error('El video supera el límite de 50MB. Por favor comprimilo o subí una versión más corta.');
+  }
+
+  // Notificar progreso inicial
+  onProgress?.(10);
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
+      const cleanExt = ['mp4', 'webm', 'mov', 'm4v'].includes(ext) ? ext : 'mp4';
+      const fileName = `videos/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${cleanExt}`;
+
+      onProgress?.(30);
+
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(fileName, file, {
+          contentType: file.type || `video/${cleanExt}`,
+          upsert: true
+        });
+
+      onProgress?.(80);
+
+      if (error) {
+        console.warn('Error subiendo video a Supabase Storage:', error.message);
+        throw new Error(`No se pudo subir el video a Supabase: ${error.message}`);
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(data.path);
+
+      onProgress?.(100);
+      return publicUrlData.publicUrl;
+    } catch (err: any) {
+      console.error('Error en uploadVideoToStorage:', err);
+      throw err;
+    }
+  }
+
+  // Modo offline / local: Generar object URL para previsualizar inmediatamente
+  onProgress?.(100);
+  return URL.createObjectURL(file);
+}
