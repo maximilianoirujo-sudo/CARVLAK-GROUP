@@ -384,10 +384,20 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Limpieza profunda de interior',
     description: 'Limpieza integral completa a vapor e inyección-extracción. Incluye butacas, alfombras, baúl, cielo raso/techo y desinfección total.',
     durationHours: 5,
+    category: 'Interior',
     prices: { chico: 3500, mediano: 4200, suv: 4900, pickup: 5800, moto: 2000 },
     isActive: true,
     is_featured: true,
+    badge: 'MÁS ELEGIDO',
     order: 1,
+    cover_image_url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80',
+    video_url: 'https://assets.mixkit.co/videos/preview/mixkit-car-interior-cleaning-service-43618-large.mp4',
+    before_after_images: [
+      {
+        before_url: 'https://images.unsplash.com/photo-1584345604476-8ec5e12e42dd?w=600&auto=format&fit=crop&q=80',
+        after_url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=600&auto=format&fit=crop&q=80'
+      }
+    ],
     included_steps: [
       'Aspirado minucioso de habitáculo, tapizados, alfombras y baúl',
       'Limpieza y desinfección a vapor a 140°C para eliminar bacterias y olores',
@@ -409,9 +419,17 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Tratamiento de cuero',
     description: 'Limpieza técnica de poros y nutrición profunda con acondicionadores mate de pH neutro.',
     durationHours: 3,
+    category: 'Interior',
     prices: { chico: 2200, mediano: 2600, suv: 3200, pickup: 3800, moto: 1500 },
     isActive: true,
     order: 2,
+    cover_image_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
+    before_after_images: [
+      {
+        before_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop&q=80',
+        after_url: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80'
+      }
+    ],
     included_steps: [
       'Limpieza técnica de poro abierto con cepillo de cerdas suaves de caballo',
       'Remoción de grasitud corporal, brillo artificial y suciedad acumulada',
@@ -430,9 +448,17 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Detallado de motor',
     description: 'Limpieza técnica segura con vapor, desengrasante dieléctrico y acondicionamiento satinado de mangueras y plásticos.',
     durationHours: 2.5,
+    category: 'Motor',
     prices: { chico: 1800, mediano: 1800, suv: 2000, pickup: 2200, moto: 1500 },
     isActive: true,
     order: 3,
+    cover_image_url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80',
+    before_after_images: [
+      {
+        before_url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=80',
+        after_url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&auto=format&fit=crop&q=80'
+      }
+    ],
     included_steps: [
       'Protección e impermeabilización de componentes eléctricos y alternador',
       'Aplicación de desengrasante dieléctrico soluble que no daña gomas ni metales',
@@ -452,9 +478,17 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Restauración de ópticas',
     description: 'Lijado al agua en varios pasos, pulido de alta transparencia y sellado de protección contra rayos UV.',
     durationHours: 2,
+    category: 'Exterior',
     prices: { chico: 2000, mediano: 2000, suv: 2000, pickup: 2000, moto: 1200 },
     isActive: true,
     order: 4,
+    cover_image_url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&auto=format&fit=crop&q=80',
+    before_after_images: [
+      {
+        before_url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=600&auto=format&fit=crop&q=80',
+        after_url: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80'
+      }
+    ],
     included_steps: [
       'Enmascarado protector de carrocería y bordes de pintura circundantes',
       'Lijado al agua micrograduado (granos 1000, 1500, 2000, 3000) para eliminar amarilleo y microfisuras',
@@ -474,9 +508,11 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Lavado al detalle exterior',
     description: 'Lavado con guante de microfibra en 2 baldes, descontaminado químico y mecánico con clay bar.',
     durationHours: 2.5,
+    category: 'Exterior',
     prices: { chico: 1800, mediano: 2200, suv: 2600, pickup: 3200, moto: 1400 },
     isActive: true,
     order: 5,
+    cover_image_url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&auto=format&fit=crop&q=80',
     included_steps: [
       'Pre-lavado con cañón de espuma Snow Foam de pH neutro para encapsular mugre',
       'Lavado técnico con método de los dos baldes y guantes de microfibra premium',
@@ -498,9 +534,19 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Corrección de pintura / Pulido',
     description: 'Corte, pulido y abrillantado técnico para devolver el brillo espejo y eliminar marcas de lavado.',
     durationHours: 8,
+    category: 'Exterior',
     prices: { chico: 6800, mediano: 7900, suv: 9200, pickup: 10800, moto: 3800 },
     isActive: true,
+    is_featured: true,
+    badge: 'MÁS ELEGIDO',
     order: 6,
+    cover_image_url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80',
+    before_after_images: [
+      {
+        before_url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=600&auto=format&fit=crop&q=80',
+        after_url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=600&auto=format&fit=crop&q=80'
+      }
+    ],
     included_steps: [
       'Medición de espesores de barniz con medidor digital micrométrico',
       'Enmascarado exhaustivo de molduras, plásticos, burletes y emblemas',
@@ -522,10 +568,19 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Sellado Cerámico / Acrílico',
     description: 'Protección hidrofóbica extrema de larga duración contra rayos UV, lluvia ácida, desechos de aves y contaminación ambiental.',
     durationHours: 8,
+    category: 'Protección',
     prices: { chico: 8500, mediano: 9800, suv: 11500, pickup: 13200, moto: 4500 },
     isActive: true,
     is_featured: true,
+    badge: 'PROMO',
     order: 7,
+    cover_image_url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80',
+    before_after_images: [
+      {
+        before_url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=600&auto=format&fit=crop&q=80',
+        after_url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=600&auto=format&fit=crop&q=80'
+      }
+    ],
     included_steps: [
       'Lavado técnico y descontaminado químico y mecánico completo',
       'Corrección de laca en 2 pasos para lograr la máxima adherencia química',
@@ -547,9 +602,11 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     shortName: 'Detallado de llantas y chasis',
     description: 'Descontaminado férrico de llantas, limpieza de pasarruedas y sellado protector.',
     durationHours: 2,
+    category: 'Exterior',
     prices: { chico: 1600, mediano: 1800, suv: 2200, pickup: 2500, moto: 1200 },
     isActive: true,
     order: 8,
+    cover_image_url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
     included_steps: [
       'Descontaminado férrico activo de polvo de frenos en llantas y cálipers',
       'Desengrasado y cepillado de pasarruedas y neumáticos con cepillos cilíndricos',
@@ -1036,11 +1093,21 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
             date: 'Hace 3 semanas'
           }
         ],
-        gallery: []
+        gallery: [
+          { url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80', caption: 'Sellado Cerámico Gyeon 9H' },
+          { url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80', caption: 'Corrección de laca en BMW M3' },
+          { url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80', caption: 'Detallado integral de interior' },
+          { url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&auto=format&fit=crop&q=80', caption: 'Lavado técnico 2 baldes con Snow Foam' },
+          { url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza técnica de motor a vapor' },
+          { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80', caption: 'Detallado de llantas y cálipers' },
+          { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80', caption: 'Restauración y nutrición de cuero' },
+          { url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&auto=format&fit=crop&q=80', caption: 'Ópticas pulidas con sellado UV' },
+          { url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80', caption: 'Entrega final en taller Shangrilá' }
+        ]
       },
       appearance: {
-        primary_color: '#0066FF',
-        accent_color: '#0044CC',
+        primary_color: '#E10600',
+        accent_color: '#111111',
         font_family: 'Archivo Narrow',
         card_style: 'compact',
         section_order: ['hero', 'packages', 'sizes', 'services', 'products', 'reviews', 'faq']

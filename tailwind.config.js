@@ -54,6 +54,13 @@ export default {
           darkBg: '#F5F5F4',
           darkCard: '#FFFFFF',
           darkBorder: '#E5E5E3'
+        },
+        detailvlak: {
+          red: '#E10600',
+          redHover: '#C20500',
+          black: '#111111',
+          grayBg: '#F2F2F2',
+          grayBorder: '#E5E5E5'
         }
       },
       borderRadius: {
@@ -77,7 +84,10 @@ export default {
         display: ['"Archivo Narrow"', 'system-ui', 'sans-serif'],
         plate: ['"Archivo Narrow"', 'system-ui', 'sans-serif'],
         sans: ['"Barlow Condensed"', 'system-ui', '-apple-system', 'sans-serif'],
-        body: ['"Barlow Condensed"', 'system-ui', '-apple-system', 'sans-serif']
+        body: ['"Barlow Condensed"', 'system-ui', '-apple-system', 'sans-serif'],
+        anton: ['"Anton"', 'sans-serif'],
+        archivoBlack: ['"Archivo Black"', 'sans-serif'],
+        montserrat: ['"Montserrat"', 'sans-serif']
       }
     },
   },

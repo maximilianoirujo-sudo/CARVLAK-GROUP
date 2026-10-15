@@ -26,7 +26,7 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
       {/* Botones de acción flotantes (ocultos al imprimir) */}
       <div className="print:hidden w-full max-w-3xl mb-4 flex items-center justify-between bg-white border border-neutral-200 p-3.5 rounded-2xl text-neutral-900 shadow-xl">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-red-50 text-[#E10600] flex items-center justify-center">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
@@ -39,7 +39,7 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[#E10600] hover:bg-[#c20500] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Imprimir / Guardar PDF</span>
@@ -59,13 +59,12 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
         {/* Encabezado */}
         <div className="flex items-start justify-between border-b border-neutral-200 pb-6 print:pb-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#0066FF] text-white flex items-center justify-center font-black text-xs shadow-xs">
-                DV
-              </div>
-              <span className="font-extrabold text-neutral-900 text-lg tracking-tight font-display">
-                DETAIL<span className="text-[#0066FF]">VLAK</span>
-              </span>
+            <div className="flex items-center gap-3">
+              <img
+                src="/detailvlak-logo.png"
+                alt="DetailVlak"
+                className="h-10 sm:h-12 w-auto object-contain"
+              />
             </div>
             <div className="text-xs font-bold tracking-wider text-neutral-800 uppercase pt-1">
               DetailVlak • Taller de Estética Automotriz
@@ -205,7 +204,7 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
                   <td colSpan={2} className="py-3 px-4 font-bold text-sm text-neutral-900 text-right">
                     TOTAL ESTIMADO:
                   </td>
-                  <td className="py-3 px-4 font-mono font-bold text-base text-[#0066FF] text-right">
+                  <td className="py-3 px-4 font-mono font-bold text-base text-[#E10600] text-right">
                     $ {request.total_amount.toLocaleString('es-UY')}
                   </td>
                 </tr>
@@ -214,15 +213,15 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
           </div>
 
           {request.next_service_coupon_code && (
-            <div className="mt-3 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs">
+            <div className="mt-3 p-3 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#0066FF]" />
+                <Sparkles className="w-4 h-4 text-[#E10600]" />
                 <div>
                   <span className="font-bold text-neutral-900 block">¡Cupón regalo para tu próximo servicio o para un amigo!</span>
                   <span className="text-[11px] text-neutral-600">Presentá este cupón en el taller para obtener un 10% de descuento.</span>
                 </div>
               </div>
-              <span className="font-mono font-black text-sm bg-white px-3 py-1 rounded-lg border border-blue-300 text-[#0066FF]">
+              <span className="font-mono font-black text-sm bg-white px-3 py-1 rounded-lg border border-red-300 text-[#E10600]">
                 {request.next_service_coupon_code}
               </span>
             </div>
@@ -232,7 +231,7 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
         {/* Condiciones del Taller */}
         <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-2 text-[11px] text-neutral-600 leading-relaxed">
           <div className="font-bold text-neutral-800 flex items-center gap-1.5 text-xs">
-            <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
+            <ShieldCheck className="w-4 h-4 text-[#E10600]" />
             <span>Condiciones y Reglas de DetailVlak</span>
           </div>
           <ul className="space-y-1 list-disc list-inside">

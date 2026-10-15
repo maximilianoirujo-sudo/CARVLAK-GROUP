@@ -30,7 +30,13 @@ import {
   Share2,
   RotateCcw,
   Sliders,
-  Eye
+  Eye,
+  Instagram,
+  Wrench,
+  Grid,
+  Layers,
+  Award,
+  ExternalLink
 } from 'lucide-react';
 import {
   DetailingTariff,
@@ -48,11 +54,24 @@ import {
 } from '../../../../lib/mockData';
 import { VideoEmbed } from '../../../../components/common/VideoEmbed';
 import { PublicBudgetPrintView } from './PublicBudgetPrintView';
+import { BeforeAfterSlider } from './BeforeAfterSlider';
 import { supabase, isSupabaseConfigured } from '../../../../lib/supabase';
 
 interface PublicBudgetBuilderProps {
   onBackToApp?: () => void;
 }
+
+const DEFAULT_GALLERY = [
+  { url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80', caption: 'Sellado Cerámico Gyeon 9H' },
+  { url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80', caption: 'Corrección de laca en BMW M3' },
+  { url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80', caption: 'Detallado integral de interior' },
+  { url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&auto=format&fit=crop&q=80', caption: 'Lavado técnico 2 baldes con Snow Foam' },
+  { url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza técnica de motor a vapor' },
+  { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80', caption: 'Detallado de llantas y cálipers' },
+  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80', caption: 'Restauración y nutrición de cuero' },
+  { url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&auto=format&fit=crop&q=80', caption: 'Ópticas pulidas con sellado UV' },
+  { url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80', caption: 'Entrega final en taller Shangrilá' }
+];
 
 export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBackToApp }) => {
   // ---------------------------------------------------------------------------
@@ -164,13 +183,21 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   // 2. Wizard Navigation: 4 Pasos Clave
   // 1: Auto, 2: Servicios, 3: Día (Agenda), 4: Tus datos, 5: Éxito/Resumen
   // ---------------------------------------------------------------------------
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search).get('paso') || new URLSearchParams(window.location.search).get('step');
+      if (p && ['1', '2', '3', '4', '5'].includes(p)) return Number(p) as any;
+    } catch {}
+    return 1;
+  });
 
   // ---------------------------------------------------------------------------
-  // 3. Selection States with LocalStorage Restore
+  // 3. Selection States with LocalStorage Restore & URL Param support
   // ---------------------------------------------------------------------------
   const [selectedCategory, setSelectedCategory] = useState<VehicleCategory | null>(() => {
     try {
+      const q = new URLSearchParams(window.location.search).get('tamano') || new URLSearchParams(window.location.search).get('categoria');
+      if (q) return q as VehicleCategory;
       const draft = localStorage.getItem('dv_client_draft');
       if (draft) {
         const parsed = JSON.parse(draft);
@@ -267,11 +294,17 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   // Category filter in catalog
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('todos');
 
-  // Scroll helper
+  // Scroll helpers & references
   const topRef = useRef<HTMLDivElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     topRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToLocation = () => {
+    locationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // Draft autosave to localStorage
@@ -317,28 +350,74 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     }
   }, [selectedCategory]);
 
-  // Active Tariffs
+  // Active Tariffs with normalized category
   const activeTariffs = useMemo(() => {
     return tariffs
       .filter((t) => t.isActive !== false)
+      .map((t) => {
+        let cat = t.category;
+        if (!cat) {
+          const id = t.id.toLowerCase();
+          if (id.includes('interior') || id.includes('cuero') || id.includes('tapizado')) cat = 'Interior';
+          else if (id.includes('motor')) cat = 'Motor';
+          else if (id.includes('ceramico') || id.includes('acrilico') || id.includes('protec')) cat = 'Protección';
+          else cat = 'Exterior';
+        }
+        return { ...t, category: cat };
+      })
       .sort((a, b) => (a.order || 999) - (b.order || 999));
   }, [tariffs]);
 
-  // Categories list for filter chips
-  const availableCategories = useMemo(() => {
-    const set = new Set<string>();
-    activeTariffs.forEach((t) => {
-      if (t.category && t.category.trim()) set.add(t.category.trim());
-    });
-    return Array.from(set);
+  // Auto-open modal from query param
+  useEffect(() => {
+    try {
+      const modalParam = new URLSearchParams(window.location.search).get('modal');
+      if (modalParam && activeTariffs.length > 0) {
+        const found = activeTariffs.find(
+          (t) =>
+            t.id.toLowerCase() === modalParam.toLowerCase() ||
+            (t.shortName || '').toLowerCase().includes(modalParam.toLowerCase())
+        );
+        if (found) setDetailModalService(found);
+      }
+    } catch {}
   }, [activeTariffs]);
 
-  // Filtered tariffs by category chip
+  // Stories Highlights Categories
+  const highlightStories = [
+    { key: 'todos', label: 'Todos', icon: Grid },
+    { key: 'interior', label: 'Interior', icon: Sparkles },
+    { key: 'exterior', label: 'Exterior', icon: Car },
+    { key: 'motor', label: 'Motor', icon: Wrench },
+    { key: 'proteccion', label: 'Protección', icon: ShieldCheck },
+    { key: 'ubicacion', label: 'Ubicación', icon: MapPin }
+  ];
+
+  const handleStoryHighlightClick = (key: string) => {
+    if (key === 'ubicacion') {
+      scrollToLocation();
+      return;
+    }
+    setSelectedCategoryTab(key);
+    if (currentStep !== 2) {
+      // Si está en otro paso y toca una categoría, saltar a servicios
+      if (selectedCategory) {
+        setCurrentStep(2);
+      }
+    }
+  };
+
+  // Filtered tariffs by category
   const visibleTariffs = useMemo(() => {
     if (selectedCategoryTab === 'todos') return activeTariffs;
-    return activeTariffs.filter(
-      (t) => (t.category || '').toLowerCase() === selectedCategoryTab.toLowerCase()
-    );
+    const tabLower = selectedCategoryTab.toLowerCase();
+    return activeTariffs.filter((t) => {
+      const c = (t.category || '').toLowerCase();
+      if (tabLower === 'proteccion') {
+        return c.includes('protec') || c.includes('ceram') || c.includes('acril');
+      }
+      return c.includes(tabLower);
+    });
   }, [activeTariffs, selectedCategoryTab]);
 
   // Selected Services with calculated prices
@@ -348,30 +427,25 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       .map((sid) => {
         const tariff = activeTariffs.find((t) => t.id === sid);
         if (!tariff) return null;
-        let price = tariff.prices?.[categoryKey] || 0;
-        // Check promo price
-        if (
-          tariff.promo_price &&
-          tariff.promo_price > 0 &&
-          tariff.promo_price < price
-        ) {
-          const expires = tariff.promo_expires_at ? new Date(tariff.promo_expires_at).getTime() : null;
-          if (!expires || expires > Date.now()) {
-            price = tariff.promo_price;
-          }
-        }
+        const regularPrice = tariff.prices?.[categoryKey] || 0;
+        const hasPromo = Boolean(tariff.promo_price && tariff.promo_price > 0 && tariff.promo_price < regularPrice);
+        const price = hasPromo ? tariff.promo_price! : regularPrice;
         return {
           tariff,
           price,
+          regularPrice,
+          hasPromo,
           durationHours: tariff.durationHours || 3
         };
       })
       .filter(Boolean) as Array<{
       tariff: DetailingTariff;
       price: number;
+      regularPrice: number;
+      hasPromo: boolean;
       durationHours: number;
     }>;
-  }, [selectedServiceIds, activeTariffs, categoryKey]);
+  }, [selectedServiceIds, categoryKey, activeTariffs]);
 
   // Selected Upsell Products
   const selectedProducts = useMemo(() => {
@@ -428,103 +502,84 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       const prodDisc = (servicesSubtotal * promoRules.product_upsell_discount_percent) / 100;
       totalDiscount += prodDisc;
       reasons.push(
-        `${promoRules.product_upsell_discount_percent}% OFF por sumar producto (-$${Math.round(prodDisc).toLocaleString('es-UY')})`
+        `${promoRules.product_upsell_discount_percent}% OFF por sumar productos de mantenimiento (-$${Math.round(prodDisc).toLocaleString('es-UY')})`
       );
     }
 
-    // 3. Agenda promo day
-    if (preferredDate && promoRules.promo_days_enabled && promoRules.promo_days?.length > 0) {
-      const dateObj = new Date(`${preferredDate}T12:00:00`);
-      const dayOfWeek = dateObj.getDay();
-      if (promoRules.promo_days.includes(dayOfWeek)) {
-        const pct = promoRules.promo_days_discount_percent || 10;
-        const agendaDisc = (servicesSubtotal * pct) / 100;
-        totalDiscount += agendaDisc;
-        reasons.push(`${pct}% OFF Día Especial Agenda (-$${Math.round(agendaDisc).toLocaleString('es-UY')})`);
+    // 3. Promo day discount
+    if (preferredDate && promoRules.promo_days_enabled && promoRules.promo_days?.length) {
+      const parsedDayOfWeek = new Date(preferredDate + 'T12:00:00').getDay();
+      if (promoRules.promo_days.includes(parsedDayOfWeek) && promoRules.promo_days_discount_percent > 0) {
+        const dayDisc = (servicesSubtotal * promoRules.promo_days_discount_percent) / 100;
+        totalDiscount += dayDisc;
+        reasons.push(
+          `${promoRules.promo_days_discount_percent}% OFF por día promo en taller (-$${Math.round(dayDisc).toLocaleString('es-UY')})`
+        );
       }
     }
 
-    // 4. Coupon
-    if (appliedCoupon) {
-      let coupDisc = 0;
-      if (appliedCoupon.discount_percent && appliedCoupon.discount_percent > 0) {
-        coupDisc = (servicesSubtotal * appliedCoupon.discount_percent) / 100;
-      } else if (appliedCoupon.discount_amount && appliedCoupon.discount_amount > 0) {
-        coupDisc = appliedCoupon.discount_amount;
-      }
-      if (coupDisc > 0) {
-        totalDiscount += coupDisc;
-        reasons.push(`Cupón "${appliedCoupon.code}" (-$${Math.round(coupDisc).toLocaleString('es-UY')})`);
-      }
-    }
-
-    // Cap at max discount percent
-    const maxDiscountAllowed = (servicesSubtotal * maxDiscountPercent) / 100;
-    if (totalDiscount > maxDiscountAllowed) {
-      totalDiscount = maxDiscountAllowed;
-      reasons.push(`* Tope máximo aplicado: ${maxDiscountPercent}% de descuento.`);
+    // Cap maximum discount
+    const maxAllowedDiscount = (servicesSubtotal * maxDiscountPercent) / 100;
+    if (totalDiscount > maxAllowedDiscount) {
+      totalDiscount = maxAllowedDiscount;
+      reasons.push(`(Tope máximo acumulado aplicado: ${maxDiscountPercent}%)`);
     }
 
     return {
       totalDiscount: Math.round(totalDiscount),
       reasons
     };
-  }, [
-    promoRules,
-    servicesSubtotal,
-    selectedServices.length,
-    selectedProducts.length,
-    preferredDate,
-    appliedCoupon
-  ]);
+  }, [selectedServices, selectedProducts, preferredDate, promoRules, servicesSubtotal]);
 
-  const finalTotal = Math.max(0, servicesSubtotal + productsSubtotal - discountDetails.totalDiscount);
+  const promoDiscountAmount = discountDetails.totalDiscount;
 
-  // Incentive message (e.g. "Sumá 1 servicio más y ahorrás 10%")
+  const couponDiscountAmount = useMemo(() => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.discount_amount) return appliedCoupon.discount_amount;
+    if (appliedCoupon.discount_percent) {
+      return Math.round((servicesSubtotal * appliedCoupon.discount_percent) / 100);
+    }
+    return 0;
+  }, [appliedCoupon, servicesSubtotal]);
+
+  const finalTotal = useMemo(() => {
+    const raw = servicesSubtotal + productsSubtotal - promoDiscountAmount - couponDiscountAmount;
+    return Math.max(0, Math.round(raw));
+  }, [servicesSubtotal, productsSubtotal, promoDiscountAmount, couponDiscountAmount]);
+
+  // Next tier incentive message
   const nextTierPushMessage = useMemo(() => {
     if (!promoRules?.tiered_quantity_enabled) return null;
     const count = selectedServices.length;
-    const tiers = [...(promoRules.tiered_quantity_rules || [])].sort(
-      (a, b) => a.min_services - b.min_services
-    );
-    const nextTier = tiers.find((t) => t.min_services > count);
-    if (!nextTier) return null;
-    const needed = nextTier.min_services - count;
-    return `¡Sumá ${needed} servicio${needed > 1 ? 's' : ''} más y ahorrás un ${nextTier.discount_percent}% en tu presupuesto!`;
-  }, [promoRules, selectedServices.length]);
+    const rules = [...(promoRules.tiered_quantity_rules || [])].sort((a, b) => a.min_services - b.min_services);
+    const nextRule = rules.find((r) => r.min_services > count);
+    if (!nextRule) return null;
+    const diff = nextRule.min_services - count;
+    if (diff === 1) {
+      return `¡Sumá 1 tratamiento más y desbloqueás ${nextRule.discount_percent}% OFF en todo tu presupuesto!`;
+    }
+    return null;
+  }, [selectedServices.length, promoRules]);
 
   // ---------------------------------------------------------------------------
-  // 5. Actions: Add/Remove, Packages, Cross-sell
+  // 5. Handlers
   // ---------------------------------------------------------------------------
   const handleToggleService = (tariffId: string) => {
-    if (!selectedCategory) {
-      alert('Por favor seleccioná primero el tamaño de tu vehículo para calcular los precios.');
-      setCurrentStep(1);
-      scrollToTop();
-      return;
-    }
-
-    const isAlreadySelected = selectedServiceIds.includes(tariffId);
-
-    if (isAlreadySelected) {
-      setSelectedServiceIds((prev) => prev.filter((id) => id !== tariffId));
-      setCrossSellNotification(null);
+    if (selectedServiceIds.includes(tariffId)) {
+      setSelectedServiceIds(selectedServiceIds.filter((id) => id !== tariffId));
     } else {
-      setSelectedServiceIds((prev) => [...prev, tariffId]);
+      setSelectedServiceIds([...selectedServiceIds, tariffId]);
 
-      // Check cross-sell suggestions
-      const tariff = activeTariffs.find((t) => t.id === tariffId);
-      if (tariff && tariff.suggested_service_ids && tariff.suggested_service_ids.length > 0) {
-        const unselectedSuggestions = activeTariffs.filter(
-          (t) =>
-            tariff.suggested_service_ids?.includes(t.id) &&
-            !selectedServiceIds.includes(t.id) &&
-            t.id !== tariffId
+      // Check cross-sell recommendation
+      const addedTariff = activeTariffs.find((t) => t.id === tariffId);
+      if (addedTariff?.suggested_service_ids && addedTariff.suggested_service_ids.length > 0) {
+        const notSelectedSuggested = activeTariffs.filter(
+          (t) => addedTariff.suggested_service_ids?.includes(t.id) && !selectedServiceIds.includes(t.id) && t.id !== tariffId
         );
-        if (unselectedSuggestions.length > 0) {
+        if (notSelectedSuggested.length > 0) {
           setCrossSellNotification({
-            parentName: tariff.shortName || tariff.name,
-            suggestedTariffs: unselectedSuggestions
+            parentName: addedTariff.shortName || addedTariff.name,
+            suggestedTariffs: notSelectedSuggested
           });
         }
       }
@@ -532,107 +587,115 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   };
 
   const handleApplyPackage = (pkg: DetailingPackage) => {
-    if (!selectedCategory) {
-      alert('Por favor seleccioná primero el tamaño de tu vehículo para calcular el combo.');
-      setCurrentStep(1);
-      scrollToTop();
-      return;
-    }
-    const union = Array.from(new Set([...selectedServiceIds, ...pkg.service_ids]));
-    setSelectedServiceIds(union);
+    const newServiceIds = Array.from(new Set([...selectedServiceIds, ...pkg.service_ids]));
+    setSelectedServiceIds(newServiceIds);
   };
 
   const handleToggleProduct = (productId: string) => {
-    setSelectedProductIds((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
+    if (selectedProductIds.includes(productId)) {
+      setSelectedProductIds(selectedProductIds.filter((id) => id !== productId));
+    } else {
+      setSelectedProductIds([...selectedProductIds, productId]);
+    }
   };
 
-  // Coupon validation
   const handleValidateCoupon = () => {
-    if (!couponCode.trim()) return;
-    const codeClean = couponCode.trim().toUpperCase();
-    const list = promoRules?.coupons || [];
-    const found = list.find(
-      (c) => c.code.toUpperCase() === codeClean && c.is_active !== false
-    );
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      setAppliedCoupon(null);
+      return;
+    }
 
-    if (found) {
+    if (promoRules?.referrals_enabled && code.startsWith('DV-REF-')) {
+      const discount = promoRules.referral_friend_discount_percent || 10;
+      setAppliedCoupon({
+        code,
+        discount_percent: discount,
+        description: `Código amigo: ${discount}% OFF de bienvenida`
+      });
+      return;
+    }
+
+    const found = promoRules?.coupons?.find((c) => c.code.toUpperCase() === code && c.is_active !== false);
+    if (!found) {
+      alert('El código ingresado no es válido o ha expirado.');
+      setAppliedCoupon(null);
+      return;
+    }
+
+    if (found.max_uses && found.current_uses && found.current_uses >= found.max_uses) {
+      alert('Este cupón alcanzó el límite máximo de usos.');
+      return;
+    }
+
+    if (found.discount_type === 'percent') {
       setAppliedCoupon({
         code: found.code,
-        discount_percent: found.discount_type === 'percent' ? found.discount_value : undefined,
-        discount_amount: found.discount_type === 'fixed' ? found.discount_value : undefined,
-        description:
-          found.discount_type === 'percent'
-            ? `${found.discount_value}% de descuento`
-            : `$${found.discount_value} de descuento`
+        discount_percent: found.discount_value,
+        description: `${found.discount_value}% OFF`
       });
     } else {
-      alert(`El cupón "${codeClean}" no es válido o ha expirado.`);
+      setAppliedCoupon({
+        code: found.code,
+        discount_amount: found.discount_value,
+        description: `-$${found.discount_value.toLocaleString('es-UY')} de regalo`
+      });
     }
   };
 
   // ---------------------------------------------------------------------------
-  // 6. Agenda Days Generator (próximos 21 días)
+  // 6. Agenda Days Generator
   // ---------------------------------------------------------------------------
   const availableAgendaDays = useMemo(() => {
-    const agendaCfg = webBudget.agenda || INITIAL_DETAILING_CONFIG.web_budget?.agenda;
-    const workingDaysMap = agendaCfg?.working_days || {};
-    const maxCars = agendaCfg?.max_vehicles_per_day || 2;
-    const blocked = agendaCfg?.blocked_dates || [];
-    const promoDays = promoRules?.promo_days || [];
-    const isPromoEnabled = promoRules?.promo_days_enabled || false;
-
-    const dayNameKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-
     const days: Array<{
       dateIso: string;
       displayDay: string;
       displayDate: string;
-      dayOfWeek: number;
       isAvailable: boolean;
       isPromo: boolean;
-      statusReason?: string;
+      statusReason: string;
     }> = [];
 
-    const today = new Date();
-    const startOffset = today.getHours() >= 17 ? 1 : 0;
+    const now = new Date();
+    const daysAhead = 14;
+    const maxCapacity = webBudget.agenda?.max_vehicles_per_day || 3;
+    const blockedDates = webBudget.agenda?.blocked_dates || [];
 
-    for (let i = startOffset; i < startOffset + 21; i++) {
-      const d = new Date();
-      d.setDate(today.getDate() + i);
+    for (let i = 1; i <= daysAhead; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+
+      const dayOfWeek = d.getDay(); // 0 domingo, 6 sábado
       const dateIso = d.toISOString().split('T')[0];
-      const dayOfWeek = d.getDay(); // 0 Dom, 1 Lun, ..., 6 Sáb
-      const dayKey = dayNameKeys[dayOfWeek];
+      const isSunday = dayOfWeek === 0;
+      const isBlocked = blockedDates.includes(dateIso);
 
-      const dayConfig = workingDaysMap[dayKey];
-      const isWorkDay = dayConfig ? dayConfig.is_open : dayOfWeek !== 0;
-      const isBlocked = blocked.includes(dateIso);
       const bookedCount = bookedDatesCount[dateIso] || 0;
-      const isFull = bookedCount >= maxCars;
-      const isPromo = isPromoEnabled && promoDays.includes(dayOfWeek);
+      const isFull = bookedCount >= maxCapacity;
 
-      let isAvailable = isWorkDay && !isBlocked && !isFull;
+      const isPromo =
+        Boolean(promoRules?.promo_days_enabled && promoRules.promo_days?.includes(dayOfWeek));
+
+      let isAvailable = !isSunday && !isFull && !isBlocked;
       let statusReason = 'Disponible';
 
-      if (!isWorkDay) {
+      if (isSunday || isBlocked) {
+        isAvailable = false;
         statusReason = 'Cerrado';
-      } else if (isBlocked) {
-        statusReason = 'No disponible';
       } else if (isFull) {
+        isAvailable = false;
         statusReason = 'Completo';
       } else if (isPromo) {
-        statusReason = `${promoRules?.promo_days_discount_percent || 10}% OFF`;
+        statusReason = `Promo ${promoRules?.promo_days_discount_percent}% OFF`;
       }
 
-      const displayDay = d.toLocaleDateString('es-UY', { weekday: 'short' });
-      const displayDate = d.toLocaleDateString('es-UY', { day: '2-digit', month: 'short' });
+      const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 
       days.push({
         dateIso,
-        displayDay: displayDay.charAt(0).toUpperCase() + displayDay.slice(1).replace('.', ''),
-        displayDate,
-        dayOfWeek,
+        displayDay: dayNames[dayOfWeek],
+        displayDate: `${d.getDate()} ${monthNames[d.getMonth()]}`,
         isAvailable,
         isPromo,
         statusReason
@@ -671,7 +734,6 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     setIsSubmitting(true);
 
     try {
-      // Attribution & Origin
       const urlParams = new URLSearchParams(window.location.search);
       const isPaidAd = !!(
         urlParams.get('origen') === 'anuncio' ||
@@ -684,12 +746,10 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       );
       const origin = urlParams.get('origen') || (isPaidAd ? 'Anuncios pagos' : 'Directo / Web');
 
-      // Unique human code: DV-26-XXXX
       const randomCodeSuffix = Math.floor(1000 + Math.random() * 9000);
       const code = `DV-26-${randomCodeSuffix}`;
       const nowIso = new Date().toISOString();
 
-      // Referral code for the client
       const refCode = `DV-REF-${code.slice(6)}`;
       setPersonalReferralCode(refCode);
 
@@ -748,63 +808,44 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
         ]
       };
 
-      // 1. Guardar localmente
+      setCreatedRequest(newRequest);
+
+      // Local storage persist
       try {
         const saved = localStorage.getItem('carvlak_detailing_web_requests');
         const list: DetailingWebRequest[] = saved ? JSON.parse(saved) : [];
-        const updatedList = [newRequest, ...list];
-        localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(updatedList));
-
-        // 2. Sync to cloud Upstash KV
-        fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            key: 'detailing_web_requests',
-            data: updatedList
-          })
-        }).catch(() => {});
+        list.unshift(newRequest);
+        localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(list));
       } catch (e) {
-        console.error('Error saving web request:', e);
+        console.error(e);
       }
 
-      // 3. Supabase RPC fallback
-      if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase.rpc('submit_quote_request', {
-            payload: {
-              client_name: newRequest.client_name,
-              client_phone: newRequest.client_phone,
-              vehicle_brand: newRequest.vehicle_brand,
-              vehicle_model: `${newRequest.vehicle_model} ${newRequest.vehicle_year || ''}`.trim(),
-              vehicle_category: newRequest.vehicle_category,
-              origin: newRequest.origin,
-              comments: newRequest.comments,
-              selected_services: newRequest.selected_services,
-              total_amount: newRequest.total_amount
-            }
-          });
-        } catch {}
-      }
+      // Sync API
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'detailing_web_requests', data: [newRequest] })
+      }).catch(() => {});
 
-      setCreatedRequest(newRequest);
+      // Clear draft
+      localStorage.removeItem('dv_client_draft');
+
       setCurrentStep(5);
       scrollToTop();
     } catch (err) {
       console.error(err);
-      alert('Ocurrió un error al procesar tu solicitud. Podés contactarnos directamente por WhatsApp.');
+      alert('Ocurrió un error al procesar el presupuesto. Intentá nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // ---------------------------------------------------------------------------
-  // 8. WhatsApp Sender
+  // 8. WhatsApp Senders
   // ---------------------------------------------------------------------------
   const handleConfirmWhatsApp = () => {
     if (!createdRequest) return;
 
-    // Promover estado a 'nueva' y marcar como completada
     try {
       const saved = localStorage.getItem('carvlak_detailing_web_requests');
       if (saved) {
@@ -880,7 +921,6 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
     window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`, '_blank');
   };
 
-  // Direct floating WhatsApp
   const handleDirectFloatingWhatsApp = () => {
     let cleanPhone = companyPhone.replace(/[^0-9]/g, '');
     if (!cleanPhone) cleanPhone = '59899267964';
@@ -888,64 +928,147 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
     window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${text}`, '_blank');
   };
 
+  const galleryItems = (webBudget.content?.gallery && webBudget.content.gallery.length > 0)
+    ? webBudget.content.gallery
+    : DEFAULT_GALLERY;
+
   return (
     <div
       ref={topRef}
-      className="min-h-screen bg-white text-gray-900 flex flex-col justify-between selection:bg-[#0066FF]/20 selection:text-[#0066FF] font-sans antialiased"
+      className="min-h-screen w-full max-w-full overflow-x-hidden bg-white text-[#111111] flex flex-col justify-between selection:bg-[#E10600]/20 selection:text-[#E10600] font-montserrat antialiased"
     >
       {/* --------------------------------------------------------------------- */}
-      {/* 1. Header con Marca DetailVlak */}
+      {/* 1. ENCABEZADO TIPO PERFIL DE INSTAGRAM (@detailvlak)                  */}
       {/* --------------------------------------------------------------------- */}
-      <header className="border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-2xs">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#0044CC] flex items-center justify-center font-black text-white text-xs tracking-wider shadow-sm shrink-0">
-              DV
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-extrabold text-gray-900 text-sm sm:text-base tracking-tight font-display">
-                  DETAIL<span className="text-[#0066FF]">VLAK</span>
-                </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-[#0066FF] border border-blue-200 tracking-wide uppercase">
-                  Armador
+      <header className="border-b border-gray-200 bg-white sticky top-0 z-40 px-3.5 py-3 shadow-2xs w-full max-w-full min-w-0">
+        <div className="max-w-4xl mx-auto space-y-2.5 w-full min-w-0">
+          {/* Fila principal del perfil */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Avatar con Story Ring rojo DetailVlak */}
+              <div className="relative shrink-0 p-0.5 rounded-full ring-2 ring-[#E10600] ring-offset-2 ring-offset-white bg-[#111111]">
+                <img
+                  src="/detailvlak-avatar.png"
+                  alt="DetailVlak"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#E10600] border-2 border-white flex items-center justify-center text-[8px] text-white font-black">
+                  ✓
                 </span>
               </div>
-              <p className="text-[10px] text-gray-500 truncate">Estética automotriz • Shangrilá</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+              {/* Handle y biografía */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h1 className="font-anton uppercase tracking-wide text-base sm:text-xl text-[#111111] leading-none">
+                    DetailVlak
+                  </h1>
+                  <span className="text-[10px] font-bold text-gray-500 font-montserrat">
+                    @detailvlak
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-[#111111] mt-0.5 truncate font-montserrat">
+                  ✨ Volver a estrenar tu auto ✨
+                </p>
+                <p className="text-[10px] text-gray-500 truncate hidden sm:block">
+                  Estética Automotriz • Shangrilá, Canelones
+                </p>
+              </div>
+            </div>
+
+            {/* Acceso interno al hub si está embebido */}
             {onBackToApp && (
               <button
                 type="button"
                 onClick={onBackToApp}
-                className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 border border-gray-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black border border-gray-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                 title="Volver al Hub"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Hub interno</span>
               </button>
             )}
+          </div>
+
+          {/* Botones de acción tipo perfil de Instagram */}
+          <div className="flex items-center gap-2 pt-0.5 w-full">
+            <a
+              href="https://www.instagram.com/detailvlak/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 min-w-0 py-2 px-2.5 rounded-xl bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-xs hover:opacity-95 transition-opacity"
+            >
+              <Instagram className="w-3.5 h-3.5 shrink-0" />
+              <span className="uppercase tracking-wider text-[11px] truncate">
+                <span className="hidden sm:inline">Seguinos en </span>Instagram
+              </span>
+            </a>
+
             <button
               type="button"
               onClick={handleDirectFloatingWhatsApp}
-              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="flex-1 min-w-0 py-2 px-2.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
-              <MessageCircle className="w-4 h-4 text-emerald-600" />
-              <span className="hidden sm:inline">WhatsApp directo</span>
+              <MessageCircle className="w-3.5 h-3.5 text-[#25D366] shrink-0" />
+              <span className="text-[11px] truncate">WhatsApp</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 2. Barra de Progreso en 4 Pasos (Auto → Servicios → Día → Tus datos) */}
+      {/* 2. CATEGORÍAS COMO HISTORIAS DESTACADAS (Stories Highlights)          */}
+      {/* --------------------------------------------------------------------- */}
+      <section className="bg-white border-b border-gray-200 py-3 px-3.5 w-full max-w-full min-w-0 overflow-hidden">
+        <div className="max-w-4xl mx-auto w-full min-w-0 overflow-hidden">
+          <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-none w-full min-w-0">
+            {highlightStories.map((story) => {
+              const IconComp = story.icon;
+              const isSelected = selectedCategoryTab === story.key;
+
+              return (
+                <button
+                  key={story.key}
+                  type="button"
+                  onClick={() => handleStoryHighlightClick(story.key)}
+                  className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
+                >
+                  <div
+                    className={`p-0.5 rounded-full transition-all ${
+                      isSelected
+                        ? 'ring-2 ring-[#E10600] ring-offset-2 ring-offset-white'
+                        : 'ring-1 ring-gray-300 group-hover:ring-[#111111]'
+                    }`}
+                  >
+                    <div
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md transition-transform group-active:scale-95 ${
+                        isSelected ? 'bg-[#E10600] text-white' : 'bg-[#111111] text-white'
+                      }`}
+                    >
+                      <IconComp className="w-6 h-6 stroke-[2.2]" />
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[11px] font-extrabold uppercase tracking-tight truncate max-w-[68px] ${
+                      isSelected ? 'text-[#E10600]' : 'text-gray-800'
+                    }`}
+                  >
+                    {story.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* 3. BARRA DE PROGRESO EN 4 PASOS (Auto → Servicios → Día → Tus datos)  */}
       {/* --------------------------------------------------------------------- */}
       {currentStep !== 5 && (
-        <div className="bg-gray-50/80 border-b border-gray-200 px-4 py-3 sticky top-[53px] sm:top-[61px] z-30 backdrop-blur-xs">
+        <div className="bg-[#F2F2F2] border-b border-gray-200 px-3 py-2.5 sticky top-[110px] sm:top-[118px] z-30 backdrop-blur-xs">
           <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-4 gap-1.5 sm:gap-3 text-center">
+            <div className="grid grid-cols-4 gap-1.5 text-center">
               {[
                 { step: 1, label: 'Auto', desc: 'Tamaño' },
                 { step: 2, label: 'Servicios', desc: 'Tratamientos' },
@@ -966,9 +1089,9 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                         scrollToTop();
                       }
                     }}
-                    className={`py-1.5 px-1 rounded-xl transition-all flex flex-col items-center justify-center cursor-pointer ${
+                    className={`py-1 px-1 rounded-xl transition-all flex flex-col items-center justify-center cursor-pointer ${
                       isActive
-                        ? 'bg-white border border-[#0066FF] shadow-xs'
+                        ? 'bg-white border-2 border-[#E10600] shadow-xs'
                         : isPassed
                         ? 'text-gray-700 hover:bg-gray-200/60'
                         : 'text-gray-400 opacity-60 cursor-not-allowed'
@@ -978,23 +1101,23 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       <span
                         className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
                           isActive
-                            ? 'bg-[#0066FF] text-white'
+                            ? 'bg-[#E10600] text-white'
                             : isPassed
-                            ? 'bg-emerald-500 text-white'
+                            ? 'bg-[#111111] text-white'
                             : 'bg-gray-200 text-gray-500'
                         }`}
                       >
                         {isPassed ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : item.step}
                       </span>
                       <span
-                        className={`text-xs font-bold truncate ${
-                          isActive ? 'text-[#0066FF]' : isPassed ? 'text-gray-900' : 'text-gray-500'
+                        className={`text-xs font-black truncate uppercase tracking-wider ${
+                          isActive ? 'text-[#E10600]' : isPassed ? 'text-[#111111]' : 'text-gray-500'
                         }`}
                       >
                         {item.label}
                       </span>
                     </div>
-                    <span className="text-[9px] text-gray-400 hidden sm:block truncate mt-0.5">
+                    <span className="text-[9px] text-gray-400 hidden sm:block truncate mt-0.5 font-bold">
                       {item.desc}
                     </span>
                   </button>
@@ -1006,29 +1129,31 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 3. Contenido Principal según el Paso */}
+      {/* 4. CONTENIDO PRINCIPAL SEGÚN EL PASO                                  */}
       {/* --------------------------------------------------------------------- */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 pb-32">
+      <main className="flex-1 max-w-4xl w-full mx-auto p-3.5 sm:p-6 pb-32">
         {/* =================================================================== */}
         {/* PASO 1: SELECCIÓN DEL AUTO (TAMAÑO)                                */}
         {/* =================================================================== */}
         {currentStep === 1 && (
           <div className="space-y-6 animate-fade-in py-2">
             {/* Header del Paso 1 */}
-            <div className="space-y-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
-                Paso 1 de 4 • Tu vehículo
-              </span>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight">
+            <div className="space-y-2 text-center sm:text-left">
+              <div>
+                <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
+                  ARMÁ TU PRESUPUESTO ONLINE
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-anton uppercase text-[#111111] tracking-wide leading-tight">
                 {webBudget.content?.hero_title || 'Elegí el tamaño de tu vehículo'}
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed max-w-2xl">
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 font-bold leading-relaxed max-w-2xl">
                 {webBudget.content?.hero_subtitle ||
                   'Seleccioná la categoría correspondiente a tu vehículo para desbloquear los precios exactos de cada tratamiento.'}
               </p>
             </div>
 
-            {/* Tarjetas de Selección de Tamaño */}
+            {/* Tarjetas de Selección de Tamaño con borde rojo activo */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {(
                 webBudget.custom_sizes?.filter((s) => s.is_active !== false) || [
@@ -1081,22 +1206,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     }}
                     className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-blue-50/80 border-[#0066FF] shadow-md shadow-blue-500/10 ring-2 ring-[#0066FF]/20'
-                        : 'bg-gray-50 border-gray-200 hover:border-gray-300 hover:bg-gray-100/60'
+                        ? 'bg-red-50/20 border-[#E10600] shadow-md shadow-red-500/10 ring-2 ring-[#E10600]/20'
+                        : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
                           isSelected
-                            ? 'bg-[#0066FF] text-white shadow-xs'
-                            : 'bg-white border border-gray-200 text-gray-600'
+                            ? 'bg-[#111111] text-white shadow-xs'
+                            : 'bg-gray-100 border border-gray-200 text-gray-600'
                         }`}
                       >
                         <IconComponent className="w-5 h-5" />
                       </div>
                       {isSelected ? (
-                        <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-xs">
+                        <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center shadow-xs">
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </div>
                       ) : (
@@ -1106,14 +1231,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
                     <div className="space-y-0.5">
                       <span
-                        className={`font-extrabold text-sm block ${
-                          isSelected ? 'text-[#0066FF]' : 'text-gray-900'
+                        className={`font-black text-sm uppercase tracking-wide block ${
+                          isSelected ? 'text-[#E10600]' : 'text-[#111111]'
                         }`}
                       >
                         {cat.label}
                       </span>
-                      <span className="text-[11px] text-gray-500 block">{cat.sub}</span>
-                      <span className="text-[10px] text-gray-400 block truncate mt-1">
+                      <span className="text-[11px] text-gray-500 font-bold block">{cat.sub}</span>
+                      <span className="text-[10px] text-gray-400 font-medium block truncate mt-1">
                         {cat.examples}
                       </span>
                     </div>
@@ -1124,11 +1249,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Botón Siguiente si ya seleccionó */}
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-600 font-bold">
                 {selectedCategory ? (
-                  <span className="text-emerald-600 font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Vehículo seleccionado: <strong>{selectedCategory}</strong>
+                  <span className="text-emerald-600 font-extrabold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#E10600]" />
+                    Vehículo seleccionado: <strong className="text-[#111111]">{selectedCategory}</strong>
                   </span>
                 ) : (
                   'Tocá el tamaño de tu auto para continuar.'
@@ -1143,70 +1268,33 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(2);
                   scrollToTop();
                 }}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#E10600] hover:bg-[#c20500] text-white font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>Continuar a Servicios</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-
-            {/* Beneficios de Portada */}
-            <div className="pt-6 border-t border-gray-200">
-              <span className="text-[11px] font-bold uppercase text-gray-400 tracking-wider block mb-3">
-                Por qué elegir DetailVlak
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {(
-                  webBudget.content?.benefits || [
-                    {
-                      title: 'Time-Lapse de tu auto',
-                      description: 'Grabamos en video el proceso de cada trabajo para máxima transparencia.',
-                      icon: 'play'
-                    },
-                    {
-                      title: 'Tratamiento Integral',
-                      description: 'Limpieza profunda a vapor de todas las butacas, piso y techo.',
-                      icon: 'shield'
-                    },
-                    {
-                      title: 'Sin Sorpresas',
-                      description: 'Precios claros de antemano y garantía escrita de satisfacción.',
-                      icon: 'clock'
-                    }
-                  ]
-                ).map((b, i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-1.5"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div className="text-xs font-bold text-gray-900">{b.title}</div>
-                    <p className="text-[11px] text-gray-600 leading-relaxed">{b.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* PASO 2: SERVICIOS, COMBOS Y PRODUCTOS                              */}
+        {/* PASO 2: SERVICIOS ESTILO REEL & COMBOS                             */}
         {/* =================================================================== */}
         {currentStep === 2 && (
           <div className="space-y-7 animate-fade-in py-2">
             {/* Header del Paso 2 con categoría activa */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
               <div className="space-y-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
-                  Paso 2 de 4 • Catálogo
-                </span>
-                <h2 className="text-2xl font-extrabold text-gray-900">
-                  Elegí los tratamientos para tu {selectedCategory || 'auto'}
+                <div>
+                  <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
+                    CATÁLOGO EN VIVO
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
+                  Tratamientos para tu {selectedCategory || 'auto'}
                 </h2>
-                <p className="text-xs text-gray-500">
-                  Podés sumar tratamientos individuales o elegir un paquete con descuento especial.
+                <p className="text-xs text-gray-600 font-bold">
+                  Mirá cómo trabajamos en videos time-lapse y sumá los tratamientos que quieras a tu presupuesto.
                 </p>
               </div>
 
@@ -1216,7 +1304,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(1);
                   scrollToTop();
                 }}
-                className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#111111] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer border border-gray-200"
               >
                 <span>Cambiar tamaño ({selectedCategory})</span>
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1224,29 +1312,30 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
 
             {/* Banner de regla de taller (interiores) */}
-            <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200 flex items-start gap-3 text-xs text-gray-700">
-              <Info className="w-4 h-4 text-[#0066FF] shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-2xl bg-[#F2F2F2] border border-gray-200 flex items-start gap-3 text-xs text-gray-800">
+              <Info className="w-4 h-4 text-[#E10600] shrink-0 mt-0.5" />
               <div className="space-y-0.5 leading-relaxed text-[11px]">
-                <strong className="text-gray-900 block">Regla de calidad en interiores:</strong>
-                <p className="text-gray-600">
+                <strong className="text-[#111111] block font-black uppercase tracking-wider">
+                  Regla de calidad en interiores DetailVlak:
+                </strong>
+                <p className="text-gray-700 font-medium">
                   {webBudget.content?.interior_quality_rule ||
                     'En interiores únicamente realizamos limpieza profunda integral (incluye butacas, piso, baúl y cielo raso a vapor). No realizamos lavados sueltos ni superficiales.'}
                 </p>
               </div>
             </div>
 
-            {/* A) PAQUETES DESTACADOS ARRIBA */}
+            {/* A) COMBOS & PAQUETES DESTACADOS */}
             {webBudget.packages &&
               webBudget.packages.filter((p) => p.is_active !== false).length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#0066FF]" />
-                    <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">
-                      Combos & Paquetes Más Elegidos
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200">
-                      Mayor Ahorro
+                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                      MÁS ELEGIDO
                     </span>
+                    <h3 className="text-sm font-anton uppercase text-[#111111] tracking-wide">
+                      Combos & Paquetes Más Pedidos
+                    </h3>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1271,36 +1360,36 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                             key={pkg.id}
                             className={`p-4 rounded-2xl border-2 transition-all flex flex-col justify-between ${
                               isAllSelected
-                                ? 'bg-blue-50/70 border-[#0066FF] shadow-md shadow-blue-500/10'
+                                ? 'bg-red-50/20 border-[#E10600] shadow-md shadow-red-500/10'
                                 : 'bg-white border-gray-200 hover:border-gray-300 shadow-2xs'
                             }`}
                           >
                             <div className="space-y-2.5">
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
                                 {pkg.badge && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <span className="bg-[#111111] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
                                     ★ {pkg.badge}
                                   </span>
                                 )}
                                 {savings > 0 && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    Ahorrás ${savings.toLocaleString('es-UY')}
+                                  <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                                    AHORRÁS ${savings.toLocaleString('es-UY')}
                                   </span>
                                 )}
                               </div>
 
                               <div className="space-y-1">
-                                <h4 className="font-extrabold text-gray-900 text-sm">
+                                <h4 className="font-anton uppercase text-base text-[#111111] tracking-wide">
                                   {pkg.name}
                                 </h4>
-                                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-bold">
                                   {pkg.description}
                                 </p>
                               </div>
 
                               {/* Servicios que incluye */}
                               <div className="space-y-1 pt-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
                                   Incluye {pkg.service_ids.length} tratamientos:
                                 </span>
                                 <div className="flex flex-wrap gap-1">
@@ -1310,7 +1399,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                                     return (
                                       <span
                                         key={sId}
-                                        className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 border border-gray-200"
+                                        className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#F2F2F2] text-[#111111] border border-gray-200"
                                       >
                                         ✓ {s.shortName || s.name}
                                       </span>
@@ -1324,11 +1413,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                             <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3 mt-3">
                               <div>
                                 {savings > 0 && individualTotal > 0 && (
-                                  <span className="text-[11px] text-gray-400 line-through block font-mono">
+                                  <span className="text-[11px] text-gray-400 line-through block font-mono font-bold">
                                     ${individualTotal.toLocaleString('es-UY')}
                                   </span>
                                 )}
-                                <span className="text-base font-extrabold text-gray-900 font-mono">
+                                <span className="text-lg font-black text-[#111111] font-mono">
                                   ${pkgPrice.toLocaleString('es-UY')}{' '}
                                   <span className="text-[10px] text-gray-500 font-normal">UYU</span>
                                 </span>
@@ -1337,10 +1426,10 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                               <button
                                 type="button"
                                 onClick={() => handleApplyPackage(pkg)}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
                                   isAllSelected
-                                    ? 'bg-[#0066FF] text-white shadow-xs'
-                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
+                                    ? 'bg-[#E10600] text-white shadow-xs'
+                                    : 'bg-[#111111] hover:bg-black text-white'
                                 }`}
                               >
                                 {isAllSelected ? (
@@ -1363,56 +1452,24 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 </div>
               )}
 
-            {/* B) FILTRO POR CATEGORÍAS */}
-            {availableCategories.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategoryTab('todos')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                      selectedCategoryTab === 'todos'
-                        ? 'bg-[#0066FF] text-white shadow-xs'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Todos ({activeTariffs.length})
-                  </button>
-                  {availableCategories.map((cat) => {
-                    const count = activeTariffs.filter(
-                      (t) => (t.category || '').toLowerCase() === cat.toLowerCase()
-                    ).length;
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setSelectedCategoryTab(cat)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                          selectedCategoryTab.toLowerCase() === cat.toLowerCase()
-                            ? 'bg-[#0066FF] text-white shadow-xs'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {cat} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* C) TARJETAS DE SERVICIO INDIVIDUALES */}
-            <div className="space-y-3">
+            {/* B) TARJETAS DE SERVICIO ESTILO REEL */}
+            <div id="catalogo-reels" className="space-y-3 scroll-mt-20">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-gray-900">
-                  Tratamientos Individuales
-                </h3>
-                <span className="text-xs text-gray-500 font-medium">
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                    TRATAMIENTOS
+                  </span>
+                  <h3 className="text-sm font-anton uppercase text-[#111111] tracking-wide">
+                    Catálogo de Servicios {selectedCategoryTab !== 'todos' ? `• ${selectedCategoryTab}` : ''}
+                  </h3>
+                </div>
+                <span className="text-xs text-gray-600 font-bold">
                   {selectedServiceIds.length} sumado{selectedServiceIds.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Grilla de Reels (2 columnas en desktop, 1 en mobile o 2 compactas) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {visibleTariffs.map((tariff) => {
                   const isSelected = selectedServiceIds.includes(tariff.id);
                   const regularPrice = categoryKey ? tariff.prices?.[categoryKey] || 0 : 0;
@@ -1421,121 +1478,127 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   const effectivePrice = hasPromo ? tariff.promo_price! : regularPrice;
                   const hasVideo = Boolean(tariff.video_url && tariff.video_url.trim());
 
+                  // Fallback cover image
+                  const coverImage =
+                    tariff.cover_image_url ||
+                    (tariff.category === 'Interior'
+                      ? 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80'
+                      : tariff.category === 'Motor'
+                      ? 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80'
+                      : tariff.category === 'Protección'
+                      ? 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80'
+                      : 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80');
+
                   return (
                     <div
                       key={tariff.id}
-                      className={`rounded-2xl border transition-all overflow-hidden flex flex-col justify-between ${
+                      className={`group rounded-2xl border transition-all overflow-hidden flex flex-col justify-between bg-white ${
                         isSelected
-                          ? 'bg-blue-50/40 border-[#0066FF] shadow-md shadow-blue-500/10 ring-1 ring-[#0066FF]'
-                          : 'bg-white border-gray-200 hover:border-gray-300 shadow-2xs'
+                          ? 'border-[#E10600] shadow-md shadow-red-500/10 ring-2 ring-[#E10600]'
+                          : 'border-gray-200 hover:border-gray-300 shadow-2xs'
                       }`}
                     >
-                      {/* Cuerpo de la tarjeta */}
-                      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                        <div className="space-y-2.5">
-                          {/* Badges superiores */}
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {tariff.badge && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                  ★ {tariff.badge}
-                                </span>
-                              )}
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono text-gray-600 bg-gray-100">
-                                <Clock className="w-3 h-3" /> {tariff.durationHours || 3} hs
-                              </span>
-                            </div>
+                      {/* Portada Estilo Reel con Gradiente y Textos */}
+                      <div
+                        onClick={() => setDetailModalService(tariff)}
+                        className="relative w-full aspect-[4/5] overflow-hidden bg-black cursor-pointer"
+                      >
+                        <img
+                          src={coverImage}
+                          alt={tariff.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                        />
 
-                            {hasVideo && (
-                              <button
-                                type="button"
-                                onClick={() => setDetailModalService(tariff)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold text-[#0066FF] bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
-                              >
-                                <Play className="w-3 h-3" /> Ver time-lapse
-                              </button>
+                        {/* Overlay Gradiente Oscuro estilo Reel */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
+                        {/* Badges superiores estilo Sticker */}
+                        <div className="absolute top-3 inset-x-3 flex items-start justify-between gap-2 z-10">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {tariff.badge && (
+                              <span className="bg-[#E10600] text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-md">
+                                {tariff.badge}
+                              </span>
                             )}
+                            <span className="bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-md border border-white/10 flex items-center gap-1 font-mono">
+                              <Clock className="w-3 h-3 text-[#E10600]" /> {tariff.durationHours || 3} hs
+                            </span>
                           </div>
 
-                          {/* Foto de portada si existe */}
-                          {tariff.cover_image_url && (
-                            <div
-                              onClick={() => setDetailModalService(tariff)}
-                              className="w-full h-32 rounded-xl overflow-hidden relative cursor-pointer group bg-gray-100"
-                            >
-                              <img
-                                src={tariff.cover_image_url}
-                                alt={tariff.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                <span className="px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1">
-                                  <Eye className="w-3 h-3" /> Ver detalle y time-lapse
-                                </span>
+                          <div className="flex items-center gap-1.5">
+                            {hasVideo && (
+                              <span className="bg-black/80 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md border border-white/20">
+                                <Play className="w-3 h-3 text-[#E10600] fill-[#E10600]" /> REEL
+                              </span>
+                            )}
+                            {isSelected && (
+                              <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center shadow-md">
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
                               </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Ícono de Play Central al pasar el mouse */}
+                        {hasVideo && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-12 h-12 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center border border-white/40 shadow-xl group-hover:scale-110 transition-transform">
+                              <Play className="w-5 h-5 ml-0.5 fill-white" />
                             </div>
+                          </div>
+                        )}
+
+                        {/* Información inferior sobre la foto */}
+                        <div className="absolute bottom-3 inset-x-3 space-y-1.5 z-10">
+                          <h4 className="font-anton uppercase text-white text-base sm:text-lg leading-tight tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                            {tariff.shortName || tariff.name}
+                          </h4>
+
+                          {tariff.description && (
+                            <p className="text-gray-200 text-xs line-clamp-2 leading-relaxed font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                              {tariff.description}
+                            </p>
                           )}
 
-                          {/* Título y descripción corta */}
-                          <div className="space-y-1">
-                            <h4
-                              onClick={() => setDetailModalService(tariff)}
-                              className="font-extrabold text-gray-900 text-sm leading-snug cursor-pointer hover:text-[#0066FF] transition-colors"
-                            >
-                              {tariff.shortName || tariff.name}
-                            </h4>
-                            {tariff.description && (
-                              <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                                {tariff.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Botón Ver Más detalles */}
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setDetailModalService(tariff)}
-                            className="text-[11px] font-semibold text-[#0066FF] hover:underline flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>Ver qué incluye y fotos</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Barra de Precio y Botón Sumar */}
-                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
-                        <div>
-                          <span className="text-[10px] uppercase text-gray-400 font-bold block">
-                            {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
-                          </span>
-                          {tariff.price_type === 'consult' ? (
-                            <span className="text-sm font-bold text-gray-800">A cotizar</span>
-                          ) : (
-                            <div className="flex items-baseline gap-1.5">
+                          {/* Precio en Etiqueta Roja estilo Sticker */}
+                          <div className="pt-1 flex items-center justify-between gap-2">
+                            <div className="inline-flex items-center gap-1 bg-[#E10600] text-white font-mono font-black text-xs sm:text-sm px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
                               {hasPromo && (
-                                <span className="text-xs text-gray-400 line-through font-mono">
+                                <span className="line-through text-white/70 text-[10px] mr-1">
                                   ${regularPrice.toLocaleString('es-UY')}
                                 </span>
                               )}
-                              <span className="text-base font-extrabold text-gray-900 font-mono">
-                                {tariff.price_type === 'from' ? 'Desde ' : ''}$
-                                {effectivePrice.toLocaleString('es-UY')}{' '}
-                                <span className="text-[10px] text-gray-500 font-normal">UYU</span>
+                              <span>
+                                {tariff.price_type === 'from' ? 'DESDE ' : ''}$
+                                {effectivePrice.toLocaleString('es-UY')} UYU
                               </span>
                             </div>
-                          )}
+
+                            <span className="text-[10px] text-white/90 font-bold bg-black/60 px-2 py-0.5 rounded backdrop-blur-xs flex items-center gap-1">
+                              <Eye className="w-3 h-3 text-[#E10600]" /> Ver más
+                            </span>
+                          </div>
                         </div>
+                      </div>
+
+                      {/* Barra de acción inferior de la tarjeta */}
+                      <div className="p-3 bg-white border-t border-gray-100 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDetailModalService(tariff)}
+                          className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Detalle & time-lapse</span>
+                          <ArrowRight className="w-3 h-3 text-[#E10600]" />
+                        </button>
 
                         <button
                           type="button"
                           onClick={() => handleToggleService(tariff.id)}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/25'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'
+                              ? 'bg-[#E10600] text-white shadow-md shadow-red-600/30 ring-2 ring-[#E10600]/30'
+                              : 'bg-[#111111] hover:bg-black text-white'
                           }`}
                         >
                           {isSelected ? (
@@ -1557,20 +1620,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </div>
             </div>
 
-            {/* D) NOTIFICACIÓN / CROSS-SELLING ("Sumale también...") */}
+            {/* C) CROSS-SELLING ("Sumale también...") */}
             {crossSellNotification && (
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 space-y-3 shadow-sm animate-fade-in">
+              <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-300 space-y-3 shadow-sm animate-fade-in">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#0066FF]" />
-                    <span className="text-xs font-bold text-gray-900">
-                      Recomendado para complementar tu {crossSellNotification.parentName}:
+                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
+                      RECOMENDADO
+                    </span>
+                    <span className="text-xs font-black uppercase text-[#111111]">
+                      Para complementar tu {crossSellNotification.parentName}:
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setCrossSellNotification(null)}
-                    className="text-gray-400 hover:text-gray-600 text-xs"
+                    className="text-gray-400 hover:text-gray-600 text-xs p-1"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1582,13 +1647,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     return (
                       <div
                         key={sug.id}
-                        className="p-3 bg-white rounded-xl border border-blue-200 flex items-center justify-between gap-3 shadow-2xs"
+                        className="p-3 bg-white rounded-xl border border-gray-200 flex items-center justify-between gap-3 shadow-2xs"
                       >
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-gray-900 truncate block">
+                          <span className="text-xs font-black uppercase text-[#111111] truncate block">
                             {sug.shortName || sug.name}
                           </span>
-                          <span className="text-[11px] font-mono text-gray-600">
+                          <span className="text-[11px] font-mono font-bold text-gray-700">
                             +${sugPrice.toLocaleString('es-UY')} UYU
                           </span>
                         </div>
@@ -1598,7 +1663,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                             handleToggleService(sug.id);
                             setCrossSellNotification(null);
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold shrink-0 cursor-pointer"
+                          className="px-3 py-1.5 rounded-lg bg-[#E10600] hover:bg-[#c20500] text-white text-xs font-black uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
                         >
                           + Sumar
                         </button>
@@ -1609,76 +1674,63 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </div>
             )}
 
-            {/* E) PRODUCTOS DE MANTENIMIENTO (PASO OPCIONAL) */}
+            {/* D) PRODUCTOS DE CUIDADO POSTERIOR (UPSELL) */}
             {webBudget.products &&
               webBudget.products.filter((p) => p.is_active !== false).length > 0 && (
-                <div className="pt-4 border-t border-gray-200 space-y-3">
+                <div className="space-y-3 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <ShoppingBag className="w-4 h-4 text-[#0066FF]" />
-                        <h3 className="text-sm font-extrabold text-gray-900">
-                          ¿Querés sumar productos para mantener tu auto?
-                        </h3>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Opcional • Te los entregamos listos al retirar tu auto en el taller.
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-[#E10600]" />
+                      <h3 className="text-sm font-anton uppercase text-[#111111] tracking-wide">
+                        Insumos & Cuidados para Llevar a Casa
+                      </h3>
                     </div>
+                    {promoRules?.product_upsell_discount_enabled && (
+                      <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                        +{promoRules.product_upsell_discount_percent}% OFF en servicios
+                      </span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {webBudget.products
                       .filter((p) => p.is_active !== false)
                       .map((prod) => {
-                        const isAdded = selectedProductIds.includes(prod.id);
+                        const isSelected = selectedProductIds.includes(prod.id);
                         return (
                           <div
                             key={prod.id}
                             className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                              isAdded
-                                ? 'bg-blue-50/60 border-[#0066FF]'
-                                : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                              isSelected
+                                ? 'bg-red-50/20 border-[#E10600] ring-1 ring-[#E10600]'
+                                : 'bg-white border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              {prod.image_url ? (
-                                <img
-                                  src={prod.image_url}
-                                  alt={prod.name}
-                                  className="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-200"
-                                />
-                              ) : (
-                                <div className="w-12 h-12 rounded-xl bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                                  <ShoppingBag className="w-5 h-5" />
-                                </div>
+                            <div className="min-w-0 space-y-0.5">
+                              <span className="text-xs font-bold text-[#111111] truncate block">
+                                {prod.name}
+                              </span>
+                              {prod.short_description && (
+                                <p className="text-[11px] text-gray-500 line-clamp-1">
+                                  {prod.short_description}
+                                </p>
                               )}
-                              <div className="min-w-0">
-                                <span className="font-bold text-xs text-gray-900 block truncate">
-                                  {prod.name}
-                                </span>
-                                {prod.short_description && (
-                                  <p className="text-[10px] text-gray-500 line-clamp-1">
-                                    {prod.short_description}
-                                  </p>
-                                )}
-                                <span className="text-xs font-mono font-bold text-gray-900 block mt-0.5">
-                                  ${prod.price.toLocaleString('es-UY')}{' '}
-                                  <span className="text-[9px] text-gray-500 font-normal">UYU</span>
-                                </span>
-                              </div>
+                              <span className="text-xs font-mono font-bold text-[#111111] block">
+                                ${prod.price.toLocaleString('es-UY')}{' '}
+                                <span className="text-[10px] text-gray-400 font-normal">UYU</span>
+                              </span>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => handleToggleProduct(prod.id)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 cursor-pointer transition-all ${
-                                isAdded
-                                  ? 'bg-[#0066FF] text-white'
-                                  : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-200'
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#E10600] text-white'
+                                  : 'bg-gray-100 hover:bg-gray-200 text-[#111111] border border-gray-300'
                               }`}
                             >
-                              {isAdded ? 'Sumado ✓' : '+ Sumar'}
+                              {isSelected ? '✓ Sumado' : '+ Sumar'}
                             </button>
                           </div>
                         );
@@ -1690,26 +1742,28 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
         )}
 
         {/* =================================================================== */}
-        {/* PASO 3: DÍA EN LA AGENDA (CALENDARIO INTERACTIVO CON PROMOS)        */}
+        {/* PASO 3: DÍA / AGENDA                                               */}
         {/* =================================================================== */}
         {currentStep === 3 && (
           <div className="space-y-6 animate-fade-in py-2">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
-                Paso 3 de 4 • Fecha en agenda
-              </span>
-              <h2 className="text-2xl font-extrabold text-gray-900">
+              <div>
+                <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
+                  AGENDA EN VIVO
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
                 Elegí el día estimado para traer tu vehículo
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-600 font-bold">
                 Seleccioná el día que más te convenga. Los días con etiqueta verde tienen descuento promocional especial.
               </p>
             </div>
 
             {/* Selector de Días de la Agenda */}
             <div className="space-y-3">
-              <span className="text-xs font-bold text-gray-800 block">
-                Próximos días disponibles en el taller:
+              <span className="text-xs font-black uppercase tracking-wide text-[#111111] block">
+                Próximos días disponibles en el taller Shangrilá:
               </span>
 
               <div className="grid grid-cols-3 sm:grid-cols-7 gap-2.5">
@@ -1728,16 +1782,16 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                         !day.isAvailable
                           ? 'bg-gray-100/60 border-gray-200 opacity-50 cursor-not-allowed'
                           : isSelected
-                          ? 'bg-blue-50 border-[#0066FF] shadow-sm ring-2 ring-[#0066FF]/20 cursor-pointer'
+                          ? 'bg-red-50/30 border-[#E10600] shadow-sm ring-2 ring-[#E10600]/30 cursor-pointer'
                           : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
                       }`}
                     >
-                      <span className="text-[10px] font-bold text-gray-500 uppercase block">
+                      <span className="text-[10px] font-black text-gray-500 uppercase block">
                         {day.displayDay}
                       </span>
                       <span
-                        className={`text-sm font-extrabold block my-0.5 ${
-                          isSelected ? 'text-[#0066FF]' : 'text-gray-900'
+                        className={`text-sm font-black block my-0.5 ${
+                          isSelected ? 'text-[#E10600]' : 'text-[#111111]'
                         }`}
                       >
                         {day.displayDate}
@@ -1745,14 +1799,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
                       {/* Badge estado / promo */}
                       <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-1 ${
+                        className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block mt-1 ${
                           day.isPromo
                             ? 'bg-emerald-100 text-emerald-800'
                             : !day.isAvailable
                             ? 'bg-gray-200 text-gray-500'
                             : isSelected
-                            ? 'bg-blue-100 text-[#0066FF]'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-[#E10600] text-white'
+                            : 'bg-gray-100 text-gray-700'
                         }`}
                       >
                         {day.statusReason}
@@ -1765,7 +1819,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Franja horaria de preferencia */}
             <div className="space-y-2 pt-2">
-              <span className="text-xs font-bold text-gray-800 block">
+              <span className="text-xs font-black uppercase tracking-wide text-[#111111] block">
                 Franja horaria preferida de entrega:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -1781,19 +1835,19 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       onClick={() => setPreferredTimeSlot(slot.key as any)}
                       className={`p-3 rounded-xl border cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] font-bold'
-                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                          ? 'bg-red-50/30 border-[#E10600] text-[#E10600] font-black'
+                          : 'bg-[#F2F2F2] border-gray-200 text-gray-800 hover:bg-gray-200'
                       }`}
                     >
-                      <div className="text-xs font-bold">{slot.label}</div>
-                      <div className="text-[10px] text-gray-500">{slot.hours}</div>
+                      <div className="text-xs font-black uppercase tracking-wide">{slot.label}</div>
+                      <div className="text-[10px] text-gray-500 font-bold">{slot.hours}</div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Opción rápida: no elegir fecha todavía */}
+            {/* Opción rápida: coordinar luego */}
             <div className="pt-2">
               <button
                 type="button"
@@ -1802,7 +1856,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(4);
                   scrollToTop();
                 }}
-                className="text-xs text-gray-500 hover:text-gray-900 underline cursor-pointer"
+                className="text-xs text-gray-600 font-bold hover:text-black underline cursor-pointer"
               >
                 Prefiero coordinar el día exacto luego directamente por WhatsApp →
               </button>
@@ -1816,42 +1870,44 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
         {currentStep === 4 && (
           <div className="space-y-6 animate-fade-in max-w-2xl mx-auto py-2">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
-                Paso 4 de 4 • Finalizar cotización
-              </span>
-              <h2 className="text-2xl font-extrabold text-gray-900">
+              <div>
+                <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
+                  PASO FINAL
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
                 Tus datos para enviarte el presupuesto
               </h2>
-              <p className="text-xs text-gray-500">
-                Solo tu nombre y celular son obligatorios para preparar tu cotización formal y el PDF.
+              <p className="text-xs text-gray-600 font-bold">
+                Solo tu nombre y celular son necesarios para preparar tu cotización formal y el PDF.
               </p>
             </div>
 
             {/* Resumen previo de lo elegido */}
-            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-bold text-gray-900 border-b border-gray-200 pb-2">
+            <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-200 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-black uppercase text-[#111111] border-b border-gray-300 pb-2">
                 <span>
                   Tratamientos elegidos ({selectedCategory}) • {selectedServices.length} servicios
                 </span>
-                <span className="text-[#0066FF] font-mono text-sm">
+                <span className="text-[#E10600] font-mono text-base font-black">
                   ${finalTotal.toLocaleString('es-UY')} UYU
                 </span>
               </div>
               <div className="space-y-1 text-xs">
                 {selectedServices.map((s) => (
-                  <div key={s.tariff.id} className="flex items-center justify-between text-gray-700">
+                  <div key={s.tariff.id} className="flex items-center justify-between text-gray-800 font-bold">
                     <span>{s.tariff.shortName || s.tariff.name}</span>
-                    <span className="font-mono font-semibold">${s.price.toLocaleString('es-UY')}</span>
+                    <span className="font-mono">${s.price.toLocaleString('es-UY')}</span>
                   </div>
                 ))}
                 {selectedProducts.map((p) => (
                   <div key={p.id} className="flex items-center justify-between text-gray-600 italic">
                     <span>+ {p.name} (mantenimiento)</span>
-                    <span className="font-mono">${p.price.toLocaleString('es-UY')}</span>
+                    <span className="font-mono font-bold">${p.price.toLocaleString('es-UY')}</span>
                   </div>
                 ))}
                 {discountDetails.totalDiscount > 0 && (
-                  <div className="pt-2 border-t border-gray-200 flex items-center justify-between text-emerald-700 font-bold">
+                  <div className="pt-2 border-t border-gray-300 flex items-center justify-between text-emerald-700 font-black">
                     <span>Descuento aplicado:</span>
                     <span>-${discountDetails.totalDiscount.toLocaleString('es-UY')}</span>
                   </div>
@@ -1861,31 +1917,31 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Cupón de descuento */}
             <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-2.5 shadow-2xs">
-              <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-[#0066FF]" />
+              <span className="text-xs font-black uppercase tracking-wider text-[#111111] flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-[#E10600]" />
                 <span>¿Tenés un cupón de descuento o código de amigo?</span>
               </span>
 
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Ej: BIENVENIDA, DETAIL10"
+                  placeholder="Ej: BIENVENIDO, DETAIL10"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2 text-xs text-gray-900 uppercase font-mono focus:outline-hidden focus:bg-white focus:border-[#0066FF]"
+                  className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2 text-xs text-[#111111] uppercase font-mono font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-1 focus:ring-[#E10600]"
                 />
                 <button
                   type="button"
                   onClick={handleValidateCoupon}
-                  className="px-4 py-2 rounded-xl bg-gray-900 hover:bg-black text-white text-xs font-bold cursor-pointer transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black uppercase tracking-wider cursor-pointer transition-colors"
                 >
                   Aplicar
                 </button>
               </div>
 
               {appliedCoupon && (
-                <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>¡Cupón {appliedCoupon.code} aplicado con éxito! ({appliedCoupon.description})</span>
                 </div>
               )}
@@ -1893,7 +1949,6 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Formulario */}
             <form onSubmit={handleSubmitForm} className="space-y-4">
-              {/* Honeypot anti-spam */}
               <div className="hidden" aria-hidden="true">
                 <input
                   type="text"
@@ -1906,14 +1961,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* 1. Datos Personales */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 space-y-3.5 shadow-2xs">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF] block">
+                <span className="text-xs font-black uppercase tracking-wider text-[#E10600] block">
                   1. Tus Datos de Contacto
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">
-                      Nombre y apellido <span className="text-red-500">*</span>
+                    <label className="text-xs font-bold text-gray-700">
+                      Nombre y apellido <span className="text-[#E10600]">*</span>
                     </label>
                     <input
                       type="text"
@@ -1921,13 +1976,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       placeholder="Ej: Juan Pérez"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-2 focus:ring-red-100 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">
-                      WhatsApp / Celular <span className="text-red-500">*</span>
+                    <label className="text-xs font-bold text-gray-700">
+                      WhatsApp / Celular <span className="text-[#E10600]">*</span>
                     </label>
                     <input
                       type="tel"
@@ -1935,110 +1990,114 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       placeholder="Ej: 099 123 456"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-2 focus:ring-red-100 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700">
-                    Email <span className="text-gray-400 text-[11px]">(opcional)</span>
+                  <label className="text-xs font-bold text-gray-700">
+                    Email <span className="text-gray-400 text-[11px] font-normal">(opcional)</span>
                   </label>
                   <input
                     type="email"
-                    placeholder="Para recibir una copia de tu presupuesto (opcional)"
+                    placeholder="Para recibir una copia de tu presupuesto en PDF"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-2 focus:ring-red-100 transition-all"
                   />
                 </div>
               </div>
 
               {/* 2. Datos del Auto */}
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 space-y-3.5 shadow-2xs">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF] block">
+                <span className="text-xs font-black uppercase tracking-wider text-[#E10600] block">
                   2. Tu Vehículo <span className="text-gray-400 text-[11px] font-normal lowercase">(opcional)</span>
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">Marca</label>
+                    <label className="text-xs font-bold text-gray-700">Marca</label>
                     <input
                       type="text"
                       placeholder="Ej: Peugeot"
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">Modelo</label>
+                    <label className="text-xs font-bold text-gray-700">Modelo</label>
                     <input
                       type="text"
                       placeholder="Ej: 208"
                       value={vehicleModel}
                       onChange={(e) => setVehicleModel(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">Año</label>
+                    <label className="text-xs font-bold text-gray-700">Año</label>
                     <input
                       type="number"
                       placeholder="Ej: 2021"
                       value={vehicleYear}
                       onChange={(e) => setVehicleYear(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">Matrícula</label>
+                    <label className="text-xs font-bold text-gray-700">Matrícula</label>
                     <input
                       type="text"
                       placeholder="Ej: SAA 1234"
                       value={vehiclePlate}
                       onChange={(e) => setVehiclePlate(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs uppercase font-mono focus:outline-hidden focus:bg-white focus:border-[#0066FF] transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs uppercase font-mono font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-700">Día acordado</label>
+                    <label className="text-xs font-bold text-gray-700">Día acordado</label>
                     <input
                       type="date"
                       value={preferredDate}
                       onChange={(e) => setPreferredDate(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] transition-all"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-700">
-                    Comentarios o detalles especiales de la pintura
+                  <label className="text-xs font-bold text-gray-700">
+                    Comentarios o notas de pintura / tapizado
                   </label>
                   <textarea
                     rows={2}
                     placeholder="Contanos si tiene rayas profundas, manchas en las butacas o algo puntual a tratar..."
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] transition-all"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
                   />
                 </div>
               </div>
 
               {/* Aclaración obligatoria de precio estimado */}
-              <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-[#0066FF] shrink-0 mt-0.5" />
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-950 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-[#E10600] shrink-0 mt-0.5" />
                 <div className="leading-relaxed text-[11px]">
-                  <strong className="text-gray-900 block mb-0.5">Aclaración de DetailVlak:</strong>
-                  {webBudget.content?.estimated_price_disclaimer ||
-                    'Presupuesto estimado. El precio final y plazos se confirman al inspeccionar personalmente el vehículo en el taller.'}
+                  <strong className="text-[#111111] block mb-0.5 font-black uppercase tracking-wider">
+                    Aclaración de DetailVlak:
+                  </strong>
+                  <span className="font-semibold text-gray-700">
+                    {webBudget.content?.estimated_price_disclaimer ||
+                      'Presupuesto estimado. El precio final y plazos se confirman al inspeccionar personalmente el vehículo en el taller.'}
+                  </span>
                 </div>
               </div>
 
@@ -2046,7 +2105,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-blue-500/25 cursor-pointer disabled:opacity-50 active:scale-98"
+                className="w-full py-4 rounded-2xl bg-[#E10600] hover:bg-[#c20500] text-white font-black uppercase tracking-wider text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-red-600/30 cursor-pointer disabled:opacity-50 active:scale-98"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 <span>{isSubmitting ? 'Generando presupuesto...' : 'Ver mi presupuesto terminado'}</span>
@@ -2062,16 +2121,16 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
           <div className="space-y-6 animate-fade-in max-w-2xl mx-auto py-2">
             {/* Header de Éxito */}
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 text-[#E10600] flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-9 h-9" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+              <h2 className="text-2xl sm:text-4xl font-anton uppercase text-[#111111] tracking-wide">
                 ¡Presupuesto listo, {createdRequest.client_name}!
               </h2>
-              <p className="text-xs text-gray-600 max-w-md mx-auto">
+              <p className="text-xs text-gray-600 font-bold max-w-md mx-auto">
                 Tu cotización para tu <strong>{createdRequest.vehicle_brand} {createdRequest.vehicle_model}</strong> quedó registrada con el código:
               </p>
-              <div className="inline-block px-4 py-1.5 rounded-xl bg-gray-100 border border-gray-200 font-mono text-sm font-bold text-[#0066FF]">
+              <div className="inline-block px-4 py-1.5 rounded-xl bg-[#111111] font-mono text-base font-black text-white tracking-wider">
                 #{createdRequest.code}
               </div>
             </div>
@@ -2079,14 +2138,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             {/* Tarjeta de Resumen Detallado */}
             <div className="p-5 sm:p-6 rounded-2xl bg-white border border-gray-200 space-y-4 shadow-lg shadow-gray-100">
               <div className="flex items-center justify-between border-b border-gray-100 pb-3 text-xs">
-                <span className="text-gray-500">Tamaño del vehículo:</span>
-                <span className="font-bold text-gray-900">{createdRequest.vehicle_category}</span>
+                <span className="text-gray-500 font-bold">Tamaño del vehículo:</span>
+                <span className="font-black text-[#111111] uppercase">{createdRequest.vehicle_category}</span>
               </div>
 
               {createdRequest.preferred_date && (
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3 text-xs">
-                  <span className="text-gray-500">Fecha en agenda:</span>
-                  <span className="font-bold text-[#0066FF] flex items-center gap-1">
+                  <span className="text-gray-500 font-bold">Fecha en agenda:</span>
+                  <span className="font-bold text-[#E10600] flex items-center gap-1">
                     <CalendarIcon className="w-3.5 h-3.5" />
                     {createdRequest.preferred_date} (
                     {createdRequest.preferred_time_slot === 'manana'
@@ -2101,21 +2160,21 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* Lista de Servicios */}
               <div className="space-y-2">
-                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">
+                <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider block">
                   Tratamientos Seleccionados
                 </span>
                 <div className="divide-y divide-gray-100">
                   {createdRequest.selected_services.map((item, idx) => (
                     <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
                       <div>
-                        <div className="font-semibold text-gray-900">{item.serviceName}</div>
+                        <div className="font-black uppercase text-[#111111]">{item.serviceName}</div>
                         {item.durationHours && (
-                          <div className="text-[10px] text-gray-400 font-mono">
-                            Duración: {item.durationHours} hs
+                          <div className="text-[10px] text-gray-500 font-mono font-bold">
+                            Duración estimada: {item.durationHours} hs
                           </div>
                         )}
                       </div>
-                      <span className="font-mono font-bold text-gray-900">
+                      <span className="font-mono font-black text-[#111111]">
                         ${item.price.toLocaleString('es-UY')}
                       </span>
                     </div>
@@ -2124,8 +2183,8 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   {createdRequest.selected_products &&
                     createdRequest.selected_products.map((prod, idx) => (
                       <div key={`p-${idx}`} className="py-2 flex items-center justify-between text-xs text-gray-700">
-                        <span className="italic">+ {prod.productName} (mantenimiento)</span>
-                        <span className="font-mono font-bold">${prod.price.toLocaleString('es-UY')}</span>
+                        <span className="italic font-bold">+ {prod.productName} (mantenimiento)</span>
+                        <span className="font-mono font-black">${prod.price.toLocaleString('es-UY')}</span>
                       </div>
                     ))}
                 </div>
@@ -2133,7 +2192,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* Descuentos Aplicados */}
               {createdRequest.applied_discount && createdRequest.applied_discount.discount_amount > 0 && (
-                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-emerald-700 font-bold">
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-emerald-700 font-black">
                   <span>Descuento ({createdRequest.applied_discount.discount_name}):</span>
                   <span>-${createdRequest.applied_discount.discount_amount.toLocaleString('es-UY')} UYU</span>
                 </div>
@@ -2141,8 +2200,8 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* Total Final */}
               <div className="pt-3 border-t-2 border-gray-100 flex items-center justify-between">
-                <span className="font-bold text-sm text-gray-700">TOTAL ESTIMADO:</span>
-                <span className="text-2xl font-extrabold text-[#0066FF] font-mono">
+                <span className="font-black text-sm uppercase text-gray-700">TOTAL ESTIMADO:</span>
+                <span className="text-2xl font-black text-[#E10600] font-mono">
                   ${createdRequest.total_amount.toLocaleString('es-UY')}{' '}
                   <span className="text-xs text-gray-500 font-normal">UYU</span>
                 </span>
@@ -2151,19 +2210,19 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Tarjeta de Cupón Próximo Servicio */}
             {createdRequest.next_service_coupon_code && (
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex items-center justify-between gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 text-[#E10600] flex items-center justify-center shrink-0">
                     <Gift className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="font-bold text-gray-900 block">¡Cupón regalo para tu próximo servicio!</span>
-                    <span className="text-[11px] text-gray-600">
+                    <span className="font-black uppercase text-[#111111] block">¡Cupón regalo para tu próximo servicio!</span>
+                    <span className="text-[11px] text-gray-600 font-medium">
                       Presentalo en el taller o compartilo con un amigo para un 10% de descuento.
                     </span>
                   </div>
                 </div>
-                <span className="font-mono font-black text-sm bg-white px-3 py-1.5 rounded-xl border border-blue-300 text-[#0066FF] shrink-0">
+                <span className="font-mono font-black text-sm bg-white px-3 py-1.5 rounded-xl border border-red-300 text-[#E10600] shrink-0">
                   {createdRequest.next_service_coupon_code}
                 </span>
               </div>
@@ -2171,19 +2230,19 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Código de referidos personal */}
             {personalReferralCode && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-300 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <Share2 className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
+                    <Share2 className="w-5 h-5 text-[#E10600]" />
                   </div>
                   <div>
-                    <span className="font-bold text-emerald-950 block">Tu código de recomendación</span>
-                    <span className="text-[11px] text-emerald-800">
+                    <span className="font-black uppercase text-[#111111] block">Tu código de recomendación</span>
+                    <span className="text-[11px] text-gray-600 font-medium">
                       Un amigo se ahorra 10% y vos acumulás crédito para tu próximo service.
                     </span>
                   </div>
                 </div>
-                <span className="font-mono font-bold text-xs bg-white px-3 py-1.5 rounded-xl border border-emerald-300 text-emerald-700 shrink-0">
+                <span className="font-mono font-black text-xs bg-white px-3 py-1.5 rounded-xl border border-gray-300 text-[#111111] shrink-0">
                   {personalReferralCode}
                 </span>
               </div>
@@ -2194,7 +2253,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={handleConfirmWhatsApp}
-                className="w-full py-4 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-[#25D366]/20 cursor-pointer active:scale-98"
+                className="w-full py-4 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-black uppercase tracking-wider text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-[#25D366]/25 cursor-pointer active:scale-98"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span>Confirmar por WhatsApp ahora</span>
@@ -2203,20 +2262,20 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={() => setShowPrintModal(true)}
-                className="w-full py-3.5 rounded-2xl bg-gray-900 hover:bg-black text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-gray-800 cursor-pointer shadow-md"
+                className="w-full py-3.5 rounded-2xl bg-[#111111] hover:bg-black text-white font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-gray-800 cursor-pointer shadow-md"
               >
-                <FileText className="w-4 h-4 text-[#0066FF]" />
+                <FileText className="w-4 h-4 text-[#E10600]" />
                 <span>Descargar Presupuesto en PDF</span>
               </button>
             </div>
 
             {/* Ubicación del Taller */}
-            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs text-gray-600 space-y-1.5 text-center">
-              <div className="flex items-center justify-center gap-1.5 font-bold text-gray-900">
-                <MapPin className="w-4 h-4 text-[#0066FF]" />
+            <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-200 text-xs text-gray-600 space-y-1.5 text-center">
+              <div className="flex items-center justify-center gap-1.5 font-black uppercase text-[#111111]">
+                <MapPin className="w-4 h-4 text-[#E10600]" />
                 <span>DetailVlak Shangrilá • Av. Giannattasio</span>
               </div>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-gray-500 font-medium">
                 Atención con agenda previa de Lunes a Sábados de 08:30 a 18:30 hs.
               </p>
             </div>
@@ -2231,7 +2290,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(1);
                   scrollToTop();
                 }}
-                className="text-xs text-gray-500 hover:text-gray-900 underline cursor-pointer"
+                className="text-xs text-gray-500 hover:text-black font-bold underline cursor-pointer"
               >
                 Armar otro presupuesto nuevo
               </button>
@@ -2239,119 +2298,190 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
           </div>
         )}
 
-        {/* ------------------------------------------------------------------- */}
-        {/* BLOQUES DE CONFIANZA INTERCALADOS (Reseñas, FAQ y Mapa)            */}
-        {/* ------------------------------------------------------------------- */}
-        {currentStep <= 3 && (
-          <div className="mt-14 space-y-10 pt-10 border-t border-gray-200">
-            {/* Reseñas de Clientes Reales */}
-            {webBudget.content?.reviews && webBudget.content.reviews.length > 0 && (
-              <div className="space-y-3">
-                <div className="text-center space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
-                    Opiniones reales
-                  </span>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-gray-900">
-                    Clientes que confiaron en DetailVlak
-                  </h3>
-                </div>
+        {/* =================================================================== */}
+        {/* SECCIÓN ESTILO INSTAGRAM: "NUESTROS TRABAJOS" (FEED DE 3 COLUMNAS) */}
+        {/* =================================================================== */}
+        <section id="nuestros-trabajos" className="mt-14 space-y-5 pt-10 border-t border-gray-200 scroll-mt-20">
+          <div className="text-center space-y-1.5">
+            <div>
+              <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
+                FEED @DETAILVLAK
+              </span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
+              Nuestros Trabajos Reales
+            </h3>
+            <p className="text-xs text-gray-600 font-bold max-w-md mx-auto">
+              Mirá las transformaciones diarias que realizamos en nuestro taller de estética automotriz en Shangrilá.
+            </p>
+          </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  {webBudget.content.reviews.map((rev) => (
-                    <div
-                      key={rev.id}
-                      className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2 flex flex-col justify-between"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-1 text-amber-500">
-                          {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                            <Star key={i} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                          ))}
-                        </div>
-                        <p className="text-xs text-gray-700 italic leading-relaxed">
-                          "{rev.comment}"
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-gray-200/60">
-                        <span className="font-bold text-xs text-gray-900 block">{rev.client_name}</span>
-                        {rev.vehicle && (
-                          <span className="text-[10px] text-gray-500 block">{rev.vehicle}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Preguntas Frecuentes (FAQ) */}
-            {webBudget.content?.faqs && webBudget.content.faqs.length > 0 && (
-              <div className="space-y-3 max-w-2xl mx-auto">
-                <div className="text-center space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
-                    Dudas frecuentes
-                  </span>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-gray-900">
-                    Preguntas habituales sobre nuestros trabajos
-                  </h3>
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  {webBudget.content.faqs.map((faq, i) => (
-                    <details
-                      key={i}
-                      className="group p-3.5 rounded-xl bg-gray-50 border border-gray-200 text-xs open:bg-blue-50/40 open:border-blue-200 transition-all cursor-pointer"
-                    >
-                      <summary className="font-bold text-gray-900 flex items-center justify-between list-none">
-                        <span>{faq.question}</span>
-                        <ChevronDown className="w-4 h-4 text-gray-500 group-open:rotate-180 transition-transform" />
-                      </summary>
-                      <p className="text-gray-600 mt-2 leading-relaxed pt-2 border-t border-gray-200/60">
-                        {faq.answer}
-                      </p>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Ubicación & Mapa */}
-            <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="space-y-1 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1.5 font-bold text-sm text-gray-900">
-                  <MapPin className="w-4 h-4 text-[#0066FF]" />
-                  <span>DetailVlak Shangrilá</span>
-                </div>
-                <p className="text-xs text-gray-600">
-                  {webBudget.content?.address ||
-                    'Av. Giannattasio, Ciudad de la Costa, Canelones, Uruguay.'}
-                </p>
-              </div>
-
+          {/* Grilla de 3 columnas estilo Instagram Feed */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 rounded-2xl overflow-hidden">
+            {galleryItems.map((item, idx) => (
               <a
-                href={webBudget.content?.map_url || 'https://maps.google.com/?q=Shangrila+Canelones+Uruguay'}
+                key={idx}
+                href="https://www.instagram.com/detailvlak/"
                 target="_blank"
                 rel="noreferrer"
-                className="px-4 py-2 rounded-xl bg-white hover:bg-gray-100 text-gray-900 border border-gray-200 text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0 shadow-2xs"
+                className="relative aspect-square overflow-hidden group bg-black cursor-pointer"
               >
-                <span>Cómo llegar (Google Maps)</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <img
+                  src={item.url}
+                  alt={item.caption || 'Trabajo DetailVlak'}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95"
+                />
+                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 p-2">
+                  <div className="text-center text-white space-y-1">
+                    <Instagram className="w-5 h-5 mx-auto text-[#E10600]" />
+                    {item.caption && (
+                      <p className="text-[10px] sm:text-xs font-black uppercase tracking-tight line-clamp-2">
+                        {item.caption}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="absolute top-1.5 right-1.5 z-10">
+                  <span className="w-5 h-5 rounded-md bg-black/60 backdrop-blur-xs flex items-center justify-center text-white/90">
+                    <Play className="w-2.5 h-2.5 fill-white text-white" />
+                  </span>
+                </div>
               </a>
-            </div>
+            ))}
           </div>
-        )}
+
+          {/* Botón Ver Más en Instagram */}
+          <div className="text-center pt-2">
+            <a
+              href="https://www.instagram.com/detailvlak/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 transition-opacity"
+            >
+              <Instagram className="w-4 h-4" />
+              <span>Ver más en Instagram @detailvlak</span>
+            </a>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------------- */}
+        {/* BLOQUES DE CONFIANZA (Reseñas, FAQ y Ubicación del Taller)         */}
+        {/* ------------------------------------------------------------------- */}
+        <div className="mt-12 space-y-10 pt-10 border-t border-gray-200">
+          {/* Reseñas de Clientes Reales */}
+          {webBudget.content?.reviews && webBudget.content.reviews.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-center space-y-1">
+                <div>
+                  <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-xs inline-block">
+                    OPINIONES
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-anton uppercase text-[#111111] tracking-wide">
+                  Clientes que Vuelven a Estrenar su Auto
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                {webBudget.content.reviews.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-200 space-y-2 flex flex-col justify-between"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1 text-[#E10600]">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-[#E10600] text-[#E10600]" />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-700 italic font-semibold leading-relaxed">
+                        "{rev.comment}"
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-300">
+                      <span className="font-black text-xs uppercase text-[#111111] block">{rev.client_name}</span>
+                      {rev.vehicle && (
+                        <span className="text-[10px] text-gray-500 font-bold block">{rev.vehicle}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Preguntas Frecuentes (FAQ) */}
+          {webBudget.content?.faqs && webBudget.content.faqs.length > 0 && (
+            <div className="space-y-3 max-w-2xl mx-auto">
+              <div className="text-center space-y-1">
+                <div>
+                  <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-xs inline-block">
+                    PREGUNTAS FRECUENTES
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-anton uppercase text-[#111111] tracking-wide">
+                  Dudas habituales sobre los tratamientos
+                </h3>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                {webBudget.content.faqs.map((faq, i) => (
+                  <details
+                    key={i}
+                    className="group p-3.5 rounded-xl bg-[#F2F2F2] border border-gray-200 text-xs open:bg-red-50/20 open:border-red-200 transition-all cursor-pointer"
+                  >
+                    <summary className="font-black uppercase tracking-wide text-[#111111] flex items-center justify-between list-none">
+                      <span>{faq.question}</span>
+                      <ChevronDown className="w-4 h-4 text-[#E10600] group-open:rotate-180 transition-transform" />
+                    </summary>
+                    <p className="text-gray-700 font-semibold mt-2 leading-relaxed pt-2 border-t border-gray-300">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Ubicación & Mapa */}
+          <div
+            ref={locationRef}
+            className="p-5 rounded-2xl bg-[#F2F2F2] border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4"
+          >
+            <div className="space-y-1 text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 font-black uppercase tracking-wide text-sm text-[#111111]">
+                <MapPin className="w-4 h-4 text-[#E10600]" />
+                <span>DetailVlak Shangrilá</span>
+              </div>
+              <p className="text-xs text-gray-600 font-bold">
+                {webBudget.content?.address ||
+                  'Av. Giannattasio, Ciudad de la Costa, Canelones, Uruguay.'}
+              </p>
+            </div>
+
+            <a
+              href={webBudget.content?.map_url || 'https://maps.google.com/?q=Shangrila+Canelones+Uruguay'}
+              target="_blank"
+              rel="noreferrer"
+              className="px-5 py-2.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
+            >
+              <span>Cómo llegar (Google Maps)</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#E10600]" />
+            </a>
+          </div>
+        </div>
       </main>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 4. Barra Fija Inferior (Sticky Bottom Bar con Total y Ahorro en Vivo)  */}
+      {/* 5. BARRA FIJA INFERIOR (Sticky Bottom Bar Negra con Total en Blanco)  */}
       {/* --------------------------------------------------------------------- */}
       {currentStep <= 3 && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 sm:p-4 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] safe-bottom">
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#111111] border-t border-neutral-800 p-3 sm:p-4 shadow-[0_-8px_25px_rgba(0,0,0,0.5)] safe-bottom text-white">
           <div className="max-w-4xl mx-auto space-y-2">
             {/* Mensaje de incentivo si falta 1 servicio */}
             {nextTierPushMessage && (
-              <div className="text-[11px] font-semibold text-[#0066FF] bg-blue-50 px-3 py-1 rounded-lg border border-blue-200 flex items-center justify-between">
+              <div className="text-[11px] font-bold text-white bg-[#E10600] px-3 py-1 rounded-lg flex items-center justify-between shadow-xs">
                 <span>{nextTierPushMessage}</span>
                 <Percent className="w-3.5 h-3.5 shrink-0" />
               </div>
@@ -2363,40 +2493,41 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 onClick={() => setIsSummaryDrawerOpen(!isSummaryDrawerOpen)}
                 className="cursor-pointer min-w-0"
               >
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                <div className="flex items-center gap-1.5 text-[11px] text-gray-400 font-bold">
                   <span className="truncate">
-                    {selectedServices.length} servicios {selectedCategory ? `• ${selectedCategory}` : ''}
+                    {selectedServices.length} servicio{selectedServices.length !== 1 ? 's' : ''}{' '}
+                    {selectedCategory ? `• ${selectedCategory}` : ''}
                   </span>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform shrink-0 ${
+                    className={`w-3.5 h-3.5 text-[#E10600] transition-transform shrink-0 ${
                       isSummaryDrawerOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </div>
 
                 <div className="flex items-baseline gap-2">
-                  <div className="text-lg sm:text-xl font-extrabold text-gray-900 font-mono leading-tight">
+                  <div className="text-xl sm:text-2xl font-black text-white font-mono leading-tight">
                     {selectedCategory ? (
                       <>
                         ${finalTotal.toLocaleString('es-UY')}{' '}
-                        <span className="text-xs font-normal text-gray-500">UYU</span>
+                        <span className="text-xs font-normal text-gray-400">UYU</span>
                       </>
                     ) : (
-                      <span className="text-xs text-amber-600 font-sans font-bold">
+                      <span className="text-xs text-[#E10600] font-sans font-black uppercase tracking-wider">
                         Elegí tamaño de auto
                       </span>
                     )}
                   </div>
 
                   {discountDetails.totalDiscount > 0 && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Ahorrás ${discountDetails.totalDiscount.toLocaleString('es-UY')}
+                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                      AHORRÁS ${discountDetails.totalDiscount.toLocaleString('es-UY')}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Botón Siguiente */}
+              {/* Botón Siguiente Rojo */}
               <button
                 type="button"
                 onClick={() => {
@@ -2418,14 +2549,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   scrollToTop();
                 }}
                 disabled={currentStep === 1 && !selectedCategory}
-                className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-lg shadow-blue-500/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                className="px-6 sm:px-8 py-3 rounded-xl bg-[#E10600] hover:bg-[#c20500] text-white font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-red-600/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
                 <span>
                   {currentStep === 1
-                    ? 'Ver Servicios'
+                    ? 'CONTINUAR'
                     : currentStep === 2
-                    ? 'Elegir Día'
-                    : 'Mis Datos'}
+                    ? 'ELEGIR DÍA'
+                    : 'TUS DATOS'}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -2433,22 +2564,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
             {/* Drawer Desplegable con los items seleccionados */}
             {isSummaryDrawerOpen && (
-              <div className="mt-3 pt-3 border-t border-gray-200 space-y-2 max-h-56 overflow-y-auto">
-                <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+              <div className="mt-3 pt-3 border-t border-neutral-800 space-y-2 max-h-56 overflow-y-auto">
+                <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider block">
                   Desglose de tu presupuesto:
                 </span>
                 {selectedServices.length === 0 ? (
                   <p className="text-xs text-gray-400">Aún no agregaste servicios.</p>
                 ) : (
-                  <div className="space-y-1.5 divide-y divide-gray-100 text-xs">
+                  <div className="space-y-1.5 divide-y divide-neutral-800 text-xs">
                     {selectedServices.map((s) => (
                       <div
                         key={s.tariff.id}
-                        className="pt-1.5 flex items-center justify-between text-gray-700"
+                        className="pt-1.5 flex items-center justify-between text-gray-300"
                       >
-                        <span className="truncate pr-2">{s.tariff.shortName || s.tariff.name}</span>
+                        <span className="truncate pr-2 font-bold">{s.tariff.shortName || s.tariff.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono text-gray-900 font-bold">
+                          <span className="font-mono text-white font-black">
                             ${s.price.toLocaleString('es-UY')}
                           </span>
                           <button
@@ -2457,7 +2588,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                               e.stopPropagation();
                               handleToggleService(s.tariff.id);
                             }}
-                            className="text-gray-400 hover:text-red-600 text-[10px] font-semibold"
+                            className="text-[#E10600] hover:underline text-[10px] font-bold"
                           >
                             Quitar
                           </button>
@@ -2468,18 +2599,18 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     {selectedProducts.map((p) => (
                       <div
                         key={p.id}
-                        className="pt-1.5 flex items-center justify-between text-gray-600 italic"
+                        className="pt-1.5 flex items-center justify-between text-gray-400 italic"
                       >
                         <span className="truncate pr-2">+ {p.name}</span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono font-bold">${p.price.toLocaleString('es-UY')}</span>
+                          <span className="font-mono font-bold text-white">${p.price.toLocaleString('es-UY')}</span>
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleProduct(p.id);
                             }}
-                            className="text-gray-400 hover:text-red-600 text-[10px] font-semibold"
+                            className="text-[#E10600] hover:underline text-[10px] font-bold"
                           >
                             Quitar
                           </button>
@@ -2488,7 +2619,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     ))}
 
                     {discountDetails.totalDiscount > 0 && (
-                      <div className="pt-2 flex items-center justify-between text-emerald-700 font-bold text-xs">
+                      <div className="pt-2 flex items-center justify-between text-[#E10600] font-black text-xs">
                         <span>Descuentos acumulados:</span>
                         <span>-${discountDetails.totalDiscount.toLocaleString('es-UY')}</span>
                       </div>
@@ -2502,7 +2633,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 5. Botón Flotante Directo de WhatsApp                                 */}
+      {/* 6. BOTÓN FLOTANTE DIRECTO DE WHATSAPP                                 */}
       {/* --------------------------------------------------------------------- */}
       <button
         type="button"
@@ -2514,22 +2645,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       </button>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 6. Modal de Detalle de Servicio con Video Time-Lapse & Fotos         */}
+      {/* 7. MODAL DE SERVICIO ESTILO REEL CON COMPARADOR ANTES / DESPUÉS       */}
       {/* --------------------------------------------------------------------- */}
       {detailModalService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl my-8 text-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-2xl my-auto text-[#111111] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-gray-200">
             {/* Header del modal */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-full bg-[#111111] text-white flex items-center justify-center shrink-0">
+                  <Play className="w-3.5 h-3.5 fill-[#E10600] text-[#E10600]" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-gray-900 text-sm sm:text-base truncate">
+                  <h3 className="font-anton uppercase text-[#111111] text-base sm:text-lg truncate tracking-wide">
                     {detailModalService.name}
                   </h3>
-                  <span className="text-[11px] text-gray-500">
+                  <span className="text-[11px] text-gray-500 font-bold font-mono">
                     Duración estimada: {detailModalService.durationHours || 3} horas
                   </span>
                 </div>
@@ -2537,22 +2668,26 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={() => setDetailModalService(null)}
-                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+                className="p-1.5 text-gray-400 hover:text-black rounded-xl hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Contenido scrolleable */}
-            <div className="p-5 overflow-y-auto space-y-5 text-xs">
-              {/* Video Time-Lapse embebido o subido */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs">
+              {/* Demostración Time-Lapse en video */}
               {detailModalService.video_url && detailModalService.video_url.trim() ? (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <Play className="w-3.5 h-3.5 text-[#0066FF]" />
-                    <span>Demostración Time-Lapse real de este tratamiento</span>
-                  </span>
-                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-black">
+                  <div className="flex items-center gap-1.5">
+                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
+                      DEMO EN VIDEO
+                    </span>
+                    <span className="text-xs font-black uppercase text-[#111111]">
+                      Time-Lapse real de este tratamiento
+                    </span>
+                  </div>
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-black aspect-video sm:aspect-auto">
                     {detailModalService.is_video_uploaded || detailModalService.video_url.includes('.mp4') ? (
                       <video
                         src={detailModalService.video_url}
@@ -2567,85 +2702,87 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 </div>
               ) : null}
 
-              {/* Fotos Antes / Después */}
-              {detailModalService.before_after_images &&
-                detailModalService.before_after_images.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider block">
-                      Comparativa Antes / Después:
+              {/* COMPARADOR ANTES / DESPUÉS DESLIZABLE */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
+                      COMPARADOR
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {detailModalService.before_after_images.map((pair, idx) => (
-                        <div
-                          key={idx}
-                          className="grid grid-cols-2 gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200"
-                        >
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-red-600 block">Antes:</span>
-                            <img
-                              src={pair.before_url}
-                              alt="Antes"
-                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-emerald-600 block">Después:</span>
-                            <img
-                              src={pair.after_url}
-                              alt="Después"
-                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <span className="text-xs font-black uppercase text-[#111111]">
+                      Antes y Después (Deslizá para comparar)
+                    </span>
                   </div>
-                )}
+                </div>
 
-              {/* Descripción */}
+                {detailModalService.before_after_images &&
+                detailModalService.before_after_images.length > 0 ? (
+                  <div className="space-y-3">
+                    {detailModalService.before_after_images.map((pair, idx) => (
+                      <BeforeAfterSlider
+                        key={idx}
+                        beforeUrl={pair.before_url}
+                        afterUrl={pair.after_url}
+                        labelBefore="ANTES"
+                        labelAfter="DESPUÉS"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  // Fallback interactivo de alta calidad de DetailVlak para que siempre se vea el comparador
+                  <BeforeAfterSlider
+                    beforeUrl="https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80"
+                    afterUrl="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80"
+                    labelBefore="ANTES (CON SWIRLS)"
+                    labelAfter="DESPUÉS (BRILLO ESPEJO)"
+                  />
+                )}
+              </div>
+
+              {/* Descripción del Tratamiento */}
               {detailModalService.description && (
-                <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
-                    ¿En qué consiste?
+                <div className="space-y-1 pt-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                    ¿En qué consiste este tratamiento?
                   </span>
-                  <p className="text-gray-700 leading-relaxed text-xs sm:text-sm">
+                  <p className="text-gray-800 leading-relaxed text-xs sm:text-sm font-semibold">
                     {detailModalService.description}
                   </p>
                 </div>
               )}
 
-              {/* Qué Incluye (Pasos) */}
+              {/* Qué Incluye (Pasos numerados) */}
               {detailModalService.included_steps && detailModalService.included_steps.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider block">
-                    Qué incluye este tratamiento:
+                  <span className="text-[10px] font-black text-[#E10600] uppercase tracking-wider block">
+                    Qué incluye este tratamiento paso a paso:
                   </span>
-                  <div className="space-y-1.5 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+                  <div className="space-y-1.5 bg-[#F2F2F2] p-3.5 rounded-2xl border border-gray-200">
                     {detailModalService.included_steps.map((st, i) => (
-                      <div key={i} className="flex items-start gap-2 text-gray-700">
-                        <span className="w-4 h-4 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                      <div key={i} className="flex items-start gap-2 text-gray-800 font-bold">
+                        <span className="w-4 h-4 rounded-full bg-[#E10600] text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
                           {i + 1}
                         </span>
-                        <span className="leading-snug">{st}</span>
+                        <span className="leading-snug text-xs">{st}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Productos que Usamos */}
+              {/* Insumos & Productos Prémium Utilizados */}
               {detailModalService.products_used && detailModalService.products_used.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">
-                    Insumos & Productos Prémium Utilizados:
+                  <span className="text-[10px] font-black text-[#111111] uppercase tracking-wider block">
+                    Insumos & Productos Importados Utilizados:
                   </span>
-                  <div className="flex flex-wrap gap-1.5 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                  <div className="flex flex-wrap gap-1.5 bg-[#F2F2F2] p-3 rounded-2xl border border-gray-200">
                     {detailModalService.products_used.map((prod, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 text-[11px] font-medium"
+                        className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-[#111111] text-[11px] font-bold"
                       >
-                        {prod}
+                        ✓ {prod}
                       </span>
                     ))}
                   </div>
@@ -2654,26 +2791,28 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* Cuidados Recomendados */}
               {detailModalService.care_text && (
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] space-y-1">
-                  <strong className="block font-bold">Cuidados recomendados posteriores:</strong>
-                  <span>{detailModalService.care_text}</span>
+                <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-950 text-[11px] space-y-1">
+                  <strong className="block font-black uppercase tracking-wider">
+                    Cuidados recomendados posteriores:
+                  </strong>
+                  <span className="font-semibold">{detailModalService.care_text}</span>
                 </div>
               )}
             </div>
 
             {/* Footer del Modal */}
-            <div className="px-5 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-3">
+            <div className="px-5 py-3.5 bg-[#F2F2F2] border-t border-gray-200 flex items-center justify-between gap-3">
               <div>
                 <span className="text-[10px] text-gray-500 uppercase font-bold block">
                   {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
                 </span>
                 {selectedCategory && categoryKey ? (
-                  <span className="text-lg font-bold text-gray-900 font-mono">
+                  <span className="text-xl font-black text-[#111111] font-mono">
                     ${(detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY')}{' '}
                     <span className="text-xs font-normal text-gray-500">UYU</span>
                   </span>
                 ) : (
-                  <span className="text-xs font-semibold text-amber-600">
+                  <span className="text-xs font-black text-[#E10600] uppercase">
                     Elegí el tamaño de tu auto
                   </span>
                 )}
@@ -2683,7 +2822,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 <button
                   type="button"
                   onClick={() => setDetailModalService(null)}
-                  className="px-3.5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-semibold cursor-pointer"
+                  className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-gray-100 text-gray-800 text-xs font-bold border border-gray-300 cursor-pointer"
                 >
                   Cerrar
                 </button>
@@ -2693,16 +2832,16 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     handleToggleService(detailModalService.id);
                     setDetailModalService(null);
                   }}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md ${
                     selectedServiceIds.includes(detailModalService.id)
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-[#0066FF] hover:bg-[#0052CC] text-white shadow-md'
+                      ? 'bg-[#111111] text-white'
+                      : 'bg-[#E10600] hover:bg-[#c20500] text-white shadow-red-600/30'
                   }`}
                 >
                   {selectedServiceIds.includes(detailModalService.id) ? (
                     <>
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Quitar</span>
+                      <span>Quitar del presupuesto</span>
                     </>
                   ) : (
                     <>
@@ -2718,7 +2857,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 7. Modal de Impresión / PDF                                           */}
+      {/* 8. MODAL DE IMPRESIÓN / PDF EN ROJO Y NEGRO DETAILVLAK                */}
       {/* --------------------------------------------------------------------- */}
       {showPrintModal && createdRequest && (
         <PublicBudgetPrintView
@@ -2728,13 +2867,20 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 8. Footer General                                                     */}
+      {/* 9. FOOTER GENERAL CON IDENTIDAD DETAILVLAK                            */}
       {/* --------------------------------------------------------------------- */}
-      <footer className="border-t border-gray-200 bg-gray-50 py-5 px-4 text-center text-xs text-gray-500">
-        <div>
-          <strong className="text-gray-700">DetailVlak</strong> • Shangrilá, Canelones • Miembro de{' '}
-          <strong className="text-gray-700">CARVLAK Group</strong>
+      <footer className="border-t border-gray-200 bg-white py-6 px-4 text-center text-xs text-gray-600 space-y-2">
+        <div className="flex items-center justify-center gap-2">
+          <img src="/detailvlak-avatar.png" alt="DetailVlak" className="w-5 h-5 rounded-full" />
+          <strong className="text-[#111111] font-anton uppercase tracking-wider text-sm">
+            DetailVlak
+          </strong>
+          <span>•</span>
+          <span className="font-bold">Shangrilá, Canelones</span>
         </div>
+        <p className="text-[11px] text-gray-500 font-bold">
+          Miembro oficial de <strong className="text-[#111111]">CARVLAK Group</strong> • Todos los derechos reservados
+        </p>
       </footer>
     </div>
   );

@@ -15,7 +15,7 @@
   ],
   "start_url": "/presupuesto",
   "background_color": "#FFFFFF",
-  "theme_color": "#0066FF",
+  "theme_color": "#111111",
   "display": "standalone",
   "orientation": "portrait"
 }
