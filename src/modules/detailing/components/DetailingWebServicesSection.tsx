@@ -17,7 +17,10 @@ import {
   DollarSign,
   CheckCircle2,
   AlertTriangle,
-  Play
+  Play,
+  Copy,
+  Check,
+  Megaphone
 } from 'lucide-react';
 import { DetailingTariff } from '../../../types';
 import { useData } from '../../../context/DataContext';
@@ -39,6 +42,14 @@ export const DetailingWebServicesSection: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<DetailingTariff | null>(null);
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  const handleCopyLink = (url: string, label: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLink(url);
+    showToast(`${label} copiado al portapapeles`, 'success');
+    setTimeout(() => setCopiedLink(null), 3000);
+  };
 
   // Sort tariffs by order or original index
   const sortedTariffs = useMemo(() => {
@@ -242,7 +253,120 @@ export const DetailingWebServicesSection: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Barra de Búsqueda y Filtros */}
+      {/* 2. Generador de Enlaces con Atribución para Anuncios & Redes */}
+      <div className="bg-[#161616] border border-[#282828] rounded-2xl p-4 sm:p-5 text-white space-y-3 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Megaphone className="w-4 h-4 text-[#3B82F6]" />
+            <span className="font-bold text-sm">Generador de Links para Anuncios (Atribución Automática)</span>
+          </div>
+          <span className="text-[11px] text-neutral-400">
+            Define la comisión: <strong>12,5% si es anuncio</strong> y <strong>30% si es directo</strong>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {/* Link para Anuncios */}
+          <div className="p-3.5 rounded-xl bg-[#1C1C1C] border border-[#303030] flex flex-col justify-between gap-2.5">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-xs text-purple-400 flex items-center gap-1.5">
+                  <Megaphone className="w-3.5 h-3.5" />
+                  <span>Para Anuncios Pagos (Meta / Google / TikTok)</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  Comisión 12,5%
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400 leading-normal">
+                Usá este enlace en tus campañas de Meta Ads o Google. Las solicitudes se etiquetan automáticamente como anuncio pago.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/presupuesto?origen=anuncio`}
+                className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-neutral-300 select-all"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  handleCopyLink(
+                    `${typeof window !== 'undefined' ? window.location.origin : ''}/presupuesto?origen=anuncio`,
+                    'Link para anuncios'
+                  )
+                }
+                className="px-3 py-1.5 bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer shadow-xs"
+              >
+                {copiedLink?.includes('origen=anuncio') ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>¡Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar link para anuncios</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Link Directo / Orgánico */}
+          <div className="p-3.5 rounded-xl bg-[#1C1C1C] border border-[#303030] flex flex-col justify-between gap-2.5">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-bold text-xs text-emerald-400 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Para Bio de Instagram / Estados / WhatsApp</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Comisión 30%
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400 leading-normal">
+                Para compartir en tu perfil o enviar a clientes referidos de forma directa sin costo de publicidad.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/presupuesto`}
+                className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-neutral-300 select-all"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  handleCopyLink(
+                    `${typeof window !== 'undefined' ? window.location.origin : ''}/presupuesto`,
+                    'Link web directo'
+                  )
+                }
+                className="px-3 py-1.5 bg-[#252525] hover:bg-[#303030] text-neutral-200 text-xs font-bold rounded-lg flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer border border-[#383838]"
+              >
+                {copiedLink === `${typeof window !== 'undefined' ? window.location.origin : ''}/presupuesto` ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>¡Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar link directo</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Barra de Búsqueda y Filtros */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />

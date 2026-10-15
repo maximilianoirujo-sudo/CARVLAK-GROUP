@@ -27,7 +27,8 @@ import {
   SocialMediaPostRecord,
   GeneralConfig,
   DetailingConfig,
-  DetailingCompany
+  DetailingCompany,
+  DetailingWebRequest
 } from '../types';
 import { DEFAULT_PREVENTA_TARIFF, DEFAULT_COMPANY_SPECIAL_SERVICES } from '../modules/detailing/lib/companyTariffUtils';
 import { getLocalDateString } from './formatters';
@@ -1691,6 +1692,75 @@ export const INITIAL_SOCIAL_MEDIA_POSTS: SocialMediaPostRecord[] = [
     created_by: 'user-maxi',
     created_by_name: 'Maximiliano Irujo',
     created_at: '2026-09-26T18:00:00Z'
+  }
+];
+
+export const INITIAL_DETAILING_WEB_REQUESTS: DetailingWebRequest[] = [
+  {
+    id: 'webreq-1',
+    code: 'DV-26-4821',
+    client_name: 'Santiago Méndez',
+    client_phone: '098 765 432',
+    client_email: 'santiago.mendez@gmail.com',
+    vehicle_brand: 'Volkswagen',
+    vehicle_model: 'Golf GTI',
+    vehicle_year: 2021,
+    vehicle_plate: 'SBX 4821',
+    vehicle_category: 'Chico',
+    preferred_date: '2026-10-18',
+    comments: 'Tiene algunos microrayones en el capot y me gustaría que quede con brillo espejo.',
+    selected_services: [
+      {
+        serviceId: 'ceramico',
+        serviceName: 'Tratamiento Cerámico / Acrílico',
+        price: 8500,
+        durationHours: 8
+      },
+      {
+        serviceId: 'interior',
+        serviceName: 'Limpieza profunda integral de interiores',
+        price: 3500,
+        durationHours: 5
+      }
+    ],
+    total_amount: 12000,
+    origin: 'Anuncios pagos',
+    is_paid_ad: true,
+    status: 'nueva',
+    created_at: '2026-10-14T19:30:00-03:00'
+  },
+  {
+    id: 'webreq-2',
+    code: 'DV-26-9134',
+    client_name: 'Florencia Varela',
+    client_phone: '099 881 234',
+    client_email: 'florencia.varela@outlook.com',
+    vehicle_brand: 'Jeep',
+    vehicle_model: 'Compass Longitude',
+    vehicle_year: 2023,
+    vehicle_plate: 'SCA 9134',
+    vehicle_category: 'SUV/Rural',
+    preferred_date: '2026-10-20',
+    comments: 'Tapizados claros con algunas manchas de café y viaje.',
+    selected_services: [
+      {
+        serviceId: 'interior',
+        serviceName: 'Limpieza profunda integral de interiores',
+        price: 4900,
+        durationHours: 5
+      },
+      {
+        serviceId: 'motor',
+        serviceName: 'Lavado y detallado técnico de motor',
+        price: 2000,
+        durationHours: 2.5
+      }
+    ],
+    total_amount: 6900,
+    origin: 'Directo / Web',
+    is_paid_ad: false,
+    status: 'contactado',
+    created_at: '2026-10-14T16:15:00-03:00'
   }
 ];
 

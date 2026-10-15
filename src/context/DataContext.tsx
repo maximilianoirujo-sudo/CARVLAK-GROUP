@@ -45,7 +45,9 @@ import {
   DetailingReceipt,
   DetailingCleanSelection,
   DetailingCompany,
-  DetailingCompanySpecialService
+  DetailingCompanySpecialService,
+  DetailingWebRequest,
+  DetailingWebRequestStatus
 } from '../types';
 import {
   DEFAULT_COMPANY_SPECIAL_SERVICES,
@@ -75,7 +77,8 @@ import {
   INITIAL_SOCIAL_MEDIA_CONFIG,
   INITIAL_SOCIAL_MEDIA_POSTS,
   INITIAL_DETAILING_CONFIG,
-  INITIAL_DETAILING_COMPANIES
+  INITIAL_DETAILING_COMPANIES,
+  INITIAL_DETAILING_WEB_REQUESTS
 } from '../lib/mockData';
 import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, isActivePayment, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -184,6 +187,13 @@ export interface DataContextType {
   detailingReceipts: DetailingReceipt[];
   generateDetailingReceipt: (quoteId: string, options?: { includePhotos?: boolean; version?: number }) => Promise<DetailingReceipt | null> | DetailingReceipt | null;
   cleanDetailingTestData: (selection: DetailingCleanSelection) => Promise<{ success: boolean; counts: Record<string, number> }>;
+
+  // Solicitudes Web (Presupuestos públicos)
+  detailingWebRequests: DetailingWebRequest[];
+  addDetailingWebRequest: (request: DetailingWebRequest) => void;
+  updateDetailingWebRequestStatus: (id: string, status: DetailingWebRequestStatus, notes?: string) => void;
+  deleteDetailingWebRequest: (id: string) => void;
+  convertWebRequestToQuote: (requestId: string, appointmentDetails?: { date: string; assigned_to?: string; work_bay_id?: string }) => DetailingQuote | null;
 
   whatsappTemplates: WhatsAppTemplate[];
   updateWhatsAppTemplate: (key: WhatsAppTemplateKey, templateText: string) => void;
@@ -437,6 +447,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEFAULT_COMPANY_SPECIAL_SERVICES;
   });
   useDebouncedLocalStorage('carvlak_detailing_company_services', detailingCompanyServices, 500);
+
+  const [detailingWebRequests, setDetailingWebRequests] = useState<DetailingWebRequest[]>(() => {
+    const s = localStorage.getItem('carvlak_detailing_web_requests');
+    if (s) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return INITIAL_DETAILING_WEB_REQUESTS;
+  });
+  useDebouncedLocalStorage('carvlak_detailing_web_requests', detailingWebRequests, 500);
 
   // Estados de Sincronización en la nube (Web & Móvil)
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -830,6 +852,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (Array.isArray(d.detailing_tariffs) && d.detailing_tariffs.length > 0) {
         setDetailingTariffs(d.detailing_tariffs);
         localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(d.detailing_tariffs));
+      }
+      if (Array.isArray(d.detailing_web_requests)) {
+        setDetailingWebRequests(d.detailing_web_requests);
+        localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(d.detailing_web_requests));
       }
     } catch (e) {
       // offline o sin conexión
@@ -1257,6 +1283,139 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: 'detailing_tariffs', data: ordered })
     }).catch(() => {});
+  };
+
+  // Solicitudes Web de Presupuestos (DetailVlak)
+  const addDetailingWebRequest = (req: DetailingWebRequest) => {
+    setDetailingWebRequests((prev) => [req, ...prev]);
+    logActivity('cotizacion_detailing', req.id, 'create', { action: 'Nueva solicitud web', client: req.client_name });
+  };
+
+  const updateDetailingWebRequestStatus = (id: string, status: DetailingWebRequestStatus, notes?: string) => {
+    setDetailingWebRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status, ...(notes !== undefined ? { notes } : {}) } : r))
+    );
+    logActivity('cotizacion_detailing', id, 'status_change', { new_status: status });
+  };
+
+  const deleteDetailingWebRequest = (id: string) => {
+    setDetailingWebRequests((prev) => prev.filter((r) => r.id !== id));
+    logActivity('cotizacion_detailing', id, 'archive', { action: 'Eliminación de solicitud web' });
+  };
+
+  const convertWebRequestToQuote = (
+    requestId: string,
+    appointmentDetails?: { date: string; assigned_to?: string; work_bay_id?: string }
+  ): DetailingQuote | null => {
+    const req = detailingWebRequests.find((r) => r.id === requestId);
+    if (!req) return null;
+
+    // 1. Obtener o crear cliente
+    let clientId: string | undefined;
+    const existingClient = checkPhoneDuplicate(req.client_phone);
+    if (existingClient) {
+      clientId = existingClient.id;
+    } else {
+      const created = addClient({
+        full_name: req.client_name,
+        phone: req.client_phone,
+        email: req.client_email,
+        origin: req.is_paid_ad ? 'Anuncios pagos' : (req.origin || 'Formulario web')
+      });
+      clientId = created.client.id;
+    }
+
+    // 2. Obtener o crear vehículo
+    let vehicleId: string | undefined;
+    if (req.vehicle_plate) {
+      const existingVehicle = getVehicleByPlate(req.vehicle_plate);
+      if (existingVehicle) {
+        vehicleId = existingVehicle.id;
+      }
+    }
+    if (!vehicleId && clientId) {
+      const createdVeh = addVehicle({
+        brand: req.vehicle_brand,
+        model: req.vehicle_model,
+        year: req.vehicle_year || new Date().getFullYear(),
+        plate: req.vehicle_plate || '',
+        category: req.vehicle_category,
+        client_id: clientId,
+        ownership: 'client',
+        color: 'A verificar',
+        photos: []
+      });
+      vehicleId = createdVeh.vehicle.id;
+    }
+
+    // 3. Fecha de trabajo y asignación
+    const workDate = appointmentDetails?.date || req.preferred_date || getLocalDateString();
+    const assignedTo = appointmentDetails?.assigned_to || profile?.id || 'user-maxi';
+    const workBayId = appointmentDetails?.work_bay_id || 'box-1';
+
+    // 4. Crear la cotización / trabajo en detailing
+    const newQuote = addDetailingQuote({
+      client_id: clientId,
+      client_name: req.client_name,
+      client_phone: req.client_phone,
+      vehicle_id: vehicleId,
+      vehicle_info: `${req.vehicle_brand} ${req.vehicle_model} ${req.vehicle_year ? `(${req.vehicle_year})` : ''}`.trim(),
+      vehicle_plate: req.vehicle_plate || '',
+      vehicle_category: req.vehicle_category,
+      selected_services: req.selected_services.map((s) => ({
+        serviceId: s.serviceId,
+        serviceName: s.serviceName,
+        price: s.price
+      })),
+      subtotal: req.total_amount,
+      discount_type: 'none',
+      discount_amount: 0,
+      extreme_dirt_surcharge: 0,
+      total_amount: req.total_amount,
+      work_date: workDate,
+      estimated_time: '1 a 2 días',
+      assigned_to: assignedTo,
+      work_bay_id: workBayId,
+      origin: req.is_paid_ad ? 'Anuncios pagos' : (req.origin || 'Formulario web'),
+      notes: req.comments ? `[Solicitud Web #${req.code}] ${req.comments}` : `[Solicitud Web #${req.code}]`,
+      status: 'Agendado'
+    });
+
+    // 5. Agendar en el calendario
+    addAppointment({
+      business: 'detailing',
+      client_id: clientId,
+      vehicle_id: vehicleId,
+      assigned_to: assignedTo,
+      work_bay_id: workBayId,
+      quote_id: newQuote.id,
+      stage: 'Confirmado',
+      start_time: `${workDate}T09:00:00-03:00`,
+      duration_minutes: 180,
+      status: 'Confirmado',
+      title: `${newQuote.vehicle_info} - ${req.selected_services.map((s) => s.serviceName).join(', ')}`,
+      notes: req.comments || '',
+      price_amount: req.total_amount,
+      price_currency: 'UYU'
+    });
+
+    // 6. Actualizar solicitud web a confirmada y vincular cotización
+    setDetailingWebRequests((prev) =>
+      prev.map((r) =>
+        r.id === requestId
+          ? { ...r, status: 'confirmado', converted_to_quote_id: newQuote.id }
+          : r
+      )
+    );
+
+    logActivity('cotizacion_detailing', newQuote.id, 'create', {
+      action: 'Conversión de solicitud web a trabajo',
+      web_request_code: req.code,
+      client: req.client_name,
+      total: newQuote.total_amount
+    });
+
+    return newQuote;
   };
 
   // Trabajos de Detailing (Registro Contable)
@@ -4420,6 +4579,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     detailingReceipts,
     generateDetailingReceipt,
     cleanDetailingTestData,
+    detailingWebRequests,
+    addDetailingWebRequest,
+    updateDetailingWebRequestStatus,
+    deleteDetailingWebRequest,
+    convertWebRequestToQuote,
     whatsappTemplates,
     updateWhatsAppTemplate,
     importDetailVlakData,
@@ -4505,6 +4669,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     detailingPayments,
     detailingCompanies,
     detailingCompanyServices,
+    detailingWebRequests,
     commissions,
     whatsappTemplates,
     activeInspections,
