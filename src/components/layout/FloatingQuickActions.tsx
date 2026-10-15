@@ -43,7 +43,7 @@ export const FloatingQuickActions: React.FC<FloatingQuickActionsProps> = ({
   };
 
   return (
-    <div className="md:hidden">
+    <div id="floating-quick-actions-container" className="md:hidden floating-quick-actions-root">
       {/* Fondo atenuado al abrir el menú */}
       {isOpen && (
         <div

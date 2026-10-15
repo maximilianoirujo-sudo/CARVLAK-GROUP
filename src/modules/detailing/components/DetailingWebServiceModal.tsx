@@ -106,6 +106,16 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
     setNewProductText('');
   }, [service, isOpen]);
 
+  // Ocultar botón flotante '+' y bloquear scroll de fondo mientras el modal está abierto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('overflow-hidden', 'modal-open-hide-fab');
+      return () => {
+        document.body.classList.remove('overflow-hidden', 'modal-open-hide-fab');
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Add Step
@@ -176,19 +186,19 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-[#161616] border border-[#2D2D2D] rounded-2xl w-full max-w-3xl my-8 text-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black/85 backdrop-blur-xs sm:items-center sm:justify-center sm:p-4 overflow-hidden animate-fade-in">
+      <div className="bg-[#161616] w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-3xl sm:rounded-2xl sm:border sm:border-[#2D2D2D] text-white shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2D2D2D] bg-[#1A1A1A]">
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-[#2D2D2D] bg-[#1A1A1A] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0066FF]/20 border border-[#0066FF]/40 flex items-center justify-center text-[#3B82F6]">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0066FF]/20 border border-[#0066FF]/40 flex items-center justify-center text-[#3B82F6] shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-wide">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-wide">
                 {isEditing ? 'Editar Servicio Web' : 'Nuevo Servicio Web'}
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-[11px] sm:text-xs text-neutral-400">
                 Se mostrará en el armador de presupuestos online DetailVlak
               </p>
             </div>
@@ -202,8 +212,10 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSave} className="overflow-y-auto p-6 space-y-6 flex-1 text-sm">
+        {/* Form Container */}
+        <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          {/* Scrollable Form Body */}
+          <div className="overflow-y-auto p-4 sm:p-6 space-y-6 flex-1 text-sm">
           {/* 1. Información General */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
@@ -593,18 +605,20 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
             </div>
           </div>
 
-          {/* Footer Buttons */}
-          <div className="pt-4 border-t border-[#2D2D2D] flex items-center justify-end gap-2.5">
+          </div>
+
+          {/* Footer Buttons - Siempre visibles en celular y desktop */}
+          <div className="shrink-0 p-3.5 sm:p-4 border-t border-[#2D2D2D] bg-[#1A1A1A] flex items-center justify-end gap-2.5 safe-bottom z-10 shadow-lg">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-[#252525] hover:bg-[#303030] text-neutral-300 text-xs font-semibold transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-[#252525] hover:bg-[#303030] text-neutral-300 text-xs font-semibold transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold transition-all shadow-lg shadow-[#0066FF]/20 flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0055DD] text-white text-xs font-bold transition-all shadow-lg shadow-[#0066FF]/20 flex items-center gap-2 cursor-pointer active:scale-95"
             >
               <Check className="w-4 h-4" />
               <span>{isEditing ? 'Guardar Cambios' : 'Crear Servicio'}</span>

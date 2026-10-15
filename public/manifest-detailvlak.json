@@ -1,0 +1,21 @@
+{
+  "short_name": "DetailVlak",
+  "name": "DetailVlak | Armá tu presupuesto",
+  "icons": [
+    {
+      "src": "/detailvlak-icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/detailvlak-icon-192.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/presupuesto",
+  "background_color": "#0D0D0D",
+  "theme_color": "#0D0D0D",
+  "display": "standalone",
+  "orientation": "portrait"
+}

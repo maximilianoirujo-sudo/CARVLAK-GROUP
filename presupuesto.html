@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>DetailVlak | Armá tu presupuesto</title>
+    <meta name="description" content="Armá tu presupuesto a medida en segundos. Elegí el tamaño de tu vehículo, mirá cómo trabajamos en videos time-lapse y seleccioná tus tratamientos de estética automotriz." />
+
+    <!-- Open Graph / WhatsApp / Instagram / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://carvlak-group.vercel.app/presupuesto" />
+    <meta property="og:title" content="DetailVlak | Armá tu presupuesto" />
+    <meta property="og:description" content="Armá tu presupuesto a medida en segundos. Elegí el tamaño de tu vehículo, mirá videos time-lapse reales y obtené tu cotización en vivo." />
+    <meta property="og:image" content="https://carvlak-group.vercel.app/detailvlak-og-preview.png" />
+    <meta property="og:image:secure_url" content="https://carvlak-group.vercel.app/detailvlak-og-preview.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="DetailVlak" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://carvlak-group.vercel.app/presupuesto" />
+    <meta name="twitter:title" content="DetailVlak | Armá tu presupuesto" />
+    <meta name="twitter:description" content="Armá tu presupuesto a medida en segundos. Mirá videos time-lapse reales y cotizá en vivo." />
+    <meta name="twitter:image" content="https://carvlak-group.vercel.app/detailvlak-og-preview.png" />
+
+    <!-- PWA & Mobile Web App Meta Tags para DetailVlak -->
+    <link rel="manifest" href="/manifest-detailvlak.json" />
+    <meta name="theme-color" content="#0D0D0D" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DetailVlak" />
+    <link rel="apple-touch-icon" href="/detailvlak-icon-192.png" />
+    <link rel="icon" type="image/x-icon" href="/detailvlak-favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/detailvlak-icon-192.png" />
+    <link rel="icon" type="image/png" href="/detailvlak-favicon.png" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400..700;1,400..700&family=Barlow+Condensed:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-[#0D0D0D] text-white min-h-screen antialiased selection:bg-[#0066FF]/30 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Service worker registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration error:', err));
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -7,7 +7,11 @@
     },
     {
       "source": "/presupuesto",
-      "destination": "/index.html"
+      "destination": "/presupuesto.html"
+    },
+    {
+      "source": "/presupuesto/(.*)",
+      "destination": "/presupuesto.html"
     },
     {
       "source": "/((?!api/).*)",

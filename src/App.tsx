@@ -24,6 +24,23 @@ export const App: React.FC = () => {
   const publicReportToken = search.includes('informe=') ? new URLSearchParams(search).get('informe') : null;
   const publicReceiptToken = search.includes('comprobante=') ? new URLSearchParams(search).get('comprobante') : null;
 
+  // Metadatos dinámicos exclusivos para /presupuesto (DetailVlak) sin tocar el resto del hub
+  React.useEffect(() => {
+    if (isPublicBudget) {
+      document.title = 'DetailVlak | Armá tu presupuesto';
+      const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+      if (favicon) favicon.href = '/detailvlak-favicon.png';
+      const manifest = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+      if (manifest) manifest.href = '/manifest-detailvlak.json';
+    } else {
+      document.title = 'CARVLAK Group | Hub Operativo';
+      const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+      if (favicon) favicon.href = '/favicon.ico';
+      const manifest = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+      if (manifest) manifest.href = '/manifest.json';
+    }
+  }, [isPublicBudget]);
+
   return (
     <ToastProvider>
       {publicReceiptToken ? (

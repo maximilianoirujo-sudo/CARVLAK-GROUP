@@ -121,3 +121,10 @@ input:focus, select:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: #9A9A9A;
 }
+
+/* Ocultar botones flotantes y barras inferiores cuando un modal a pantalla completa esté activo */
+body.modal-open-hide-fab #floating-quick-actions-container,
+body.modal-open-hide-fab .floating-quick-actions-root,
+body.modal-open-hide-fab nav.safe-bottom {
+  display: none !important;
+}

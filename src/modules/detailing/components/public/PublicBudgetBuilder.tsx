@@ -86,11 +86,11 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   // 'hero' (Portada) -> 'catalog' (Selector de tamaño + servicios) -> 'form' (Datos cliente) -> 'success' (Resumen final)
   const [currentStep, setCurrentStep] = useState<'hero' | 'catalog' | 'form' | 'success'>('hero');
 
-  // 3. Vehicle Category Selection
-  const [selectedCategory, setSelectedCategory] = useState<VehicleCategory>('Mediano');
+  // 3. Vehicle Category Selection (no preseleccionar ningún tamaño)
+  const [selectedCategory, setSelectedCategory] = useState<VehicleCategory | null>(null);
 
-  // 4. Selected Services (service IDs)
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(['interior']);
+  // 4. Selected Services (service IDs) (no preseleccionar ningún servicio)
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   // Modal de Detalle de Servicio con Video
   const [detailModalService, setDetailModalService] = useState<DetailingTariff | null>(null);
@@ -126,7 +126,8 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   };
 
   // Category Key mapping for tariff prices
-  const categoryKey = useMemo<'chico' | 'mediano' | 'suv' | 'pickup' | 'moto'>(() => {
+  const categoryKey = useMemo<'chico' | 'mediano' | 'suv' | 'pickup' | 'moto' | null>(() => {
+    if (!selectedCategory) return null;
     switch (selectedCategory) {
       case 'Chico':
         return 'chico';
@@ -152,6 +153,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
 
   // Selected Service Objects with calculated prices
   const selectedServices = useMemo(() => {
+    if (!categoryKey) return [];
     return selectedServiceIds
       .map((sid) => {
         const tariff = activeTariffs.find((t) => t.id === sid);
@@ -177,6 +179,11 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
 
   // Toggle Service
   const handleToggleService = (tariffId: string) => {
+    if (!selectedCategory) {
+      alert('Por favor seleccioná primero el tamaño de tu vehículo para calcular los precios y sumar servicios.');
+      document.getElementById('size-selector-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     setSelectedServiceIds((prev) =>
       prev.includes(tariffId) ? prev.filter((id) => id !== tariffId) : [...prev, tariffId]
     );
@@ -197,8 +204,14 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       return;
     }
 
-    if (!name.trim() || !phone.trim() || !vehicleBrand.trim() || !vehicleModel.trim()) {
-      alert('Por favor completá los campos obligatorios: tu nombre, celular, marca y modelo del vehículo.');
+    if (!name.trim() || !phone.trim()) {
+      alert('Por favor completá los campos obligatorios: tu nombre y celular para enviarte la cotización.');
+      return;
+    }
+
+    if (!selectedCategory) {
+      alert('Por favor seleccioná el tamaño de tu vehículo para calcular el presupuesto.');
+      setCurrentStep('catalog');
       return;
     }
 
@@ -236,11 +249,11 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
         client_name: name.trim(),
         client_phone: phone.trim(),
         client_email: email.trim() || undefined,
-        vehicle_brand: vehicleBrand.trim(),
-        vehicle_model: vehicleModel.trim(),
+        vehicle_brand: vehicleBrand.trim() || 'A coordinar',
+        vehicle_model: vehicleModel.trim() || '',
         vehicle_year: vehicleYear.trim() ? parseInt(vehicleYear.trim(), 10) : null,
         vehicle_plate: vehiclePlate.trim() ? vehiclePlate.trim().toUpperCase() : undefined,
-        vehicle_category: selectedCategory,
+        vehicle_category: selectedCategory || 'Mediano',
         preferred_date: preferredDate || undefined,
         comments: comments.trim() || undefined,
         selected_services: selectedServices.map((s) => ({
@@ -319,7 +332,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
 📋 *Presupuesto #${createdRequest.code}*
 👤 *Cliente:* ${createdRequest.client_name}
 📱 *Teléfono:* ${createdRequest.client_phone}
-🚗 *Vehículo:* ${createdRequest.vehicle_brand} ${createdRequest.vehicle_model} ${createdRequest.vehicle_year ? `(${createdRequest.vehicle_year})` : ''} - *${createdRequest.vehicle_category}*
+🚗 *Vehículo:* ${createdRequest.vehicle_brand && createdRequest.vehicle_brand !== 'A coordinar' ? `${createdRequest.vehicle_brand} ${createdRequest.vehicle_model}`.trim() : 'A coordinar'} ${createdRequest.vehicle_year ? `(${createdRequest.vehicle_year})` : ''} - *${createdRequest.vehicle_category}*
 ${createdRequest.vehicle_plate ? `🔖 *Matrícula:* ${createdRequest.vehicle_plate}\n` : ''}${createdRequest.preferred_date ? `📅 *Fecha preferida:* ${createdRequest.preferred_date}\n` : ''}
 🛠️ *Tratamientos elegidos:*
 ${servicesListText}
@@ -340,32 +353,33 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       ref={topRef}
       className="min-h-screen bg-[#0D0D0D] text-white flex flex-col justify-between selection:bg-[#0066FF]/30 selection:text-white font-sans antialiased"
     >
-      {/* 1. Header con Logo DetailVlak */}
-      <header className="border-b border-[#222] bg-[#141414]/90 backdrop-blur-md sticky top-0 z-40 px-4 py-3.5">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/carvlak-logo-blanco.png"
-              alt="DetailVlak CARVLAK"
-              className="h-7 w-auto object-contain"
-            />
-            <div className="border-l border-[#333] pl-3">
-              <div className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5">
-                <span>DetailVlak</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#0066FF]/20 text-[#3B82F6] border border-[#0066FF]/30">
-                  Presupuestador
+      {/* 1. Header con Marca DetailVlak */}
+      <header className="border-b border-[#222] bg-[#141414]/95 backdrop-blur-md sticky top-0 z-40 px-3.5 py-3 sm:px-4 sm:py-3.5">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#0044CC] flex items-center justify-center font-black text-white text-xs tracking-wider shadow-md shrink-0 border border-blue-400/30">
+              DV
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-extrabold text-white text-sm sm:text-base tracking-tight font-display">
+                  DETAIL<span className="text-[#3B82F6]">VLAK</span>
+                </span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#0066FF]/20 text-[#3B82F6] border border-[#0066FF]/30 tracking-wide uppercase">
+                  Presupuestos
                 </span>
               </div>
-              <div className="text-[10px] text-neutral-400">Estética automotriz • Shangrilá</div>
+              <p className="text-[10px] text-neutral-400 truncate">Estética automotriz • Shangrilá</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {onBackToApp && (
               <button
                 type="button"
                 onClick={onBackToApp}
-                className="px-3 py-1.5 rounded-xl bg-[#222] hover:bg-[#2A2A2A] text-neutral-300 hover:text-white border border-[#333] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl bg-[#202020] hover:bg-[#282828] text-neutral-300 hover:text-white border border-[#333] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                title="Volver al Hub"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Hub interno</span>
@@ -460,17 +474,26 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
         {currentStep === 'catalog' && (
           <div className="space-y-7 animate-fade-in">
             {/* Header del Catálogo */}
-            <div className="space-y-1">
+            <div id="size-selector-section" className="space-y-1">
               <span className="text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
                 Paso 1 de 2
               </span>
-              <h2 className="text-2xl font-bold text-white">
-                Seleccioná el tamaño de tu vehículo
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                {selectedCategory ? `Tamaño: ${selectedCategory}` : '1. Elegí el tamaño de tu vehículo'}
               </h2>
               <p className="text-xs text-neutral-400">
-                Los precios de los tratamientos se ajustan de acuerdo al tamaño del vehículo.
+                {selectedCategory
+                  ? 'Podés cambiarlo en cualquier momento para ver los precios ajustados a tu vehículo.'
+                  : 'Seleccioná el tamaño de tu auto para desbloquear los precios exactos y armar tu cotización.'}
               </p>
             </div>
+
+            {!selectedCategory && (
+              <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 text-xs text-blue-200 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                <span>Primero tocá la categoría de tu vehículo abajo para ver los precios de los servicios.</span>
+              </div>
+            )}
 
             {/* 2. Selector de Tamaño de Auto (5 Categorías) */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
@@ -641,11 +664,17 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       <div className="px-4 py-3 bg-[#1A1A1A] border-t border-[#262626] flex items-center justify-between gap-3">
                         <div>
                           <span className="text-[10px] uppercase text-neutral-500 font-bold block">
-                            Precio ({selectedCategory})
+                            {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
                           </span>
-                          <span className="text-base font-bold text-white font-mono">
-                            ${price.toLocaleString('es-UY')} <span className="text-[10px] text-neutral-400">UYU</span>
-                          </span>
+                          {selectedCategory ? (
+                            <span className="text-base font-bold text-white font-mono">
+                              ${price.toLocaleString('es-UY')} <span className="text-[10px] text-neutral-400">UYU</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold text-amber-400">
+                              Elegí el tamaño arriba
+                            </span>
+                          )}
                         </div>
 
                         <button
@@ -760,7 +789,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     <input
                       type="text"
                       required
-                      placeholder="Ej: Maximiliano Irujo"
+                      placeholder="Ej: Juan Pérez"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
@@ -788,7 +817,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   </label>
                   <input
                     type="email"
-                    placeholder="Para recibir una copia del presupuesto en tu correo"
+                    placeholder="Para recibir una copia del presupuesto en tu correo (opcional)"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
@@ -799,18 +828,17 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               {/* 2. Datos del Auto */}
               <div className="p-4 sm:p-5 rounded-2xl bg-[#161616] border border-[#262626] space-y-3.5">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#3B82F6] block">
-                  2. Tu Vehículo
+                  2. Tu Vehículo <span className="text-neutral-500 text-[11px] font-normal lowercase">(opcional)</span>
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-neutral-300">
-                      Marca <span className="text-red-500">*</span>
+                      Marca <span className="text-neutral-500 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="text"
-                      required
-                      placeholder="Ej: Volkswagen"
+                      placeholder="Ej: Peugeot"
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
                       className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
@@ -819,12 +847,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-neutral-300">
-                      Modelo <span className="text-red-500">*</span>
+                      Modelo <span className="text-neutral-500 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="text"
-                      required
-                      placeholder="Ej: Golf GTI"
+                      placeholder="Ej: 208"
                       value={vehicleModel}
                       onChange={(e) => setVehicleModel(e.target.value)}
                       className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
@@ -837,7 +864,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     </label>
                     <input
                       type="number"
-                      placeholder="Ej: 2022"
+                      placeholder="Ej: 2021"
                       value={vehicleYear}
                       onChange={(e) => setVehicleYear(e.target.value)}
                       className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
@@ -848,7 +875,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-neutral-300">
-                      Fecha preferida para traerlo
+                      Fecha preferida para traerlo <span className="text-neutral-500 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="date"
@@ -864,7 +891,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej: SBX 1234"
+                      placeholder="Ej: SAA 1234"
                       value={vehiclePlate}
                       onChange={(e) => setVehiclePlate(e.target.value)}
                       className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs uppercase font-mono focus:outline-hidden focus:border-[#0066FF]"
@@ -1013,7 +1040,8 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedServiceIds(['interior']);
+                  setSelectedServiceIds([]);
+                  setSelectedCategory(null);
                   setCurrentStep('catalog');
                   scrollToTop();
                 }}
@@ -1028,7 +1056,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
       {/* 3. Barra Fija Inferior (Sticky Bottom Bar) */}
       {currentStep === 'catalog' && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#141414]/95 backdrop-blur-md border-t border-[#262626] p-3 sm:p-4 shadow-2xl">
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#141414]/95 backdrop-blur-md border-t border-[#262626] p-3 sm:p-4 shadow-2xl safe-bottom">
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
             {/* Resumen & Total */}
             <div
@@ -1036,20 +1064,31 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               className="cursor-pointer"
             >
               <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
-                <span>{selectedServices.length} servicios</span>
+                <span>{selectedServices.length} servicios {selectedCategory ? `• ${selectedCategory}` : ''}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${isSummaryDrawerOpen ? 'rotate-180' : ''}`} />
               </div>
               <div className="text-lg sm:text-xl font-extrabold text-white font-mono leading-tight">
-                ${liveTotal.toLocaleString('es-UY')}{' '}
-                <span className="text-xs font-normal text-neutral-400">UYU</span>
+                {selectedCategory ? (
+                  <>
+                    ${liveTotal.toLocaleString('es-UY')}{' '}
+                    <span className="text-xs font-normal text-neutral-400">UYU</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-amber-400 font-sans font-bold">Elegí tamaño de auto</span>
+                )}
               </div>
             </div>
 
             {/* Botón Continuar */}
             <button
               type="button"
-              disabled={selectedServices.length === 0}
+              disabled={!selectedCategory || selectedServices.length === 0}
               onClick={() => {
+                if (!selectedCategory) {
+                  alert('Por favor seleccioná primero el tamaño de tu vehículo arriba.');
+                  document.getElementById('size-selector-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  return;
+                }
                 if (selectedServices.length === 0) {
                   alert('Seleccioná al menos un servicio para continuar.');
                   return;
@@ -1057,9 +1096,9 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 setCurrentStep('form');
                 scrollToTop();
               }}
-              className="px-6 py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-lg shadow-[#0066FF]/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-lg shadow-[#0066FF]/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <span>Continuar con mis datos</span>
+              <span>{!selectedCategory ? 'Elegí tamaño' : 'Continuar con mis datos'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -1206,11 +1245,17 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             <div className="px-5 py-3.5 bg-[#1A1A1A] border-t border-[#282828] flex items-center justify-between gap-3">
               <div>
                 <span className="text-[10px] text-neutral-400 uppercase font-bold block">
-                  Precio para tu auto ({selectedCategory})
+                  {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
                 </span>
-                <span className="text-lg font-bold text-white font-mono">
-                  ${(detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY')} UYU
-                </span>
+                {selectedCategory && categoryKey ? (
+                  <span className="text-lg font-bold text-white font-mono">
+                    ${(detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY')} UYU
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-amber-400">
+                    Elegí el tamaño de tu auto arriba
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
