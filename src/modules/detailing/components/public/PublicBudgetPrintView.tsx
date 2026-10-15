@@ -166,8 +166,41 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
                     </td>
                   </tr>
                 ))}
+
+                {request.selected_products && request.selected_products.length > 0 && (
+                  <>
+                    <tr className="bg-neutral-100/70 border-t border-neutral-300">
+                      <td colSpan={3} className="py-2 px-4 font-bold text-[10px] uppercase text-neutral-700 tracking-wider">
+                        Productos de Mantenimiento Sumados
+                      </td>
+                    </tr>
+                    {request.selected_products.map((prod, idx) => (
+                      <tr key={`prod-${idx}`} className="bg-white">
+                        <td className="py-2.5 px-4 font-semibold text-neutral-900">
+                          {prod.productName}
+                        </td>
+                        <td className="py-2.5 px-3 text-center text-neutral-500 text-[11px]">
+                          Para cuidado en casa
+                        </td>
+                        <td className="py-2.5 px-4 text-right font-mono font-semibold text-neutral-800">
+                          $ {prod.price.toLocaleString('es-UY')}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                )}
               </tbody>
               <tfoot className="bg-[#F4F4F3] border-t-2 border-neutral-300">
+                {request.applied_discount && request.applied_discount.discount_amount > 0 && (
+                  <tr>
+                    <td colSpan={2} className="py-2 px-4 font-semibold text-xs text-emerald-700 text-right">
+                      {request.applied_discount.discount_name} {request.applied_discount.coupon_code ? `(${request.applied_discount.coupon_code})` : ''}:
+                    </td>
+                    <td className="py-2 px-4 font-mono font-bold text-xs text-emerald-700 text-right">
+                      -$ {request.applied_discount.discount_amount.toLocaleString('es-UY')}
+                    </td>
+                  </tr>
+                )}
                 <tr>
                   <td colSpan={2} className="py-3 px-4 font-bold text-sm text-neutral-900 text-right">
                     TOTAL ESTIMADO:
@@ -179,6 +212,21 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
               </tfoot>
             </table>
           </div>
+
+          {request.next_service_coupon_code && (
+            <div className="mt-3 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#0066FF]" />
+                <div>
+                  <span className="font-bold text-neutral-900 block">¡Cupón regalo para tu próximo servicio o para un amigo!</span>
+                  <span className="text-[11px] text-neutral-600">Presentá este cupón en el taller para obtener un 10% de descuento.</span>
+                </div>
+              </div>
+              <span className="font-mono font-black text-sm bg-white px-3 py-1 rounded-lg border border-blue-300 text-[#0066FF]">
+                {request.next_service_coupon_code}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Condiciones del Taller */}

@@ -355,6 +355,19 @@ export interface DetailingWebRequest {
   created_at: string;
   converted_to_quote_id?: string;
   notes?: string;
+  selected_products?: Array<{
+    productId: string;
+    productName: string;
+    price: number;
+  }>;
+  applied_discount?: {
+    discount_name: string;
+    discount_amount: number;
+    coupon_code?: string;
+  };
+  preferred_time_slot?: 'manana' | 'tarde' | 'indiferente';
+  referral_code?: string;
+  next_service_coupon_code?: string;
 }
 
 export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed' | string;
