@@ -415,17 +415,17 @@ export const DetailingWebBudgetSection: React.FC = () => {
             </div>
             <div className="bg-white p-3 rounded-2xl border border-[#E5E5E3] shadow-xs">
               <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Con video</span>
-              <p className="text-lg sm:text-xl font-bold font-mono text-blue-600 mt-0.5">
+              <p className="text-lg sm:text-xl font-bold font-mono text-violet-600 mt-0.5">
                 {detailingTariffs.filter((t) => Boolean(t.video_url && t.video_url.trim())).length}
               </p>
-              <span className="text-[10px] text-[#6B6B6B] block">multimedia</span>
+              <span className="text-[10px] text-violet-600 block">multimedia</span>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-[#E5E5E3] shadow-xs col-span-2 sm:col-span-1">
               <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Destacados</span>
-              <p className="text-lg sm:text-xl font-bold font-mono text-amber-600 mt-0.5">
+              <p className="text-lg sm:text-xl font-bold font-mono text-[#D7141A] mt-0.5">
                 {detailingTariffs.filter((t) => Boolean(t.is_featured)).length}
               </p>
-              <span className="text-[10px] text-amber-600 block">con insignia</span>
+              <span className="text-[10px] text-[#D7141A] block">con insignia</span>
             </div>
           </div>
 
@@ -445,8 +445,10 @@ export const DetailingWebBudgetSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setServiceFilter('all')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                  serviceFilter === 'all' ? 'bg-[#161616] text-white' : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616]'
+                className={`px-3 py-2 rounded-xl font-bold transition-colors cursor-pointer ${
+                  serviceFilter === 'all'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
                 Todos ({detailingTariffs.length})
@@ -454,8 +456,10 @@ export const DetailingWebBudgetSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setServiceFilter('active')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                  serviceFilter === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616]'
+                className={`px-3 py-2 rounded-xl font-bold transition-colors cursor-pointer ${
+                  serviceFilter === 'active'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
                 Activos ({detailingTariffs.filter((t) => t.isActive !== false).length})
@@ -463,8 +467,10 @@ export const DetailingWebBudgetSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setServiceFilter('paused')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                  serviceFilter === 'paused' ? 'bg-gray-200 text-gray-700' : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616]'
+                className={`px-3 py-2 rounded-xl font-bold transition-colors cursor-pointer ${
+                  serviceFilter === 'paused'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
                 Pausados ({detailingTariffs.filter((t) => t.isActive === false).length})
@@ -472,8 +478,10 @@ export const DetailingWebBudgetSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setServiceFilter('featured')}
-                className={`px-2.5 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
-                  serviceFilter === 'featured' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616]'
+                className={`px-3 py-2 rounded-xl font-bold transition-colors cursor-pointer ${
+                  serviceFilter === 'featured'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
                 Destacados
@@ -502,13 +510,13 @@ export const DetailingWebBudgetSection: React.FC = () => {
                           {tariff.category || 'Interior'}
                         </span>
                         {tariff.badge && (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-[#D7141A] border border-red-200">
                             {tariff.badge}
                           </span>
                         )}
                         {tariff.is_featured && (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> Destacado
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-[#D7141A] border border-red-200 flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-[#D7141A] text-[#D7141A]" /> Destacado
                           </span>
                         )}
                         <span className="text-[10px] text-[#6B6B6B] font-mono">
@@ -550,7 +558,7 @@ export const DetailingWebBudgetSection: React.FC = () => {
                     {/* Indicadores Multimedia */}
                     <div className="flex items-center gap-2 text-[11px] text-[#6B6B6B]">
                       {hasVideo ? (
-                        <span className="text-blue-600 flex items-center gap-1 font-medium">
+                        <span className="text-violet-600 flex items-center gap-1 font-medium">
                           <Video className="w-3.5 h-3.5" /> {tariff.is_video_uploaded ? 'Video subido' : 'Video embebido'}
                         </span>
                       ) : (
@@ -676,7 +684,7 @@ export const DetailingWebBudgetSection: React.FC = () => {
             {packages.map((pkg) => (
               <div key={pkg.id} className="bg-white border border-[#E5E5E3] rounded-2xl p-4 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-red-50 text-[#D7141A] border border-red-200">
                     {pkg.badge || 'Combo Especial'}
                   </span>
                   <span className={`text-[10px] font-semibold ${pkg.is_active ? 'text-emerald-600' : 'text-[#6B6B6B]'}`}>
@@ -1041,8 +1049,8 @@ export const DetailingWebBudgetSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] text-xs text-[#161616] flex items-start gap-2.5">
+              <Info className="w-4 h-4 text-[#D7141A] shrink-0 mt-0.5" />
               <span>
                 <strong>Sincronización Inteligente:</strong> Los días que ya tengan trabajos agendados en la pestaña "Calendario" de DetailVlak se descontarán automáticamente del cupo disponible para los clientes en la web.
               </span>

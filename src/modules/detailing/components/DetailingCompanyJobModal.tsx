@@ -394,10 +394,10 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in">
-      <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-[#E5E5E3] my-auto max-h-[94vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-hidden animate-fade-in">
+      <div className="bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[94vh] p-4 sm:p-6 shadow-2xl border border-[#E5E5E3] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E3]">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E5E5E3] shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-[#D7141A]">
               <Building2 className="w-4 h-4" />
@@ -854,7 +854,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         </div>
 
         {/* Footer con Resumen y Botones de Acción */}
-        <div className="pt-3 border-t border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+        <div className="shrink-0 pt-3.5 sm:pt-4 border-t border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white sticky bottom-0 shadow-xs">
           <div className="flex items-baseline gap-2">
             <span className="text-xs text-[#6B6B6B]">Total del Trabajo:</span>
             <span className="text-xl sm:text-2xl font-black font-mono text-[#161616]">

@@ -31,7 +31,8 @@ import {
   ChevronDown,
   ChevronUp,
   Send,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 import {
   DetailingWebRequest,
@@ -311,7 +312,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                 </span>
               )}
               {incompleteCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3]">
                   {incompleteCount} para recuperar
                 </span>
               )}
@@ -322,15 +323,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Toggle de Vista */}
-            <div className="bg-[#F5F5F4] p-1 rounded-xl border border-[#E5E5E3] flex items-center gap-1 text-xs">
+            {/* Toggle de Vista con estilo de chips de pestañas del hub */}
+            <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
               <button
                 type="button"
                 onClick={() => setActiveMainView('solicitudes')}
-                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
                   activeMainView === 'solicitudes'
                     ? 'bg-[#161616] text-white shadow-xs'
-                    : 'text-[#6B6B6B] hover:text-[#161616]'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
                 <Inbox className="w-3.5 h-3.5" />
@@ -339,10 +340,10 @@ export const DetailingWebRequestsSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveMainView('metricas')}
-                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
                   activeMainView === 'metricas'
                     ? 'bg-[#161616] text-white shadow-xs'
-                    : 'text-[#6B6B6B] hover:text-[#161616]'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -362,22 +363,22 @@ export const DetailingWebRequestsSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Badges / Tarjetas de Resumen en el formato de Trabajos del mes */}
+        {/* Tarjetas de Resumen en el formato de Trabajos del mes (Siempre blancas) */}
         <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5 pt-3 border-t border-[#E5E5E3]">
           <div
             onClick={() => {
               setActiveMainView('solicitudes');
               setStatusFilter('all');
             }}
-            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+            className={`bg-white p-3 rounded-2xl border transition-all cursor-pointer shadow-xs ${
               statusFilter === 'all' && activeMainView === 'solicitudes'
-                ? 'bg-[#161616] text-white border-[#161616]'
-                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
+                ? 'border-[#161616] ring-1 ring-[#161616]'
+                : 'border-[#E5E5E3] hover:border-gray-400'
             }`}
           >
-            <span className={`text-[10px] uppercase font-bold block ${statusFilter === 'all' && activeMainView === 'solicitudes' ? 'text-neutral-400' : 'text-[#6B6B6B]'}`}>Total</span>
-            <span className="text-lg font-bold font-mono">{totalCount}</span>
-            <span className={`text-[10px] block ${statusFilter === 'all' && activeMainView === 'solicitudes' ? 'text-neutral-400' : 'text-[#6B6B6B]'}`}>solicitudes</span>
+            <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Total solicitudes</span>
+            <p className="text-lg sm:text-xl font-bold font-mono text-[#161616] mt-0.5">{totalCount}</p>
+            <span className="text-[10px] text-[#6B6B6B] block">en bandeja</span>
           </div>
 
           <div
@@ -385,17 +386,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('nueva');
             }}
-            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+            className={`bg-white p-3 rounded-2xl border transition-all cursor-pointer shadow-xs ${
               statusFilter === 'nueva' && activeMainView === 'solicitudes'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
+                ? 'border-[#161616] ring-1 ring-[#161616]'
+                : 'border-[#E5E5E3] hover:border-gray-400'
             }`}
           >
-            <span className={`text-[10px] uppercase font-bold block flex items-center gap-1 ${statusFilter === 'nueva' && activeMainView === 'solicitudes' ? 'text-blue-100' : 'text-blue-600'}`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600" /> Nuevas
-            </span>
-            <span className={`text-lg font-bold font-mono ${statusFilter === 'nueva' && activeMainView === 'solicitudes' ? 'text-white' : 'text-blue-600'}`}>{newCount}</span>
-            <span className={`text-[10px] block ${statusFilter === 'nueva' && activeMainView === 'solicitudes' ? 'text-blue-100' : 'text-[#6B6B6B]'}`}>sin contactar</span>
+            <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Nuevas</span>
+            <p className="text-lg sm:text-xl font-bold font-mono text-[#D7141A] mt-0.5">{newCount}</p>
+            <span className="text-[10px] text-[#D7141A] block">sin contactar</span>
           </div>
 
           <div
@@ -403,17 +402,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('incompleta');
             }}
-            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+            className={`bg-white p-3 rounded-2xl border transition-all cursor-pointer shadow-xs ${
               statusFilter === 'incompleta' && activeMainView === 'solicitudes'
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
+                ? 'border-[#161616] ring-1 ring-[#161616]'
+                : 'border-[#E5E5E3] hover:border-gray-400'
             }`}
           >
-            <span className={`text-[10px] uppercase font-bold block flex items-center gap-1 ${statusFilter === 'incompleta' && activeMainView === 'solicitudes' ? 'text-amber-100' : 'text-amber-600'}`}>
-              <AlertTriangle className="w-3 h-3" /> Incompletas
-            </span>
-            <span className={`text-lg font-bold font-mono ${statusFilter === 'incompleta' && activeMainView === 'solicitudes' ? 'text-white' : 'text-amber-600'}`}>{incompleteCount}</span>
-            <span className={`text-[10px] block ${statusFilter === 'incompleta' && activeMainView === 'solicitudes' ? 'text-amber-100' : 'text-[#6B6B6B]'}`}>recuperables</span>
+            <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Incompletas</span>
+            <p className="text-lg sm:text-xl font-bold font-mono text-[#6B6B6B] mt-0.5">{incompleteCount}</p>
+            <span className="text-[10px] text-[#6B6B6B] block">recuperables</span>
           </div>
 
           <div
@@ -421,15 +418,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('contactado');
             }}
-            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+            className={`bg-white p-3 rounded-2xl border transition-all cursor-pointer shadow-xs ${
               statusFilter === 'contactado' && activeMainView === 'solicitudes'
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
+                ? 'border-[#161616] ring-1 ring-[#161616]'
+                : 'border-[#E5E5E3] hover:border-gray-400'
             }`}
           >
-            <span className={`text-[10px] uppercase font-bold block ${statusFilter === 'contactado' && activeMainView === 'solicitudes' ? 'text-indigo-100' : 'text-indigo-600'}`}>Contactadas</span>
-            <span className={`text-lg font-bold font-mono ${statusFilter === 'contactado' && activeMainView === 'solicitudes' ? 'text-white' : 'text-indigo-600'}`}>{contactedCount}</span>
-            <span className={`text-[10px] block ${statusFilter === 'contactado' && activeMainView === 'solicitudes' ? 'text-indigo-100' : 'text-[#6B6B6B]'}`}>en conversación</span>
+            <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Contactadas</span>
+            <p className="text-lg sm:text-xl font-bold font-mono text-[#161616] mt-0.5">{contactedCount}</p>
+            <span className="text-[10px] text-[#6B6B6B] block">en conversación</span>
           </div>
 
           <div
@@ -437,15 +434,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setStatusFilter('confirmado');
             }}
-            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+            className={`bg-white p-3 rounded-2xl border transition-all cursor-pointer shadow-xs ${
               statusFilter === 'confirmado' && activeMainView === 'solicitudes'
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
+                ? 'border-[#161616] ring-1 ring-[#161616]'
+                : 'border-[#E5E5E3] hover:border-gray-400'
             }`}
           >
-            <span className={`text-[10px] uppercase font-bold block ${statusFilter === 'confirmado' && activeMainView === 'solicitudes' ? 'text-emerald-100' : 'text-emerald-600'}`}>Confirmadas</span>
-            <span className={`text-lg font-bold font-mono ${statusFilter === 'confirmado' && activeMainView === 'solicitudes' ? 'text-white' : 'text-emerald-600'}`}>{confirmedCount}</span>
-            <span className={`text-[10px] block ${statusFilter === 'confirmado' && activeMainView === 'solicitudes' ? 'text-emerald-100' : 'text-[#6B6B6B]'}`}>pasadas a taller</span>
+            <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">Confirmadas</span>
+            <p className="text-lg sm:text-xl font-bold font-mono text-emerald-600 mt-0.5">{confirmedCount}</p>
+            <span className="text-[10px] text-emerald-600 block">agendadas</span>
           </div>
 
           <div
@@ -453,17 +450,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
               setActiveMainView('solicitudes');
               setOriginFilter(originFilter === 'ads' ? 'all' : 'ads');
             }}
-            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+            className={`bg-white p-3 rounded-2xl border transition-all cursor-pointer shadow-xs ${
               originFilter === 'ads' && activeMainView === 'solicitudes'
-                ? 'bg-purple-600 text-white border-purple-600'
-                : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
+                ? 'border-[#161616] ring-1 ring-[#161616]'
+                : 'border-[#E5E5E3] hover:border-gray-400'
             }`}
           >
-            <span className={`text-[10px] uppercase font-bold block flex items-center gap-1 ${originFilter === 'ads' && activeMainView === 'solicitudes' ? 'text-purple-100' : 'text-purple-600'}`}>
-              <Megaphone className="w-3 h-3" /> De Anuncios
-            </span>
-            <span className={`text-lg font-bold font-mono ${originFilter === 'ads' && activeMainView === 'solicitudes' ? 'text-white' : 'text-purple-600'}`}>{adsCount}</span>
-            <span className={`text-[10px] block ${originFilter === 'ads' && activeMainView === 'solicitudes' ? 'text-purple-100' : 'text-[#6B6B6B]'}`}>comisión 12,5%</span>
+            <span className="text-[10px] sm:text-xs text-[#6B6B6B] block">De Anuncios</span>
+            <p className="text-lg sm:text-xl font-bold font-mono text-violet-600 mt-0.5">{adsCount}</p>
+            <span className="text-[10px] text-violet-600 block">comisión 12,5%</span>
           </div>
         </div>
       </div>
@@ -476,51 +471,65 @@ export const DetailingWebRequestsSection: React.FC = () => {
           {/* Filtros y Búsqueda */}
           <div className="bg-white border border-[#E5E5E3] p-3 rounded-2xl shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9A9A9A]" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#9A9A9A]" />
               <input
                 type="text"
                 placeholder="Buscar por cliente, teléfono, auto, matrícula o código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
+                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl pl-8 pr-3 py-2 text-xs text-[#161616] placeholder-[#9A9A9A] focus:outline-none focus:border-[#D7141A]"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs flex-wrap">
-              <span className="text-[11px] text-[#6B6B6B] font-medium hidden sm:inline">Origen:</span>
+            <div className="flex items-center gap-1.5 text-xs overflow-x-auto pb-1 sm:pb-0">
+              {/* Desplegable de Estado estilo Trabajos del Mes */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-2.5 py-2 text-xs text-[#161616] font-medium focus:border-[#D7141A] focus:outline-none shrink-0 cursor-pointer"
+              >
+                <option value="all">Estado: Todos</option>
+                <option value="nueva">Nuevas</option>
+                <option value="incompleta">Incompletas</option>
+                <option value="contactado">Contactadas</option>
+                <option value="confirmado">Confirmadas</option>
+                <option value="descartado">Descartadas</option>
+              </select>
+
+              {/* Chips de Origen con el estilo del hub (negro solo cuando está activo) */}
               <button
                 type="button"
                 onClick={() => setOriginFilter('all')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
                   originFilter === 'all'
-                    ? 'bg-[#161616] text-white font-bold'
-                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616]'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
-                Todos
+                Origen: Todos
               </button>
               <button
                 type="button"
                 onClick={() => setOriginFilter('ads')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 ${
                   originFilter === 'ads'
-                    ? 'bg-purple-600 text-white font-bold'
-                    : 'bg-[#F5F5F4] text-purple-700 hover:bg-purple-50'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
-                <Megaphone className="w-3 h-3" />
-                <span>Anuncios (12.5%)</span>
+                <Megaphone className="w-3.5 h-3.5 text-violet-600" />
+                <span>Anuncios (12,5%)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setOriginFilter('direct')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 ${
                   originFilter === 'direct'
-                    ? 'bg-emerald-600 text-white font-bold'
-                    : 'bg-[#F5F5F4] text-emerald-700 hover:bg-emerald-50'
+                    ? 'bg-[#161616] text-white shadow-xs'
+                    : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
                 }`}
               >
-                <Globe className="w-3 h-3" />
+                <Globe className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Directo (30%)</span>
               </button>
             </div>
@@ -554,9 +563,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                   <div
                     key={req.id}
                     className={`bg-white border rounded-2xl p-4 sm:p-5 transition-all shadow-xs space-y-4 ${
-                      isIncomplete
-                        ? 'border-l-4 border-l-amber-500 border-[#E5E5E3]'
-                        : req.status === 'nueva'
+                      req.status === 'nueva'
                         ? 'border-l-4 border-l-[#D7141A] border-[#E5E5E3]'
                         : req.status === 'confirmado'
                         ? 'border-l-4 border-l-emerald-600 border-[#E5E5E3]'
@@ -565,13 +572,15 @@ export const DetailingWebRequestsSection: React.FC = () => {
                         : 'border-[#E5E5E3]'
                     }`}
                   >
-                    {/* Alerta si es incompleta (Recupero) */}
+                    {/* Aviso si es incompleta (Recupero) estilo tarjeta blanca con borde e insignia */}
                     {isIncomplete && (
-                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-xs text-amber-900">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span className="font-bold">
-                            Lead Incompleto: El cliente cargó sus datos pero no tocó "Confirmar por WhatsApp".
+                      <div className="p-3 rounded-xl bg-white border border-[#E5E5E3] flex items-center justify-between gap-3 text-xs text-[#161616] shadow-xs">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F5F5F4] text-[#6B6B6B] border border-[#E5E5E3] shrink-0">
+                            LEAD INCOMPLETO
+                          </span>
+                          <span className="text-[#6B6B6B] font-medium">
+                            El cliente cargó sus datos pero no tocó "Confirmar por WhatsApp".
                           </span>
                         </div>
                         <button
@@ -580,9 +589,10 @@ export const DetailingWebRequestsSection: React.FC = () => {
                             setTemplateModalRequest(req);
                             setSelectedTemplateKey('recupero');
                           }}
-                          className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] shrink-0 cursor-pointer shadow-xs"
+                          className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] font-bold text-xs shrink-0 cursor-pointer shadow-xs flex items-center gap-1.5 transition-colors"
                         >
-                          Recuperar Lead
+                          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Recuperar Lead</span>
                         </button>
                       </div>
                     )}
@@ -616,36 +626,26 @@ export const DetailingWebRequestsSection: React.FC = () => {
                         )}
 
                         {isConverted && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <Check className="w-3 h-3" /> Trabajo Agendado
                           </span>
                         )}
                       </div>
 
-                      {/* Selector de Estado */}
+                      {/* Selector de Estado estilo Trabajos del mes */}
                       <div className="flex items-center gap-2 self-start sm:self-auto">
-                        <span className="text-[11px] text-[#6B6B6B]">Estado:</span>
+                        <span className="text-[11px] text-[#6B6B6B] font-medium">Estado:</span>
                         <select
                           value={req.status}
                           onChange={(e) =>
                             handleStatusChange(req.id, e.target.value as DetailingWebRequestStatus)
                           }
-                          className={`text-xs font-bold px-2.5 py-1 rounded-lg border focus:outline-none cursor-pointer ${
-                            req.status === 'incompleta'
-                              ? 'bg-amber-100 text-amber-800 border-amber-300 font-extrabold'
-                              : req.status === 'nueva'
-                              ? 'bg-blue-100 text-blue-800 border-blue-300'
-                              : req.status === 'contactado'
-                              ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
-                              : req.status === 'confirmado'
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : 'bg-[#F5F5F4] text-[#6B6B6B] border-[#E5E5E3]'
-                          }`}
+                          className="bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-2.5 py-1.5 text-xs text-[#161616] font-medium focus:border-[#D7141A] focus:outline-none cursor-pointer"
                         >
-                          <option value="incompleta">Incompleta (Recupero)</option>
                           <option value="nueva">Nueva</option>
                           <option value="contactado">Contactado</option>
                           <option value="confirmado">Confirmado</option>
+                          <option value="incompleta">Incompleta (Recupero)</option>
                           <option value="descartado">Descartado</option>
                         </select>
                       </div>
@@ -1160,11 +1160,11 @@ export const DetailingWebRequestsSection: React.FC = () => {
       {/* MODAL: CHAT DE WHATSAPP CON PLANTILLAS                                */}
       {/* ===================================================================== */}
       {templateModalRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg p-5 sm:p-6 text-[#161616] shadow-xl space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
+        <div className="fixed inset-0 z-50 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-hidden animate-fade-in">
+          <div className="bg-white border border-[#E5E5E3] w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl text-[#161616] shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4] shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                   <MessageCircle className="w-5 h-5" />
                 </div>
                 <div>
@@ -1176,9 +1176,16 @@ export const DetailingWebRequestsSection: React.FC = () => {
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setTemplateModalRequest(null)}
+                className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="p-4 sm:p-6 space-y-3 overflow-y-auto flex-1 text-xs">
               <span className="font-bold text-[#161616] block">Elegí la plantilla de mensaje:</span>
 
               <div className="space-y-2">
@@ -1213,14 +1220,14 @@ export const DetailingWebRequestsSection: React.FC = () => {
                     onClick={() => setSelectedTemplateKey(tpl.key)}
                     className={`p-3 rounded-xl border cursor-pointer transition-all ${
                       selectedTemplateKey === tpl.key
-                        ? 'bg-emerald-50 border-emerald-500 text-[#161616]'
-                        : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#161616] hover:bg-gray-200'
+                        ? 'bg-[#F5F5F4] border-[#161616] ring-1 ring-[#161616] text-[#161616]'
+                        : 'bg-white border-[#E5E5E3] text-[#161616] hover:bg-[#F5F5F4]'
                     }`}
                   >
                     <div className="font-bold text-xs flex items-center justify-between">
                       <span>{tpl.title}</span>
                       {selectedTemplateKey === tpl.key && (
-                        <Check className="w-4 h-4 text-emerald-600" />
+                        <Check className="w-4 h-4 text-[#D7141A]" />
                       )}
                     </div>
                     <p className="text-[11px] text-[#6B6B6B] mt-1 line-clamp-2">
@@ -1231,21 +1238,22 @@ export const DetailingWebRequestsSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E3]">
+            {/* Footer con botón fijo */}
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-[#E5E5E3] bg-white flex items-center justify-end gap-2.5 sticky bottom-0 shadow-xs">
               <button
                 type="button"
                 onClick={() => setTemplateModalRequest(null)}
-                className="px-4 py-2 rounded-xl bg-[#F5F5F4] hover:bg-[#E5E5E3] text-[#161616] text-xs font-semibold cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] text-xs font-semibold cursor-pointer shadow-xs"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={() => handleSendWhatsAppTemplate(templateModalRequest, selectedTemplateKey)}
-                className="px-5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 transition-all"
               >
                 <Send className="w-4 h-4" />
-                <span>Abrir WhatsApp con esta plantilla</span>
+                <span>Abrir WhatsApp</span>
               </button>
             </div>
           </div>
@@ -1253,14 +1261,14 @@ export const DetailingWebRequestsSection: React.FC = () => {
       )}
 
       {/* ===================================================================== */}
-      {/* MODAL: PASAR A TRABAJO EN CALENDARIO                                  */}
+      {/* MODAL: PASAR A TRABAJO EN CALENDARIO (Pantalla completa en celular)   */}
       {/* ===================================================================== */}
       {convertingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg p-5 sm:p-6 text-[#161616] shadow-xl space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-[#E5E5E3] pb-3">
+        <div className="fixed inset-0 z-50 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs overflow-hidden animate-fade-in">
+          <div className="bg-white border border-[#E5E5E3] w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl text-[#161616] shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4] shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-red-100 text-[#D7141A] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-red-50 text-[#D7141A] flex items-center justify-center">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
@@ -1270,9 +1278,16 @@ export const DetailingWebRequestsSection: React.FC = () => {
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setConvertingRequest(null)}
+                className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
               {/* Resumen */}
               <div className="p-3.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-1.5">
                 <div className="flex items-center justify-between font-bold text-[#161616]">
@@ -1281,7 +1296,7 @@ export const DetailingWebRequestsSection: React.FC = () => {
                 </div>
                 <div className="text-[#6B6B6B] text-[11px]">
                   Origen:{' '}
-                  <strong className={convertingRequest.is_paid_ad ? 'text-purple-700' : 'text-emerald-700'}>
+                  <strong className={convertingRequest.is_paid_ad ? 'text-violet-700' : 'text-emerald-700'}>
                     {convertingRequest.is_paid_ad ? 'Anuncios pagos (12,5% comisión)' : 'Directo / Web (30% comisión)'}
                   </strong>
                 </div>
@@ -1341,19 +1356,19 @@ export const DetailingWebRequestsSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Botones */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E5E5E3]">
+            {/* Botones - Fijos abajo */}
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-[#E5E5E3] bg-white flex items-center justify-end gap-2.5 sticky bottom-0 shadow-xs">
               <button
                 type="button"
                 onClick={() => setConvertingRequest(null)}
-                className="px-4 py-2 rounded-xl bg-[#F5F5F4] hover:bg-[#E5E5E3] text-[#161616] text-xs font-semibold cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] text-xs font-semibold cursor-pointer shadow-xs"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleConfirmConvertToJob}
-                className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#D7141A] hover:bg-[#b01015] text-white text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 transition-all"
               >
                 <Check className="w-4 h-4" />
                 <span>Confirmar y agendar en calendario</span>

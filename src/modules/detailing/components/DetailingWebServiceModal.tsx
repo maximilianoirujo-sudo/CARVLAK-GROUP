@@ -416,7 +416,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-[#161616] flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 text-amber-500" />
+                    <Star className="w-3.5 h-3.5 text-[#D7141A]" />
                     <span>Etiqueta Opcional (Badge visual)</span>
                   </label>
                   <select
@@ -666,8 +666,8 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                 )}
 
                 {videoWarning && (
-                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                  <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-[#D7141A] text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-[#D7141A]" />
                     <span>{videoWarning}</span>
                   </div>
                 )}
@@ -1048,13 +1048,13 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                   onClick={() => setIsFeatured(!isFeatured)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                     isFeatured
-                      ? 'bg-amber-50 border-amber-300 text-amber-900'
+                      ? 'bg-red-50/50 border-red-300 text-[#161616]'
                       : 'bg-[#F5F5F4] border-[#E5E5E3] text-[#6B6B6B]'
                   }`}
                 >
                   <div>
                     <span className="font-semibold text-xs block text-[#161616] flex items-center gap-1.5">
-                      <Star className={`w-3.5 h-3.5 ${isFeatured ? 'text-amber-500 fill-amber-500' : 'text-[#6B6B6B]'}`} />
+                      <Star className={`w-3.5 h-3.5 ${isFeatured ? 'text-[#D7141A] fill-[#D7141A]' : 'text-[#6B6B6B]'}`} />
                       <span>Marcar como Destacado</span>
                     </span>
                     <span className="text-[11px] text-[#6B6B6B]">
@@ -1063,7 +1063,7 @@ export const DetailingWebServiceModal: React.FC<DetailingWebServiceModalProps> =
                   </div>
                   <div
                     className={`w-5 h-5 rounded-md flex items-center justify-center ${
-                      isFeatured ? 'bg-amber-600 text-white' : 'bg-gray-300 text-gray-500'
+                      isFeatured ? 'bg-[#D7141A] text-white' : 'bg-gray-300 text-gray-500'
                     }`}
                   >
                     {isFeatured ? <Check className="w-3.5 h-3.5" /> : null}

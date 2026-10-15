@@ -540,10 +540,10 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto animate-fade-in">
-      <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl my-auto">
+    <div className="fixed inset-0 z-50 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-xs overflow-hidden animate-fade-in">
+      <div className="bg-white border border-[#E5E5E3] rounded-none sm:rounded-2xl w-full h-full sm:h-auto sm:max-w-lg sm:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4]">
+        <div className="p-4 border-b border-[#E5E5E3] flex items-center justify-between bg-[#F5F5F4] shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center text-[#D7141A]">
               <Sparkles className="w-4 h-4" />
@@ -564,7 +564,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 text-xs">
           {/* 1. CLIENTE */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
@@ -1252,7 +1252,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-[#E5E5E3] bg-[#F5F5F4] flex items-center justify-between gap-2">
+        <div className="shrink-0 p-3.5 sm:p-4 border-t border-[#E5E5E3] bg-[#F5F5F4] flex items-center justify-between gap-2 sticky bottom-0">
           <Button variant="secondary" size="md" type="button" onClick={onClose} disabled={isSubmitting}>
             Cancelar
           </Button>
