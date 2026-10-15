@@ -192,6 +192,7 @@ export interface DataContextType {
   detailingWebRequests: DetailingWebRequest[];
   addDetailingWebRequest: (request: DetailingWebRequest) => void;
   updateDetailingWebRequestStatus: (id: string, status: DetailingWebRequestStatus, notes?: string) => void;
+  addDetailingWebRequestNote: (id: string, text: string, author?: string) => void;
   deleteDetailingWebRequest: (id: string) => void;
   convertWebRequestToQuote: (requestId: string, appointmentDetails?: { date: string; assigned_to?: string; work_bay_id?: string }) => DetailingQuote | null;
 
@@ -1322,10 +1323,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateDetailingWebRequestStatus = (id: string, status: DetailingWebRequestStatus, notes?: string) => {
     setDetailingWebRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status, ...(notes !== undefined ? { notes } : {}) } : r))
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const historyItem = {
+          status,
+          changed_at: new Date().toISOString(),
+          changed_by: profile?.full_name || 'Sistema',
+          note: notes
+        };
+        const updatedHistory = [...(r.status_history || []), historyItem];
+        return {
+          ...r,
+          status,
+          status_history: updatedHistory,
+          ...(notes !== undefined ? { notes } : {})
+        };
+      })
     );
     logActivity('cotizacion_detailing', id, 'status_change', { new_status: status });
     syncSupabase('detailing_web_requests', 'update', { status, ...(notes !== undefined ? { notes } : {}), updated_at: new Date().toISOString() }, 'id', id);
+  };
+
+  const addDetailingWebRequestNote = (id: string, text: string, author?: string) => {
+    if (!text.trim()) return;
+    setDetailingWebRequests((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        const newNote = {
+          id: `note-${crypto.randomUUID()}`,
+          text: text.trim(),
+          created_at: new Date().toISOString(),
+          author: author || profile?.full_name || 'Administración'
+        };
+        const updatedNotes = [...(r.internal_notes || []), newNote];
+        return {
+          ...r,
+          internal_notes: updatedNotes
+        };
+      })
+    );
+    syncSupabase('detailing_web_requests', 'update', { updated_at: new Date().toISOString() }, 'id', id);
   };
 
   const deleteDetailingWebRequest = (id: string) => {
@@ -4613,6 +4650,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     detailingWebRequests,
     addDetailingWebRequest,
     updateDetailingWebRequestStatus,
+    addDetailingWebRequestNote,
     deleteDetailingWebRequest,
     convertWebRequestToQuote,
     whatsappTemplates,

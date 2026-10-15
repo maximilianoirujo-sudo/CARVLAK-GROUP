@@ -733,10 +733,19 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
         total_amount: finalTotal,
         origin,
         is_paid_ad: isPaidAd,
-        status: 'nueva',
+        status: 'incompleta',
+        is_completed: false,
         created_at: nowIso,
         referral_code: refCode,
-        next_service_coupon_code: nextServiceCouponCode
+        next_service_coupon_code: nextServiceCouponCode,
+        status_history: [
+          {
+            status: 'incompleta',
+            changed_at: nowIso,
+            changed_by: 'Cliente (Web)',
+            note: 'Presupuesto armado en la web (esperando confirmación por WhatsApp)'
+          }
+        ]
       };
 
       // 1. Guardar localmente
@@ -794,6 +803,40 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   // ---------------------------------------------------------------------------
   const handleConfirmWhatsApp = () => {
     if (!createdRequest) return;
+
+    // Promover estado a 'nueva' y marcar como completada
+    try {
+      const saved = localStorage.getItem('carvlak_detailing_web_requests');
+      if (saved) {
+        const list: DetailingWebRequest[] = JSON.parse(saved);
+        const updatedList = list.map((r) =>
+          r.id === createdRequest.id
+            ? {
+                ...r,
+                status: 'nueva' as const,
+                is_completed: true,
+                status_history: [
+                  ...(r.status_history || []),
+                  {
+                    status: 'nueva' as const,
+                    changed_at: new Date().toISOString(),
+                    changed_by: 'Cliente (WhatsApp)',
+                    note: 'Cliente confirmó y abrió WhatsApp'
+                  }
+                ]
+              }
+            : r
+        );
+        localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(updatedList));
+        fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'detailing_web_requests', data: updatedList })
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.error(e);
+    }
 
     const servicesListText = createdRequest.selected_services
       .map((s) => `• ${s.serviceName}: $${s.price.toLocaleString('es-UY')}`)

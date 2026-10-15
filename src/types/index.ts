@@ -326,7 +326,7 @@ export interface DetailingWebBudgetConfig {
   settings: DetailingWebSettingsConfig;
 }
 
-export type DetailingWebRequestStatus = 'nueva' | 'contactado' | 'confirmado' | 'descartado';
+export type DetailingWebRequestStatus = 'nueva' | 'contactado' | 'confirmado' | 'descartado' | 'incompleta';
 
 export interface DetailingWebRequest {
   id: string;
@@ -368,6 +368,19 @@ export interface DetailingWebRequest {
   preferred_time_slot?: 'manana' | 'tarde' | 'indiferente';
   referral_code?: string;
   next_service_coupon_code?: string;
+  status_history?: Array<{
+    status: DetailingWebRequestStatus;
+    changed_at: string;
+    changed_by?: string;
+    note?: string;
+  }>;
+  internal_notes?: Array<{
+    id: string;
+    text: string;
+    created_at: string;
+    author: string;
+  }>;
+  is_completed?: boolean;
 }
 
 export type DetailingDiscountType = 'none' | 'combo_10' | 'special_15' | 'fixed' | string;
