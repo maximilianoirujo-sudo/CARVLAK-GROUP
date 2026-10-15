@@ -22,16 +22,16 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex flex-col items-center p-2 sm:p-6 print:p-0 print:static print:bg-white print:backdrop-blur-none">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex flex-col items-center p-2 sm:p-6 print:p-0 print:static print:bg-white print:backdrop-blur-none">
       {/* Botones de acción flotantes (ocultos al imprimir) */}
-      <div className="print:hidden w-full max-w-3xl mb-4 flex items-center justify-between bg-[#161616] border border-[#2D2D2D] p-3.5 rounded-2xl text-white shadow-xl">
+      <div className="print:hidden w-full max-w-3xl mb-4 flex items-center justify-between bg-white border border-neutral-200 p-3.5 rounded-2xl text-neutral-900 shadow-xl">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#0066FF]/20 text-[#3B82F6] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
             <span className="text-xs font-bold block">Presupuesto Estimado DetailVlak</span>
-            <span className="text-[11px] text-neutral-400">Código #{request.code}</span>
+            <span className="text-[11px] text-neutral-500">Código #{request.code}</span>
           </div>
         </div>
 
@@ -47,7 +47,7 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition-colors cursor-pointer"
+            className="p-2 text-neutral-400 hover:text-neutral-700 rounded-xl hover:bg-neutral-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -59,11 +59,14 @@ export const PublicBudgetPrintView: React.FC<PublicBudgetPrintViewProps> = ({
         {/* Encabezado */}
         <div className="flex items-start justify-between border-b border-neutral-200 pb-6 print:pb-4">
           <div className="space-y-1.5">
-            <img
-              src="/carvlak-logo-negro.png"
-              alt="DetailVlak CARVLAK"
-              className="h-10 w-auto object-contain"
-            />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-[#0066FF] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                DV
+              </div>
+              <span className="font-extrabold text-neutral-900 text-lg tracking-tight font-display">
+                DETAIL<span className="text-[#0066FF]">VLAK</span>
+              </span>
+            </div>
             <div className="text-xs font-bold tracking-wider text-neutral-800 uppercase pt-1">
               DetailVlak • Taller de Estética Automotriz
             </div>

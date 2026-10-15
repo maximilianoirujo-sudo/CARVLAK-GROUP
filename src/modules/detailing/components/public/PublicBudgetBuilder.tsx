@@ -351,25 +351,25 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
   return (
     <div
       ref={topRef}
-      className="min-h-screen bg-[#0D0D0D] text-white flex flex-col justify-between selection:bg-[#0066FF]/30 selection:text-white font-sans antialiased"
+      className="min-h-screen bg-white text-gray-900 flex flex-col justify-between selection:bg-[#0066FF]/20 selection:text-[#0066FF] font-sans antialiased"
     >
       {/* 1. Header con Marca DetailVlak */}
-      <header className="border-b border-[#222] bg-[#141414]/95 backdrop-blur-md sticky top-0 z-40 px-3.5 py-3 sm:px-4 sm:py-3.5">
+      <header className="border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-3.5 py-3 sm:px-4 sm:py-3.5 shadow-2xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#0044CC] flex items-center justify-center font-black text-white text-xs tracking-wider shadow-md shrink-0 border border-blue-400/30">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#0044CC] flex items-center justify-center font-black text-white text-xs tracking-wider shadow-sm shrink-0">
               DV
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-extrabold text-white text-sm sm:text-base tracking-tight font-display">
-                  DETAIL<span className="text-[#3B82F6]">VLAK</span>
+                <span className="font-extrabold text-gray-900 text-sm sm:text-base tracking-tight font-display">
+                  DETAIL<span className="text-[#0066FF]">VLAK</span>
                 </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#0066FF]/20 text-[#3B82F6] border border-[#0066FF]/30 tracking-wide uppercase">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-[#0066FF] border border-blue-200 tracking-wide uppercase">
                   Presupuestos
                 </span>
               </div>
-              <p className="text-[10px] text-neutral-400 truncate">Estética automotriz • Shangrilá</p>
+              <p className="text-[10px] text-gray-500 truncate">Estética automotriz • Shangrilá</p>
             </div>
           </div>
 
@@ -378,7 +378,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={onBackToApp}
-                className="px-2.5 py-1.5 rounded-xl bg-[#202020] hover:bg-[#282828] text-neutral-300 hover:text-white border border-[#333] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 border border-gray-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                 title="Volver al Hub"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -397,51 +397,51 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
         {currentStep === 'hero' && (
           <div className="py-8 sm:py-14 text-center space-y-8 animate-fade-in">
             {/* Badge superior */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#181818] border border-[#2D2D2D] text-xs text-neutral-300">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-xs text-gray-700 shadow-2xs">
               <Sparkles className="w-4 h-4 text-[#0066FF]" />
-              <span className="font-semibold text-white">DetailVlak Studio</span>
-              <span className="text-neutral-500">•</span>
-              <span className="text-neutral-400">Cotización transparente en vivo</span>
+              <span className="font-semibold text-gray-900">DetailVlak Studio</span>
+              <span className="text-gray-400">•</span>
+              <span className="text-gray-600">Cotización transparente en vivo</span>
             </div>
 
             {/* Frase Principal */}
             <div className="space-y-4 max-w-2xl mx-auto">
-              <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                Armá tu presupuesto a medida en <span className="text-[#3B82F6]">segundos</span>
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                Armá tu presupuesto a medida en <span className="text-[#0066FF]">segundos</span>
               </h1>
-              <p className="text-sm sm:text-base text-neutral-400 leading-relaxed max-w-xl mx-auto">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed max-w-xl mx-auto">
                 Elegí el tamaño de tu vehículo, mirá cómo trabajamos en videos time-lapse y seleccioná los tratamientos que querés realizarle.
               </p>
             </div>
 
             {/* Tarjetas de Beneficios */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left pt-2">
-              <div className="p-4 rounded-2xl bg-[#161616] border border-[#262626] space-y-1.5">
-                <div className="w-8 h-8 rounded-xl bg-[#0066FF]/20 text-[#3B82F6] flex items-center justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 max-w-2xl mx-auto text-left pt-2">
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all space-y-1.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#0066FF] flex items-center justify-center">
                   <Play className="w-4 h-4" />
                 </div>
-                <div className="text-xs font-bold text-white">Videos Time-Lapse</div>
-                <p className="text-[11px] text-neutral-400 leading-normal">
+                <div className="text-xs font-bold text-gray-900">Videos Time-Lapse</div>
+                <p className="text-[11px] text-gray-600 leading-normal">
                   Mirá el paso a paso real y los productos alemanes que aplicamos.
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#161616] border border-[#262626] space-y-1.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all space-y-1.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
-                <div className="text-xs font-bold text-white">Tratamientos Integrales</div>
-                <p className="text-[11px] text-neutral-400 leading-normal">
+                <div className="text-xs font-bold text-gray-900">Tratamientos Integrales</div>
+                <p className="text-[11px] text-gray-600 leading-normal">
                   Limpieza profunda a vapor de butacas y techo con desinfección total.
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#161616] border border-[#262626] space-y-1.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 hover:border-gray-300 transition-all space-y-1.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
                   <Clock className="w-4 h-4" />
                 </div>
-                <div className="text-xs font-bold text-white">Sin Sorpresas</div>
-                <p className="text-[11px] text-neutral-400 leading-normal">
+                <div className="text-xs font-bold text-gray-900">Sin Sorpresas</div>
+                <p className="text-[11px] text-gray-600 leading-normal">
                   Precios claros y confirmación directa con nosotros por WhatsApp.
                 </p>
               </div>
@@ -455,13 +455,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep('catalog');
                   scrollToTop();
                 }}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl shadow-[#0066FF]/30 cursor-pointer active:scale-98"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-base flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-500/25 cursor-pointer active:scale-98"
               >
                 <span>Armá tu presupuesto</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
 
-              <span className="text-[11px] text-neutral-500">
+              <span className="text-[11px] text-gray-500">
                 Totalmente gratuito • No requiere registro ni tarjeta
               </span>
             </div>
@@ -475,13 +475,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
           <div className="space-y-7 animate-fade-in">
             {/* Header del Catálogo */}
             <div id="size-selector-section" className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF]">
                 Paso 1 de 2
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {selectedCategory ? `Tamaño: ${selectedCategory}` : '1. Elegí el tamaño de tu vehículo'}
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-gray-500">
                 {selectedCategory
                   ? 'Podés cambiarlo en cualquier momento para ver los precios ajustados a tu vehículo.'
                   : 'Seleccioná el tamaño de tu auto para desbloquear los precios exactos y armar tu cotización.'}
@@ -489,8 +489,8 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
 
             {!selectedCategory && (
-              <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 text-xs text-blue-200 flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-[#3B82F6] shrink-0" />
+              <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-[#0066FF] shrink-0" />
                 <span>Primero tocá la categoría de tu vehículo abajo para ver los precios de los servicios.</span>
               </div>
             )}
@@ -541,31 +541,31 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   <div
                     key={cat.key}
                     onClick={() => setSelectedCategory(cat.key)}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-[#182338] border-[#0066FF] shadow-lg shadow-[#0066FF]/20 ring-1 ring-[#0066FF]'
-                        : 'bg-[#161616] border-[#262626] hover:border-[#383838]'
+                        ? 'bg-blue-50/70 border-[#0066FF] shadow-sm shadow-blue-500/10'
+                        : 'bg-gray-50 border-gray-200 hover:border-gray-300 hover:bg-gray-100/50'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                          isSelected ? 'bg-[#0066FF] text-white' : 'bg-[#222] text-neutral-400'
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                          isSelected ? 'bg-[#0066FF] text-white shadow-xs' : 'bg-white border border-gray-200 text-gray-600'
                         }`}
                       >
                         <IconComponent className="w-4 h-4" />
                       </div>
                       {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-[#0066FF] text-white flex items-center justify-center">
-                          <Check className="w-3 h-3" />
+                        <div className="w-5 h-5 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-xs">
+                          <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <span className="font-bold text-xs text-white block">{cat.label}</span>
-                      <span className="text-[10px] text-neutral-400 block">{cat.sub}</span>
-                      <span className="text-[9px] text-neutral-500 block truncate mt-1">
+                      <span className={`font-bold text-xs block ${isSelected ? 'text-[#0066FF]' : 'text-gray-900'}`}>{cat.label}</span>
+                      <span className="text-[10px] text-gray-500 block">{cat.sub}</span>
+                      <span className="text-[9px] text-gray-400 block truncate mt-1">
                         {cat.examples}
                       </span>
                     </div>
@@ -575,11 +575,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
 
             {/* Aviso de Regla de Taller (Interiores) */}
-            <div className="p-3.5 rounded-2xl bg-[#161616] border border-[#282828] flex items-start gap-3 text-xs text-neutral-300">
-              <Info className="w-4 h-4 text-[#3B82F6] shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex items-start gap-3 text-xs text-gray-700">
+              <Info className="w-4 h-4 text-[#0066FF] shrink-0 mt-0.5" />
               <div className="space-y-0.5 leading-relaxed">
-                <span className="font-bold text-white block">Regla de calidad DetailVlak:</span>
-                <p className="text-[11px] text-neutral-400">
+                <span className="font-bold text-gray-900 block">Regla de calidad DetailVlak:</span>
+                <p className="text-[11px] text-gray-600">
                   En interiores únicamente realizamos <strong>limpieza profunda integral</strong> (incluye inyección/extracción de todas las butacas, alfombras, baúl y cielo raso a vapor). No realizamos lavados sueltos ni superficiales.
                 </p>
               </div>
@@ -589,12 +589,12 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">Tratamientos Disponibles</h3>
-                  <p className="text-[11px] text-neutral-400">
+                  <h3 className="text-sm font-bold text-gray-900">Tratamientos Disponibles</h3>
+                  <p className="text-[11px] text-gray-500">
                     Tocá cualquier servicio para ver su video time-lapse y pasos detallados.
                   </p>
                 </div>
-                <span className="text-xs text-neutral-400 font-medium">
+                <span className="text-xs text-gray-500 font-medium">
                   {selectedServiceIds.length} seleccionados
                 </span>
               </div>
@@ -610,8 +610,8 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       key={tariff.id}
                       className={`rounded-2xl border transition-all overflow-hidden flex flex-col justify-between ${
                         isSelected
-                          ? 'bg-[#182030] border-[#0066FF] shadow-lg shadow-[#0066FF]/15 ring-1 ring-[#0066FF]'
-                          : 'bg-[#161616] border-[#262626] hover:border-[#383838]'
+                          ? 'bg-blue-50/30 border-[#0066FF] shadow-md shadow-blue-500/10 ring-1 ring-[#0066FF]'
+                          : 'bg-white border-gray-200 hover:border-gray-300 shadow-2xs'
                       }`}
                     >
                       {/* Cuerpo de la tarjeta */}
@@ -623,29 +623,29 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {tariff.is_featured && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                <Star className="w-3 h-3 fill-amber-400" /> Destacado
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" /> Destacado
                               </span>
                             )}
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono text-neutral-400 bg-[#222]">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono text-gray-600 bg-gray-100">
                               <Clock className="w-3 h-3" /> {tariff.durationHours || 3}h
                             </span>
                           </div>
 
                           {hasVideo && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold text-[#3B82F6] bg-[#0066FF]/15 border border-[#0066FF]/30">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold text-[#0066FF] bg-blue-50 border border-blue-200">
                               <Play className="w-3 h-3" /> Ver Time-Lapse
                             </span>
                           )}
                         </div>
 
-                        {/* Título y descripción */}
+                        {/* Título y descripción (muestra el nombre corto en la tarjeta) */}
                         <div className="space-y-1">
-                          <h4 className="font-bold text-white text-sm leading-snug">
-                            {tariff.name}
+                          <h4 className="font-bold text-gray-900 text-sm leading-snug">
+                            {tariff.shortName || tariff.name}
                           </h4>
                           {tariff.description && (
-                            <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
+                            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
                               {tariff.description}
                             </p>
                           )}
@@ -653,7 +653,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
                         {/* Pasos destacados preview */}
                         {tariff.included_steps && tariff.included_steps.length > 0 && (
-                          <div className="text-[11px] text-neutral-500 flex items-center gap-1.5">
+                          <div className="text-[11px] text-gray-500 flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF]" />
                             <span>{tariff.included_steps.length} pasos incluidos • Ver detalle</span>
                           </div>
@@ -661,17 +661,17 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       </div>
 
                       {/* Barra inferior de la tarjeta: Precio y Botón Agregar */}
-                      <div className="px-4 py-3 bg-[#1A1A1A] border-t border-[#262626] flex items-center justify-between gap-3">
+                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
                         <div>
-                          <span className="text-[10px] uppercase text-neutral-500 font-bold block">
+                          <span className="text-[10px] uppercase text-gray-400 font-bold block">
                             {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
                           </span>
                           {selectedCategory ? (
-                            <span className="text-base font-bold text-white font-mono">
-                              ${price.toLocaleString('es-UY')} <span className="text-[10px] text-neutral-400">UYU</span>
+                            <span className="text-base font-bold text-gray-900 font-mono">
+                              ${price.toLocaleString('es-UY')} <span className="text-[10px] text-gray-500 font-normal">UYU</span>
                             </span>
                           ) : (
-                            <span className="text-xs font-semibold text-amber-400">
+                            <span className="text-xs font-semibold text-amber-600">
                               Elegí el tamaño arriba
                             </span>
                           )}
@@ -685,13 +685,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                           }}
                           className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-[#0066FF] text-white shadow-md shadow-[#0066FF]/30'
-                              : 'bg-[#252525] hover:bg-[#303030] text-neutral-200'
+                              ? 'bg-[#0066FF] text-white shadow-md shadow-blue-500/25'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'
                           }`}
                         >
                           {isSelected ? (
                             <>
-                              <Check className="w-3.5 h-3.5" />
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
                               <span>Agregado</span>
                             </>
                           ) : (
@@ -709,11 +709,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
 
             {/* Disclaimer visible */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#222] text-center space-y-1 text-xs text-neutral-400">
-              <span className="font-semibold text-neutral-300">
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-center space-y-1 text-xs text-gray-600">
+              <span className="font-semibold text-gray-800">
                 * Presupuesto estimado. El precio final se confirma al ver el vehículo.
               </span>
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[11px] text-gray-500">
                 Los tiempos y costos pueden variar según el estado real de la pintura y la suciedad del habitáculo.
               </p>
             </div>
@@ -733,30 +733,30 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep('catalog');
                   scrollToTop();
                 }}
-                className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white mb-2 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 mb-2 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Volver a elegir servicios</span>
               </button>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-gray-900">
                 Tus datos para enviarte el presupuesto
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-gray-500">
                 Completá tus datos de contacto y del vehículo para preparar tu cotización formal.
               </p>
             </div>
 
             {/* Resumen de Servicios Elegidos */}
-            <div className="p-4 rounded-2xl bg-[#161616] border border-[#262626] space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-white border-b border-[#262626] pb-2">
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-gray-900 border-b border-gray-200 pb-2">
                 <span>Tratamientos seleccionados ({selectedCategory})</span>
-                <span className="text-[#3B82F6] font-mono text-sm">${liveTotal.toLocaleString('es-UY')} UYU</span>
+                <span className="text-[#0066FF] font-mono text-sm">${liveTotal.toLocaleString('es-UY')} UYU</span>
               </div>
               <div className="space-y-1.5 text-xs">
                 {selectedServices.map((s) => (
-                  <div key={s.tariff.id} className="flex items-center justify-between text-neutral-300">
+                  <div key={s.tariff.id} className="flex items-center justify-between text-gray-700">
                     <span>{s.tariff.shortName || s.tariff.name}</span>
-                    <span className="font-mono text-white">${s.price.toLocaleString('es-UY')}</span>
+                    <span className="font-mono font-semibold text-gray-900">${s.price.toLocaleString('es-UY')}</span>
                   </div>
                 ))}
               </div>
@@ -776,14 +776,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </div>
 
               {/* 1. Datos Personales */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#161616] border border-[#262626] space-y-3.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#3B82F6] block">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 space-y-3.5 shadow-2xs">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF] block">
                   1. Tus Datos de Contacto
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
+                    <label className="text-xs font-semibold text-gray-700">
                       Nombre y apellido <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -792,12 +792,12 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       placeholder="Ej: Juan Pérez"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
+                    <label className="text-xs font-semibold text-gray-700">
                       WhatsApp / Celular <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -806,101 +806,101 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       placeholder="Ej: 099 123 456"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
-                    Email <span className="text-neutral-500 text-[11px]">(opcional)</span>
+                  <label className="text-xs font-semibold text-gray-700">
+                    Email <span className="text-gray-400 text-[11px]">(opcional)</span>
                   </label>
                   <input
                     type="email"
                     placeholder="Para recibir una copia del presupuesto en tu correo (opcional)"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                   />
                 </div>
               </div>
 
               {/* 2. Datos del Auto */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#161616] border border-[#262626] space-y-3.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#3B82F6] block">
-                  2. Tu Vehículo <span className="text-neutral-500 text-[11px] font-normal lowercase">(opcional)</span>
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 space-y-3.5 shadow-2xs">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0066FF] block">
+                  2. Tu Vehículo <span className="text-gray-400 text-[11px] font-normal lowercase">(opcional)</span>
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
-                      Marca <span className="text-neutral-500 text-[11px]">(opcional)</span>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Marca <span className="text-gray-400 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="text"
                       placeholder="Ej: Peugeot"
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
-                      Modelo <span className="text-neutral-500 text-[11px]">(opcional)</span>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Modelo <span className="text-gray-400 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="text"
                       placeholder="Ej: 208"
                       value={vehicleModel}
                       onChange={(e) => setVehicleModel(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
-                      Año <span className="text-neutral-500 text-[11px]">(opcional)</span>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Año <span className="text-gray-400 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="number"
                       placeholder="Ej: 2021"
                       value={vehicleYear}
                       onChange={(e) => setVehicleYear(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
-                      Fecha preferida para traerlo <span className="text-neutral-500 text-[11px]">(opcional)</span>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Fecha preferida para traerlo <span className="text-gray-400 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="date"
                       value={preferredDate}
                       onChange={(e) => setPreferredDate(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-neutral-300">
-                      Matrícula <span className="text-neutral-500 text-[11px]">(opcional)</span>
+                    <label className="text-xs font-semibold text-gray-700">
+                      Matrícula <span className="text-gray-400 text-[11px]">(opcional)</span>
                     </label>
                     <input
                       type="text"
                       placeholder="Ej: SAA 1234"
                       value={vehiclePlate}
                       onChange={(e) => setVehiclePlate(e.target.value)}
-                      className="w-full bg-[#202020] border border-[#333] rounded-xl px-3.5 py-2.5 text-white placeholder-neutral-500 text-xs uppercase font-mono focus:outline-hidden focus:border-[#0066FF]"
+                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 placeholder-gray-400 text-xs uppercase font-mono focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-neutral-300">
+                  <label className="text-xs font-semibold text-gray-700">
                     Comentarios o estado actual del vehículo
                   </label>
                   <textarea
@@ -908,16 +908,16 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     placeholder="Contanos si tiene rayones profundos, marcas de agua, manchas en butacas o algo puntual a tratar..."
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    className="w-full bg-[#202020] border border-[#333] rounded-xl p-3 text-white placeholder-neutral-500 text-xs focus:outline-hidden focus:border-[#0066FF]"
+                    className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-gray-900 placeholder-gray-400 text-xs focus:outline-hidden focus:bg-white focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100 transition-all"
                   />
                 </div>
               </div>
 
               {/* Aclaración Obligatoria */}
-              <div className="p-4 rounded-xl bg-[#182030] border border-[#0066FF]/30 text-xs text-neutral-300 flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-[#3B82F6] shrink-0 mt-0.5" />
+              <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-[#0066FF] shrink-0 mt-0.5" />
                 <div className="leading-relaxed text-[11px]">
-                  <strong className="text-white block mb-0.5">Aclaración de DetailVlak:</strong>
+                  <strong className="text-gray-900 block mb-0.5">Aclaración de DetailVlak:</strong>
                   Presupuesto estimado. El precio final y plazos se confirman al inspeccionar personalmente el vehículo en el taller.
                 </div>
               </div>
@@ -926,7 +926,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-[#0066FF]/30 cursor-pointer disabled:opacity-50"
+                className="w-full py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-blue-500/25 cursor-pointer disabled:opacity-50 active:scale-98"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 <span>{isSubmitting ? 'Generando presupuesto...' : 'Ver mi presupuesto terminado'}</span>
@@ -942,44 +942,44 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
           <div className="space-y-6 animate-fade-in max-w-2xl mx-auto py-4">
             {/* Header de Éxito */}
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-9 h-9" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                 ¡Presupuesto listo, {createdRequest.client_name}!
               </h2>
-              <p className="text-xs text-neutral-400 max-w-md mx-auto">
+              <p className="text-xs text-gray-600 max-w-md mx-auto">
                 Tu cotización estimada para tu <strong>{createdRequest.vehicle_brand} {createdRequest.vehicle_model}</strong> quedó registrada con el código:
               </p>
-              <div className="inline-block px-4 py-1.5 rounded-xl bg-[#161616] border border-[#2D2D2D] font-mono text-sm font-bold text-[#3B82F6]">
+              <div className="inline-block px-4 py-1.5 rounded-xl bg-gray-100 border border-gray-200 font-mono text-sm font-bold text-[#0066FF]">
                 #{createdRequest.code}
               </div>
             </div>
 
             {/* Tarjeta de Resumen Detallado */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-[#161616] border border-[#282828] space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-[#262626] pb-3 text-xs">
-                <span className="text-neutral-400">Tamaño del vehículo:</span>
-                <span className="font-bold text-white">{createdRequest.vehicle_category}</span>
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-gray-200 space-y-4 shadow-lg shadow-gray-100">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3 text-xs">
+                <span className="text-gray-500">Tamaño del vehículo:</span>
+                <span className="font-bold text-gray-900">{createdRequest.vehicle_category}</span>
               </div>
 
               {/* Lista de Servicios */}
               <div className="space-y-2">
-                <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider block">
                   Tratamientos Incluidos
                 </span>
-                <div className="divide-y divide-[#222]">
+                <div className="divide-y divide-gray-100">
                   {createdRequest.selected_services.map((item, idx) => (
                     <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
                       <div>
-                        <div className="font-semibold text-white">{item.serviceName}</div>
+                        <div className="font-semibold text-gray-900">{item.serviceName}</div>
                         {item.durationHours && (
-                          <div className="text-[10px] text-neutral-500 font-mono">
+                          <div className="text-[10px] text-gray-400 font-mono">
                             Duración est.: {item.durationHours} hs
                           </div>
                         )}
                       </div>
-                      <span className="font-mono font-bold text-white">
+                      <span className="font-mono font-bold text-gray-900">
                         ${item.price.toLocaleString('es-UY')}
                       </span>
                     </div>
@@ -988,15 +988,15 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </div>
 
               {/* Total Destacado */}
-              <div className="pt-3 border-t-2 border-[#262626] flex items-center justify-between">
-                <span className="font-bold text-sm text-neutral-300">TOTAL ESTIMADO:</span>
-                <span className="text-2xl font-extrabold text-[#3B82F6] font-mono">
-                  ${createdRequest.total_amount.toLocaleString('es-UY')} <span className="text-xs text-neutral-400 font-normal">UYU</span>
+              <div className="pt-3 border-t-2 border-gray-100 flex items-center justify-between">
+                <span className="font-bold text-sm text-gray-700">TOTAL ESTIMADO:</span>
+                <span className="text-2xl font-extrabold text-[#0066FF] font-mono">
+                  ${createdRequest.total_amount.toLocaleString('es-UY')} <span className="text-xs text-gray-500 font-normal">UYU</span>
                 </span>
               </div>
 
               {/* Aclaración */}
-              <p className="text-[11px] text-neutral-500 leading-normal pt-2 border-t border-[#222]">
+              <p className="text-[11px] text-gray-500 leading-normal pt-2 border-t border-gray-100">
                 * Presupuesto estimado. El precio final se confirma al ver el vehículo en el taller.
               </p>
             </div>
@@ -1017,20 +1017,20 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={() => setShowPrintModal(true)}
-                className="w-full py-3.5 rounded-2xl bg-[#202020] hover:bg-[#282828] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-[#333] cursor-pointer"
+                className="w-full py-3.5 rounded-2xl bg-gray-900 hover:bg-black text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-gray-800 cursor-pointer shadow-md"
               >
-                <FileText className="w-4 h-4 text-[#3B82F6]" />
+                <FileText className="w-4 h-4 text-[#0066FF]" />
                 <span>Descargar Presupuesto en PDF</span>
               </button>
             </div>
 
             {/* Contacto & Ubicación */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#222] text-xs text-neutral-400 space-y-1.5 text-center">
-              <div className="flex items-center justify-center gap-1.5 font-bold text-white">
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs text-gray-600 space-y-1.5 text-center">
+              <div className="flex items-center justify-center gap-1.5 font-bold text-gray-900">
                 <MapPin className="w-4 h-4 text-[#0066FF]" />
                 <span>DetailVlak Shangrilá • Av. Giannattasio</span>
               </div>
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[11px] text-gray-500">
                 Atención con agenda previa de Lunes a Sábados.
               </p>
             </div>
@@ -1045,7 +1045,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep('catalog');
                   scrollToTop();
                 }}
-                className="text-xs text-neutral-400 hover:text-white underline cursor-pointer"
+                className="text-xs text-gray-500 hover:text-gray-900 underline cursor-pointer"
               >
                 Armar otro presupuesto
               </button>
@@ -1056,25 +1056,25 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
       {/* 3. Barra Fija Inferior (Sticky Bottom Bar) */}
       {currentStep === 'catalog' && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#141414]/95 backdrop-blur-md border-t border-[#262626] p-3 sm:p-4 shadow-2xl safe-bottom">
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 p-3 sm:p-4 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] safe-bottom">
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
             {/* Resumen & Total */}
             <div
               onClick={() => setIsSummaryDrawerOpen(!isSummaryDrawerOpen)}
               className="cursor-pointer"
             >
-              <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
+              <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
                 <span>{selectedServices.length} servicios {selectedCategory ? `• ${selectedCategory}` : ''}</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${isSummaryDrawerOpen ? 'rotate-180' : ''}`} />
               </div>
-              <div className="text-lg sm:text-xl font-extrabold text-white font-mono leading-tight">
+              <div className="text-lg sm:text-xl font-extrabold text-gray-900 font-mono leading-tight">
                 {selectedCategory ? (
                   <>
                     ${liveTotal.toLocaleString('es-UY')}{' '}
-                    <span className="text-xs font-normal text-neutral-400">UYU</span>
+                    <span className="text-xs font-normal text-gray-500">UYU</span>
                   </>
                 ) : (
-                  <span className="text-xs text-amber-400 font-sans font-bold">Elegí tamaño de auto</span>
+                  <span className="text-xs text-amber-600 font-sans font-bold">Elegí tamaño de auto</span>
                 )}
               </div>
             </div>
@@ -1096,7 +1096,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 setCurrentStep('form');
                 scrollToTop();
               }}
-              className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0055DD] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-lg shadow-[#0066FF]/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all shadow-lg shadow-blue-500/25 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span>{!selectedCategory ? 'Elegí tamaño' : 'Continuar con mis datos'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -1105,28 +1105,28 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
           {/* Drawer desplegable con servicios elegidos */}
           {isSummaryDrawerOpen && (
-            <div className="max-w-4xl mx-auto mt-3 pt-3 border-t border-[#222] space-y-2 max-h-48 overflow-y-auto">
-              <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+            <div className="max-w-4xl mx-auto mt-3 pt-3 border-t border-gray-200 space-y-2 max-h-48 overflow-y-auto">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
                 Servicios seleccionados:
               </span>
               {selectedServices.length === 0 ? (
-                <p className="text-xs text-neutral-500">Ningún servicio seleccionado.</p>
+                <p className="text-xs text-gray-400">Ningún servicio seleccionado.</p>
               ) : (
                 selectedServices.map((s) => (
                   <div
                     key={s.tariff.id}
-                    className="flex items-center justify-between text-xs py-1 text-neutral-300"
+                    className="flex items-center justify-between text-xs py-1 text-gray-700"
                   >
                     <span>{s.tariff.shortName || s.tariff.name}</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-white font-bold">${s.price.toLocaleString('es-UY')}</span>
+                      <span className="font-mono text-gray-900 font-bold">${s.price.toLocaleString('es-UY')}</span>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggleService(s.tariff.id);
                         }}
-                        className="text-neutral-500 hover:text-red-400 text-[10px] ml-1"
+                        className="text-gray-400 hover:text-red-600 text-[10px] ml-1 font-semibold"
                       >
                         Quitar
                       </button>
@@ -1141,19 +1141,19 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
       {/* 4. Modal de Detalle de Servicio con Video Embebido */}
       {detailModalService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-[#161616] border border-[#2D2D2D] rounded-2xl w-full max-w-2xl my-8 text-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl w-full max-w-2xl my-8 text-gray-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             {/* Header del modal */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#282828] bg-[#1A1A1A]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#0066FF]/20 text-[#3B82F6] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#0066FF] flex items-center justify-center">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm sm:text-base">
+                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">
                     {detailModalService.name}
                   </h3>
-                  <span className="text-[11px] text-neutral-400">
+                  <span className="text-[11px] text-gray-500">
                     Duración estimada: {detailModalService.durationHours || 3} horas
                   </span>
                 </div>
@@ -1161,7 +1161,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               <button
                 type="button"
                 onClick={() => setDetailModalService(null)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1172,11 +1172,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               {/* Video Time-Lapse */}
               {detailModalService.video_url && detailModalService.video_url.trim() ? (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
                     <Play className="w-3.5 h-3.5 text-[#0066FF]" />
                     <span>Demostración Time-Lapse de nuestro trabajo</span>
                   </span>
-                  <div className="rounded-xl overflow-hidden border border-[#282828]">
+                  <div className="rounded-xl overflow-hidden border border-gray-200">
                     <VideoEmbed url={detailModalService.video_url} autoPlay />
                   </div>
                 </div>
@@ -1185,10 +1185,10 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               {/* Descripción */}
               {detailModalService.description && (
                 <div className="space-y-1">
-                  <span className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
                     ¿En qué consiste?
                   </span>
-                  <p className="text-neutral-300 leading-relaxed text-xs sm:text-sm">
+                  <p className="text-gray-700 leading-relaxed text-xs sm:text-sm">
                     {detailModalService.description}
                   </p>
                 </div>
@@ -1197,13 +1197,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               {/* Qué Incluye */}
               {detailModalService.included_steps && detailModalService.included_steps.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-[#3B82F6] uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider block">
                     Qué incluye este tratamiento:
                   </span>
-                  <div className="space-y-1.5 bg-[#1F1F1F] p-3 rounded-xl border border-[#2B2B2B]">
+                  <div className="space-y-1.5 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
                     {detailModalService.included_steps.map((st, i) => (
-                      <div key={i} className="flex items-start gap-2 text-neutral-300">
-                        <span className="w-4 h-4 rounded-full bg-[#0066FF]/20 text-[#3B82F6] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                      <div key={i} className="flex items-start gap-2 text-gray-700">
+                        <span className="w-4 h-4 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                           {i + 1}
                         </span>
                         <span className="leading-snug">{st}</span>
@@ -1216,14 +1216,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               {/* Productos que Usamos */}
               {detailModalService.products_used && detailModalService.products_used.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">
                     Productos & Insumos Prémium Utilizados:
                   </span>
-                  <div className="flex flex-wrap gap-1.5 bg-[#1F1F1F] p-3 rounded-xl border border-[#2B2B2B]">
+                  <div className="flex flex-wrap gap-1.5 bg-gray-50 p-3 rounded-xl border border-gray-200">
                     {detailModalService.products_used.map((prod, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 rounded-lg bg-[#282828] border border-[#3A3A3A] text-neutral-200 text-[11px]"
+                        className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 text-[11px] font-medium"
                       >
                         {prod}
                       </span>
@@ -1234,7 +1234,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* Cuidados posteriores si los tiene */}
               {detailModalService.care_text && (
-                <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/30 text-amber-200/90 text-[11px] space-y-1">
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] space-y-1">
                   <strong className="block font-bold">Cuidados recomendados:</strong>
                   <span>{detailModalService.care_text}</span>
                 </div>
@@ -1242,17 +1242,18 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
 
             {/* Footer del Modal: Precio y Botón Agregar */}
-            <div className="px-5 py-3.5 bg-[#1A1A1A] border-t border-[#282828] flex items-center justify-between gap-3">
+            <div className="px-5 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] text-neutral-400 uppercase font-bold block">
+                <span className="text-[10px] text-gray-500 uppercase font-bold block">
                   {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
                 </span>
                 {selectedCategory && categoryKey ? (
-                  <span className="text-lg font-bold text-white font-mono">
-                    ${(detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY')} UYU
+                  <span className="text-lg font-bold text-gray-900 font-mono">
+                    ${(detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY')}{' '}
+                    <span className="text-xs font-normal text-gray-500">UYU</span>
                   </span>
                 ) : (
-                  <span className="text-xs font-semibold text-amber-400">
+                  <span className="text-xs font-semibold text-amber-600">
                     Elegí el tamaño de tu auto arriba
                   </span>
                 )}
@@ -1262,7 +1263,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 <button
                   type="button"
                   onClick={() => setDetailModalService(null)}
-                  className="px-3.5 py-2 rounded-xl bg-[#252525] hover:bg-[#303030] text-neutral-300 text-xs font-semibold"
+                  className="px-3.5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-semibold cursor-pointer"
                 >
                   Cerrar
                 </button>
@@ -1274,13 +1275,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   }}
                   className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
                     selectedServiceIds.includes(detailModalService.id)
-                      ? 'bg-neutral-700 text-white'
-                      : 'bg-[#0066FF] hover:bg-[#0055DD] text-white shadow-md'
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-[#0066FF] hover:bg-[#0052CC] text-white shadow-md'
                   }`}
                 >
                   {selectedServiceIds.includes(detailModalService.id) ? (
                     <>
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
                       <span>Quitar del presupuesto</span>
                     </>
                   ) : (
@@ -1305,10 +1306,10 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* Footer General */}
-      <footer className="border-t border-[#222] bg-[#111] py-4 px-4 text-center text-xs text-neutral-500">
+      <footer className="border-t border-gray-200 bg-gray-50 py-5 px-4 text-center text-xs text-gray-500">
         <div>
-          <strong className="text-neutral-400">DetailVlak</strong> • Shangrilá, Canelones • Miembro de{' '}
-          <strong className="text-neutral-400">CARVLAK Group</strong>
+          <strong className="text-gray-700">DetailVlak</strong> • Shangrilá, Canelones • Miembro de{' '}
+          <strong className="text-gray-700">CARVLAK Group</strong>
         </div>
       </footer>
     </div>
