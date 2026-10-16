@@ -452,10 +452,10 @@ export const INITIAL_DETAILING_TARIFFS: DetailingTariff[] = [
     prices: { chico: 1800, mediano: 1800, suv: 2000, pickup: 2200, moto: 1500 },
     isActive: true,
     order: 3,
-    cover_image_url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80',
+    cover_image_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
     before_after_images: [
       {
-        before_url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=80',
+        before_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop&q=80',
         after_url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&auto=format&fit=crop&q=80'
       }
     ],
@@ -1098,7 +1098,7 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
           { url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80', caption: 'Corrección de laca en BMW M3' },
           { url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80', caption: 'Detallado integral de interior' },
           { url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&auto=format&fit=crop&q=80', caption: 'Lavado técnico 2 baldes con Snow Foam' },
-          { url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza técnica de motor a vapor' },
+          { url: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza técnica de motor a vapor' },
           { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80', caption: 'Detallado de llantas y cálipers' },
           { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80', caption: 'Restauración y nutrición de cuero' },
           { url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&auto=format&fit=crop&q=80', caption: 'Ópticas pulidas con sellado UV' },
@@ -1106,9 +1106,9 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
         ]
       },
       appearance: {
-        primary_color: '#E10600',
-        accent_color: '#111111',
-        font_family: 'Archivo Narrow',
+        primary_color: '#1E5EFF',
+        accent_color: '#0B0B0C',
+        font_family: 'Inter',
         card_style: 'compact',
         section_order: ['hero', 'packages', 'sizes', 'services', 'products', 'reviews', 'faq']
       },

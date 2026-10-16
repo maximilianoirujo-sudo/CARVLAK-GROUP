@@ -87,7 +87,8 @@ export default {
         body: ['"Barlow Condensed"', 'system-ui', '-apple-system', 'sans-serif'],
         anton: ['"Anton"', 'sans-serif'],
         archivoBlack: ['"Archivo Black"', 'sans-serif'],
-        montserrat: ['"Montserrat"', 'sans-serif']
+        montserrat: ['"Montserrat"', 'sans-serif'],
+        inter: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif']
       }
     },
   },

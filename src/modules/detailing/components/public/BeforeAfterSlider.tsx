@@ -52,7 +52,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         draggable={false}
       />
-      <div className="absolute top-3 left-3 z-10 bg-black/85 backdrop-blur-xs text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md border border-white/10">
+      <div className="absolute top-3 left-3 z-10 bg-[#0B0B0C]/80 backdrop-blur-xs text-white text-[11px] font-medium uppercase tracking-[0.06em] px-2.5 py-1 rounded-[6px] shadow-sm">
         {labelBefore}
       </div>
 
@@ -67,19 +67,19 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
           className="absolute inset-0 w-full h-full object-cover"
           draggable={false}
         />
-        <div className="absolute top-3 right-3 z-10 bg-[#E10600] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md">
+        <div className="absolute top-3 right-3 z-10 bg-[#1E5EFF] text-white text-[11px] font-medium uppercase tracking-[0.06em] px-2.5 py-1 rounded-[6px] shadow-sm">
           {labelAfter}
         </div>
       </div>
 
-      {/* 3. Barra Divisoria con Handle estilo Instagram */}
+      {/* 3. Barra Divisoria con Handle sobrio */}
       <div
-        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_12px_rgba(0,0,0,0.8)] pointer-events-none z-20"
+        className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] pointer-events-none z-20"
         style={{ left: `${position}%` }}
       >
-        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white text-[#111111] shadow-2xl flex items-center justify-center font-bold border-2 border-[#E10600] group-hover:scale-110 transition-transform">
-          <svg className="w-4 h-4 text-[#E10600]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M8 9l-4 3 4 3m8-6l4 3-4 3" />
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white text-[#0B0B0C] shadow-lg flex items-center justify-center font-bold border-2 border-[#1E5EFF] group-hover:scale-110 transition-transform">
+          <svg className="w-3.5 h-3.5 text-[#1E5EFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 9l-4 3 4 3m8-6l4 3-4 3" />
           </svg>
         </div>
       </div>

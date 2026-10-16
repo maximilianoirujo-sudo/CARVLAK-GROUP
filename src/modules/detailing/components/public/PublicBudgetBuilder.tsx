@@ -18,9 +18,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Info,
   MapPin,
-  AlertCircle,
   Truck,
   Bike,
   Tag,
@@ -29,14 +27,8 @@ import {
   Gift,
   Share2,
   RotateCcw,
-  Sliders,
-  Eye,
-  Instagram,
-  Wrench,
-  Grid,
-  Layers,
-  Award,
-  ExternalLink
+  ExternalLink,
+  DollarSign
 } from 'lucide-react';
 import {
   DetailingTariff,
@@ -62,15 +54,12 @@ interface PublicBudgetBuilderProps {
 }
 
 const DEFAULT_GALLERY = [
-  { url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80', caption: 'Sellado Cerámico Gyeon 9H' },
-  { url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80', caption: 'Corrección de laca en BMW M3' },
-  { url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80', caption: 'Detallado integral de interior' },
-  { url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&auto=format&fit=crop&q=80', caption: 'Lavado técnico 2 baldes con Snow Foam' },
-  { url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza técnica de motor a vapor' },
-  { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80', caption: 'Detallado de llantas y cálipers' },
-  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80', caption: 'Restauración y nutrición de cuero' },
-  { url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&auto=format&fit=crop&q=80', caption: 'Ópticas pulidas con sellado UV' },
-  { url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80', caption: 'Entrega final en taller Shangrilá' }
+  { url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80', caption: 'Sellado cerámico Gyeon 9H' },
+  { url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80', caption: 'Corrección de pintura en BMW M3' },
+  { url: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza profunda de tapizados' },
+  { url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&auto=format&fit=crop&q=80', caption: 'Lavado técnico detallado' },
+  { url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80', caption: 'Limpieza técnica de motor a vapor' },
+  { url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80', caption: 'Detallado de llantas y cálipers' }
 ];
 
 export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBackToApp }) => {
@@ -103,7 +92,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     return INITIAL_DETAILING_CONFIG;
   });
 
-  // Busy/Booked counts per date from quotes
+  // Booked counts per date from quotes
   const [bookedDatesCount, setBookedDatesCount] = useState<Record<string, number>>(() => {
     try {
       const saved = localStorage.getItem('carvlak_detailing_quotes');
@@ -164,7 +153,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
           }
         }
       } catch (e) {
-        // Fallback to local storage
+        // Fallback
       }
 
       if (isSupabaseConfigured && supabase) {
@@ -287,7 +276,62 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   } | null>(null);
 
   // Final Results
-  const [createdRequest, setCreatedRequest] = useState<DetailingWebRequest | null>(null);
+  const [createdRequest, setCreatedRequest] = useState<DetailingWebRequest | null>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search).get('paso');
+      if (p === '5') {
+        const saved = localStorage.getItem('carvlak_detailing_web_requests');
+        if (saved) {
+          const list = JSON.parse(saved);
+          if (Array.isArray(list) && list.length > 0) return list[0];
+        }
+        return {
+          id: 'webreq-demo',
+          code: 'DV-26-9824',
+          created_at: new Date().toISOString(),
+          status: 'incompleta',
+          is_completed: false,
+          origin: 'Directo / Web',
+          is_paid_ad: false,
+          client_name: 'Santiago Morales',
+          client_phone: '+598 99 123 456',
+          vehicle_brand: 'Audi',
+          vehicle_model: 'Q5',
+          vehicle_year: 2023,
+          vehicle_category: 'SUV/Rural',
+          selected_services: [
+            {
+              serviceId: '1',
+              serviceName: 'Tratamiento Cerámico 9H (3 Años)',
+              price: 18500,
+              durationHours: 12
+            },
+            {
+              serviceId: '2',
+              serviceName: 'Limpieza Integral de Interior y Tapizados',
+              price: 6500,
+              durationHours: 6
+            }
+          ],
+          selected_products: [
+            {
+              productId: 'p-1',
+              productName: 'Shampoo pH Neutro Gyeon Bathe+ 500ml',
+              price: 1450
+            }
+          ],
+          applied_discount: {
+            discount_name: 'Descuento por 2 tratamientos (10% OFF)',
+            discount_amount: 2500
+          },
+          total_amount: 23950,
+          preferred_date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+          preferred_time_slot: 'manana'
+        } as DetailingWebRequest;
+      }
+    } catch {}
+    return null;
+  });
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [personalReferralCode, setPersonalReferralCode] = useState('');
 
@@ -296,6 +340,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
 
   // Scroll helpers & references
   const topRef = useRef<HTMLDivElement>(null);
+  const configSectionRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -303,9 +348,24 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     topRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToConfig = () => {
+    configSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const scrollToLocation = () => {
     locationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  useEffect(() => {
+    try {
+      const p = new URLSearchParams(window.location.search).get('scroll');
+      if (p === 'inferiores' || window.location.hash === '#secciones-inferiores') {
+        setTimeout(() => {
+          document.getElementById('secciones-inferiores')?.scrollIntoView({ behavior: 'instant' as any, block: 'start' });
+        }, 100);
+      }
+    } catch {}
+  }, []);
 
   // Draft autosave to localStorage
   useEffect(() => {
@@ -383,30 +443,6 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     } catch {}
   }, [activeTariffs]);
 
-  // Stories Highlights Categories
-  const highlightStories = [
-    { key: 'todos', label: 'Todos', icon: Grid },
-    { key: 'interior', label: 'Interior', icon: Sparkles },
-    { key: 'exterior', label: 'Exterior', icon: Car },
-    { key: 'motor', label: 'Motor', icon: Wrench },
-    { key: 'proteccion', label: 'Protección', icon: ShieldCheck },
-    { key: 'ubicacion', label: 'Ubicación', icon: MapPin }
-  ];
-
-  const handleStoryHighlightClick = (key: string) => {
-    if (key === 'ubicacion') {
-      scrollToLocation();
-      return;
-    }
-    setSelectedCategoryTab(key);
-    if (currentStep !== 2) {
-      // Si está en otro paso y toca una categoría, saltar a servicios
-      if (selectedCategory) {
-        setCurrentStep(2);
-      }
-    }
-  };
-
   // Filtered tariffs by category
   const visibleTariffs = useMemo(() => {
     if (selectedCategoryTab === 'todos') return activeTariffs;
@@ -451,49 +487,49 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
   const selectedProducts = useMemo(() => {
     const list = webBudget.products || [];
     return selectedProductIds
-      .map((pid) => list.find((p) => p.id === pid && p.is_active !== false))
+      .map((pid) => list.find((p) => p.id === pid))
       .filter(Boolean) as DetailingUpsellProduct[];
   }, [selectedProductIds, webBudget.products]);
 
-  // ---------------------------------------------------------------------------
-  // 4. Promo Engine & Calculation
-  // ---------------------------------------------------------------------------
-  const promoRules = webBudget.promotions;
-
+  // Subtotals
   const servicesSubtotal = useMemo(() => {
     return selectedServices.reduce((sum, item) => sum + item.price, 0);
   }, [selectedServices]);
 
   const productsSubtotal = useMemo(() => {
-    return selectedProducts.reduce((sum, item) => sum + item.price, 0);
+    return selectedProducts.reduce((sum, prod) => sum + prod.price, 0);
   }, [selectedProducts]);
+
+  // Discounts
+  const promoRules = webBudget.promotions;
 
   const discountDetails = useMemo(() => {
     let totalDiscount = 0;
     const reasons: string[] = [];
-    const maxDiscountPercent = promoRules?.max_accumulated_discount_percent || 25;
+    const count = selectedServices.length;
+    const maxDiscountPercent = promoRules?.max_accumulated_discount_percent || 40;
 
-    if (!promoRules || servicesSubtotal === 0) {
+    if (!promoRules) {
       return { totalDiscount: 0, reasons: [] };
     }
 
-    // 1. Quantity discount tiers
-    if (promoRules.tiered_quantity_enabled) {
-      const count = selectedServices.length;
-      const sortedTiers = [...(promoRules.tiered_quantity_rules || [])].sort(
-        (a, b) => b.min_services - a.min_services
-      );
-      const appliedTier = sortedTiers.find((t) => count >= t.min_services);
-      if (appliedTier && appliedTier.discount_percent > 0) {
-        const tierDisc = (servicesSubtotal * appliedTier.discount_percent) / 100;
-        totalDiscount += tierDisc;
+    // 1. Tiered quantity discount
+    if (promoRules.tiered_quantity_enabled && promoRules.tiered_quantity_rules?.length) {
+      const applicableRules = [...promoRules.tiered_quantity_rules]
+        .sort((a, b) => b.min_services - a.min_services)
+        .filter((r) => count >= r.min_services);
+
+      if (applicableRules.length > 0) {
+        const bestRule = applicableRules[0];
+        const tierDiscount = (servicesSubtotal * bestRule.discount_percent) / 100;
+        totalDiscount += tierDiscount;
         reasons.push(
-          `${appliedTier.discount_percent}% OFF por ${appliedTier.min_services}+ servicios (-$${Math.round(tierDisc).toLocaleString('es-UY')})`
+          `${bestRule.discount_percent}% OFF por sumar ${count} tratamientos (-$${Math.round(tierDiscount).toLocaleString('es-UY')})`
         );
       }
     }
 
-    // 2. Product add-on discount
+    // 2. Product upsell discount
     if (
       promoRules.product_upsell_discount_enabled &&
       selectedProducts.length > 0 &&
@@ -556,7 +592,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     if (!nextRule) return null;
     const diff = nextRule.min_services - count;
     if (diff === 1) {
-      return `¡Sumá 1 tratamiento más y desbloqueás ${nextRule.discount_percent}% OFF en todo tu presupuesto!`;
+      return `Sumá 1 tratamiento más y desbloqueás ${nextRule.discount_percent}% OFF en todo tu presupuesto.`;
     }
     return null;
   }, [selectedServices.length, promoRules]);
@@ -638,7 +674,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       setAppliedCoupon({
         code: found.code,
         discount_amount: found.discount_value,
-        description: `-$${found.discount_value.toLocaleString('es-UY')} de regalo`
+        description: `-$${found.discount_value.toLocaleString('es-UY')} de descuento`
       });
     }
   };
@@ -665,7 +701,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       const d = new Date(now);
       d.setDate(d.getDate() + i);
 
-      const dayOfWeek = d.getDay(); // 0 domingo, 6 sábado
+      const dayOfWeek = d.getDay();
       const dateIso = d.toISOString().split('T')[0];
       const isSunday = dayOfWeek === 0;
       const isBlocked = blockedDates.includes(dateIso);
@@ -750,30 +786,38 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
       const code = `DV-26-${randomCodeSuffix}`;
       const nowIso = new Date().toISOString();
 
-      const refCode = `DV-REF-${code.slice(6)}`;
-      setPersonalReferralCode(refCode);
+      let nextServiceCouponCode: string | undefined;
+      if (promoRules?.coupons && promoRules.coupons.length > 0) {
+        const autoC = promoRules.coupons.find((c) => c.is_active !== false);
+        if (autoC) nextServiceCouponCode = autoC.code;
+      }
+      if (!nextServiceCouponCode) {
+        nextServiceCouponCode = `DV-PROXIMO-${Math.floor(100 + Math.random() * 900)}`;
+      }
 
-      const nextServiceCouponCode = promoRules?.next_service_coupon_enabled
-        ? promoRules.next_service_coupon_code || 'VUELVOADETAIL'
-        : undefined;
+      const personalRef = `DV-REF-${Math.floor(1000 + Math.random() * 9000)}`;
+      setPersonalReferralCode(personalRef);
 
       const newRequest: DetailingWebRequest = {
-        id: `webreq-${crypto.randomUUID()}`,
+        id: `webreq-${Date.now()}`,
         code,
+        created_at: nowIso,
+        status: 'incompleta',
+        is_completed: false,
+        origin,
+        is_paid_ad: isPaidAd,
         client_name: name.trim(),
         client_phone: phone.trim(),
         client_email: email.trim() || undefined,
         vehicle_brand: vehicleBrand.trim() || 'A coordinar',
         vehicle_model: vehicleModel.trim() || '',
-        vehicle_year: vehicleYear.trim() ? parseInt(vehicleYear.trim(), 10) : null,
-        vehicle_plate: vehiclePlate.trim() ? vehiclePlate.trim().toUpperCase() : undefined,
-        vehicle_category: selectedCategory || 'Mediano',
-        preferred_date: preferredDate || undefined,
-        preferred_time_slot: preferredTimeSlot,
-        comments: comments.trim() || undefined,
+        vehicle_year: vehicleYear.trim() ? Number(vehicleYear.trim()) : undefined,
+        vehicle_plate: vehiclePlate.trim().toUpperCase() || undefined,
+        vehicle_category: selectedCategory,
         selected_services: selectedServices.map((s) => ({
           serviceId: s.tariff.id,
-          serviceName: s.tariff.shortName || s.tariff.name,
+          serviceName: s.tariff.name,
+          category: s.tariff.category || 'General',
           price: s.price,
           durationHours: s.durationHours
         })),
@@ -783,20 +827,17 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
           price: p.price
         })),
         applied_discount:
-          discountDetails.totalDiscount > 0
+          promoDiscountAmount > 0 || couponDiscountAmount > 0
             ? {
-                discount_name: discountDetails.reasons[0] || 'Descuentos acumulados',
-                discount_amount: discountDetails.totalDiscount,
+                discount_name: appliedCoupon ? `Promo + ${appliedCoupon.description}` : 'Descuentos acumulados',
+                discount_amount: promoDiscountAmount + couponDiscountAmount,
                 coupon_code: appliedCoupon?.code
               }
             : undefined,
         total_amount: finalTotal,
-        origin,
-        is_paid_ad: isPaidAd,
-        status: 'incompleta',
-        is_completed: false,
-        created_at: nowIso,
-        referral_code: refCode,
+        preferred_date: preferredDate || undefined,
+        preferred_time_slot: preferredTimeSlot,
+        comments: comments.trim() || undefined,
         next_service_coupon_code: nextServiceCouponCode,
         status_history: [
           {
@@ -912,7 +953,7 @@ ${servicesListText}${productsListText}${discountText}
 
 💰 *TOTAL ESTIMADO:* $${createdRequest.total_amount.toLocaleString('es-UY')} UYU
 ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n` : ''}
-¿Tienen disponible ese turno para coordinar la inspección del auto en el taller?`;
+¿Tienen disponibilidad en esas fechas para coordinar la inspección?`;
 
     let cleanPhone = companyPhone.replace(/[^0-9]/g, '');
     if (!cleanPhone) cleanPhone = '59899267964';
@@ -921,7 +962,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
     window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`, '_blank');
   };
 
-  const handleDirectFloatingWhatsApp = () => {
+  const handleDirectWhatsApp = () => {
     let cleanPhone = companyPhone.replace(/[^0-9]/g, '');
     if (!cleanPhone) cleanPhone = '59899267964';
     const text = encodeURIComponent('¡Hola DetailVlak! 👋 Quisiera hacerles una consulta sobre un tratamiento para mi auto.');
@@ -932,194 +973,196 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
     ? webBudget.content.gallery
     : DEFAULT_GALLERY;
 
+  const categoryChips = [
+    { key: 'todos', label: 'Todos' },
+    { key: 'interior', label: 'Interior' },
+    { key: 'exterior', label: 'Exterior' },
+    { key: 'motor', label: 'Motor' },
+    { key: 'proteccion', label: 'Protección' }
+  ];
+
+  const isOnlySections = useMemo(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('solo_secciones') === '1';
+    } catch {
+      return false;
+    }
+  }, []);
+
   return (
     <div
       ref={topRef}
-      className="min-h-screen w-full max-w-full overflow-x-hidden bg-white text-[#111111] flex flex-col justify-between selection:bg-[#E10600]/20 selection:text-[#E10600] font-montserrat antialiased"
+      className="min-h-screen w-full max-w-full overflow-x-hidden bg-white text-[#0B0B0C] flex flex-col justify-between selection:bg-[#1E5EFF]/15 selection:text-[#1E5EFF] font-inter antialiased"
     >
       {/* --------------------------------------------------------------------- */}
-      {/* 1. ENCABEZADO TIPO PERFIL DE INSTAGRAM (@detailvlak)                  */}
+      {/* 1. ENCABEZADO COMPACTO Y FIJO                                         */}
       {/* --------------------------------------------------------------------- */}
-      <header className="border-b border-gray-200 bg-white sticky top-0 z-40 px-3.5 py-3 shadow-2xs w-full max-w-full min-w-0">
-        <div className="max-w-4xl mx-auto space-y-2.5 w-full min-w-0">
-          {/* Fila principal del perfil */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Avatar con Story Ring rojo DetailVlak */}
-              <div className="relative shrink-0 p-0.5 rounded-full ring-2 ring-[#E10600] ring-offset-2 ring-offset-white bg-[#111111]">
-                <img
-                  src="/detailvlak-avatar.png"
-                  alt="DetailVlak"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover"
-                />
-                <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#E10600] border-2 border-white flex items-center justify-center text-[8px] text-white font-black">
-                  ✓
-                </span>
-              </div>
+      <header className="border-b border-[#E6E8EB] bg-white sticky top-0 z-40 px-5 sm:px-6 h-[60px] flex items-center shadow-xs">
+        <div className="max-w-[1080px] w-full mx-auto flex items-center justify-between">
+          {/* Logo DetailVlak a la izquierda */}
+          <div className="flex items-center gap-3">
+            <a href="/presupuesto" className="flex items-center gap-2.5 group">
+              <img
+                src="/detailvlak-logo.png"
+                alt="DetailVlak"
+                className="h-8 sm:h-9 w-auto object-contain"
+              />
+            </a>
+          </div>
 
-              {/* Handle y biografía */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h1 className="font-anton uppercase tracking-wide text-base sm:text-xl text-[#111111] leading-none">
-                    DetailVlak
-                  </h1>
-                  <span className="text-[10px] font-bold text-gray-500 font-montserrat">
-                    @detailvlak
-                  </span>
-                </div>
-                <p className="text-xs font-bold text-[#111111] mt-0.5 truncate font-montserrat">
-                  ✨ Volver a estrenar tu auto ✨
-                </p>
-                <p className="text-[10px] text-gray-500 truncate hidden sm:block">
-                  Estética Automotriz • Shangrilá, Canelones
-                </p>
-              </div>
-            </div>
-
-            {/* Acceso interno al hub si está embebido */}
+          {/* Acciones a la derecha: WhatsApp directo y link a hub si aplica */}
+          <div className="flex items-center gap-2.5">
             {onBackToApp && (
               <button
                 type="button"
                 onClick={onBackToApp}
-                className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black border border-gray-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                className="px-3 py-1.5 rounded-[10px] bg-[#F5F6F7] hover:bg-[#E6E8EB] text-[#3A3D42] text-[13px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Volver al Hub"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Hub interno</span>
               </button>
             )}
-          </div>
-
-          {/* Botones de acción tipo perfil de Instagram */}
-          <div className="flex items-center gap-2 pt-0.5 w-full">
-            <a
-              href="https://www.instagram.com/detailvlak/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 min-w-0 py-2 px-2.5 rounded-xl bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-xs hover:opacity-95 transition-opacity"
-            >
-              <Instagram className="w-3.5 h-3.5 shrink-0" />
-              <span className="uppercase tracking-wider text-[11px] truncate">
-                <span className="hidden sm:inline">Seguinos en </span>Instagram
-              </span>
-            </a>
 
             <button
               type="button"
-              onClick={handleDirectFloatingWhatsApp}
-              className="flex-1 min-w-0 py-2 px-2.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              onClick={handleDirectWhatsApp}
+              className="w-10 h-10 rounded-full bg-[#F5F6F7] hover:bg-[#E6E8EB] text-[#25D366] flex items-center justify-center transition-colors cursor-pointer"
+              title="Consultar por WhatsApp"
+              aria-label="WhatsApp"
             >
-              <MessageCircle className="w-3.5 h-3.5 text-[#25D366] shrink-0" />
-              <span className="text-[11px] truncate">WhatsApp</span>
+              <MessageCircle className="w-5 h-5 fill-current" />
             </button>
           </div>
         </div>
       </header>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 2. CATEGORÍAS COMO HISTORIAS DESTACADAS (Stories Highlights)          */}
+      {/* 2. PORTADA (HERO) A ANCHO COMPLETO CON OSCURECIDO SUAVE                */}
       {/* --------------------------------------------------------------------- */}
-      <section className="bg-white border-b border-gray-200 py-3 px-3.5 w-full max-w-full min-w-0 overflow-hidden">
-        <div className="max-w-4xl mx-auto w-full min-w-0 overflow-hidden">
-          <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-none w-full min-w-0">
-            {highlightStories.map((story) => {
-              const IconComp = story.icon;
-              const isSelected = selectedCategoryTab === story.key;
+      {currentStep === 1 && !isOnlySections && (
+        <section className="px-5 sm:px-6 pt-5 max-w-[1080px] w-full mx-auto">
+          <div className="relative rounded-[16px] overflow-hidden bg-[#0B0B0C] min-h-[300px] sm:min-h-[380px] flex flex-col justify-end p-5 sm:p-10 border border-[#E6E8EB] shadow-xs">
+            {/* Foto real del taller de fondo */}
+            <img
+              src="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1600&auto=format&fit=crop&q=85"
+              alt="DetailVlak Taller"
+              className="absolute inset-0 w-full h-full object-cover opacity-40"
+            />
+            {/* Oscurecido suave con gradiente sutil */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/95 via-[#0B0B0C]/50 to-transparent pointer-events-none" />
 
-              return (
+            {/* Contenido sobre la foto */}
+            <div className="relative z-10 max-w-xl space-y-2">
+              <span className="text-[11px] sm:text-[12px] font-medium uppercase tracking-[0.06em] text-[#E6E8EB]/80 block">
+                DetailVlak • Estética Automotriz Shangrilá
+              </span>
+              <h1 className="text-[26px] sm:text-[32px] font-bold leading-[1.15] text-white tracking-tight">
+                Volvé a estrenar tu auto
+              </h1>
+              <p className="text-[14px] sm:text-[15px] text-[#E6E8EB] font-normal leading-relaxed max-w-lg">
+                Armá tu presupuesto a medida en segundos con precios claros y atención personalizada.
+              </p>
+              <div className="pt-1.5">
                 <button
-                  key={story.key}
                   type="button"
-                  onClick={() => handleStoryHighlightClick(story.key)}
-                  className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-hidden"
+                  onClick={scrollToConfig}
+                  className="h-[52px] px-6 sm:px-8 rounded-[12px] bg-[#1E5EFF] hover:bg-[#1747C7] text-white font-semibold text-[15px] inline-flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs active:scale-98"
                 >
-                  <div
-                    className={`p-0.5 rounded-full transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-[#E10600] ring-offset-2 ring-offset-white'
-                        : 'ring-1 ring-gray-300 group-hover:ring-[#111111]'
-                    }`}
-                  >
-                    <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md transition-transform group-active:scale-95 ${
-                        isSelected ? 'bg-[#E10600] text-white' : 'bg-[#111111] text-white'
-                      }`}
-                    >
-                      <IconComp className="w-6 h-6 stroke-[2.2]" />
-                    </div>
-                  </div>
-                  <span
-                    className={`text-[11px] font-extrabold uppercase tracking-tight truncate max-w-[68px] ${
-                      isSelected ? 'text-[#E10600]' : 'text-gray-800'
-                    }`}
-                  >
-                    {story.label}
-                  </span>
+                  <span>Armar mi presupuesto</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
-              );
-            })}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+
+          {/* 3 datos de confianza en fila con íconos de línea grises */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 pb-1">
+            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-[14px] bg-[#F5F6F7] border border-[#E6E8EB]">
+              <ShieldCheck className="w-5 h-5 text-[#6B7079] shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[14px] sm:text-[15px] font-semibold text-[#0B0B0C] block truncate">
+                  Productos profesionales
+                </span>
+                <span className="text-[12px] sm:text-[13px] text-[#6B7079] block truncate">
+                  Insumos importados Gyeon & Koch
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-[14px] bg-[#F5F6F7] border border-[#E6E8EB]">
+              <DollarSign className="w-5 h-5 text-[#6B7079] shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[14px] sm:text-[15px] font-semibold text-[#0B0B0C] block truncate">
+                  Precio claro
+                </span>
+                <span className="text-[12px] sm:text-[13px] text-[#6B7079] block truncate">
+                  Sin sorpresas ni cargos ocultos
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3.5 sm:p-4 rounded-[14px] bg-[#F5F6F7] border border-[#E6E8EB]">
+              <MessageCircle className="w-5 h-5 text-[#6B7079] shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[14px] sm:text-[15px] font-semibold text-[#0B0B0C] block truncate">
+                  Confirmás por WhatsApp
+                </span>
+                <span className="text-[12px] sm:text-[13px] text-[#6B7079] block truncate">
+                  Coordinación rápida y directa
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 3. BARRA DE PROGRESO EN 4 PASOS (Auto → Servicios → Día → Tus datos)  */}
+      {/* 3. BARRA DE PASOS: FINA, GRIS, CON PASO ACTUAL EN AZUL                */}
       {/* --------------------------------------------------------------------- */}
-      {currentStep !== 5 && (
-        <div className="bg-[#F2F2F2] border-b border-gray-200 px-3 py-2.5 sticky top-[110px] sm:top-[118px] z-30 backdrop-blur-xs">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-4 gap-1.5 text-center">
-              {[
-                { step: 1, label: 'Auto', desc: 'Tamaño' },
-                { step: 2, label: 'Servicios', desc: 'Tratamientos' },
-                { step: 3, label: 'Día', desc: 'Agenda' },
-                { step: 4, label: 'Tus datos', desc: 'Resumen' }
-              ].map((item) => {
-                const isActive = currentStep === item.step;
-                const isPassed = currentStep > item.step;
+      {currentStep !== 5 && !isOnlySections && (
+        <div className="bg-[#F5F6F7] border-y border-[#E6E8EB] sticky top-[60px] z-30 py-2.5 px-5 sm:px-6">
+          <div className="max-w-[1080px] mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[13px] min-w-0 flex-1 truncate">
+              <span className="text-[#1E5EFF] font-semibold shrink-0">
+                Paso {currentStep} de 4:
+              </span>
+              <span className="text-[#0B0B0C] font-semibold truncate">
+                {currentStep === 1
+                  ? 'Tamaño del vehículo'
+                  : currentStep === 2
+                  ? 'Tratamientos y servicios'
+                  : currentStep === 3
+                  ? 'Día en agenda'
+                  : 'Tus datos'}
+              </span>
+            </div>
 
+            {/* Navegación a pasos completados */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {[1, 2, 3, 4].map((stepNumber) => {
+                const isActive = currentStep === stepNumber;
+                const isPassed = currentStep > stepNumber;
                 return (
                   <button
-                    key={item.step}
+                    key={stepNumber}
                     type="button"
                     disabled={!isPassed && !isActive}
                     onClick={() => {
-                      if (isPassed || isActive) {
-                        setCurrentStep(item.step as any);
+                      if (isPassed) {
+                        setCurrentStep(stepNumber as any);
                         scrollToTop();
                       }
                     }}
-                    className={`py-1 px-1 rounded-xl transition-all flex flex-col items-center justify-center cursor-pointer ${
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full text-[11px] sm:text-[12px] font-semibold flex items-center justify-center transition-colors ${
                       isActive
-                        ? 'bg-white border-2 border-[#E10600] shadow-xs'
+                        ? 'bg-[#1E5EFF] text-white shadow-xs'
                         : isPassed
-                        ? 'text-gray-700 hover:bg-gray-200/60'
-                        : 'text-gray-400 opacity-60 cursor-not-allowed'
+                        ? 'bg-[#0B0B0C] text-white hover:bg-neutral-800 cursor-pointer'
+                        : 'bg-[#E6E8EB] text-[#6B7079] cursor-not-allowed'
                     }`}
                   >
-                    <div className="flex items-center gap-1">
-                      <span
-                        className={`w-4 h-4 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
-                          isActive
-                            ? 'bg-[#E10600] text-white'
-                            : isPassed
-                            ? 'bg-[#111111] text-white'
-                            : 'bg-gray-200 text-gray-500'
-                        }`}
-                      >
-                        {isPassed ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : item.step}
-                      </span>
-                      <span
-                        className={`text-xs font-black truncate uppercase tracking-wider ${
-                          isActive ? 'text-[#E10600]' : isPassed ? 'text-[#111111]' : 'text-gray-500'
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </div>
-                    <span className="text-[9px] text-gray-400 hidden sm:block truncate mt-0.5 font-bold">
-                      {item.desc}
-                    </span>
+                    {isPassed ? <Check className="w-3 h-3" /> : stepNumber}
                   </button>
                 );
               })}
@@ -1129,32 +1172,29 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 4. CONTENIDO PRINCIPAL SEGÚN EL PASO                                  */}
+      {/* 4. CONTENIDO PRINCIPAL POR PASO                                       */}
       {/* --------------------------------------------------------------------- */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-3.5 sm:p-6 pb-32">
+      {!isOnlySections && (
+        <main
+          ref={configSectionRef}
+          className="flex-1 max-w-[1080px] w-full mx-auto px-5 sm:px-6 py-8 pb-32"
+        >
         {/* =================================================================== */}
-        {/* PASO 1: SELECCIÓN DEL AUTO (TAMAÑO)                                */}
+        {/* PASO 1: SELECCIÓN DEL AUTO (TAMAÑO)                                 */}
         {/* =================================================================== */}
         {currentStep === 1 && (
-          <div className="space-y-6 animate-fade-in py-2">
-            {/* Header del Paso 1 */}
-            <div className="space-y-2 text-center sm:text-left">
-              <div>
-                <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
-                  ARMÁ TU PRESUPUESTO ONLINE
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-4xl font-anton uppercase text-[#111111] tracking-wide leading-tight">
-                {webBudget.content?.hero_title || 'Elegí el tamaño de tu vehículo'}
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
+                Elegí el tamaño de tu vehículo
               </h2>
-              <p className="text-xs sm:text-sm text-gray-600 font-bold leading-relaxed max-w-2xl">
-                {webBudget.content?.hero_subtitle ||
-                  'Seleccioná la categoría correspondiente a tu vehículo para desbloquear los precios exactos de cada tratamiento.'}
+              <p className="text-[13px] text-[#6B7079]">
+                Seleccioná la categoría correspondiente para desbloquear los precios exactos de cada tratamiento.
               </p>
             </div>
 
-            {/* Tarjetas de Selección de Tamaño con borde rojo activo */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {/* Tarjetas de Selección de Tamaño */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
               {(
                 webBudget.custom_sizes?.filter((s) => s.is_active !== false) || [
                   {
@@ -1204,41 +1244,37 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     onClick={() => {
                       setSelectedCategory(cat.key as VehicleCategory);
                     }}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`p-4 rounded-[14px] cursor-pointer transition-all flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-red-50/20 border-[#E10600] shadow-md shadow-red-500/10 ring-2 ring-[#E10600]/20'
-                        : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-2 border-[#1E5EFF] bg-[#EEF3FF] shadow-xs'
+                        : 'bg-white border border-[#E6E8EB] hover:shadow-xs'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-4">
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                        className={`w-9 h-9 rounded-[10px] flex items-center justify-center transition-colors ${
                           isSelected
-                            ? 'bg-[#111111] text-white shadow-xs'
-                            : 'bg-gray-100 border border-gray-200 text-gray-600'
+                            ? 'bg-[#1E5EFF] text-white shadow-xs'
+                            : 'bg-[#F5F6F7] text-[#6B7079]'
                         }`}
                       >
-                        <IconComponent className="w-5 h-5" />
+                        <IconComponent className="w-4 h-4" />
                       </div>
                       {isSelected ? (
-                        <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center shadow-xs">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <div className="w-5 h-5 rounded-full bg-[#1E5EFF] text-white flex items-center justify-center">
+                          <Check className="w-3.5 h-3.5" />
                         </div>
                       ) : (
-                        <span className="w-5 h-5 rounded-full border border-gray-300 bg-white" />
+                        <span className="w-4 h-4 rounded-full border border-[#E6E8EB] bg-white" />
                       )}
                     </div>
 
                     <div className="space-y-0.5">
-                      <span
-                        className={`font-black text-sm uppercase tracking-wide block ${
-                          isSelected ? 'text-[#E10600]' : 'text-[#111111]'
-                        }`}
-                      >
+                      <span className="text-[17px] font-semibold text-[#0B0B0C] block">
                         {cat.label}
                       </span>
-                      <span className="text-[11px] text-gray-500 font-bold block">{cat.sub}</span>
-                      <span className="text-[10px] text-gray-400 font-medium block truncate mt-1">
+                      <span className="text-[13px] text-[#6B7079] block">{cat.sub}</span>
+                      <span className="text-[12px] text-[#6B7079] block truncate mt-1">
                         {cat.examples}
                       </span>
                     </div>
@@ -1246,55 +1282,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 );
               })}
             </div>
-
-            {/* Botón Siguiente si ya seleccionó */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <span className="text-xs text-gray-600 font-bold">
-                {selectedCategory ? (
-                  <span className="text-emerald-600 font-extrabold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#E10600]" />
-                    Vehículo seleccionado: <strong className="text-[#111111]">{selectedCategory}</strong>
-                  </span>
-                ) : (
-                  'Tocá el tamaño de tu auto para continuar.'
-                )}
-              </span>
-
-              <button
-                type="button"
-                disabled={!selectedCategory}
-                onClick={() => {
-                  if (!selectedCategory) return;
-                  setCurrentStep(2);
-                  scrollToTop();
-                }}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-[#E10600] hover:bg-[#c20500] text-white font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <span>Continuar a Servicios</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* PASO 2: SERVICIOS ESTILO REEL & COMBOS                             */}
+        {/* PASO 2: SERVICIOS CON FILTROS EN CHIPS Y FOTOS 4:3                  */}
         {/* =================================================================== */}
         {currentStep === 2 && (
-          <div className="space-y-7 animate-fade-in py-2">
-            {/* Header del Paso 2 con categoría activa */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+          <div className="space-y-8">
+            {/* Header del Paso 2 con botón secundario para cambiar auto */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E8EB] pb-4">
               <div className="space-y-1">
-                <div>
-                  <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
-                    CATÁLOGO EN VIVO
-                  </span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
+                <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
                   Tratamientos para tu {selectedCategory || 'auto'}
                 </h2>
-                <p className="text-xs text-gray-600 font-bold">
-                  Mirá cómo trabajamos en videos time-lapse y sumá los tratamientos que quieras a tu presupuesto.
+                <p className="text-[13px] text-[#6B7079]">
+                  Mirá cómo trabajamos en cada tratamiento y sumá los que quieras a tu presupuesto.
                 </p>
               </div>
 
@@ -1304,21 +1307,21 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(1);
                   scrollToTop();
                 }}
-                className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#111111] text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer border border-gray-200"
+                className="self-start sm:self-auto px-3.5 py-2 rounded-[10px] bg-white border border-[#E6E8EB] hover:bg-[#F5F6F7] text-[#0B0B0C] text-[13px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <span>Cambiar tamaño ({selectedCategory})</span>
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5 text-[#6B7079]" />
               </button>
             </div>
 
-            {/* Banner de regla de taller (interiores) */}
-            <div className="p-3.5 rounded-2xl bg-[#F2F2F2] border border-gray-200 flex items-start gap-3 text-xs text-gray-800">
-              <Info className="w-4 h-4 text-[#E10600] shrink-0 mt-0.5" />
-              <div className="space-y-0.5 leading-relaxed text-[11px]">
-                <strong className="text-[#111111] block font-black uppercase tracking-wider">
-                  Regla de calidad en interiores DetailVlak:
+            {/* Regla de calidad en interiores DetailVlak */}
+            <div className="p-4 rounded-[14px] bg-[#F5F6F7] border border-[#E6E8EB] flex items-start gap-3">
+              <ShieldCheck className="w-4 h-4 text-[#1E5EFF] shrink-0 mt-0.5" />
+              <div className="space-y-0.5 text-[13px]">
+                <strong className="text-[#0B0B0C] block font-semibold">
+                  Regla de calidad en interiores:
                 </strong>
-                <p className="text-gray-700 font-medium">
+                <p className="text-[#3A3D42] font-normal leading-relaxed">
                   {webBudget.content?.interior_quality_rule ||
                     'En interiores únicamente realizamos limpieza profunda integral (incluye butacas, piso, baúl y cielo raso a vapor). No realizamos lavados sueltos ni superficiales.'}
                 </p>
@@ -1328,17 +1331,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             {/* A) COMBOS & PAQUETES DESTACADOS */}
             {webBudget.packages &&
               webBudget.packages.filter((p) => p.is_active !== false).length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
-                      MÁS ELEGIDO
+                    <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079]">
+                      PAQUETES DESTACADOS
                     </span>
-                    <h3 className="text-sm font-anton uppercase text-[#111111] tracking-wide">
-                      Combos & Paquetes Más Pedidos
-                    </h3>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {webBudget.packages
                       .filter((p) => p.is_active !== false)
                       .map((pkg) => {
@@ -1358,38 +1358,36 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                         return (
                           <div
                             key={pkg.id}
-                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col justify-between ${
+                            className={`p-4 rounded-[14px] border transition-all flex flex-col justify-between ${
                               isAllSelected
-                                ? 'bg-red-50/20 border-[#E10600] shadow-md shadow-red-500/10'
-                                : 'bg-white border-gray-200 hover:border-gray-300 shadow-2xs'
+                                ? 'bg-[#EEF3FF] border-[#1E5EFF] shadow-xs'
+                                : 'bg-white border-[#E6E8EB] hover:shadow-xs'
                             }`}
                           >
-                            <div className="space-y-2.5">
+                            <div className="space-y-2">
                               <div className="flex items-center justify-between gap-2 flex-wrap">
-                                {pkg.badge && (
-                                  <span className="bg-[#111111] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
-                                    ★ {pkg.badge}
-                                  </span>
-                                )}
+                                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#1E5EFF]">
+                                  Combo ahorro
+                                </span>
                                 {savings > 0 && (
-                                  <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
-                                    AHORRÁS ${savings.toLocaleString('es-UY')}
+                                  <span className="text-[13px] text-[#1E5EFF] font-semibold">
+                                    Ahorrás ${savings.toLocaleString('es-UY')}
                                   </span>
                                 )}
                               </div>
 
                               <div className="space-y-1">
-                                <h4 className="font-anton uppercase text-base text-[#111111] tracking-wide">
+                                <h3 className="text-[17px] font-semibold text-[#0B0B0C]">
                                   {pkg.name}
-                                </h4>
-                                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-bold">
+                                </h3>
+                                <p className="text-[13px] text-[#6B7079] line-clamp-2 leading-relaxed">
                                   {pkg.description}
                                 </p>
                               </div>
 
                               {/* Servicios que incluye */}
                               <div className="space-y-1 pt-1">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
+                                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
                                   Incluye {pkg.service_ids.length} tratamientos:
                                 </span>
                                 <div className="flex flex-wrap gap-1">
@@ -1399,7 +1397,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                                     return (
                                       <span
                                         key={sId}
-                                        className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#F2F2F2] text-[#111111] border border-gray-200"
+                                        className="text-[12px] font-normal px-2.5 py-0.5 rounded-[6px] bg-[#F5F6F7] text-[#3A3D42] border border-[#E6E8EB]"
                                       >
                                         ✓ {s.shortName || s.name}
                                       </span>
@@ -1410,37 +1408,37 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                             </div>
 
                             {/* Precio y Botón Sumar Combo */}
-                            <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-3 mt-3">
+                            <div className="pt-4 border-t border-[#E6E8EB] flex items-center justify-between gap-3 mt-4">
                               <div>
                                 {savings > 0 && individualTotal > 0 && (
-                                  <span className="text-[11px] text-gray-400 line-through block font-mono font-bold">
+                                  <span className="text-[12px] text-[#6B7079] line-through block font-mono">
                                     ${individualTotal.toLocaleString('es-UY')}
                                   </span>
                                 )}
-                                <span className="text-lg font-black text-[#111111] font-mono">
+                                <span className="text-[20px] font-bold font-mono tabular-nums text-[#1E5EFF]">
                                   ${pkgPrice.toLocaleString('es-UY')}{' '}
-                                  <span className="text-[10px] text-gray-500 font-normal">UYU</span>
+                                  <span className="text-[13px] text-[#6B7079] font-normal">UYU</span>
                                 </span>
                               </div>
 
                               <button
                                 type="button"
                                 onClick={() => handleApplyPackage(pkg)}
-                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+                                className={`px-4 py-2 rounded-[10px] text-[13px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                                   isAllSelected
-                                    ? 'bg-[#E10600] text-white shadow-xs'
-                                    : 'bg-[#111111] hover:bg-black text-white'
+                                    ? 'bg-[#1E5EFF] text-white'
+                                    : 'bg-white border border-[#E6E8EB] text-[#0B0B0C] hover:bg-[#F5F6F7]'
                                 }`}
                               >
                                 {isAllSelected ? (
                                   <>
-                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                    <span>Combo Sumado</span>
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Agregado</span>
                                   </>
                                 ) : (
                                   <>
                                     <Plus className="w-3.5 h-3.5" />
-                                    <span>Elegir Combo</span>
+                                    <span>Agregar</span>
                                   </>
                                 )}
                               </button>
@@ -1452,24 +1450,30 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 </div>
               )}
 
-            {/* B) TARJETAS DE SERVICIO ESTILO REEL */}
-            <div id="catalogo-reels" className="space-y-3 scroll-mt-20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
-                    TRATAMIENTOS
-                  </span>
-                  <h3 className="text-sm font-anton uppercase text-[#111111] tracking-wide">
-                    Catálogo de Servicios {selectedCategoryTab !== 'todos' ? `• ${selectedCategoryTab}` : ''}
-                  </h3>
-                </div>
-                <span className="text-xs text-gray-600 font-bold">
-                  {selectedServiceIds.length} sumado{selectedServiceIds.length !== 1 ? 's' : ''}
-                </span>
+            {/* B) FILTROS DE CATEGORÍA COMO CHIPS HORIZONTALES SIMPLES */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {categoryChips.map((chip) => {
+                  const isSelected = selectedCategoryTab === chip.key;
+                  return (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={() => setSelectedCategoryTab(chip.key)}
+                      className={`px-4 py-2 rounded-[10px] text-[13px] font-medium transition-colors cursor-pointer shrink-0 ${
+                        isSelected
+                          ? 'bg-[#0B0B0C] text-white shadow-xs'
+                          : 'bg-white text-[#6B7079] border border-[#E6E8EB] hover:bg-[#F5F6F7]'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Grilla de Reels (2 columnas en desktop, 1 en mobile o 2 compactas) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* GRILLA DE TARJETAS DE SERVICIO (FOTO 4:3 ARRIBA) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visibleTariffs.map((tariff) => {
                   const isSelected = selectedServiceIds.includes(tariff.id);
                   const regularPrice = categoryKey ? tariff.prices?.[categoryKey] || 0 : 0;
@@ -1478,7 +1482,6 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   const effectivePrice = hasPromo ? tariff.promo_price! : regularPrice;
                   const hasVideo = Boolean(tariff.video_url && tariff.video_url.trim());
 
-                  // Fallback cover image
                   const coverImage =
                     tariff.cover_image_url ||
                     (tariff.category === 'Interior'
@@ -1492,127 +1495,92 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   return (
                     <div
                       key={tariff.id}
-                      className={`group rounded-2xl border transition-all overflow-hidden flex flex-col justify-between bg-white ${
+                      className={`group rounded-[14px] border overflow-hidden flex flex-col justify-between bg-white transition-all ${
                         isSelected
-                          ? 'border-[#E10600] shadow-md shadow-red-500/10 ring-2 ring-[#E10600]'
-                          : 'border-gray-200 hover:border-gray-300 shadow-2xs'
+                          ? 'border-[#1E5EFF] shadow-xs'
+                          : 'border-[#E6E8EB] hover:shadow-xs'
                       }`}
                     >
-                      {/* Portada Estilo Reel con Gradiente y Textos */}
+                      {/* Foto 4:3 arriba con ícono de play si tiene video */}
                       <div
                         onClick={() => setDetailModalService(tariff)}
-                        className="relative w-full aspect-[4/5] overflow-hidden bg-black cursor-pointer"
+                        className="relative w-full aspect-[4/3] overflow-hidden bg-[#F5F6F7] cursor-pointer"
                       >
                         <img
                           src={coverImage}
                           alt={tariff.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                         />
 
-                        {/* Overlay Gradiente Oscuro estilo Reel */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
-
-                        {/* Badges superiores estilo Sticker */}
+                        {/* Badges superiores discretos */}
                         <div className="absolute top-3 inset-x-3 flex items-start justify-between gap-2 z-10">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {tariff.badge && (
-                              <span className="bg-[#E10600] text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-md">
-                                {tariff.badge}
-                              </span>
-                            )}
-                            <span className="bg-black/75 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-md border border-white/10 flex items-center gap-1 font-mono">
-                              <Clock className="w-3 h-3 text-[#E10600]" /> {tariff.durationHours || 3} hs
+                          {tariff.badge ? (
+                            <span className="bg-[#0B0B0C]/85 backdrop-blur-xs text-white text-[11px] font-medium uppercase tracking-[0.06em] px-2.5 py-0.5 rounded-[6px]">
+                              {tariff.badge}
                             </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            {hasVideo && (
-                              <span className="bg-black/80 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md border border-white/20">
-                                <Play className="w-3 h-3 text-[#E10600] fill-[#E10600]" /> REEL
-                              </span>
-                            )}
-                            {isSelected && (
-                              <div className="w-6 h-6 rounded-full bg-[#E10600] text-white flex items-center justify-center shadow-md">
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Ícono de Play Central al pasar el mouse */}
-                        {hasVideo && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="w-12 h-12 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center border border-white/40 shadow-xl group-hover:scale-110 transition-transform">
-                              <Play className="w-5 h-5 ml-0.5 fill-white" />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Información inferior sobre la foto */}
-                        <div className="absolute bottom-3 inset-x-3 space-y-1.5 z-10">
-                          <h4 className="font-anton uppercase text-white text-base sm:text-lg leading-tight tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                            {tariff.shortName || tariff.name}
-                          </h4>
-
-                          {tariff.description && (
-                            <p className="text-gray-200 text-xs line-clamp-2 leading-relaxed font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                              {tariff.description}
-                            </p>
+                          ) : (
+                            <span />
                           )}
 
-                          {/* Precio en Etiqueta Roja estilo Sticker */}
-                          <div className="pt-1 flex items-center justify-between gap-2">
-                            <div className="inline-flex items-center gap-1 bg-[#E10600] text-white font-mono font-black text-xs sm:text-sm px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
-                              {hasPromo && (
-                                <span className="line-through text-white/70 text-[10px] mr-1">
-                                  ${regularPrice.toLocaleString('es-UY')}
-                                </span>
-                              )}
-                              <span>
-                                {tariff.price_type === 'from' ? 'DESDE ' : ''}$
-                                {effectivePrice.toLocaleString('es-UY')} UYU
-                              </span>
-                            </div>
-
-                            <span className="text-[10px] text-white/90 font-bold bg-black/60 px-2 py-0.5 rounded backdrop-blur-xs flex items-center gap-1">
-                              <Eye className="w-3 h-3 text-[#E10600]" /> Ver más
+                          {hasVideo && (
+                            <span className="bg-[#0B0B0C]/85 backdrop-blur-xs text-white text-[11px] font-medium px-2 py-0.5 rounded-[6px] flex items-center gap-1">
+                              <Play className="w-3 h-3 text-[#1E5EFF] fill-[#1E5EFF]" /> Video
                             </span>
-                          </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Barra de acción inferior de la tarjeta */}
-                      <div className="p-3 bg-white border-t border-gray-100 flex items-center justify-between gap-2">
-                        <button
-                          type="button"
+                      {/* Información de la tarjeta */}
+                      <div className="p-4 flex flex-col justify-between flex-1 space-y-3">
+                        <div
                           onClick={() => setDetailModalService(tariff)}
-                          className="text-xs font-bold text-gray-700 hover:text-black flex items-center gap-1 cursor-pointer"
+                          className="space-y-1 cursor-pointer"
                         >
-                          <span>Detalle & time-lapse</span>
-                          <ArrowRight className="w-3 h-3 text-[#E10600]" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleToggleService(tariff.id)}
-                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#E10600] text-white shadow-md shadow-red-600/30 ring-2 ring-[#E10600]/30'
-                              : 'bg-[#111111] hover:bg-black text-white'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>Sumado</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Sumar</span>
-                            </>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="text-[17px] font-semibold text-[#0B0B0C] group-hover:text-[#1E5EFF] transition-colors leading-snug">
+                              {tariff.shortName || tariff.name}
+                            </h3>
+                          </div>
+                          <span className="text-[13px] text-[#6B7079] block">
+                            Duración aprox. {tariff.durationHours || 3} horas
+                          </span>
+                          {tariff.description && (
+                            <p className="text-[13px] text-[#6B7079] line-clamp-2 leading-relaxed pt-1">
+                              {tariff.description}
+                            </p>
                           )}
-                        </button>
+                        </div>
+
+                        {/* Fila inferior con precio en azul a la derecha y botón Agregar */}
+                        <div className="pt-3 border-t border-[#E6E8EB] flex items-center justify-between gap-3">
+                          <div className="text-right">
+                            <span className="text-[20px] font-bold font-mono tabular-nums text-[#1E5EFF]">
+                              ${effectivePrice.toLocaleString('es-UY')}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleService(tariff.id)}
+                            className={`h-[38px] px-4 rounded-[10px] text-[13px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#1E5EFF] text-white shadow-xs'
+                                : 'bg-white border border-[#E6E8EB] text-[#0B0B0C] hover:bg-[#F5F6F7]'
+                            }`}
+                          >
+                            {isSelected ? (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Agregado</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Agregar</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1620,79 +1588,27 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </div>
             </div>
 
-            {/* C) CROSS-SELLING ("Sumale también...") */}
-            {crossSellNotification && (
-              <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-300 space-y-3 shadow-sm animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
-                      RECOMENDADO
-                    </span>
-                    <span className="text-xs font-black uppercase text-[#111111]">
-                      Para complementar tu {crossSellNotification.parentName}:
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCrossSellNotification(null)}
-                    className="text-gray-400 hover:text-gray-600 text-xs p-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {crossSellNotification.suggestedTariffs.map((sug) => {
-                    const sugPrice = categoryKey ? sug.prices?.[categoryKey] || 0 : 0;
-                    return (
-                      <div
-                        key={sug.id}
-                        className="p-3 bg-white rounded-xl border border-gray-200 flex items-center justify-between gap-3 shadow-2xs"
-                      >
-                        <div className="min-w-0">
-                          <span className="text-xs font-black uppercase text-[#111111] truncate block">
-                            {sug.shortName || sug.name}
-                          </span>
-                          <span className="text-[11px] font-mono font-bold text-gray-700">
-                            +${sugPrice.toLocaleString('es-UY')} UYU
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleToggleService(sug.id);
-                            setCrossSellNotification(null);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-[#E10600] hover:bg-[#c20500] text-white text-xs font-black uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
-                        >
-                          + Sumar
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* D) PRODUCTOS DE CUIDADO POSTERIOR (UPSELL) */}
+            {/* C) PRODUCTOS DE CUIDADO POSTERIOR (UPSELL) */}
             {webBudget.products &&
               webBudget.products.filter((p) => p.is_active !== false).length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-gray-200">
+                <div className="space-y-4 pt-6 border-t border-[#E6E8EB]">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-[#E10600]" />
-                      <h3 className="text-sm font-anton uppercase text-[#111111] tracking-wide">
-                        Insumos & Cuidados para Llevar a Casa
+                    <div>
+                      <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                        CUIDADO EN CASA
+                      </span>
+                      <h3 className="text-[17px] font-semibold text-[#0B0B0C]">
+                        Productos de mantenimiento para llevar
                       </h3>
                     </div>
                     {promoRules?.product_upsell_discount_enabled && (
-                      <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
+                      <span className="text-[13px] text-[#1E5EFF] font-semibold">
                         +{promoRules.product_upsell_discount_percent}% OFF en servicios
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {webBudget.products
                       .filter((p) => p.is_active !== false)
                       .map((prod) => {
@@ -1700,37 +1616,37 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                         return (
                           <div
                             key={prod.id}
-                            className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            className={`p-4 rounded-[14px] border transition-all flex items-center justify-between gap-3 ${
                               isSelected
-                                ? 'bg-red-50/20 border-[#E10600] ring-1 ring-[#E10600]'
-                                : 'bg-white border-gray-200 hover:border-gray-300'
+                                ? 'bg-[#EEF3FF] border-[#1E5EFF]'
+                                : 'bg-white border-[#E6E8EB] hover:shadow-xs'
                             }`}
                           >
                             <div className="min-w-0 space-y-0.5">
-                              <span className="text-xs font-bold text-[#111111] truncate block">
+                              <span className="text-[15px] font-semibold text-[#0B0B0C] truncate block">
                                 {prod.name}
                               </span>
                               {prod.short_description && (
-                                <p className="text-[11px] text-gray-500 line-clamp-1">
+                                <p className="text-[13px] text-[#6B7079] line-clamp-1">
                                   {prod.short_description}
                                 </p>
                               )}
-                              <span className="text-xs font-mono font-bold text-[#111111] block">
+                              <span className="text-[15px] font-bold font-mono tabular-nums text-[#1E5EFF] block pt-1">
                                 ${prod.price.toLocaleString('es-UY')}{' '}
-                                <span className="text-[10px] text-gray-400 font-normal">UYU</span>
+                                <span className="text-[12px] text-[#6B7079] font-normal">UYU</span>
                               </span>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => handleToggleProduct(prod.id)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-colors cursor-pointer ${
+                              className={`h-[38px] px-3.5 rounded-[10px] text-[13px] font-semibold shrink-0 transition-colors cursor-pointer ${
                                 isSelected
-                                  ? 'bg-[#E10600] text-white'
-                                  : 'bg-gray-100 hover:bg-gray-200 text-[#111111] border border-gray-300'
+                                  ? 'bg-[#1E5EFF] text-white'
+                                  : 'bg-white border border-[#E6E8EB] text-[#0B0B0C] hover:bg-[#F5F6F7]'
                               }`}
                             >
-                              {isSelected ? '✓ Sumado' : '+ Sumar'}
+                              {isSelected ? '✓ Agregado' : '+ Agregar'}
                             </button>
                           </div>
                         );
@@ -1742,31 +1658,26 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
         )}
 
         {/* =================================================================== */}
-        {/* PASO 3: DÍA / AGENDA                                               */}
+        {/* PASO 3: DÍA / AGENDA                                                */}
         {/* =================================================================== */}
         {currentStep === 3 && (
-          <div className="space-y-6 animate-fade-in py-2">
+          <div className="space-y-6">
             <div className="space-y-1">
-              <div>
-                <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
-                  AGENDA EN VIVO
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
-                Elegí el día estimado para traer tu vehículo
+              <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
+                Elegí el día estimado
               </h2>
-              <p className="text-xs text-gray-600 font-bold">
-                Seleccioná el día que más te convenga. Los días con etiqueta verde tienen descuento promocional especial.
+              <p className="text-[13px] text-[#6B7079]">
+                Seleccioná una fecha disponible para traer tu vehículo al taller Shangrilá.
               </p>
             </div>
 
             {/* Selector de Días de la Agenda */}
             <div className="space-y-3">
-              <span className="text-xs font-black uppercase tracking-wide text-[#111111] block">
-                Próximos días disponibles en el taller Shangrilá:
+              <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                Próximos días disponibles
               </span>
 
-              <div className="grid grid-cols-3 sm:grid-cols-7 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
                 {availableAgendaDays.map((day) => {
                   const isSelected = preferredDate === day.dateIso;
 
@@ -1778,35 +1689,34 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                           setPreferredDate(day.dateIso);
                         }
                       }}
-                      className={`p-3 rounded-2xl border text-center transition-all flex flex-col justify-between ${
+                      className={`p-3.5 rounded-[14px] border text-center transition-all flex flex-col justify-between ${
                         !day.isAvailable
-                          ? 'bg-gray-100/60 border-gray-200 opacity-50 cursor-not-allowed'
+                          ? 'bg-[#F5F6F7] border-[#E6E8EB] opacity-50 cursor-not-allowed'
                           : isSelected
-                          ? 'bg-red-50/30 border-[#E10600] shadow-sm ring-2 ring-[#E10600]/30 cursor-pointer'
-                          : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
+                          ? 'bg-[#EEF3FF] border-2 border-[#1E5EFF] shadow-xs cursor-pointer'
+                          : 'bg-white border-[#E6E8EB] hover:border-[#1E5EFF]/50 cursor-pointer'
                       }`}
                     >
-                      <span className="text-[10px] font-black text-gray-500 uppercase block">
+                      <span className="text-[12px] font-medium text-[#6B7079] uppercase block">
                         {day.displayDay}
                       </span>
                       <span
-                        className={`text-sm font-black block my-0.5 ${
-                          isSelected ? 'text-[#E10600]' : 'text-[#111111]'
+                        className={`text-[15px] font-bold block my-1 ${
+                          isSelected ? 'text-[#1E5EFF]' : 'text-[#0B0B0C]'
                         }`}
                       >
                         {day.displayDate}
                       </span>
 
-                      {/* Badge estado / promo */}
                       <span
-                        className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block mt-1 ${
+                        className={`text-[11px] font-medium px-2 py-0.5 rounded-[6px] inline-block mt-1 ${
                           day.isPromo
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-[#EEF3FF] text-[#1E5EFF] font-semibold'
                             : !day.isAvailable
-                            ? 'bg-gray-200 text-gray-500'
+                            ? 'bg-[#E6E8EB] text-[#6B7079]'
                             : isSelected
-                            ? 'bg-[#E10600] text-white'
-                            : 'bg-gray-100 text-gray-700'
+                            ? 'bg-[#1E5EFF] text-white'
+                            : 'bg-[#F5F6F7] text-[#6B7079]'
                         }`}
                       >
                         {day.statusReason}
@@ -1818,11 +1728,11 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
 
             {/* Franja horaria de preferencia */}
-            <div className="space-y-2 pt-2">
-              <span className="text-xs font-black uppercase tracking-wide text-[#111111] block">
-                Franja horaria preferida de entrega:
+            <div className="space-y-2 pt-4 border-t border-[#E6E8EB]">
+              <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                Franja horaria preferida
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { key: 'manana', label: 'Mañana', hours: '08:30 a 12:30' },
                   { key: 'tarde', label: 'Tarde', hours: '13:30 a 18:30' },
@@ -1833,14 +1743,14 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     <div
                       key={slot.key}
                       onClick={() => setPreferredTimeSlot(slot.key as any)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                      className={`p-3.5 rounded-[12px] border cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-red-50/30 border-[#E10600] text-[#E10600] font-black'
-                          : 'bg-[#F2F2F2] border-gray-200 text-gray-800 hover:bg-gray-200'
+                          ? 'bg-[#EEF3FF] border-2 border-[#1E5EFF]'
+                          : 'bg-white border-[#E6E8EB] hover:bg-[#F5F6F7]'
                       }`}
                     >
-                      <div className="text-xs font-black uppercase tracking-wide">{slot.label}</div>
-                      <div className="text-[10px] text-gray-500 font-bold">{slot.hours}</div>
+                      <div className="text-[15px] font-semibold text-[#0B0B0C]">{slot.label}</div>
+                      <div className="text-[13px] text-[#6B7079]">{slot.hours}</div>
                     </div>
                   );
                 })}
@@ -1856,99 +1766,94 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(4);
                   scrollToTop();
                 }}
-                className="text-xs text-gray-600 font-bold hover:text-black underline cursor-pointer"
+                className="text-[13px] text-[#6B7079] hover:text-[#0B0B0C] font-medium underline cursor-pointer"
               >
-                Prefiero coordinar el día exacto luego directamente por WhatsApp →
+                Prefiero coordinar la fecha exacta directamente por WhatsApp →
               </button>
             </div>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* PASO 4: FORMULARIO DE DATOS & CUPÓN                                */}
+        {/* PASO 4: FORMULARIO DE DATOS & CUPÓN                                 */}
         {/* =================================================================== */}
         {currentStep === 4 && (
-          <div className="space-y-6 animate-fade-in max-w-2xl mx-auto py-2">
+          <div className="space-y-6 max-w-2xl mx-auto">
             <div className="space-y-1">
-              <div>
-                <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
-                  PASO FINAL
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
-                Tus datos para enviarte el presupuesto
+              <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
+                Tus datos para el presupuesto
               </h2>
-              <p className="text-xs text-gray-600 font-bold">
-                Solo tu nombre y celular son necesarios para preparar tu cotización formal y el PDF.
+              <p className="text-[13px] text-[#6B7079]">
+                Solo tu nombre y WhatsApp son necesarios para enviarte la cotización formal.
               </p>
             </div>
 
-            {/* Resumen previo de lo elegido */}
-            <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-200 space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-black uppercase text-[#111111] border-b border-gray-300 pb-2">
+            {/* Resumen previo de lo elegido tipo comprobante sobrio */}
+            <div className="p-4 rounded-[14px] bg-[#F5F6F7] border border-[#E6E8EB] space-y-2.5">
+              <div className="flex items-center justify-between text-[13px] font-semibold text-[#0B0B0C] border-b border-[#E6E8EB] pb-2">
                 <span>
                   Tratamientos elegidos ({selectedCategory}) • {selectedServices.length} servicios
                 </span>
-                <span className="text-[#E10600] font-mono text-base font-black">
+                <span className="text-[#1E5EFF] font-mono text-[17px] font-bold tabular-nums">
                   ${finalTotal.toLocaleString('es-UY')} UYU
                 </span>
               </div>
-              <div className="space-y-1 text-xs">
+              <div className="space-y-1.5 text-[13px]">
                 {selectedServices.map((s) => (
-                  <div key={s.tariff.id} className="flex items-center justify-between text-gray-800 font-bold">
+                  <div key={s.tariff.id} className="flex items-center justify-between text-[#3A3D42]">
                     <span>{s.tariff.shortName || s.tariff.name}</span>
-                    <span className="font-mono">${s.price.toLocaleString('es-UY')}</span>
+                    <span className="font-mono tabular-nums">${s.price.toLocaleString('es-UY')}</span>
                   </div>
                 ))}
                 {selectedProducts.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-gray-600 italic">
-                    <span>+ {p.name} (mantenimiento)</span>
-                    <span className="font-mono font-bold">${p.price.toLocaleString('es-UY')}</span>
+                  <div key={p.id} className="flex items-center justify-between text-[#6B7079]">
+                    <span>+ {p.name} (cuidado en casa)</span>
+                    <span className="font-mono tabular-nums">${p.price.toLocaleString('es-UY')}</span>
                   </div>
                 ))}
                 {discountDetails.totalDiscount > 0 && (
-                  <div className="pt-2 border-t border-gray-300 flex items-center justify-between text-emerald-700 font-black">
-                    <span>Descuento aplicado:</span>
-                    <span>-${discountDetails.totalDiscount.toLocaleString('es-UY')}</span>
+                  <div className="pt-2 border-t border-[#E6E8EB] flex items-center justify-between text-[#1E5EFF] font-semibold">
+                    <span>Descuentos acumulados:</span>
+                    <span className="font-mono tabular-nums">-${discountDetails.totalDiscount.toLocaleString('es-UY')}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Cupón de descuento */}
-            <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-2.5 shadow-2xs">
-              <span className="text-xs font-black uppercase tracking-wider text-[#111111] flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-[#E10600]" />
-                <span>¿Tenés un cupón de descuento o código de amigo?</span>
+            <div className="p-4 rounded-[14px] bg-white border border-[#E6E8EB] space-y-2.5">
+              <span className="text-[13px] font-medium text-[#0B0B0C] flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-[#1E5EFF]" />
+                <span>¿Tenés un cupón de descuento?</span>
               </span>
 
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Ej: BIENVENIDO, DETAIL10"
+                  placeholder="Ej: DETAIL10"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2 text-xs text-[#111111] uppercase font-mono font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-1 focus:ring-[#E10600]"
+                  className="flex-1 bg-white border border-[#E6E8EB] rounded-[12px] h-[52px] px-4 text-[15px] text-[#0B0B0C] uppercase font-mono font-medium focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF]"
                 />
                 <button
                   type="button"
                   onClick={handleValidateCoupon}
-                  className="px-4 py-2 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black uppercase tracking-wider cursor-pointer transition-colors"
+                  className="px-5 h-[52px] rounded-[12px] bg-white border border-[#E6E8EB] hover:bg-[#F5F6F7] text-[#0B0B0C] text-[13px] font-semibold cursor-pointer transition-colors"
                 >
                   Aplicar
                 </button>
               </div>
 
               {appliedCoupon && (
-                <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>¡Cupón {appliedCoupon.code} aplicado con éxito! ({appliedCoupon.description})</span>
+                <div className="text-[13px] text-[#1E5EFF] font-medium flex items-center gap-1">
+                  <CheckCircle2 className="w-4 h-4 text-[#1E5EFF]" />
+                  <span>Cupón {appliedCoupon.code} aplicado ({appliedCoupon.description})</span>
                 </div>
               )}
             </div>
 
             {/* Formulario */}
-            <form onSubmit={handleSubmitForm} className="space-y-4">
+            <form onSubmit={handleSubmitForm} className="space-y-6">
               <div className="hidden" aria-hidden="true">
                 <input
                   type="text"
@@ -1959,16 +1864,16 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 />
               </div>
 
-              {/* 1. Datos Personales */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 space-y-3.5 shadow-2xs">
-                <span className="text-xs font-black uppercase tracking-wider text-[#E10600] block">
-                  1. Tus Datos de Contacto
+              {/* 1. Datos de Contacto (Obligatorios) */}
+              <div className="p-5 rounded-[14px] bg-white border border-[#E6E8EB] space-y-4">
+                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                  Datos de contacto
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">
-                      Nombre y apellido <span className="text-[#E10600]">*</span>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">
+                      Nombre y apellido <span className="text-[#1E5EFF]">*</span>
                     </label>
                     <input
                       type="text"
@@ -1976,13 +1881,13 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       placeholder="Ej: Juan Pérez"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-2 focus:ring-red-100 transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">
-                      WhatsApp / Celular <span className="text-[#E10600]">*</span>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">
+                      WhatsApp / Celular <span className="text-[#1E5EFF]">*</span>
                     </label>
                     <input
                       type="tel"
@@ -1990,163 +1895,165 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                       placeholder="Ej: 099 123 456"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-2 focus:ring-red-100 transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700">
-                    Email <span className="text-gray-400 text-[11px] font-normal">(opcional)</span>
+                  <label className="text-[13px] font-medium text-[#3A3D42] block">
+                    Email <span className="text-[#6B7079] text-[12px] font-normal">(opcional, para enviarte el PDF)</span>
                   </label>
                   <input
                     type="email"
-                    placeholder="Para recibir una copia de tu presupuesto en PDF"
+                    placeholder="tunombre@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] focus:ring-2 focus:ring-red-100 transition-all"
+                    className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                   />
                 </div>
               </div>
 
-              {/* 2. Datos del Auto */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200 space-y-3.5 shadow-2xs">
-                <span className="text-xs font-black uppercase tracking-wider text-[#E10600] block">
-                  2. Tu Vehículo <span className="text-gray-400 text-[11px] font-normal lowercase">(opcional)</span>
+              {/* 2. Datos del Auto (Opcional) */}
+              <div className="p-5 rounded-[14px] bg-white border border-[#E6E8EB] space-y-4">
+                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                  Datos del auto (opcional)
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Marca</label>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">Marca</label>
                     <input
                       type="text"
-                      placeholder="Ej: Peugeot"
+                      placeholder="Ej: Volkswagen"
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Modelo</label>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">Modelo</label>
                     <input
                       type="text"
-                      placeholder="Ej: 208"
+                      placeholder="Ej: Golf GTI"
                       value={vehicleModel}
                       onChange={(e) => setVehicleModel(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Año</label>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">Año</label>
                     <input
                       type="number"
                       placeholder="Ej: 2021"
                       value={vehicleYear}
                       onChange={(e) => setVehicleYear(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Matrícula</label>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">Matrícula</label>
                     <input
                       type="text"
-                      placeholder="Ej: SAA 1234"
+                      placeholder="Ej: SBX 4821"
                       value={vehiclePlate}
                       onChange={(e) => setVehiclePlate(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] placeholder-gray-400 text-xs uppercase font-mono font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] uppercase font-mono focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">Día acordado</label>
+                    <label className="text-[13px] font-medium text-[#3A3D42] block">Día preferido</label>
                     <input
                       type="date"
                       value={preferredDate}
                       onChange={(e) => setPreferredDate(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#111111] text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
+                      className="w-full h-[52px] bg-white border border-[#E6E8EB] rounded-[12px] px-4 text-[#0B0B0C] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-gray-700">
-                    Comentarios o notas de pintura / tapizado
+                  <label className="text-[13px] font-medium text-[#3A3D42] block">
+                    Comentarios o detalles especiales
                   </label>
                   <textarea
                     rows={2}
                     placeholder="Contanos si tiene rayas profundas, manchas en las butacas o algo puntual a tratar..."
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-[#111111] placeholder-gray-400 text-xs font-bold focus:outline-hidden focus:bg-white focus:border-[#E10600] transition-all"
+                    className="w-full bg-white border border-[#E6E8EB] rounded-[12px] p-3.5 text-[#0B0B0C] placeholder-[#6B7079] text-[15px] focus:outline-hidden focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF] transition-all"
                   />
                 </div>
               </div>
 
-              {/* Aclaración obligatoria de precio estimado */}
-              <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-950 flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-[#E10600] shrink-0 mt-0.5" />
-                <div className="leading-relaxed text-[11px]">
-                  <strong className="text-[#111111] block mb-0.5 font-black uppercase tracking-wider">
-                    Aclaración de DetailVlak:
-                  </strong>
-                  <span className="font-semibold text-gray-700">
-                    {webBudget.content?.estimated_price_disclaimer ||
-                      'Presupuesto estimado. El precio final y plazos se confirman al inspeccionar personalmente el vehículo en el taller.'}
-                  </span>
-                </div>
+              {/* Aclaración de precio estimado */}
+              <div className="p-4 rounded-[12px] bg-[#F5F6F7] border border-[#E6E8EB] flex items-start gap-3">
+                <ShieldCheck className="w-4 h-4 text-[#6B7079] shrink-0 mt-0.5" />
+                <p className="text-[12px] text-[#6B7079] leading-relaxed">
+                  {webBudget.content?.estimated_price_disclaimer ||
+                    'Presupuesto estimado. El precio final y plazos se confirman al inspeccionar personalmente el vehículo en el taller.'}
+                </p>
               </div>
 
-              {/* Botón de Enviar */}
+              {/* Botón Principal */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-[#E10600] hover:bg-[#c20500] text-white font-black uppercase tracking-wider text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-red-600/30 cursor-pointer disabled:opacity-50 active:scale-98"
+                className="w-full h-[52px] rounded-[12px] bg-[#1E5EFF] hover:bg-[#1747C7] text-white font-semibold text-[15px] flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
               >
-                <CheckCircle2 className="w-5 h-5" />
                 <span>{isSubmitting ? 'Generando presupuesto...' : 'Ver mi presupuesto terminado'}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* PASO 5: PANTALLA FINAL (RESUMEN + WHATSAPP + PDF + CUPONES)         */}
+        {/* PASO 5: RESULTADO (TARJETA TIPO COMPROBANTE SOBRIO)                  */}
         {/* =================================================================== */}
         {currentStep === 5 && createdRequest && (
-          <div className="space-y-6 animate-fade-in max-w-2xl mx-auto py-2">
+          <div className="space-y-6 max-w-2xl mx-auto">
             {/* Header de Éxito */}
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 text-[#E10600] flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 className="w-9 h-9" />
+              <div className="w-12 h-12 rounded-full bg-[#EEF3FF] text-[#1E5EFF] flex items-center justify-center mx-auto">
+                <Check className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl sm:text-4xl font-anton uppercase text-[#111111] tracking-wide">
-                ¡Presupuesto listo, {createdRequest.client_name}!
+              <h2 className="text-[32px] font-bold leading-[1.15] text-[#0B0B0C]">
+                Presupuesto listo, {createdRequest.client_name}
               </h2>
-              <p className="text-xs text-gray-600 font-bold max-w-md mx-auto">
-                Tu cotización para tu <strong>{createdRequest.vehicle_brand} {createdRequest.vehicle_model}</strong> quedó registrada con el código:
-              </p>
-              <div className="inline-block px-4 py-1.5 rounded-xl bg-[#111111] font-mono text-base font-black text-white tracking-wider">
-                #{createdRequest.code}
+              <div className="pt-1">
+                <span className="text-[12px] font-mono font-medium text-[#6B7079] bg-[#F5F6F7] border border-[#E6E8EB] px-3 py-1 rounded-[8px] inline-block">
+                  #{createdRequest.code}
+                </span>
               </div>
             </div>
 
-            {/* Tarjeta de Resumen Detallado */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-gray-200 space-y-4 shadow-lg shadow-gray-100">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3 text-xs">
-                <span className="text-gray-500 font-bold">Tamaño del vehículo:</span>
-                <span className="font-black text-[#111111] uppercase">{createdRequest.vehicle_category}</span>
+            {/* Tarjeta tipo comprobante */}
+            <div className="p-6 rounded-[14px] bg-white border border-[#E6E8EB] space-y-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-[#E6E8EB] pb-3 text-[13px]">
+                <span className="text-[#6B7079]">Categoría del vehículo:</span>
+                <span className="font-semibold text-[#0B0B0C]">{createdRequest.vehicle_category}</span>
               </div>
 
+              {createdRequest.vehicle_brand && createdRequest.vehicle_brand !== 'A coordinar' && (
+                <div className="flex items-center justify-between border-b border-[#E6E8EB] pb-3 text-[13px]">
+                  <span className="text-[#6B7079]">Vehículo:</span>
+                  <span className="font-semibold text-[#0B0B0C]">
+                    {createdRequest.vehicle_brand} {createdRequest.vehicle_model} {createdRequest.vehicle_year ? `(${createdRequest.vehicle_year})` : ''}
+                  </span>
+                </div>
+              )}
+
               {createdRequest.preferred_date && (
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3 text-xs">
-                  <span className="text-gray-500 font-bold">Fecha en agenda:</span>
-                  <span className="font-bold text-[#E10600] flex items-center gap-1">
-                    <CalendarIcon className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between border-b border-[#E6E8EB] pb-3 text-[13px]">
+                  <span className="text-[#6B7079]">Fecha estimada:</span>
+                  <span className="font-semibold text-[#0B0B0C]">
                     {createdRequest.preferred_date} (
                     {createdRequest.preferred_time_slot === 'manana'
                       ? 'Mañana'
@@ -2159,22 +2066,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               )}
 
               {/* Lista de Servicios */}
-              <div className="space-y-2">
-                <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider block">
-                  Tratamientos Seleccionados
+              <div className="space-y-2 pt-1">
+                <span className="text-[12px] uppercase font-medium text-[#6B7079] tracking-[0.06em] block">
+                  Tratamientos solicitados
                 </span>
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-[#E6E8EB]">
                   {createdRequest.selected_services.map((item, idx) => (
-                    <div key={idx} className="py-2.5 flex items-center justify-between text-xs">
+                    <div key={idx} className="py-2.5 flex items-center justify-between text-[13px]">
                       <div>
-                        <div className="font-black uppercase text-[#111111]">{item.serviceName}</div>
+                        <div className="font-semibold text-[#0B0B0C]">{item.serviceName}</div>
                         {item.durationHours && (
-                          <div className="text-[10px] text-gray-500 font-mono font-bold">
-                            Duración estimada: {item.durationHours} hs
+                          <div className="text-[12px] text-[#6B7079]">
+                            Duración: {item.durationHours} hs
                           </div>
                         )}
                       </div>
-                      <span className="font-mono font-black text-[#111111]">
+                      <span className="font-mono font-semibold text-[#0B0B0C] tabular-nums">
                         ${item.price.toLocaleString('es-UY')}
                       </span>
                     </div>
@@ -2182,9 +2089,9 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
                   {createdRequest.selected_products &&
                     createdRequest.selected_products.map((prod, idx) => (
-                      <div key={`p-${idx}`} className="py-2 flex items-center justify-between text-xs text-gray-700">
-                        <span className="italic font-bold">+ {prod.productName} (mantenimiento)</span>
-                        <span className="font-mono font-black">${prod.price.toLocaleString('es-UY')}</span>
+                      <div key={`p-${idx}`} className="py-2.5 flex items-center justify-between text-[13px] text-[#6B7079]">
+                        <span>+ {prod.productName} (cuidado en casa)</span>
+                        <span className="font-mono font-medium tabular-nums">${prod.price.toLocaleString('es-UY')}</span>
                       </div>
                     ))}
                 </div>
@@ -2192,92 +2099,41 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
               {/* Descuentos Aplicados */}
               {createdRequest.applied_discount && createdRequest.applied_discount.discount_amount > 0 && (
-                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-emerald-700 font-black">
-                  <span>Descuento ({createdRequest.applied_discount.discount_name}):</span>
-                  <span>-${createdRequest.applied_discount.discount_amount.toLocaleString('es-UY')} UYU</span>
+                <div className="pt-2 border-t border-[#E6E8EB] flex items-center justify-between text-[13px] text-[#1E5EFF] font-semibold">
+                  <span>Descuento aplicado:</span>
+                  <span className="font-mono tabular-nums">-${createdRequest.applied_discount.discount_amount.toLocaleString('es-UY')} UYU</span>
                 </div>
               )}
 
-              {/* Total Final */}
-              <div className="pt-3 border-t-2 border-gray-100 flex items-center justify-between">
-                <span className="font-black text-sm uppercase text-gray-700">TOTAL ESTIMADO:</span>
-                <span className="text-2xl font-black text-[#E10600] font-mono">
+              {/* Total Final Destacado */}
+              <div className="pt-4 border-t border-[#E6E8EB] flex items-center justify-between">
+                <span className="font-semibold text-[15px] text-[#0B0B0C]">TOTAL ESTIMADO:</span>
+                <span className="text-[24px] font-bold text-[#1E5EFF] font-mono tabular-nums">
                   ${createdRequest.total_amount.toLocaleString('es-UY')}{' '}
-                  <span className="text-xs text-gray-500 font-normal">UYU</span>
+                  <span className="text-[13px] text-[#6B7079] font-normal">UYU</span>
                 </span>
               </div>
             </div>
-
-            {/* Tarjeta de Cupón Próximo Servicio */}
-            {createdRequest.next_service_coupon_code && (
-              <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-red-100 text-[#E10600] flex items-center justify-center shrink-0">
-                    <Gift className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="font-black uppercase text-[#111111] block">¡Cupón regalo para tu próximo servicio!</span>
-                    <span className="text-[11px] text-gray-600 font-medium">
-                      Presentalo en el taller o compartilo con un amigo para un 10% de descuento.
-                    </span>
-                  </div>
-                </div>
-                <span className="font-mono font-black text-sm bg-white px-3 py-1.5 rounded-xl border border-red-300 text-[#E10600] shrink-0">
-                  {createdRequest.next_service_coupon_code}
-                </span>
-              </div>
-            )}
-
-            {/* Código de referidos personal */}
-            {personalReferralCode && (
-              <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-300 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-black text-white flex items-center justify-center shrink-0">
-                    <Share2 className="w-5 h-5 text-[#E10600]" />
-                  </div>
-                  <div>
-                    <span className="font-black uppercase text-[#111111] block">Tu código de recomendación</span>
-                    <span className="text-[11px] text-gray-600 font-medium">
-                      Un amigo se ahorra 10% y vos acumulás crédito para tu próximo service.
-                    </span>
-                  </div>
-                </div>
-                <span className="font-mono font-black text-xs bg-white px-3 py-1.5 rounded-xl border border-gray-300 text-[#111111] shrink-0">
-                  {personalReferralCode}
-                </span>
-              </div>
-            )}
 
             {/* Botones de Acción */}
             <div className="space-y-3 pt-2">
               <button
                 type="button"
                 onClick={handleConfirmWhatsApp}
-                className="w-full py-4 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-black uppercase tracking-wider text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-xl shadow-[#25D366]/25 cursor-pointer active:scale-98"
+                className="w-full h-[52px] rounded-[12px] bg-[#1E5EFF] hover:bg-[#1747C7] text-white font-semibold text-[15px] flex items-center justify-center gap-2.5 transition-colors cursor-pointer shadow-xs"
               >
-                <MessageCircle className="w-5 h-5" />
-                <span>Confirmar por WhatsApp ahora</span>
+                <MessageCircle className="w-5 h-5 text-[#25D366] fill-[#25D366]" />
+                <span>Confirmar por WhatsApp</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowPrintModal(true)}
-                className="w-full py-3.5 rounded-2xl bg-[#111111] hover:bg-black text-white font-black uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-2 transition-all border border-gray-800 cursor-pointer shadow-md"
+                className="w-full h-[52px] rounded-[12px] bg-white border border-[#E6E8EB] hover:bg-[#F5F6F7] text-[#0B0B0C] font-semibold text-[15px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
-                <FileText className="w-4 h-4 text-[#E10600]" />
-                <span>Descargar Presupuesto en PDF</span>
+                <FileText className="w-4 h-4 text-[#6B7079]" />
+                <span>Descargar PDF</span>
               </button>
-            </div>
-
-            {/* Ubicación del Taller */}
-            <div className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-200 text-xs text-gray-600 space-y-1.5 text-center">
-              <div className="flex items-center justify-center gap-1.5 font-black uppercase text-[#111111]">
-                <MapPin className="w-4 h-4 text-[#E10600]" />
-                <span>DetailVlak Shangrilá • Av. Giannattasio</span>
-              </div>
-              <p className="text-[11px] text-gray-500 font-medium">
-                Atención con agenda previa de Lunes a Sábados de 08:30 a 18:30 hs.
-              </p>
             </div>
 
             <div className="text-center pt-2">
@@ -2290,119 +2146,97 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                   setCurrentStep(1);
                   scrollToTop();
                 }}
-                className="text-xs text-gray-500 hover:text-black font-bold underline cursor-pointer"
+                className="text-[13px] text-[#6B7079] hover:text-[#0B0B0C] underline cursor-pointer"
               >
                 Armar otro presupuesto nuevo
               </button>
             </div>
           </div>
         )}
+      </main>
+      )}
 
-        {/* =================================================================== */}
-        {/* SECCIÓN ESTILO INSTAGRAM: "NUESTROS TRABAJOS" (FEED DE 3 COLUMNAS) */}
-        {/* =================================================================== */}
-        <section id="nuestros-trabajos" className="mt-14 space-y-5 pt-10 border-t border-gray-200 scroll-mt-20">
-          <div className="text-center space-y-1.5">
+      {/* --------------------------------------------------------------------- */}
+      {/* 5. SECCIONES DE ABAJO (EN FONDO GRIS ALTERNO #F5F6F7)                 */}
+      {/* --------------------------------------------------------------------- */}
+      <section id="secciones-inferiores" className="bg-[#F5F6F7] border-t border-[#E6E8EB] py-14 px-5 sm:px-6 w-full">
+        <div className="max-w-[1080px] mx-auto space-y-16">
+          {/* A) TRABAJOS: GRILLA 2 COLUMNAS SIN TEXTO ENCIMA */}
+          <div className="space-y-4">
             <div>
-              <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded shadow-xs inline-block">
-                FEED @DETAILVLAK
+              <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block mb-1">
+                TRABAJOS REALES
               </span>
+              <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
+                Resultados en nuestro taller
+              </h2>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-anton uppercase text-[#111111] tracking-wide">
-              Nuestros Trabajos Reales
-            </h3>
-            <p className="text-xs text-gray-600 font-bold max-w-md mx-auto">
-              Mirá las transformaciones diarias que realizamos en nuestro taller de estética automotriz en Shangrilá.
-            </p>
-          </div>
 
-          {/* Grilla de 3 columnas estilo Instagram Feed */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 rounded-2xl overflow-hidden">
-            {galleryItems.map((item, idx) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+              {galleryItems.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="aspect-[4/3] rounded-[14px] overflow-hidden bg-white border border-[#E6E8EB] shadow-xs"
+                >
+                  <img
+                    src={item.url}
+                    alt={item.caption || 'Trabajo DetailVlak'}
+                    className="w-full h-full object-cover hover:scale-103 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
               <a
-                key={idx}
                 href="https://www.instagram.com/detailvlak/"
                 target="_blank"
                 rel="noreferrer"
-                className="relative aspect-square overflow-hidden group bg-black cursor-pointer"
+                className="text-[13px] text-[#1E5EFF] font-medium hover:underline inline-flex items-center gap-1"
               >
-                <img
-                  src={item.url}
-                  alt={item.caption || 'Trabajo DetailVlak'}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95"
-                />
-                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 p-2">
-                  <div className="text-center text-white space-y-1">
-                    <Instagram className="w-5 h-5 mx-auto text-[#E10600]" />
-                    {item.caption && (
-                      <p className="text-[10px] sm:text-xs font-black uppercase tracking-tight line-clamp-2">
-                        {item.caption}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="absolute top-1.5 right-1.5 z-10">
-                  <span className="w-5 h-5 rounded-md bg-black/60 backdrop-blur-xs flex items-center justify-center text-white/90">
-                    <Play className="w-2.5 h-2.5 fill-white text-white" />
-                  </span>
-                </div>
+                <span>Ver más trabajos en Instagram @detailvlak</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </a>
-            ))}
+            </div>
           </div>
 
-          {/* Botón Ver Más en Instagram */}
-          <div className="text-center pt-2">
-            <a
-              href="https://www.instagram.com/detailvlak/"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white text-xs font-black uppercase tracking-wider shadow-md hover:opacity-95 transition-opacity"
-            >
-              <Instagram className="w-4 h-4" />
-              <span>Ver más en Instagram @detailvlak</span>
-            </a>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------------------------- */}
-        {/* BLOQUES DE CONFIANZA (Reseñas, FAQ y Ubicación del Taller)         */}
-        {/* ------------------------------------------------------------------- */}
-        <div className="mt-12 space-y-10 pt-10 border-t border-gray-200">
-          {/* Reseñas de Clientes Reales */}
+          {/* B) OPINIONES */}
           {webBudget.content?.reviews && webBudget.content.reviews.length > 0 && (
-            <div className="space-y-3">
-              <div className="text-center space-y-1">
-                <div>
-                  <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-xs inline-block">
-                    OPINIONES
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-anton uppercase text-[#111111] tracking-wide">
-                  Clientes que Vuelven a Estrenar su Auto
-                </h3>
+            <div className="space-y-4">
+              <div>
+                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block mb-1">
+                  OPINIONES
+                </span>
+                <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
+                  Lo que dicen nuestros clientes
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {webBudget.content.reviews.map((rev) => (
                   <div
                     key={rev.id}
-                    className="p-4 rounded-2xl bg-[#F2F2F2] border border-gray-200 space-y-2 flex flex-col justify-between"
+                    className="p-5 rounded-[14px] bg-white border border-[#E6E8EB] space-y-3 flex flex-col justify-between shadow-xs"
                   >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1 text-[#E10600]">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1 text-[#1E5EFF]">
                         {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-[#E10600] text-[#E10600]" />
+                          <Star key={i} className="w-3.5 h-3.5 fill-[#1E5EFF] text-[#1E5EFF]" />
                         ))}
                       </div>
-                      <p className="text-xs text-gray-700 italic font-semibold leading-relaxed">
+                      <p className="text-[15px] text-[#3A3D42] leading-relaxed">
                         "{rev.comment}"
                       </p>
                     </div>
 
-                    <div className="pt-2 border-t border-gray-300">
-                      <span className="font-black text-xs uppercase text-[#111111] block">{rev.client_name}</span>
+                    <div className="pt-3 border-t border-[#E6E8EB]">
+                      <span className="font-semibold text-[13px] text-[#0B0B0C] block">
+                        {rev.client_name}
+                      </span>
                       {rev.vehicle && (
-                        <span className="text-[10px] text-gray-500 font-bold block">{rev.vehicle}</span>
+                        <span className="text-[12px] text-[#6B7079] block">
+                          {rev.vehicle}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -2411,31 +2245,29 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
           )}
 
-          {/* Preguntas Frecuentes (FAQ) */}
+          {/* C) PREGUNTAS FRECUENTES (ACORDEÓN CON SEPARADORES FINOS) */}
           {webBudget.content?.faqs && webBudget.content.faqs.length > 0 && (
-            <div className="space-y-3 max-w-2xl mx-auto">
-              <div className="text-center space-y-1">
-                <div>
-                  <span className="bg-[#E10600] text-white font-montserrat font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-xs inline-block">
-                    PREGUNTAS FRECUENTES
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-anton uppercase text-[#111111] tracking-wide">
+            <div className="space-y-4 max-w-2xl">
+              <div>
+                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block mb-1">
+                  PREGUNTAS FRECUENTES
+                </span>
+                <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
                   Dudas habituales sobre los tratamientos
-                </h3>
+                </h2>
               </div>
 
-              <div className="space-y-2 pt-2">
+              <div className="rounded-[14px] bg-white border border-[#E6E8EB] divide-y divide-[#E6E8EB] overflow-hidden shadow-xs">
                 {webBudget.content.faqs.map((faq, i) => (
                   <details
                     key={i}
-                    className="group p-3.5 rounded-xl bg-[#F2F2F2] border border-gray-200 text-xs open:bg-red-50/20 open:border-red-200 transition-all cursor-pointer"
+                    className="group p-4.5 cursor-pointer"
                   >
-                    <summary className="font-black uppercase tracking-wide text-[#111111] flex items-center justify-between list-none">
+                    <summary className="font-semibold text-[15px] text-[#0B0B0C] flex items-center justify-between list-none">
                       <span>{faq.question}</span>
-                      <ChevronDown className="w-4 h-4 text-[#E10600] group-open:rotate-180 transition-transform" />
+                      <ChevronDown className="w-4 h-4 text-[#6B7079] group-open:rotate-180 transition-transform shrink-0" />
                     </summary>
-                    <p className="text-gray-700 font-semibold mt-2 leading-relaxed pt-2 border-t border-gray-300">
+                    <p className="text-[#6B7079] text-[13px] font-normal mt-2.5 leading-relaxed">
                       {faq.answer}
                     </p>
                   </details>
@@ -2444,279 +2276,276 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             </div>
           )}
 
-          {/* Ubicación & Mapa */}
+          {/* D) UBICACIÓN */}
           <div
             ref={locationRef}
-            className="p-5 rounded-2xl bg-[#F2F2F2] border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4"
+            className="p-6 rounded-[14px] bg-white border border-[#E6E8EB] space-y-3 shadow-xs"
           >
-            <div className="space-y-1 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-1.5 font-black uppercase tracking-wide text-sm text-[#111111]">
-                <MapPin className="w-4 h-4 text-[#E10600]" />
-                <span>DetailVlak Shangrilá</span>
-              </div>
-              <p className="text-xs text-gray-600 font-bold">
-                {webBudget.content?.address ||
-                  'Av. Giannattasio, Ciudad de la Costa, Canelones, Uruguay.'}
-              </p>
+            <div>
+              <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block mb-1">
+                UBICACIÓN
+              </span>
+              <h2 className="text-[22px] font-semibold text-[#0B0B0C]">
+                Taller DetailVlak Shangrilá
+              </h2>
             </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+              <div className="space-y-1">
+                <p className="text-[15px] text-[#3A3D42]">
+                  {webBudget.content?.address || 'Av. Giannattasio, Ciudad de la Costa, Canelones, Uruguay.'}
+                </p>
+                <p className="text-[13px] text-[#6B7079]">
+                  Horario de atención: Lunes a Sábados de 08:30 a 18:30 hs (con coordinación previa).
+                </p>
+              </div>
 
-            <a
-              href={webBudget.content?.map_url || 'https://maps.google.com/?q=Shangrila+Canelones+Uruguay'}
-              target="_blank"
-              rel="noreferrer"
-              className="px-5 py-2.5 rounded-xl bg-[#111111] hover:bg-black text-white text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
-            >
-              <span>Cómo llegar (Google Maps)</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#E10600]" />
-            </a>
+              <a
+                href={webBudget.content?.map_url || 'https://maps.google.com/?q=Shangrila+Canelones+Uruguay'}
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-2.5 rounded-[10px] bg-white border border-[#E6E8EB] hover:bg-[#F5F6F7] text-[#0B0B0C] text-[13px] font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+              >
+                <span>Cómo llegar en Google Maps</span>
+                <ExternalLink className="w-3.5 h-3.5 text-[#6B7079]" />
+              </a>
+            </div>
           </div>
         </div>
-      </main>
+      </section>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 5. BARRA FIJA INFERIOR (Sticky Bottom Bar Negra con Total en Blanco)  */}
+      {/* 6. BARRA FIJA INFERIOR: FONDO NEGRO #0B0B0C, TOTAL EN BLANCO, BOTÓN AZUL */}
       {/* --------------------------------------------------------------------- */}
-      {currentStep <= 3 && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#111111] border-t border-neutral-800 p-3 sm:p-4 shadow-[0_-8px_25px_rgba(0,0,0,0.5)] safe-bottom text-white">
-          <div className="max-w-4xl mx-auto space-y-2">
-            {/* Mensaje de incentivo si falta 1 servicio */}
-            {nextTierPushMessage && (
-              <div className="text-[11px] font-bold text-white bg-[#E10600] px-3 py-1 rounded-lg flex items-center justify-between shadow-xs">
-                <span>{nextTierPushMessage}</span>
-                <Percent className="w-3.5 h-3.5 shrink-0" />
+      {!isOnlySections && currentStep <= 3 && (
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-[#0B0B0C] border-t border-neutral-800 p-4 safe-bottom text-white shadow-xl">
+          <div className="max-w-[1080px] mx-auto flex items-center justify-between gap-4">
+            {/* Izquierda: Cantidad de servicios + Total en blanco grande */}
+            <div
+              onClick={() => setIsSummaryDrawerOpen(!isSummaryDrawerOpen)}
+              className="cursor-pointer min-w-0"
+            >
+              <div className="flex items-center gap-1.5 text-[13px] text-[#6B7079]">
+                <span className="truncate">
+                  {selectedServices.length} servicio{selectedServices.length !== 1 ? 's' : ''}{' '}
+                  {selectedCategory ? `• ${selectedCategory}` : ''}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-[#6B7079] transition-transform shrink-0 ${
+                    isSummaryDrawerOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </div>
-            )}
 
-            <div className="flex items-center justify-between gap-3">
-              {/* Resumen & Total en Vivo */}
-              <div
-                onClick={() => setIsSummaryDrawerOpen(!isSummaryDrawerOpen)}
-                className="cursor-pointer min-w-0"
-              >
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-400 font-bold">
-                  <span className="truncate">
-                    {selectedServices.length} servicio{selectedServices.length !== 1 ? 's' : ''}{' '}
-                    {selectedCategory ? `• ${selectedCategory}` : ''}
-                  </span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-[#E10600] transition-transform shrink-0 ${
-                      isSummaryDrawerOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </div>
-
-                <div className="flex items-baseline gap-2">
-                  <div className="text-xl sm:text-2xl font-black text-white font-mono leading-tight">
-                    {selectedCategory ? (
-                      <>
-                        ${finalTotal.toLocaleString('es-UY')}{' '}
-                        <span className="text-xs font-normal text-gray-400">UYU</span>
-                      </>
-                    ) : (
-                      <span className="text-xs text-[#E10600] font-sans font-black uppercase tracking-wider">
-                        Elegí tamaño de auto
-                      </span>
-                    )}
-                  </div>
-
-                  {discountDetails.totalDiscount > 0 && (
-                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded shadow-xs">
-                      AHORRÁS ${discountDetails.totalDiscount.toLocaleString('es-UY')}
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <div className="text-[22px] font-bold text-white font-mono leading-tight tabular-nums">
+                  {selectedCategory ? (
+                    <>
+                      ${finalTotal.toLocaleString('es-UY')}{' '}
+                      <span className="text-[13px] font-normal text-[#6B7079]">UYU</span>
+                    </>
+                  ) : (
+                    <span className="text-[13px] text-[#99BCFF] font-medium">
+                      Elegí el tamaño
                     </span>
                   )}
                 </div>
-              </div>
 
-              {/* Botón Siguiente Rojo */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (currentStep === 1) {
-                    if (!selectedCategory) {
-                      alert('Por favor elegí el tamaño de tu vehículo para continuar.');
-                      return;
-                    }
-                    setCurrentStep(2);
-                  } else if (currentStep === 2) {
-                    if (selectedServices.length === 0) {
-                      alert('Por favor seleccioná al menos 1 servicio.');
-                      return;
-                    }
-                    setCurrentStep(3);
-                  } else if (currentStep === 3) {
-                    setCurrentStep(4);
-                  }
-                  scrollToTop();
-                }}
-                disabled={currentStep === 1 && !selectedCategory}
-                className="px-6 sm:px-8 py-3 rounded-xl bg-[#E10600] hover:bg-[#c20500] text-white font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg shadow-red-600/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              >
-                <span>
-                  {currentStep === 1
-                    ? 'CONTINUAR'
-                    : currentStep === 2
-                    ? 'ELEGIR DÍA'
-                    : 'TUS DATOS'}
-                </span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Drawer Desplegable con los items seleccionados */}
-            {isSummaryDrawerOpen && (
-              <div className="mt-3 pt-3 border-t border-neutral-800 space-y-2 max-h-56 overflow-y-auto">
-                <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider block">
-                  Desglose de tu presupuesto:
-                </span>
-                {selectedServices.length === 0 ? (
-                  <p className="text-xs text-gray-400">Aún no agregaste servicios.</p>
-                ) : (
-                  <div className="space-y-1.5 divide-y divide-neutral-800 text-xs">
-                    {selectedServices.map((s) => (
-                      <div
-                        key={s.tariff.id}
-                        className="pt-1.5 flex items-center justify-between text-gray-300"
-                      >
-                        <span className="truncate pr-2 font-bold">{s.tariff.shortName || s.tariff.name}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono text-white font-black">
-                            ${s.price.toLocaleString('es-UY')}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleService(s.tariff.id);
-                            }}
-                            className="text-[#E10600] hover:underline text-[10px] font-bold"
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {selectedProducts.map((p) => (
-                      <div
-                        key={p.id}
-                        className="pt-1.5 flex items-center justify-between text-gray-400 italic"
-                      >
-                        <span className="truncate pr-2">+ {p.name}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono font-bold text-white">${p.price.toLocaleString('es-UY')}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleProduct(p.id);
-                            }}
-                            className="text-[#E10600] hover:underline text-[10px] font-bold"
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {discountDetails.totalDiscount > 0 && (
-                      <div className="pt-2 flex items-center justify-between text-[#E10600] font-black text-xs">
-                        <span>Descuentos acumulados:</span>
-                        <span>-${discountDetails.totalDiscount.toLocaleString('es-UY')}</span>
-                      </div>
-                    )}
-                  </div>
+                {discountDetails.totalDiscount > 0 && (
+                  <span className="text-[12px] text-[#99BCFF] font-normal">
+                    Ahorro: -${discountDetails.totalDiscount.toLocaleString('es-UY')}
+                  </span>
                 )}
               </div>
-            )}
+            </div>
+
+            {/* Derecha: Botón azul "Continuar" */}
+            <button
+              type="button"
+              onClick={() => {
+                if (currentStep === 1) {
+                  if (!selectedCategory) {
+                    alert('Por favor elegí el tamaño de tu vehículo para continuar.');
+                    return;
+                  }
+                  setCurrentStep(2);
+                } else if (currentStep === 2) {
+                  if (selectedServices.length === 0) {
+                    alert('Por favor seleccioná al menos 1 servicio.');
+                    return;
+                  }
+                  setCurrentStep(3);
+                } else if (currentStep === 3) {
+                  setCurrentStep(4);
+                }
+                scrollToTop();
+              }}
+              disabled={currentStep === 1 && !selectedCategory}
+              className="h-[48px] px-6 rounded-[12px] bg-[#1E5EFF] hover:bg-[#1747C7] text-white font-semibold text-[15px] flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              <span>Continuar</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
+
+          {/* Drawer desplegable con desglose */}
+          {isSummaryDrawerOpen && (
+            <div className="max-w-[1080px] mx-auto mt-3 pt-3 border-t border-neutral-800 space-y-2 max-h-56 overflow-y-auto">
+              <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                Detalle de tratamientos seleccionados:
+              </span>
+              {selectedServices.length === 0 ? (
+                <p className="text-[13px] text-[#6B7079]">Aún no agregaste servicios.</p>
+              ) : (
+                <div className="space-y-1.5 divide-y divide-neutral-800 text-[13px]">
+                  {selectedServices.map((s) => (
+                    <div
+                      key={s.tariff.id}
+                      className="pt-1.5 flex items-center justify-between text-neutral-300"
+                    >
+                      <span className="truncate pr-2">{s.tariff.shortName || s.tariff.name}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-white font-semibold tabular-nums">
+                          ${s.price.toLocaleString('es-UY')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleService(s.tariff.id);
+                          }}
+                          className="text-[#99BCFF] hover:underline text-[12px]"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {selectedProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      className="pt-1.5 flex items-center justify-between text-neutral-400"
+                    >
+                      <span className="truncate pr-2">+ {p.name}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-white tabular-nums">${p.price.toLocaleString('es-UY')}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleProduct(p.id);
+                          }}
+                          className="text-[#99BCFF] hover:underline text-[12px]"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {discountDetails.totalDiscount > 0 && (
+                    <div className="pt-2 flex items-center justify-between text-[#99BCFF] font-medium text-[13px]">
+                      <span>Descuentos acumulados:</span>
+                      <span className="font-mono tabular-nums">-${discountDetails.totalDiscount.toLocaleString('es-UY')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 6. BOTÓN FLOTANTE DIRECTO DE WHATSAPP                                 */}
-      {/* --------------------------------------------------------------------- */}
-      <button
-        type="button"
-        onClick={handleDirectFloatingWhatsApp}
-        className="fixed bottom-20 sm:bottom-24 right-4 z-40 w-12 h-12 rounded-full bg-[#25D366] hover:bg-[#20BA5A] text-white flex items-center justify-center shadow-xl shadow-[#25D366]/30 transition-transform active:scale-95 cursor-pointer"
-        title="Consultar por WhatsApp"
-      >
-        <MessageCircle className="w-6 h-6" />
-      </button>
-
-      {/* --------------------------------------------------------------------- */}
-      {/* 7. MODAL DE SERVICIO ESTILO REEL CON COMPARADOR ANTES / DESPUÉS       */}
+      {/* 7. DETALLE DE SERVICIO: HOJA QUE SUBE DESDE ABAJO (BOTTOM SHEET / MODAL) */}
       {/* --------------------------------------------------------------------- */}
       {detailModalService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-2xl my-auto text-[#111111] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-gray-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+          <div className="bg-white rounded-t-[20px] sm:rounded-[16px] w-full sm:max-w-2xl max-h-[90vh] text-[#0B0B0C] shadow-2xl overflow-hidden flex flex-col border border-[#E6E8EB] animate-fade-in">
             {/* Header del modal */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-[#111111] text-white flex items-center justify-center shrink-0">
-                  <Play className="w-3.5 h-3.5 fill-[#E10600] text-[#E10600]" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-anton uppercase text-[#111111] text-base sm:text-lg truncate tracking-wide">
-                    {detailModalService.name}
-                  </h3>
-                  <span className="text-[11px] text-gray-500 font-bold font-mono">
-                    Duración estimada: {detailModalService.durationHours || 3} horas
-                  </span>
-                </div>
-              </div>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#E6E8EB] bg-white sticky top-0 z-10 shrink-0">
+              <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079]">
+                Detalle del tratamiento
+              </span>
               <button
                 type="button"
                 onClick={() => setDetailModalService(null)}
-                className="p-1.5 text-gray-400 hover:text-black rounded-xl hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+                className="p-1.5 text-[#6B7079] hover:text-[#0B0B0C] rounded-[8px] hover:bg-[#F5F6F7] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Contenido scrolleable */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs">
-              {/* Demostración Time-Lapse en video */}
+            {/* Contenido scrolleable en el orden solicitado:
+                1. video o foto
+                2. nombre
+                3. precio y duración
+                4. comparador antes / después
+                5. descripción
+                6. qué incluye con pasos numerados
+                7. productos como lista simple
+                8. botón principal fijo abajo */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-[15px] flex-1">
+              {/* 1. Video o Foto */}
               {detailModalService.video_url && detailModalService.video_url.trim() ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
-                      DEMO EN VIDEO
-                    </span>
-                    <span className="text-xs font-black uppercase text-[#111111]">
-                      Time-Lapse real de este tratamiento
-                    </span>
-                  </div>
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-black aspect-video sm:aspect-auto">
-                    {detailModalService.is_video_uploaded || detailModalService.video_url.includes('.mp4') ? (
-                      <video
-                        src={detailModalService.video_url}
-                        controls
-                        playsInline
-                        className="w-full max-h-[350px] object-contain mx-auto"
-                      />
-                    ) : (
-                      <VideoEmbed url={detailModalService.video_url} autoPlay />
-                    )}
-                  </div>
+                <div className="rounded-[12px] overflow-hidden border border-[#E6E8EB] bg-black aspect-video">
+                  {detailModalService.is_video_uploaded || detailModalService.video_url.includes('.mp4') ? (
+                    <video
+                      src={detailModalService.video_url}
+                      controls
+                      playsInline
+                      className="w-full h-full object-contain mx-auto"
+                    />
+                  ) : (
+                    <VideoEmbed url={detailModalService.video_url} autoPlay />
+                  )}
                 </div>
-              ) : null}
-
-              {/* COMPARADOR ANTES / DESPUÉS DESLIZABLE */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="bg-[#E10600] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded">
-                      COMPARADOR
-                    </span>
-                    <span className="text-xs font-black uppercase text-[#111111]">
-                      Antes y Después (Deslizá para comparar)
-                    </span>
-                  </div>
+              ) : (
+                <div className="rounded-[12px] overflow-hidden border border-[#E6E8EB] aspect-[16/9] bg-[#F5F6F7]">
+                  <img
+                    src={
+                      detailModalService.cover_image_url ||
+                      'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80'
+                    }
+                    alt={detailModalService.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
+              )}
 
-                {detailModalService.before_after_images &&
-                detailModalService.before_after_images.length > 0 ? (
+              {/* 2. Nombre */}
+              <div className="space-y-1">
+                <h3 className="text-[22px] font-semibold text-[#0B0B0C] leading-snug">
+                  {detailModalService.name}
+                </h3>
+              </div>
+
+              {/* 3. Precio y Duración */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EB]">
+                <div>
+                  <span className="text-[12px] uppercase text-[#6B7079] font-medium block">
+                    {selectedCategory ? `Precio (${selectedCategory})` : 'Precio estimado'}
+                  </span>
+                  <span className="text-[20px] font-bold font-mono tabular-nums text-[#1E5EFF]">
+                    ${categoryKey ? (detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY') : (detailModalService.prices?.mediano || 0).toLocaleString('es-UY')} UYU
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[12px] uppercase text-[#6B7079] font-medium block">
+                    Duración aprox.
+                  </span>
+                  <span className="text-[15px] font-medium text-[#0B0B0C]">
+                    {detailModalService.durationHours || 3} horas
+                  </span>
+                </div>
+              </div>
+
+              {/* 4. Comparador antes / después deslizable */}
+              <div className="space-y-2">
+                <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                  Antes y después (deslizá para comparar)
+                </span>
+                {detailModalService.before_after_images && detailModalService.before_after_images.length > 0 ? (
                   <div className="space-y-3">
                     {detailModalService.before_after_images.map((pair, idx) => (
                       <BeforeAfterSlider
@@ -2729,58 +2558,57 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                     ))}
                   </div>
                 ) : (
-                  // Fallback interactivo de alta calidad de DetailVlak para que siempre se vea el comparador
                   <BeforeAfterSlider
                     beforeUrl="https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&auto=format&fit=crop&q=80"
                     afterUrl="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80"
-                    labelBefore="ANTES (CON SWIRLS)"
-                    labelAfter="DESPUÉS (BRILLO ESPEJO)"
+                    labelBefore="ANTES"
+                    labelAfter="DESPUÉS"
                   />
                 )}
               </div>
 
-              {/* Descripción del Tratamiento */}
+              {/* 5. Descripción */}
               {detailModalService.description && (
-                <div className="space-y-1 pt-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">
-                    ¿En qué consiste este tratamiento?
+                <div className="space-y-1">
+                  <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                    Descripción
                   </span>
-                  <p className="text-gray-800 leading-relaxed text-xs sm:text-sm font-semibold">
+                  <p className="text-[15px] text-[#3A3D42] leading-relaxed font-normal">
                     {detailModalService.description}
                   </p>
                 </div>
               )}
 
-              {/* Qué Incluye (Pasos numerados) */}
+              {/* 6. Qué incluye con pasos numerados */}
               {detailModalService.included_steps && detailModalService.included_steps.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-[#E10600] uppercase tracking-wider block">
-                    Qué incluye este tratamiento paso a paso:
+                  <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                    Qué incluye
                   </span>
-                  <div className="space-y-1.5 bg-[#F2F2F2] p-3.5 rounded-2xl border border-gray-200">
+                  <div className="space-y-2 bg-[#F5F6F7] p-4 rounded-[12px] border border-[#E6E8EB]">
                     {detailModalService.included_steps.map((st, i) => (
-                      <div key={i} className="flex items-start gap-2 text-gray-800 font-bold">
-                        <span className="w-4 h-4 rounded-full bg-[#E10600] text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
+                      <div key={i} className="flex items-start gap-2.5 text-[#3A3D42] text-[13px]">
+                        <span className="w-5 h-5 rounded-full bg-[#1E5EFF] text-white flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
                           {i + 1}
                         </span>
-                        <span className="leading-snug text-xs">{st}</span>
+                        <span className="leading-snug">{st}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Insumos & Productos Prémium Utilizados */}
+              {/* 7. Productos como lista simple */}
               {detailModalService.products_used && detailModalService.products_used.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[10px] font-black text-[#111111] uppercase tracking-wider block">
-                    Insumos & Productos Importados Utilizados:
+                  <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#6B7079] block">
+                    Productos utilizados
                   </span>
-                  <div className="flex flex-wrap gap-1.5 bg-[#F2F2F2] p-3 rounded-2xl border border-gray-200">
+                  <div className="flex flex-wrap gap-2">
                     {detailModalService.products_used.map((prod, i) => (
                       <span
                         key={i}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-[#111111] text-[11px] font-bold"
+                        className="px-3 py-1 rounded-[8px] bg-[#F5F6F7] border border-[#E6E8EB] text-[#3A3D42] text-[13px]"
                       >
                         ✓ {prod}
                       </span>
@@ -2789,75 +2617,50 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                 </div>
               )}
 
-              {/* Cuidados Recomendados */}
+              {/* Cuidados recomendados */}
               {detailModalService.care_text && (
-                <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-950 text-[11px] space-y-1">
-                  <strong className="block font-black uppercase tracking-wider">
-                    Cuidados recomendados posteriores:
+                <div className="p-4 rounded-[12px] bg-[#F5F6F7] border border-[#E6E8EB] text-[13px] text-[#3A3D42] space-y-1">
+                  <strong className="block font-semibold text-[#0B0B0C]">
+                    Cuidados posteriores recomendados:
                   </strong>
-                  <span className="font-semibold">{detailModalService.care_text}</span>
+                  <span>{detailModalService.care_text}</span>
                 </div>
               )}
             </div>
 
-            {/* Footer del Modal */}
-            <div className="px-5 py-3.5 bg-[#F2F2F2] border-t border-gray-200 flex items-center justify-between gap-3">
-              <div>
-                <span className="text-[10px] text-gray-500 uppercase font-bold block">
-                  {selectedCategory ? `Precio (${selectedCategory})` : 'Precio'}
-                </span>
-                {selectedCategory && categoryKey ? (
-                  <span className="text-xl font-black text-[#111111] font-mono">
-                    ${(detailModalService.prices?.[categoryKey] || 0).toLocaleString('es-UY')}{' '}
-                    <span className="text-xs font-normal text-gray-500">UYU</span>
-                  </span>
+            {/* 8. Botón principal fijo abajo */}
+            <div className="p-4 bg-white border-t border-[#E6E8EB] shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleService(detailModalService.id);
+                  setDetailModalService(null);
+                }}
+                className={`w-full h-[52px] rounded-[12px] font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs ${
+                  selectedServiceIds.includes(detailModalService.id)
+                    ? 'bg-[#0B0B0C] text-white'
+                    : 'bg-[#1E5EFF] hover:bg-[#1747C7] text-white'
+                }`}
+              >
+                {selectedServiceIds.includes(detailModalService.id) ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Quitar del presupuesto</span>
+                  </>
                 ) : (
-                  <span className="text-xs font-black text-[#E10600] uppercase">
-                    Elegí el tamaño de tu auto
-                  </span>
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Sumar al presupuesto</span>
+                  </>
                 )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDetailModalService(null)}
-                  className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-gray-100 text-gray-800 text-xs font-bold border border-gray-300 cursor-pointer"
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleToggleService(detailModalService.id);
-                    setDetailModalService(null);
-                  }}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-md ${
-                    selectedServiceIds.includes(detailModalService.id)
-                      ? 'bg-[#111111] text-white'
-                      : 'bg-[#E10600] hover:bg-[#c20500] text-white shadow-red-600/30'
-                  }`}
-                >
-                  {selectedServiceIds.includes(detailModalService.id) ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Quitar del presupuesto</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Sumar al presupuesto</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 8. MODAL DE IMPRESIÓN / PDF EN ROJO Y NEGRO DETAILVLAK                */}
+      {/* 8. MODAL DE IMPRESIÓN / PDF                                           */}
       {/* --------------------------------------------------------------------- */}
       {showPrintModal && createdRequest && (
         <PublicBudgetPrintView
@@ -2867,19 +2670,16 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       )}
 
       {/* --------------------------------------------------------------------- */}
-      {/* 9. FOOTER GENERAL CON IDENTIDAD DETAILVLAK                            */}
+      {/* 9. PIE DE PÁGINA LIMPIO Y SOBRIO                                      */}
       {/* --------------------------------------------------------------------- */}
-      <footer className="border-t border-gray-200 bg-white py-6 px-4 text-center text-xs text-gray-600 space-y-2">
+      <footer className="border-t border-[#E6E8EB] bg-white py-8 px-5 sm:px-6 text-center text-[13px] text-[#6B7079] space-y-1.5">
         <div className="flex items-center justify-center gap-2">
-          <img src="/detailvlak-avatar.png" alt="DetailVlak" className="w-5 h-5 rounded-full" />
-          <strong className="text-[#111111] font-anton uppercase tracking-wider text-sm">
-            DetailVlak
-          </strong>
+          <strong className="text-[#0B0B0C] font-semibold">DetailVlak</strong>
           <span>•</span>
-          <span className="font-bold">Shangrilá, Canelones</span>
+          <span>Taller de Estética Automotriz en Shangrilá, Canelones</span>
         </div>
-        <p className="text-[11px] text-gray-500 font-bold">
-          Miembro oficial de <strong className="text-[#111111]">CARVLAK Group</strong> • Todos los derechos reservados
+        <p className="text-[12px]">
+          Miembro de CARVLAK Group • Todos los derechos reservados
         </p>
       </footer>
     </div>
