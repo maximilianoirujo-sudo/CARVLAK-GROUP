@@ -296,12 +296,23 @@ export interface DetailingWebContentConfig {
   gallery: Array<{ url: string; caption?: string }>;
 }
 
+export interface DetailingWebHeroClip {
+  id: string;
+  url: string;
+  label?: string;
+  order: number;
+}
+
 export interface DetailingWebAppearanceConfig {
   primary_color: string;
   accent_color: string;
   font_family: 'Archivo Narrow' | 'Inter' | 'Barlow Condensed';
   card_style: 'compact' | 'large_photo';
   section_order: string[];
+  hero_media_type?: 'image' | 'video';
+  hero_image_url?: string;
+  hero_video_clips?: DetailingWebHeroClip[];
+  hero_poster_url?: string;
 }
 
 export interface DetailingWebSettingsConfig {

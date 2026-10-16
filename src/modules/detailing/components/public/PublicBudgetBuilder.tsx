@@ -47,6 +47,7 @@ import {
 import { VideoEmbed } from '../../../../components/common/VideoEmbed';
 import { PublicBudgetPrintView } from './PublicBudgetPrintView';
 import { BeforeAfterSlider } from './BeforeAfterSlider';
+import { HeroVideoBackground } from './HeroVideoBackground';
 import { supabase, isSupabaseConfigured } from '../../../../lib/supabase';
 
 interface PublicBudgetBuilderProps {
@@ -1042,39 +1043,32 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
       {/* --------------------------------------------------------------------- */}
       {currentStep === 1 && !isOnlySections && (
         <section className="px-5 sm:px-6 pt-5 max-w-[1080px] w-full mx-auto">
-          <div className="relative rounded-[16px] overflow-hidden bg-[#0B0B0C] min-h-[300px] sm:min-h-[380px] flex flex-col justify-end p-5 sm:p-10 border border-[#E6E8EB] shadow-xs">
-            {/* Foto real del taller de fondo */}
-            <img
-              src="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1600&auto=format&fit=crop&q=85"
-              alt="DetailVlak Taller"
-              className="absolute inset-0 w-full h-full object-cover opacity-40"
-            />
-            {/* Oscurecido suave con gradiente sutil */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/95 via-[#0B0B0C]/50 to-transparent pointer-events-none" />
-
-            {/* Contenido sobre la foto */}
-            <div className="relative z-10 max-w-xl space-y-2">
-              <span className="text-[11px] sm:text-[12px] font-medium uppercase tracking-[0.06em] text-[#E6E8EB]/80 block">
-                DetailVlak • Estética Automotriz Shangrilá
-              </span>
-              <h1 className="text-[26px] sm:text-[32px] font-bold leading-[1.15] text-white tracking-tight">
-                Volvé a estrenar tu auto
-              </h1>
-              <p className="text-[14px] sm:text-[15px] text-[#E6E8EB] font-normal leading-relaxed max-w-lg">
-                Armá tu presupuesto a medida en segundos con precios claros y atención personalizada.
-              </p>
-              <div className="pt-1.5">
-                <button
-                  type="button"
-                  onClick={scrollToConfig}
-                  className="h-[52px] px-6 sm:px-8 rounded-[12px] bg-[#1E5EFF] hover:bg-[#1747C7] text-white font-semibold text-[15px] inline-flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs active:scale-98"
-                >
-                  <span>Armar mi presupuesto</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+          <HeroVideoBackground
+            mediaType={webBudget.appearance?.hero_media_type || 'video'}
+            imageUrl={webBudget.appearance?.hero_image_url}
+            posterUrl={webBudget.appearance?.hero_poster_url || '/videos/portada-poster.webp'}
+            clips={webBudget.appearance?.hero_video_clips}
+          >
+            <span className="text-[11px] sm:text-[12px] font-medium uppercase tracking-[0.06em] text-[#E6E8EB]/80 block">
+              DetailVlak • Estética Automotriz Shangrilá
+            </span>
+            <h1 className="text-[26px] sm:text-[32px] font-bold leading-[1.15] text-white tracking-tight">
+              Volvé a estrenar tu auto
+            </h1>
+            <p className="text-[14px] sm:text-[15px] text-[#E6E8EB] font-normal leading-relaxed max-w-lg">
+              Armá tu presupuesto a medida en segundos con precios claros y atención personalizada.
+            </p>
+            <div className="pt-1.5">
+              <button
+                type="button"
+                onClick={scrollToConfig}
+                className="h-[52px] px-6 sm:px-8 rounded-[12px] bg-[#1E5EFF] hover:bg-[#1747C7] text-white font-semibold text-[15px] inline-flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs active:scale-98"
+              >
+                <span>Armar mi presupuesto</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
-          </div>
+          </HeroVideoBackground>
 
           {/* 3 datos de confianza en fila con íconos de línea grises */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-5 pb-1">

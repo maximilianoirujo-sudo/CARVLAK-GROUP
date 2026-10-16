@@ -34,7 +34,11 @@ import {
   AlertTriangle,
   MessageCircle,
   Truck,
-  Bike
+  Bike,
+  Film,
+  Image as ImageIcon,
+  Play,
+  ArrowRight
 } from 'lucide-react';
 import {
   DetailingTariff,
@@ -42,13 +46,15 @@ import {
   DetailingVehicleSize,
   DetailingUpsellProduct,
   DetailingDiscountCoupon,
-  DetailingWebReview
+  DetailingWebReview,
+  DetailingWebHeroClip
 } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
 import { DetailingWebServiceModal } from './DetailingWebServiceModal';
 import { VideoEmbed } from '../../../components/common/VideoEmbed';
-import { uploadImageToStorage } from '../../../lib/storage';
+import { uploadImageToStorage, uploadVideoToStorage } from '../../../lib/storage';
+import { HeroVideoBackground } from './public/HeroVideoBackground';
 
 export const DetailingWebBudgetSection: React.FC = () => {
   const {
@@ -65,7 +71,15 @@ export const DetailingWebBudgetSection: React.FC = () => {
   // Active Sub-Tab
   const [activeSubTab, setActiveSubTab] = useState<
     'servicios' | 'paquetes' | 'tamanos' | 'productos' | 'promociones' | 'agenda' | 'contenido' | 'apariencia' | 'ajustes'
-  >('servicios');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('subtab');
+      if (p && ['servicios', 'paquetes', 'tamanos', 'productos', 'promociones', 'agenda', 'contenido', 'apariencia', 'ajustes'].includes(p)) {
+        return p as any;
+      }
+    }
+    return 'servicios';
+  });
 
   // Web Budget Config Safe Access
   const webBudget = detailingConfig.web_budget || ({} as any);
@@ -89,6 +103,12 @@ export const DetailingWebBudgetSection: React.FC = () => {
     });
     showToast('Configuración guardada en la nube', 'success');
   };
+
+  // Hero Video & Portada states
+  const [uploadingClipIndex, setUploadingClipIndex] = useState<number | null>(null);
+  const [uploadClipProgress, setUploadClipProgress] = useState<number>(0);
+  const [uploadingPoster, setUploadingPoster] = useState(false);
+  const [uploadingHeroImage, setUploadingHeroImage] = useState(false);
 
   // =========================================================================
   // SUB-PANEL A: SERVICIOS
@@ -1142,47 +1162,476 @@ export const DetailingWebBudgetSection: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* PESTAÑA H: APARIENCIA */}
+      {/* PESTAÑA H: APARIENCIA & PORTADA */}
       {/* ========================================================================= */}
-      {activeSubTab === 'apariencia' && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 text-[#161616] shadow-xs">
-          <h4 className="font-bold text-sm text-[#161616]">Estilo Visual y Tipografía</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="text-[#6B6B6B] font-semibold block mb-1">Tipografía:</label>
-              <select
-                value={webBudget.appearance?.font_family || 'Archivo Narrow'}
-                onChange={(e) =>
-                  updateWebBudget({
-                    appearance: { ...webBudget.appearance, font_family: e.target.value }
-                  })
+      {activeSubTab === 'apariencia' && (() => {
+        const appearance = webBudget.appearance || {};
+        const heroMediaType = appearance.hero_media_type || 'video';
+        const heroClips: DetailingWebHeroClip[] =
+          appearance.hero_video_clips && appearance.hero_video_clips.length > 0
+            ? appearance.hero_video_clips
+            : [
+                {
+                  id: 'clip-1',
+                  url: '/videos/portada-interior.mp4',
+                  label: '1) Limpieza de interior con pincel',
+                  order: 1
+                },
+                {
+                  id: 'clip-2',
+                  url: '/videos/portada-pulido.mp4',
+                  label: '2) Pulido con máquina',
+                  order: 2
                 }
-                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:border-[#D7141A]"
-              >
-                <option value="Archivo Narrow">Archivo Narrow (Moderna y atlética)</option>
-                <option value="Inter">Inter (Limpia y corporativa)</option>
-                <option value="Barlow Condensed">Barlow Condensed (Impactante automotriz)</option>
-              </select>
+              ];
+        const heroPoster = appearance.hero_poster_url || '/videos/portada-poster.webp';
+        const heroImage =
+          appearance.hero_image_url ||
+          'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1600&auto=format&fit=crop&q=85';
+
+        const handleSetMediaType = (type: 'image' | 'video') => {
+          updateWebBudget({
+            appearance: {
+              ...appearance,
+              hero_media_type: type,
+              hero_video_clips: heroClips,
+              hero_poster_url: heroPoster,
+              hero_image_url: heroImage
+            }
+          });
+        };
+
+        const handleUpdateClip = (index: number, partial: Partial<DetailingWebHeroClip>) => {
+          const updated = [...heroClips];
+          updated[index] = { ...updated[index], ...partial };
+          updateWebBudget({
+            appearance: {
+              ...appearance,
+              hero_video_clips: updated
+            }
+          });
+        };
+
+        const handleAddClip = () => {
+          if (heroClips.length >= 3) {
+            showToast('Se permite un máximo de 3 clips en la portada', 'info');
+            return;
+          }
+          const newClip: DetailingWebHeroClip = {
+            id: `clip-${Date.now()}`,
+            url: '',
+            label: `Clip ${heroClips.length + 1}`,
+            order: heroClips.length + 1
+          };
+          updateWebBudget({
+            appearance: {
+              ...appearance,
+              hero_video_clips: [...heroClips, newClip]
+            }
+          });
+          showToast('Clip agregado a la portada', 'success');
+        };
+
+        const handleRemoveClip = (index: number) => {
+          if (heroClips.length <= 1) {
+            showToast('Debe haber al menos 1 clip configurado', 'error');
+            return;
+          }
+          const updated = heroClips
+            .filter((_, idx) => idx !== index)
+            .map((c, i) => ({ ...c, order: i + 1 }));
+          updateWebBudget({
+            appearance: {
+              ...appearance,
+              hero_video_clips: updated
+            }
+          });
+          showToast('Clip eliminado', 'success');
+        };
+
+        const handleMoveClip = (index: number, direction: 'up' | 'down') => {
+          const targetIndex = direction === 'up' ? index - 1 : index + 1;
+          if (targetIndex < 0 || targetIndex >= heroClips.length) return;
+
+          const updated = [...heroClips];
+          const temp = updated[index];
+          updated[index] = updated[targetIndex];
+          updated[targetIndex] = temp;
+
+          const reordered = updated.map((c, i) => ({ ...c, order: i + 1 }));
+          updateWebBudget({
+            appearance: {
+              ...appearance,
+              hero_video_clips: reordered
+            }
+          });
+          showToast('Orden actualizado', 'success');
+        };
+
+        const handleUploadClipVideo = async (index: number, file: File) => {
+          setUploadingClipIndex(index);
+          setUploadClipProgress(15);
+          try {
+            const publicUrl = await uploadVideoToStorage(file, (p) => setUploadClipProgress(p));
+            handleUpdateClip(index, { url: publicUrl });
+            showToast(`Clip ${index + 1} subido correctamente`, 'success');
+          } catch (err: any) {
+            showToast(err.message || 'Error al subir el video', 'error');
+          } finally {
+            setUploadingClipIndex(null);
+            setUploadClipProgress(0);
+          }
+        };
+
+        const handleUploadPosterImage = async (file: File) => {
+          setUploadingPoster(true);
+          try {
+            const publicUrl = await uploadImageToStorage(file, 'templates', { quality: 0.85 });
+            updateWebBudget({
+              appearance: {
+                ...appearance,
+                hero_poster_url: publicUrl
+              }
+            });
+            showToast('Imagen poster actualizada con éxito', 'success');
+          } catch (err: any) {
+            showToast(err.message || 'Error al subir imagen poster', 'error');
+          } finally {
+            setUploadingPoster(false);
+          }
+        };
+
+        const handleUploadHeroImage = async (file: File) => {
+          setUploadingHeroImage(true);
+          try {
+            const publicUrl = await uploadImageToStorage(file, 'templates', { quality: 0.88 });
+            updateWebBudget({
+              appearance: {
+                ...appearance,
+                hero_image_url: publicUrl
+              }
+            });
+            showToast('Imagen de portada actualizada con éxito', 'success');
+          } catch (err: any) {
+            showToast(err.message || 'Error al subir imagen', 'error');
+          } finally {
+            setUploadingHeroImage(false);
+          }
+        };
+
+        return (
+          <div className="space-y-6">
+            {/* 1. SECCIÓN PORTADA (IMAGEN O VIDEO CON HASTA 3 CLIPS Y VISTA PREVIA) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-5 text-[#161616] shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E5E3] pb-4">
+                <div>
+                  <h4 className="font-bold text-sm text-[#161616] flex items-center gap-2">
+                    <Film className="w-4 h-4 text-[#1E5EFF]" />
+                    <span>Portada del Armador Web (/presupuesto)</span>
+                  </h4>
+                  <p className="text-xs text-[#6B6B6B] mt-0.5">
+                    Elegí si la portada muestra una imagen estática o un video en loop continuo de hasta 3 clips con fundido suave (0,4 s).
+                  </p>
+                </div>
+
+                {/* Selector Modo: Video o Imagen */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSetMediaType('video')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      heroMediaType === 'video'
+                        ? 'bg-[#1E5EFF] text-white shadow-xs'
+                        : 'text-[#6B6B6B] hover:text-[#161616]'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Video en bucle</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetMediaType('image')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      heroMediaType === 'image'
+                        ? 'bg-[#1E5EFF] text-white shadow-xs'
+                        : 'text-[#6B6B6B] hover:text-[#161616]'
+                    }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Imagen fija</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* OPCIÓN A: VIDEO EN BUCLE */}
+              {heroMediaType === 'video' && (
+                <div className="space-y-5">
+                  {/* Poster Image config */}
+                  <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-2 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="font-semibold text-[#161616] block">
+                          Imagen "Poster" de carga (WebP):
+                        </span>
+                        <span className="text-[11px] text-[#6B6B6B]">
+                          Se muestra mientras cargan los videos y como imagen fija si el visitante tiene activado ahorro de datos o reducción de movimiento.
+                        </span>
+                      </div>
+                      <label className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] hover:bg-[#F0F0EE] text-[#161616] font-semibold text-xs flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                        <Upload className="w-3.5 h-3.5 text-[#1E5EFF]" />
+                        <span>{uploadingPoster ? 'Subiendo...' : 'Subir WebP'}</span>
+                        <input
+                          type="file"
+                          accept="image/webp,image/jpeg,image/png"
+                          disabled={uploadingPoster}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadPosterImage(file);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={heroPoster}
+                      onChange={(e) =>
+                        updateWebBudget({
+                          appearance: { ...appearance, hero_poster_url: e.target.value }
+                        })
+                      }
+                      placeholder="/videos/portada-poster.webp o URL de Supabase Storage"
+                      className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-[#161616]"
+                    />
+                  </div>
+
+                  {/* Clips de Video (Hasta 3 clips) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#161616] uppercase tracking-wider">
+                        Clips de Video en Reproducción ({heroClips.length}/3)
+                      </span>
+                      {heroClips.length < 3 && (
+                        <button
+                          type="button"
+                          onClick={handleAddClip}
+                          className="px-3 py-1.5 rounded-lg bg-[#1E5EFF]/10 hover:bg-[#1E5EFF]/20 text-[#1E5EFF] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Agregar clip</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      {heroClips.map((clip, idx) => (
+                        <div
+                          key={clip.id || idx}
+                          className="p-3.5 sm:p-4 rounded-xl bg-[#FAFAFA] border border-[#E5E5E3] space-y-3 text-xs"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-[#1E5EFF] text-white flex items-center justify-center font-bold text-[11px]">
+                                {idx + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={clip.label || ''}
+                                onChange={(e) => handleUpdateClip(idx, { label: e.target.value })}
+                                placeholder="Nombre del clip (ej: Limpieza de interior con pincel)"
+                                className="font-semibold text-[#161616] bg-transparent border-b border-transparent hover:border-[#E5E5E3] focus:border-[#1E5EFF] px-1 py-0.5 text-xs outline-none"
+                              />
+                            </div>
+
+                            {/* Controles de orden y eliminación */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => handleMoveClip(idx, 'up')}
+                                title="Mover arriba"
+                                className="p-1 rounded hover:bg-[#E5E5E3] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-[#6B6B6B]"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === heroClips.length - 1}
+                                onClick={() => handleMoveClip(idx, 'down')}
+                                title="Mover abajo"
+                                className="p-1 rounded hover:bg-[#E5E5E3] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer text-[#6B6B6B]"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={heroClips.length <= 1}
+                                onClick={() => handleRemoveClip(idx)}
+                                title="Eliminar clip"
+                                className="p-1 rounded hover:bg-rose-100 text-rose-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer ml-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* URL y botón de subida */}
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            <input
+                              type="text"
+                              value={clip.url || ''}
+                              onChange={(e) => handleUpdateClip(idx, { url: e.target.value })}
+                              placeholder="/videos/clip.mp4 o URL pública en Supabase Storage"
+                              className="flex-1 bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-[#161616]"
+                            />
+
+                            <label className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] hover:bg-[#F0F0EE] text-[#161616] font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                              <Upload className="w-3.5 h-3.5 text-[#1E5EFF]" />
+                              <span>
+                                {uploadingClipIndex === idx
+                                  ? `Subiendo ${uploadClipProgress}%...`
+                                  : 'Subir MP4'}
+                              </span>
+                              <input
+                                type="file"
+                                accept="video/mp4,video/webm"
+                                disabled={uploadingClipIndex !== null}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUploadClipVideo(idx, file);
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* OPCIÓN B: IMAGEN FIJA */}
+              {heroMediaType === 'image' && (
+                <div className="p-3.5 rounded-xl bg-[#F5F5F4] border border-[#E5E5E3] space-y-3 text-xs">
+                  <span className="font-semibold text-[#161616] block">
+                    URL de la Imagen de Portada:
+                  </span>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <input
+                      type="text"
+                      value={heroImage}
+                      onChange={(e) =>
+                        updateWebBudget({
+                          appearance: { ...appearance, hero_image_url: e.target.value }
+                        })
+                      }
+                      placeholder="https://... o URL en Supabase Storage"
+                      className="flex-1 bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-[#161616]"
+                    />
+
+                    <label className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E5E3] hover:bg-[#F0F0EE] text-[#161616] font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                      <Upload className="w-3.5 h-3.5 text-[#1E5EFF]" />
+                      <span>{uploadingHeroImage ? 'Subiendo...' : 'Subir Imagen'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingHeroImage}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadHeroImage(file);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* VISTA PREVIA EN VIVO DE LA PORTADA */}
+              <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#161616] uppercase tracking-wider flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-[#1E5EFF]" />
+                    <span>Vista Previa en Vivo de la Portada</span>
+                  </span>
+                  <span className="text-[11px] text-[#6B6B6B]">
+                    {heroMediaType === 'video'
+                      ? 'Loop continuo con fundido de 0,4 s entre clips'
+                      : 'Imagen estática'}
+                  </span>
+                </div>
+
+                <div className="rounded-xl overflow-hidden border border-[#E5E5E3] max-w-full">
+                  <HeroVideoBackground
+                    mediaType={heroMediaType}
+                    imageUrl={heroImage}
+                    posterUrl={heroPoster}
+                    clips={heroClips}
+                  >
+                    <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#E6E8EB]/80 block">
+                      DetailVlak • Estética Automotriz Shangrilá
+                    </span>
+                    <h3 className="text-[20px] sm:text-[24px] font-bold leading-[1.15] text-white tracking-tight">
+                      Volvé a estrenar tu auto
+                    </h3>
+                    <p className="text-[13px] text-[#E6E8EB] font-normal leading-relaxed">
+                      Armá tu presupuesto a medida en segundos con precios claros y atención personalizada.
+                    </p>
+                    <div className="pt-1">
+                      <div className="h-[42px] px-5 rounded-[10px] bg-[#1E5EFF] text-white font-semibold text-[13px] inline-flex items-center gap-2 shadow-xs pointer-events-none select-none">
+                        <span>Armar mi presupuesto</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                  </HeroVideoBackground>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="text-[#6B6B6B] font-semibold block mb-1">Estilo de tarjetas en catálogo:</label>
-              <select
-                value={webBudget.appearance?.card_style || 'compact'}
-                onChange={(e) =>
-                  updateWebBudget({
-                    appearance: { ...webBudget.appearance, card_style: e.target.value }
-                  })
-                }
-                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:border-[#D7141A]"
-              >
-                <option value="compact">Compacta (Más tratamientos por pantalla)</option>
-                <option value="large_photo">Con Foto Grande Destacada</option>
-              </select>
+            {/* 2. ESTILO VISUAL Y TIPOGRAFÍA */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E5E5E3] space-y-4 text-[#161616] shadow-xs">
+              <h4 className="font-bold text-sm text-[#161616]">Estilo Visual y Tipografía</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="text-[#6B6B6B] font-semibold block mb-1">Tipografía:</label>
+                  <select
+                    value={webBudget.appearance?.font_family || 'Inter'}
+                    onChange={(e) =>
+                      updateWebBudget({
+                        appearance: { ...webBudget.appearance, font_family: e.target.value }
+                      })
+                    }
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:border-[#1E5EFF]"
+                  >
+                    <option value="Inter">Inter (Limpia y corporativa - Recomendada)</option>
+                    <option value="Archivo Narrow">Archivo Narrow (Moderna y atlética)</option>
+                    <option value="Barlow Condensed">Barlow Condensed (Impactante automotriz)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[#6B6B6B] font-semibold block mb-1">Estilo de tarjetas en catálogo:</label>
+                  <select
+                    value={webBudget.appearance?.card_style || 'compact'}
+                    onChange={(e) =>
+                      updateWebBudget({
+                        appearance: { ...webBudget.appearance, card_style: e.target.value }
+                      })
+                    }
+                    className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl p-2.5 text-[#161616] focus:border-[#1E5EFF]"
+                  >
+                    <option value="compact">Compacta (Más tratamientos por pantalla)</option>
+                    <option value="large_photo">Con Foto Grande Destacada</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* PESTAÑA I: AJUSTES & MARKETING */}

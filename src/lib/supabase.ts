@@ -24,24 +24,24 @@ export const supabaseAnonKey = getEnvOrStorage('VITE_SUPABASE_ANON_KEY', 'carvla
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
   supabaseAnonKey &&
+  (supabaseUrl.startsWith('https://') || supabaseUrl.startsWith('http://')) &&
   supabaseUrl !== 'https://TU_PROYECTO.supabase.co' &&
   !supabaseUrl.includes('TU_PROYECTO')
 );
 
-export const isDemoModeAllowed = (): boolean => {
-  if (import.meta.env.DEV) return true;
+let clientInstance = null;
+if (isSupabaseConfigured) {
   try {
-    return localStorage.getItem('carvlak_allow_demo_mode') === 'true';
-  } catch {
-    return false;
-  }
-};
-
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+    clientInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true
       }
-    })
-  : null;
+    });
+  } catch (err) {
+    console.warn('Error inicializando cliente de Supabase:', err);
+    clientInstance = null;
+  }
+}
+
+export const supabase = clientInstance;

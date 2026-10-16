@@ -1110,7 +1110,24 @@ export const INITIAL_DETAILING_CONFIG: DetailingConfig = {
         accent_color: '#0B0B0C',
         font_family: 'Inter',
         card_style: 'compact',
-        section_order: ['hero', 'packages', 'sizes', 'services', 'products', 'reviews', 'faq']
+        section_order: ['hero', 'packages', 'sizes', 'services', 'products', 'reviews', 'faq'],
+        hero_media_type: 'video',
+        hero_image_url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1600&auto=format&fit=crop&q=85',
+        hero_poster_url: '/videos/portada-poster.webp',
+        hero_video_clips: [
+          {
+            id: 'clip-1',
+            url: '/videos/portada-interior.mp4',
+            label: '1) Limpieza de interior con pincel',
+            order: 1
+          },
+          {
+            id: 'clip-2',
+            url: '/videos/portada-pulido.mp4',
+            label: '2) Pulido con máquina',
+            order: 2
+          }
+        ]
       },
       settings: {
         whatsapp_number: '59899267964',
