@@ -159,9 +159,20 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
 
       if (isSupabaseConfigured && supabase) {
         try {
-          const { data } = await supabase.rpc('get_public_config');
-          if (data?.detailing_tariffs && Array.isArray(data.detailing_tariffs)) {
-            setTariffs(data.detailing_tariffs);
+          const { data: tariffRows, error: tariffErr } = await supabase
+            .from('detailing_tariffs')
+            .select('*')
+            .order('order', { ascending: true });
+
+          if (!tariffErr && tariffRows && Array.isArray(tariffRows) && tariffRows.length > 0) {
+            setTariffs(tariffRows);
+            localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(tariffRows));
+          } else {
+            const { data } = await supabase.rpc('get_public_config');
+            if (data?.detailing_tariffs && Array.isArray(data.detailing_tariffs)) {
+              setTariffs(data.detailing_tariffs);
+              localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(data.detailing_tariffs));
+            }
           }
         } catch {}
       }

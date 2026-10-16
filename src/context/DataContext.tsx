@@ -126,6 +126,7 @@ export interface DataContextType {
   addDetailingTariff: (tariff: Omit<DetailingTariff, 'id'>) => DetailingTariff;
   deleteDetailingTariff: (id: string) => void;
   reorderDetailingTariffs: (tariffs: DetailingTariff[]) => void;
+  saveAllDetailingTariffs: (tariffs: DetailingTariff[]) => Promise<void>;
 
   detailingQuotes: DetailingQuote[];
   allDetailingQuotes: DetailingQuote[];
@@ -1314,6 +1315,45 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).catch(() => {});
   };
 
+  const saveAllDetailingTariffs = async (updatedTariffs: DetailingTariff[]) => {
+    // 1. Detectar servicios eliminados
+    const currentIds = new Set(updatedTariffs.map((t) => t.id));
+    const deletedTariffs = detailingTariffs.filter((t) => !currentIds.has(t.id));
+
+    // 2. Actualizar estado local y localStorage inmediatamente
+    setDetailingTariffs(updatedTariffs);
+    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(updatedTariffs));
+
+    // 3. Sincronizar en Supabase
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('detailing_tariffs').upsert(updatedTariffs);
+      } catch (err) {
+        console.warn('Error sincronizando servicios con Supabase:', err);
+      }
+
+      for (const del of deletedTariffs) {
+        try {
+          await supabase.from('detailing_tariffs').delete().eq('id', del.id);
+        } catch (err) {
+          console.warn('Error eliminando servicio en Supabase:', err);
+        }
+      }
+    }
+
+    // 4. Fallback de sincronización web pública
+    fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'detailing_tariffs', data: updatedTariffs })
+    }).catch(() => {});
+
+    logActivity('cotizacion_detailing', 'tariffs', 'update', {
+      action: 'Actualización general de tarifario y cuidados',
+      count: updatedTariffs.length
+    });
+  };
+
   // Solicitudes Web de Presupuestos (DetailVlak)
   const addDetailingWebRequest = (req: DetailingWebRequest) => {
     setDetailingWebRequests((prev) => [req, ...prev]);
@@ -2177,12 +2217,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       detailer_id: quote.assigned_to,
       detailer_name: detailer?.full_name || 'Detailer oficial',
 
-      services: (quote.selected_services || []).map((s) => ({
-        serviceId: s.serviceId,
-        serviceName: s.serviceName,
-        description: s.description,
-        price: s.price
-      })),
+      services: (quote.selected_services || []).map((s) => {
+        const tariff = detailingTariffs.find((t) => t.id === s.serviceId);
+        return {
+          serviceId: s.serviceId,
+          serviceName: tariff?.name || s.serviceName || 'Servicio',
+          description: s.description,
+          price: s.price
+        };
+      }),
       subtotal: quote.subtotal,
       discount_amount: quote.discount_amount || 0,
       discount_label: getDiscountLabel(quote.discount_type, currentCfg?.discounts),
@@ -4602,6 +4645,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addDetailingTariff,
     deleteDetailingTariff,
     reorderDetailingTariffs,
+    saveAllDetailingTariffs,
     refreshData,
     isSyncing,
     lastSyncedAt,
@@ -4769,6 +4813,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateDetailingConfig,
     updateDetailingTariff,
     addDetailingTariff,
+    deleteDetailingTariff,
+    reorderDetailingTariffs,
+    saveAllDetailingTariffs,
     addDetailingQuote,
     updateDetailingQuote,
     updateDetailingQuoteStatus,

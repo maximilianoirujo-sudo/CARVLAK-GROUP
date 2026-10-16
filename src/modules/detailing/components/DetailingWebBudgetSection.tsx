@@ -63,6 +63,7 @@ export const DetailingWebBudgetSection: React.FC = () => {
     addDetailingTariff,
     deleteDetailingTariff,
     reorderDetailingTariffs,
+    detailingQuotes,
     detailingConfig,
     updateDetailingConfig
   } = useData();
@@ -153,6 +154,17 @@ export const DetailingWebBudgetSection: React.FC = () => {
 
   // Eliminar servicio con confirmación
   const handleDeleteService = (tariff: DetailingTariff) => {
+    const hasJobs = detailingQuotes.some((q) =>
+      (q.selected_services || []).some((s) => s.serviceId === tariff.id)
+    );
+    if (hasJobs) {
+      showToast(
+        `El servicio "${tariff.name}" tiene trabajos cargados en el sistema y no puede eliminarse. Podés pausarlo para que no aparezca en nuevas cotizaciones.`,
+        'error'
+      );
+      return;
+    }
+
     if (window.confirm(`¿Estás seguro de eliminar el servicio "${tariff.name}"? Esta acción no se puede deshacer.`)) {
       deleteDetailingTariff(tariff.id);
       showToast(`Servicio "${tariff.name}" eliminado`, 'success');

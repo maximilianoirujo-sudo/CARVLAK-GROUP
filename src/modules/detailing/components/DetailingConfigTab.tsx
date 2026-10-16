@@ -18,7 +18,9 @@ import {
   AlertTriangle,
   Download,
   ShieldCheck,
-  DollarSign
+  DollarSign,
+  Pause,
+  Play
 } from 'lucide-react';
 import {
   DetailingConfig,
@@ -51,6 +53,8 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     detailingTariffs,
     updateDetailingTariff,
     addDetailingTariff,
+    deleteDetailingTariff,
+    saveAllDetailingTariffs,
     detailingQuotes,
     commissions,
     expenses,
@@ -73,7 +77,141 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     | 'commissions'
     | 'whatsapp'
     | 'backup'
-  >('company');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('config_section') || new URLSearchParams(window.location.search).get('cfg');
+      if (p && ['company', 'tarifa_empresas', 'servicios_empresas', 'receipts', 'tariffs', 'discounts', 'payments', 'origins', 'void_reasons', 'expenses', 'commissions', 'whatsapp', 'backup'].includes(p)) {
+        return p as any;
+      }
+    }
+    return 'company';
+  });
+
+  // Copia local para edición del tarifario
+  const [localTariffs, setLocalTariffs] = useState<DetailingTariff[]>(() =>
+    JSON.parse(JSON.stringify(detailingTariffs))
+  );
+  const [isTariffsDirty, setIsTariffsDirty] = useState(false);
+
+  // Sincronizar tarifario local si detailingTariffs cambia externamente y no hay cambios sucios
+  React.useEffect(() => {
+    if (!isTariffsDirty) {
+      setLocalTariffs(JSON.parse(JSON.stringify(detailingTariffs)));
+    }
+  }, [detailingTariffs, isTariffsDirty]);
+
+  // Aviso del navegador si hay cambios sin guardar al cerrar la pestaña o recargar
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isTariffsDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isTariffsDirty]);
+
+  // Handlers para edición de tarifario
+  const updateLocalTariff = (id: string, updates: Partial<DetailingTariff>) => {
+    setLocalTariffs((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    );
+    setIsTariffsDirty(true);
+  };
+
+  const handleTogglePause = (id: string) => {
+    setLocalTariffs((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const nextState = t.isActive === false ? true : false;
+        return { ...t, isActive: nextState };
+      })
+    );
+    setIsTariffsDirty(true);
+  };
+
+  const hasLoadedJobs = (tariffId: string) => {
+    return detailingQuotes.some((q) =>
+      (q.selected_services || []).some((s) => s.serviceId === tariffId)
+    );
+  };
+
+  const handleDeleteTariff = (tariff: DetailingTariff) => {
+    if (hasLoadedJobs(tariff.id)) {
+      showToast(
+        `El servicio "${tariff.name}" tiene trabajos cargados en el sistema y no puede eliminarse. Podés pausarlo para que no aparezca en nuevas cotizaciones.`,
+        'error'
+      );
+      return;
+    }
+
+    if (
+      window.confirm(
+        `¿Estás seguro de que deseás eliminar el servicio "${tariff.name}"? Esta acción se aplicará al hacer clic en "Guardar cambios".`
+      )
+    ) {
+      setLocalTariffs((prev) => prev.filter((t) => t.id !== tariff.id));
+      setIsTariffsDirty(true);
+      showToast(`Servicio "${tariff.name}" marcado para eliminar. Guardá los cambios para confirmar.`, 'info');
+    }
+  };
+
+  const handleAddNewTariff = () => {
+    const newId = `tariff-${crypto.randomUUID()}`;
+    const nextOrder = (localTariffs.length > 0 ? Math.max(...localTariffs.map((t) => t.order || 0)) : 0) + 1;
+    const newTariff: DetailingTariff = {
+      id: newId,
+      name: '',
+      shortName: '',
+      description: '',
+      durationHours: 2,
+      prices: {
+        chico: 0,
+        mediano: 0,
+        suv: 0,
+        pickup: 0,
+        moto: 0
+      },
+      isActive: true,
+      care_text: '',
+      order: nextOrder
+    };
+    setLocalTariffs((prev) => [...prev, newTariff]);
+    setIsTariffsDirty(true);
+  };
+
+  const validateTariffs = (tariffs: DetailingTariff[]): { isValid: boolean; error?: string } => {
+    if (tariffs.length === 0) {
+      return { isValid: false, error: 'Debe haber al menos un servicio en el tarifario.' };
+    }
+
+    for (let i = 0; i < tariffs.length; i++) {
+      const t = tariffs[i];
+      const nameTrimmed = (t.name || '').trim();
+      if (!nameTrimmed) {
+        return {
+          isValid: false,
+          error: `El servicio #${i + 1} no tiene nombre. El "Nombre del servicio" es obligatorio.`
+        };
+      }
+    }
+
+    // Validar nombres duplicados (case-insensitive)
+    const namesSeen = new Set<string>();
+    for (let i = 0; i < tariffs.length; i++) {
+      const key = tariffs[i].name.trim().toLowerCase();
+      if (namesSeen.has(key)) {
+        return {
+          isValid: false,
+          error: `Existe más de un servicio con el nombre "${tariffs[i].name.trim()}". No se permiten nombres duplicados.`
+        };
+      }
+      namesSeen.add(key);
+    }
+
+    return { isValid: true };
+  };
 
   // Copia local para edición
   const [formData, setFormData] = useState<DetailingConfig>(() => {
@@ -272,7 +410,29 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // 1. Validar tarifario si hay cambios pendientes o si estamos en la sección de tarifario
+    if (isTariffsDirty || activeSection === 'tariffs') {
+      const validation = validateTariffs(localTariffs);
+      if (!validation.isValid) {
+        showToast(validation.error || 'Por favor revisá los datos del tarifario', 'error');
+        return;
+      }
+    }
+
+    // 2. Si hubo modificaciones en el tarifario, sincronizar con Supabase y DataContext
+    if (isTariffsDirty) {
+      const sanitizedTariffs = localTariffs.map((t, idx) => ({
+        ...t,
+        name: t.name.trim(),
+        shortName: (t.shortName && t.shortName.trim()) ? t.shortName.trim() : t.name.trim(),
+        durationHours: Number(t.durationHours) || 2,
+        order: t.order || idx + 1
+      }));
+      await saveAllDetailingTariffs(sanitizedTariffs);
+      setIsTariffsDirty(false);
+    }
+
     const updatedRules = formData.origin_commission_rules || [];
     const syncedEmployeeRules: DetailingCommissionEmployeeRule[] = [
       {
@@ -306,7 +466,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     };
 
     onSaveConfig(toSave);
-    showToast('Configuración de DetailVlak guardada correctamente en Supabase', 'success');
+    showToast('Configuración y tarifario guardados correctamente', 'success');
   };
 
   // Exportar copia de respaldo en CSV
@@ -389,10 +549,13 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
           variant="primary"
           size="sm"
           onClick={handleSave}
-          className="bg-[#D7141A] hover:bg-[#b01015]"
+          className="bg-[#D7141A] hover:bg-[#b01015] relative inline-flex items-center gap-1.5"
         >
           <Save className="w-3.5 h-3.5 mr-1" />
-          Guardar cambios
+          <span>Guardar cambios</span>
+          {isTariffsDirty && (
+            <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse ml-0.5" title="Cambios sin guardar en el tarifario" />
+          )}
         </Button>
       </div>
 
@@ -402,19 +565,35 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
+            const hasUnsavedInThisItem = item.id === 'tariffs' && isTariffsDirty;
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveSection(item.id as any)}
-                className={`w-full p-2.5 rounded-xl text-left text-xs font-bold flex items-center gap-2.5 transition-colors cursor-pointer ${
+                onClick={() => {
+                  if (activeSection === 'tariffs' && isTariffsDirty && item.id !== 'tariffs') {
+                    const confirmLeave = window.confirm(
+                      'Tenés cambios sin guardar en "Tarifario y Cuidados". Si salís de esta sección, perderás las modificaciones.\n\n¿Deseás salir sin guardar?'
+                    );
+                    if (!confirmLeave) return;
+                    setLocalTariffs(JSON.parse(JSON.stringify(detailingTariffs)));
+                    setIsTariffsDirty(false);
+                  }
+                  setActiveSection(item.id as any);
+                }}
+                className={`w-full p-2.5 rounded-xl text-left text-xs font-bold flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-red-50 text-[#D7141A] border border-red-200'
                     : 'text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4]'
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#6B6B6B]'}`} />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-2.5 truncate">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D7141A]' : 'text-[#6B6B6B]'}`} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {hasUnsavedInThisItem && (
+                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title="Cambios sin guardar" />
+                )}
               </button>
             );
           })}
@@ -644,107 +823,280 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
           {/* 3. TARIFARIO Y CUIDADOS POSTERIORES */}
           {activeSection === 'tariffs' && (
             <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-bold text-[#161616]">Tarifario y Cuidados Posteriores</h4>
-                <p className="text-[#6B6B6B] mt-0.5">
-                  Precios por categoría de vehículo y texto de cuidados que se incluye automáticamente en el comprobante.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h4 className="text-sm font-bold text-[#161616]">Tarifario y Cuidados Posteriores</h4>
+                  <p className="text-[#6B6B6B] mt-0.5">
+                    Precios por tamaño de vehículo, nombres y recomendaciones de cuidados que se incluyen automáticamente en los comprobantes y en la web de presupuestos.
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  <span className="text-[11px] text-[#6B7079] bg-[#F5F5F4] px-2.5 py-1 rounded-lg border border-[#E5E5E3] font-medium">
+                    {localTariffs.length} {localTariffs.length === 1 ? 'servicio' : 'servicios'}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-3">
-                {detailingTariffs.map((t) => (
-                  <div key={t.id} className="p-3.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-[#161616]">{t.name}</span>
-                      <span className="text-[10px] text-[#6B6B6B] bg-white px-2 py-0.5 rounded border border-[#E5E5E3]">
-                        {t.durationHours || 2}h estimadas
-                      </span>
-                    </div>
-
-                    {/* Precios por Categoría */}
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                      <div>
-                        <span className="text-[10px] text-[#6B6B6B] block">Chico ($)</span>
-                        <input
-                          type="number"
-                          value={t.prices.chico || 0}
-                          onChange={(e) =>
-                            updateDetailingTariff(t.id, {
-                              prices: { ...t.prices, chico: Number(e.target.value) }
-                            })
-                          }
-                          className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#6B6B6B] block">Mediano ($)</span>
-                        <input
-                          type="number"
-                          value={t.prices.mediano || 0}
-                          onChange={(e) =>
-                            updateDetailingTariff(t.id, {
-                              prices: { ...t.prices, mediano: Number(e.target.value) }
-                            })
-                          }
-                          className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#6B6B6B] block">SUV ($)</span>
-                        <input
-                          type="number"
-                          value={t.prices.suv || 0}
-                          onChange={(e) =>
-                            updateDetailingTariff(t.id, {
-                              prices: { ...t.prices, suv: Number(e.target.value) }
-                            })
-                          }
-                          className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#6B6B6B] block">Pick-up ($)</span>
-                        <input
-                          type="number"
-                          value={t.prices.pickup || 0}
-                          onChange={(e) =>
-                            updateDetailingTariff(t.id, {
-                              prices: { ...t.prices, pickup: Number(e.target.value) }
-                            })
-                          }
-                          className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#6B6B6B] block">Moto ($)</span>
-                        <input
-                          type="number"
-                          value={t.prices.moto || 0}
-                          onChange={(e) =>
-                            updateDetailingTariff(t.id, {
-                              prices: { ...t.prices, moto: Number(e.target.value) }
-                            })
-                          }
-                          className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Cuidados posteriores específicos del servicio */}
-                    <div>
-                      <span className="text-[10px] font-bold text-[#161616] block mb-0.5">
-                        Cuidados posteriores y garantías para el comprobante:
-                      </span>
-                      <textarea
-                        rows={2}
-                        value={t.care_text || ''}
-                        onChange={(e) => updateDetailingTariff(t.id, { care_text: e.target.value })}
-                        placeholder="Ej: No mojar durante las primeras 72h. Lavar a mano con shampoo de pH neutro..."
-                        className="w-full bg-white border border-[#E5E5E3] rounded-lg p-2 text-xs"
-                      />
-                    </div>
+              {/* Aviso de cambios sin guardar en el tarifario */}
+              {isTariffsDirty && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs shadow-xs animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      Tenés <strong>cambios sin guardar</strong> en el tarifario. Tocá <strong>"Guardar cambios"</strong> para aplicarlos en todo el sistema.
+                    </span>
                   </div>
-                ))}
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSave}
+                    className="bg-[#D7141A] hover:bg-[#b01015] shrink-0 text-xs py-1.5 h-auto self-end sm:self-auto"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1" />
+                    Guardar ahora
+                  </Button>
+                </div>
+              )}
+
+              {/* Lista de Tarjetas de Servicios Editables */}
+              <div className="space-y-3.5">
+                {localTariffs.map((t, index) => {
+                  const hasJobs = hasLoadedJobs(t.id);
+                  const isPaused = t.isActive === false;
+
+                  return (
+                    <div
+                      key={t.id}
+                      className={`p-3.5 sm:p-4 rounded-xl border transition-all space-y-3.5 ${
+                        isPaused
+                          ? 'bg-[#FAFAFA] border-[#E5E5E3] opacity-80'
+                          : 'bg-[#F5F5F4] border-[#E5E5E3] hover:border-[#D4D4D8]'
+                      }`}
+                    >
+                      {/* Cabecera de la tarjeta: Identificador, Estado y Acciones (Pausar / Eliminar) */}
+                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#E5E5E3]">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <span className="text-[10px] font-bold text-[#6B7079] bg-white px-2 py-0.5 rounded border border-[#E5E5E3] shrink-0">
+                            #{index + 1}
+                          </span>
+                          <span className="font-bold text-xs text-[#161616] truncate max-w-[160px] sm:max-w-[280px]">
+                            {t.name.trim() || 'Nuevo servicio sin nombre'}
+                          </span>
+                          {isPaused ? (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">
+                              Pausado
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded shrink-0">
+                              Activo
+                            </span>
+                          )}
+                          {hasJobs && (
+                            <span className="text-[10px] text-[#6B7079] bg-white px-2 py-0.5 rounded border border-[#E5E5E3] hidden sm:inline-block shrink-0">
+                              Con trabajos vinculados
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Botones de acción: Pausar / Reactivar y Eliminar */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePause(t.id)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                              isPaused
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                : 'bg-white text-[#6B7079] border-[#E5E5E3] hover:text-[#161616] hover:bg-[#F5F5F4]'
+                            }`}
+                            title={isPaused ? 'Reactivar servicio' : 'Pausar servicio'}
+                          >
+                            {isPaused ? (
+                              <>
+                                <Play className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Reactivar</span>
+                              </>
+                            ) : (
+                              <>
+                                <Pause className="w-3.5 h-3.5 text-[#6B7079]" />
+                                <span>Pausar</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTariff(t)}
+                            disabled={hasJobs}
+                            className={`p-1.5 rounded-lg border transition-colors ${
+                              hasJobs
+                                ? 'bg-zinc-100 text-zinc-300 border-zinc-200 cursor-not-allowed'
+                                : 'bg-white text-zinc-400 hover:text-rose-600 hover:bg-rose-50 border-[#E5E5E3] hover:border-rose-200 cursor-pointer'
+                            }`}
+                            title={
+                              hasJobs
+                                ? 'Este servicio tiene trabajos asociados en el sistema y no puede eliminarse (podés pausarlo).'
+                                : 'Eliminar servicio'
+                            }
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Campos principales: Nombre, Nombre corto y Duración estimada */}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                        <div className="sm:col-span-5">
+                          <label className="text-[10px] font-bold text-[#6B7079] block mb-1">
+                            Nombre del servicio *
+                          </label>
+                          <input
+                            type="text"
+                            value={t.name}
+                            onChange={(e) => updateLocalTariff(t.id, { name: e.target.value })}
+                            placeholder="Ej: Tratamiento Cerámico 9H"
+                            className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 font-bold text-xs text-[#161616] placeholder-[#9CA3AF] focus:outline-none focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF]"
+                            required
+                          />
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <label className="text-[10px] font-bold text-[#6B7079] block mb-1">
+                            Nombre corto (web, comprobante y chips) *
+                          </label>
+                          <input
+                            type="text"
+                            value={t.shortName || ''}
+                            onChange={(e) => updateLocalTariff(t.id, { shortName: e.target.value })}
+                            placeholder="Ej: Cerámico 9H"
+                            className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 font-medium text-xs text-[#161616] placeholder-[#9CA3AF] focus:outline-none focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF]"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="text-[10px] font-bold text-[#6B7079] block mb-1">
+                            Duración estimada
+                          </label>
+                          <div className="relative flex items-center">
+                            <input
+                              type="number"
+                              min="0.5"
+                              step="0.5"
+                              value={t.durationHours || ''}
+                              onChange={(e) =>
+                                updateLocalTariff(t.id, { durationHours: parseFloat(e.target.value) || 0 })
+                              }
+                              placeholder="2"
+                              className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-2.5 pr-12 py-1.5 font-mono text-xs text-[#161616] focus:outline-none focus:border-[#1E5EFF] focus:ring-1 focus:ring-[#1E5EFF]"
+                            />
+                            <span className="absolute right-2.5 text-[10px] font-medium text-[#6B7079] pointer-events-none select-none">
+                              horas
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Precios por Categoría */}
+                      <div>
+                        <label className="text-[10px] font-bold text-[#6B7079] block mb-1">
+                          Precios por categoría de vehículo ($)
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                          <div>
+                            <span className="text-[10px] text-[#6B7079] block mb-0.5">Chico ($)</span>
+                            <input
+                              type="number"
+                              value={t.prices.chico || 0}
+                              onChange={(e) =>
+                                updateLocalTariff(t.id, {
+                                  prices: { ...t.prices, chico: Number(e.target.value) || 0 }
+                                })
+                              }
+                              className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs text-[#161616] focus:outline-none focus:border-[#1E5EFF]"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#6B7079] block mb-0.5">Mediano ($)</span>
+                            <input
+                              type="number"
+                              value={t.prices.mediano || 0}
+                              onChange={(e) =>
+                                updateLocalTariff(t.id, {
+                                  prices: { ...t.prices, mediano: Number(e.target.value) || 0 }
+                                })
+                              }
+                              className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs text-[#161616] focus:outline-none focus:border-[#1E5EFF]"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#6B7079] block mb-0.5">SUV ($)</span>
+                            <input
+                              type="number"
+                              value={t.prices.suv || 0}
+                              onChange={(e) =>
+                                updateLocalTariff(t.id, {
+                                  prices: { ...t.prices, suv: Number(e.target.value) || 0 }
+                                })
+                              }
+                              className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs text-[#161616] focus:outline-none focus:border-[#1E5EFF]"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#6B7079] block mb-0.5">Pick-up ($)</span>
+                            <input
+                              type="number"
+                              value={t.prices.pickup || 0}
+                              onChange={(e) =>
+                                updateLocalTariff(t.id, {
+                                  prices: { ...t.prices, pickup: Number(e.target.value) || 0 }
+                                })
+                              }
+                              className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs text-[#161616] focus:outline-none focus:border-[#1E5EFF]"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#6B7079] block mb-0.5">Moto ($)</span>
+                            <input
+                              type="number"
+                              value={t.prices.moto || 0}
+                              onChange={(e) =>
+                                updateLocalTariff(t.id, {
+                                  prices: { ...t.prices, moto: Number(e.target.value) || 0 }
+                                })
+                              }
+                              className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1 font-mono text-xs text-[#161616] focus:outline-none focus:border-[#1E5EFF]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cuidados posteriores específicos del servicio */}
+                      <div>
+                        <span className="text-[10px] font-bold text-[#161616] block mb-1">
+                          Cuidados posteriores y garantías para el comprobante:
+                        </span>
+                        <textarea
+                          rows={2}
+                          value={t.care_text || ''}
+                          onChange={(e) => updateLocalTariff(t.id, { care_text: e.target.value })}
+                          placeholder="Ej: No mojar durante las primeras 72h. Lavar a mano con shampoo de pH neutro..."
+                          className="w-full bg-white border border-[#E5E5E3] rounded-lg p-2 text-xs text-[#161616] placeholder-[#9CA3AF] focus:outline-none focus:border-[#1E5EFF]"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Botón "+ Agregar servicio" al final de la lista */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddNewTariff}
+                  className="w-full py-3.5 px-4 rounded-xl border-2 border-dashed border-[#E5E5E3] hover:border-[#1E5EFF] bg-white hover:bg-[#EEF3FF] text-[#161616] hover:text-[#1E5EFF] font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs group"
+                >
+                  <Plus className="w-4 h-4 text-[#6B7079] group-hover:text-[#1E5EFF] transition-colors" />
+                  <span>+ Agregar servicio</span>
+                </button>
               </div>
             </div>
           )}
