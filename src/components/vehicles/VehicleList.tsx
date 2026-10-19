@@ -36,9 +36,9 @@ export const VehicleList: React.FC<VehicleListProps> = ({ onScheduleAppointment 
 
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
-        const plateNorm = v.plate.toLowerCase();
-        const brandMatch = v.brand.toLowerCase().includes(q);
-        const modelMatch = v.model.toLowerCase().includes(q);
+        const plateNorm = String(v.plate || '').toLowerCase();
+        const brandMatch = String(v.brand || '').toLowerCase().includes(q);
+        const modelMatch = String(v.model || '').toLowerCase().includes(q);
         return plateNorm.includes(q) || brandMatch || modelMatch;
       }
       return true;

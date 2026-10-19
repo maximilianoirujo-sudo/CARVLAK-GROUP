@@ -40,6 +40,7 @@ export interface Profile {
 export interface Client {
   id: string;
   full_name: string;
+  name?: string;
   phone: string;
   email?: string;
   cedula?: string;
@@ -50,6 +51,7 @@ export interface Client {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface Vehicle {
@@ -72,6 +74,7 @@ export interface Vehicle {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface VehicleHistoryEvent {
@@ -115,6 +118,7 @@ export interface Appointment {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface Task {
@@ -129,6 +133,7 @@ export interface Task {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface ActivityLog {
@@ -445,6 +450,8 @@ export interface DetailingPayment {
   status?: string;
   payment_group_id?: string;
   created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
 }
 
 export interface DetailingCheckinData {
@@ -535,6 +542,7 @@ export interface DetailingQuote {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 // Cierre de caja diario
@@ -628,6 +636,8 @@ export interface Expense {
   created_by?: string;
   is_archived?: boolean;
   created_at: string;
+  updated_at?: string;
+  deleted_at?: string;
 }
 
 export interface CommissionRecord {
@@ -644,11 +654,14 @@ export interface CommissionRecord {
   currency?: Currency; // Moneda explícita: 'USD' para automotora, 'UYU' para detailing/inspección
   status: 'Pendiente' | 'Pagada';
   created_at: string;
+  updated_at?: string;
+  deleted_at?: string;
   paid_at?: string;
   origin?: string;
   receipt_number?: string;
   adjustment_reason?: string;
   adjusted_at?: string;
+  adjusted_by?: string;
 }
 
 export type WhatsAppTemplateKey = 'formal' | 'promo' | 'fotos' | 'seguimiento' | 'turno';
@@ -779,6 +792,7 @@ export interface VehicleInspection {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface InspectionTariffConfig {
@@ -1034,6 +1048,7 @@ export interface DealershipVehicle {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface DealershipInquiry {

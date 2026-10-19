@@ -139,8 +139,8 @@ export const DetailingMonthJobsSection: React.FC = () => {
   const totalPending = Math.max(0, totalBilled - totalCollected);
 
   const totalExpenses = useMemo(() => {
-    return expenses
-      .filter((e) => e.business === 'detailing' && isActiveExpense(e) && e.date.startsWith(selectedMonth))
+    return (expenses || [])
+      .filter((e) => (e.business === 'detailing' || e.business === 'general' || !e.business) && isActiveExpense(e) && !e.deleted_at && String(e.date || '').startsWith(selectedMonth))
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   }, [expenses, selectedMonth]);
 

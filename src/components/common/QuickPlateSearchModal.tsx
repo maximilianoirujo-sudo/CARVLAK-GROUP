@@ -25,10 +25,11 @@ export const QuickPlateSearchModal: React.FC<QuickPlateSearchModalProps> = ({
     const qRaw = searchTerm.toLowerCase().trim();
 
     // 1. Coincidencias en vehículos generales
-    const matchedVehicles = vehicles.filter((v) => {
-      const plateClean = v.plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const brandMatch = v.brand.toLowerCase().includes(qRaw);
-      const modelMatch = v.model.toLowerCase().includes(qRaw);
+    const matchedVehicles = (vehicles || []).filter((v) => {
+      if (!v) return false;
+      const plateClean = String(v.plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const brandMatch = String(v.brand || '').toLowerCase().includes(qRaw);
+      const modelMatch = String(v.model || '').toLowerCase().includes(qRaw);
       return (q && plateClean.includes(q)) || brandMatch || modelMatch;
     });
 

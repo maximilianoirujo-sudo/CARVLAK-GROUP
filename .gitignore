@@ -36,3 +36,4 @@ build_bundle.cjs
 .vercel
 .env*
 scratch/
+backups/

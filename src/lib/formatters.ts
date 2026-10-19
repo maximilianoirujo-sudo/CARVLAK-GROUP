@@ -527,5 +527,173 @@ export function getOriginCommissionRates(
   };
 }
 
+/**
+ * Obtiene el timestamp efectivo de un registro para merge (updated_at o created_at como respaldo)
+ */
+export function getEffectiveTimestamp(rec: any): string {
+  if (!rec || typeof rec !== 'object') return '';
+  return String(rec.updated_at || rec.created_at || '');
+}
+
+/**
+ * Normaliza de forma segura un cliente para que ningún campo sea null o undefined en render,
+ * mapeando tanto `full_name` como `name` sin alterar campos originales.
+ */
+export function normalizeClient(raw: any): any {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      id: '',
+      full_name: '',
+      name: '',
+      phone: '',
+      email: '',
+      cedula: '',
+      origin: 'WhatsApp',
+      notes: '',
+      is_archived: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+  const fullName = String(raw.full_name ?? raw.name ?? '');
+  const name = String(raw.name ?? raw.full_name ?? '');
+  return {
+    ...raw,
+    id: String(raw.id ?? ''),
+    full_name: fullName,
+    name: name,
+    phone: String(raw.phone ?? ''),
+    email: String(raw.email ?? ''),
+    cedula: String(raw.cedula ?? ''),
+    origin: raw.origin || 'WhatsApp',
+    notes: String(raw.notes ?? ''),
+    is_archived: Boolean(raw.is_archived),
+    created_at: raw.created_at || raw.updated_at || '1970-01-01T00:00:00.000Z',
+    updated_at: raw.updated_at || raw.created_at || '1970-01-01T00:00:00.000Z'
+  };
+}
+
+/**
+ * Normaliza de forma segura un vehículo para que ningún campo sea null o undefined en render.
+ */
+export function normalizeVehicle(raw: any): any {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      id: '',
+      plate: '',
+      brand: '',
+      model: '',
+      category: 'Mediano',
+      ownership: 'client',
+      client_id: '',
+      photos: [],
+      is_archived: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+  return {
+    ...raw,
+    id: String(raw.id ?? ''),
+    plate: String(raw.plate ?? ''),
+    brand: String(raw.brand ?? ''),
+    model: String(raw.model ?? ''),
+    category: raw.category || 'Mediano',
+    ownership: raw.ownership || 'client',
+    client_id: String(raw.client_id ?? ''),
+    photos: Array.isArray(raw.photos) ? raw.photos : [],
+    is_archived: Boolean(raw.is_archived),
+    created_at: raw.created_at || raw.updated_at || '1970-01-01T00:00:00.000Z',
+    updated_at: raw.updated_at || raw.created_at || '1970-01-01T00:00:00.000Z'
+  };
+}
+
+/**
+ * Normaliza de forma segura una empresa de detailing.
+ */
+export function normalizeCompany(raw: any): any {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      id: '',
+      name: '',
+      phone: '',
+      billing_mode: 'mensual',
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+  return {
+    ...raw,
+    id: String(raw.id ?? ''),
+    name: String(raw.name ?? ''),
+    phone: String(raw.phone ?? ''),
+    contact_name: String(raw.contact_name ?? ''),
+    billing_mode: raw.billing_mode || 'mensual',
+    is_active: raw.is_active !== undefined ? Boolean(raw.is_active) : true,
+    created_at: raw.created_at || raw.updated_at || '1970-01-01T00:00:00.000Z',
+    updated_at: raw.updated_at || raw.created_at || '1970-01-01T00:00:00.000Z'
+  };
+}
+
+/**
+ * Une dos listas de registros por `id` usando `updated_at` (o `created_at` si no tiene `updated_at`),
+ * respetando `deleted_at` (borrado lógico) y sin borrar registros que falten en una de las listas.
+ */
+export function mergeRecordsById<T extends { id?: string }>(
+  localList: T[],
+  remoteList: T[],
+  deletedIds?: string[],
+  normalizer?: (item: any) => T
+): T[] {
+  const map = new Map<string, any>();
+  const deletedSet = new Set<string>(Array.isArray(deletedIds) ? deletedIds : []);
+
+  const safeLocal = Array.isArray(localList) ? localList : [];
+  const safeRemote = Array.isArray(remoteList) ? remoteList : [];
+
+  for (const item of safeLocal) {
+    if (!item || !item.id) continue;
+    if ((item as any).deleted_at) {
+      deletedSet.add(item.id);
+      continue;
+    }
+    map.set(item.id, normalizer ? normalizer(item) : item);
+  }
+
+  for (const remoteItem of safeRemote) {
+    if (!remoteItem || !remoteItem.id) continue;
+    if ((remoteItem as any).deleted_at) {
+      deletedSet.add(remoteItem.id);
+      map.delete(remoteItem.id);
+      continue;
+    }
+    if (deletedSet.has(remoteItem.id)) {
+      map.delete(remoteItem.id);
+      continue;
+    }
+
+    const existing = map.get(remoteItem.id);
+    if (!existing) {
+      map.set(remoteItem.id, normalizer ? normalizer(remoteItem) : remoteItem);
+    } else {
+      const localTs = getEffectiveTimestamp(existing);
+      const remoteTs = getEffectiveTimestamp(remoteItem);
+      // Si el remoto es más nuevo o igual, gana el remoto
+      if (!localTs || (remoteTs && remoteTs >= localTs)) {
+        map.set(remoteItem.id, normalizer ? normalizer({ ...existing, ...remoteItem }) : { ...existing, ...remoteItem });
+      }
+    }
+  }
+
+  // Eliminar cualquier ID marcado como borrado
+  for (const delId of deletedSet) {
+    map.delete(delId);
+  }
+
+  return Array.from(map.values());
+}
+
+
 
 

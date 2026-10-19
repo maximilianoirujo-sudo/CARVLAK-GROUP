@@ -80,7 +80,7 @@ import {
   INITIAL_DETAILING_COMPANIES,
   INITIAL_DETAILING_WEB_REQUESTS
 } from '../lib/mockData';
-import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, isActivePayment, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates } from '../lib/formatters';
+import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, isActivePayment, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates, normalizeClient, normalizeVehicle, normalizeCompany, mergeRecordsById } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
@@ -275,14 +275,62 @@ export interface DataContextType {
 
   // Sincronización en tiempo real y remota
   refreshData: () => Promise<void>;
+  syncRecordsToCloud: (key: string, items: any) => Promise<{ ok: boolean; error?: string }>;
   isSyncing: boolean;
   lastSyncedAt: string | null;
 }
 
 export const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Hook para persistencia diferida en localStorage y nube vía /api/sync (multi-dispositivo)
-const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) => {
+// Cola de reintentos para /api/sync cuando falla la red
+const PENDING_API_SYNC_KEY = 'carvlak_pending_api_sync';
+
+function enqueueApiSyncOperation(key: string, items: any) {
+  try {
+    const raw = localStorage.getItem(PENDING_API_SYNC_KEY);
+    const queue: Array<{ key: string; items: any; ts: string }> = raw ? JSON.parse(raw) : [];
+    queue.push({ key, items, ts: new Date().toISOString() });
+    localStorage.setItem(PENDING_API_SYNC_KEY, JSON.stringify(queue.slice(-200)));
+  } catch (e) {}
+}
+
+async function flushApiSyncQueue(): Promise<void> {
+  try {
+    const raw = localStorage.getItem(PENDING_API_SYNC_KEY);
+    if (!raw) return;
+    const queue: Array<{ key: string; items: any; ts: string }> = JSON.parse(raw);
+    if (!Array.isArray(queue) || queue.length === 0) return;
+
+    const remaining: typeof queue = [];
+    for (const op of queue) {
+      try {
+        const res = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(
+            op.key === 'detailing_config'
+              ? { key: op.key, data: op.items }
+              : { key: op.key, items: Array.isArray(op.items) ? op.items : [op.items] }
+          )
+        });
+        if (!res.ok) {
+          remaining.push(op);
+        }
+      } catch {
+        remaining.push(op);
+      }
+    }
+
+    if (remaining.length === 0) {
+      localStorage.removeItem(PENDING_API_SYNC_KEY);
+    } else {
+      localStorage.setItem(PENDING_API_SYNC_KEY, JSON.stringify(remaining));
+    }
+  } catch (e) {}
+}
+
+// Hook para persistencia diferida en localStorage (sin pisar la nube con listas completas)
+const useDebouncedLocalStorage = (key: string, value: any, delay: number = 300) => {
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
@@ -292,16 +340,6 @@ const useDebouncedLocalStorage = (key: string, value: any, delay: number = 500) 
     const timer = setTimeout(() => {
       try {
         localStorage.setItem(key, JSON.stringify(value));
-
-        // Sincronización en la nube vía /api/sync (Upstash / Vercel KV) para PC y Celulares
-        if (key.startsWith('carvlak_')) {
-          const cleanKey = key.replace('carvlak_', '');
-          fetch('/api/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: cleanKey, data: value })
-          }).catch(() => {});
-        }
       } catch (err) {
         console.warn(`Error al guardar ${key} en localStorage:`, err);
       }
@@ -315,15 +353,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { profile, availableProfiles } = useAuth();
   const { showToast } = useToast();
 
-  // Estados con carga inicial desde localStorage o seed
+  // Sincronización por registro hacia /api/sync con confirmación de respuesta y cola de reintentos
+  const syncRecordsToCloud = async (key: string, items: any): Promise<{ ok: boolean; error?: string }> => {
+    if (items === undefined || items === null) return { ok: true };
+    if (Array.isArray(items) && items.length === 0) return { ok: true };
+    try {
+      const bodyPayload =
+        key === 'detailing_config' || (!Array.isArray(items) && key.endsWith('_config'))
+          ? { key, data: items }
+          : { key, items: Array.isArray(items) ? items : [items] };
+
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = errData?.error || `Error del servidor (${res.status})`;
+        enqueueApiSyncOperation(key, items);
+        return { ok: false, error: errMsg };
+      }
+      return { ok: true };
+    } catch (err: any) {
+      enqueueApiSyncOperation(key, items);
+      return { ok: false, error: err?.message || 'Error de conexión al sincronizar con el servidor' };
+    }
+  };
+
+  // Estados con carga inicial desde localStorage o seed (normalizados para nunca tener campos null/undefined)
   const [clients, setClients] = useState<Client[]>(() => {
     const s = localStorage.getItem('carvlak_clients');
-    return s ? JSON.parse(s) : INITIAL_CLIENTS;
+    const raw = s ? JSON.parse(s) : INITIAL_CLIENTS;
+    return Array.isArray(raw) ? raw.filter((c: any) => !c?.deleted_at).map(normalizeClient) : [];
   });
 
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
     const s = localStorage.getItem('carvlak_vehicles');
-    return s ? JSON.parse(s) : INITIAL_VEHICLES;
+    const raw = s ? JSON.parse(s) : INITIAL_VEHICLES;
+    return Array.isArray(raw) ? raw.filter((v: any) => !v?.deleted_at).map(normalizeVehicle) : [];
   });
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
@@ -349,27 +418,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // FASE 2: Estados Detailing, Stock, Gastos, Comisiones y WhatsApp
   const [detailingTariffs, setDetailingTariffs] = useState<DetailingTariff[]>(() => {
     const s = localStorage.getItem('carvlak_detailing_tariffs');
-    return s ? JSON.parse(s) : INITIAL_DETAILING_TARIFFS;
+    const raw = s ? JSON.parse(s) : INITIAL_DETAILING_TARIFFS;
+    return Array.isArray(raw) ? raw.filter((t: any) => !t?.deleted_at) : INITIAL_DETAILING_TARIFFS;
   });
 
   const [detailingQuotes, setDetailingQuotes] = useState<DetailingQuote[]>(() => {
     const s = localStorage.getItem('carvlak_detailing_quotes');
-    return s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
+    const raw = s ? JSON.parse(s) : INITIAL_DETAILING_QUOTES;
+    return Array.isArray(raw) ? raw.filter((q: any) => !q?.deleted_at) : INITIAL_DETAILING_QUOTES;
   });
 
   const [stockItems, setStockItems] = useState<StockItem[]>(() => {
     const s = localStorage.getItem('carvlak_stock_items');
-    return s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
+    const raw = s ? JSON.parse(s) : INITIAL_STOCK_ITEMS;
+    return Array.isArray(raw) ? raw.filter((st: any) => !st?.deleted_at) : INITIAL_STOCK_ITEMS;
   });
 
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     const s = localStorage.getItem('carvlak_expenses');
-    return s ? JSON.parse(s) : INITIAL_EXPENSES;
+    if (s) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) {
+          // Excluir los 3 gastos ficticios de mockData (exp-1, exp-2, exp-3) y borrados
+          return parsed.filter((e: any) => e && !e.deleted_at && !['exp-1', 'exp-2', 'exp-3'].includes(e.id));
+        }
+      } catch {}
+    }
+    return [];
   });
 
   const [commissions, setCommissions] = useState<CommissionRecord[]>(() => {
     const s = localStorage.getItem('carvlak_commissions');
-    return s ? JSON.parse(s) : INITIAL_COMMISSIONS;
+    const raw = s ? JSON.parse(s) : INITIAL_COMMISSIONS;
+    return Array.isArray(raw) ? raw.filter((c: any) => !c?.deleted_at) : INITIAL_COMMISSIONS;
   });
 
   const [whatsappTemplates, setWhatsappTemplates] = useState<WhatsAppTemplate[]>(() => {
@@ -438,10 +520,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const s = localStorage.getItem('carvlak_detailing_companies');
     if (s) {
       try {
-        return JSON.parse(s);
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) return parsed.filter((c: any) => !c?.deleted_at).map(normalizeCompany);
       } catch {}
     }
-    return INITIAL_DETAILING_COMPANIES;
+    return INITIAL_DETAILING_COMPANIES.map(normalizeCompany);
   });
   useDebouncedLocalStorage('carvlak_detailing_companies', detailingCompanies, 500);
 
@@ -808,74 +891,139 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [profile?.id]);
 
   // Sincronización en la nube vía /api/sync (Upstash / Vercel KV) para computadoras y celulares
+  // Une (merge) por id y updated_at sin pisar cambios locales más recientes y respetando borrados (deletedIds)
   const syncFromCloud = async () => {
     try {
+      await flushApiSyncQueue();
       const res = await fetch('/api/sync');
       if (!res.ok) return;
       const json = await res.json();
       if (!json?.success || !json?.data) return;
 
       const d = json.data;
+      const delMap = json.deletedIds || {};
+
       let rawQuotes = d.detailing_quotes;
       while (typeof rawQuotes === 'string') {
         try { rawQuotes = JSON.parse(rawQuotes); } catch { break; }
       }
-      if (Array.isArray(rawQuotes) && rawQuotes.length > 0) {
-        setDetailingQuotes(rawQuotes);
-        detailingQuotesRef.current = rawQuotes;
-        localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(rawQuotes));
+      if (Array.isArray(rawQuotes)) {
+        setDetailingQuotes((prev) => {
+          const merged = mergeRecordsById(prev, rawQuotes, delMap.detailing_quotes);
+          detailingQuotesRef.current = merged;
+          localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(merged));
+          return merged;
+        });
       }
+
       let rawPayments = d.detailing_payments;
       while (typeof rawPayments === 'string') {
         try { rawPayments = JSON.parse(rawPayments); } catch { break; }
       }
       if (Array.isArray(rawPayments)) {
-        setDetailingPayments(rawPayments);
-        localStorage.setItem('carvlak_detailing_payments', JSON.stringify(rawPayments));
+        setDetailingPayments((prev) => {
+          const merged = mergeRecordsById(prev, rawPayments, delMap.detailing_payments);
+          localStorage.setItem('carvlak_detailing_payments', JSON.stringify(merged));
+          return merged;
+        });
       }
+
       if (d.detailing_config && typeof d.detailing_config === 'object') {
-        const mergedCfg: DetailingConfig = {
-          ...INITIAL_DETAILING_CONFIG,
-          ...d.detailing_config,
-          web_budget: {
-            ...INITIAL_DETAILING_CONFIG.web_budget,
-            ...(d.detailing_config.web_budget || {})
-          }
-        };
-        setDetailingConfig(mergedCfg);
-        localStorage.setItem('carvlak_detailing_config', JSON.stringify(mergedCfg));
+        setDetailingConfig((prev) => {
+          const mergedCfg: DetailingConfig = {
+            ...INITIAL_DETAILING_CONFIG,
+            ...prev,
+            ...d.detailing_config,
+            web_budget: {
+              ...INITIAL_DETAILING_CONFIG.web_budget,
+              ...(prev.web_budget || {}),
+              ...(d.detailing_config.web_budget || {})
+            }
+          };
+          localStorage.setItem('carvlak_detailing_config', JSON.stringify(mergedCfg));
+          return mergedCfg;
+        });
       }
+
       if (Array.isArray(d.commissions)) {
-        setCommissions(d.commissions);
-        localStorage.setItem('carvlak_commissions', JSON.stringify(d.commissions));
+        setCommissions((prev) => {
+          const merged = mergeRecordsById(prev, d.commissions, delMap.commissions);
+          localStorage.setItem('carvlak_commissions', JSON.stringify(merged));
+          return merged;
+        });
       }
-      if (Array.isArray(d.clients) && d.clients.length > 0) {
-        setClients(d.clients);
-        localStorage.setItem('carvlak_clients', JSON.stringify(d.clients));
+
+      if (Array.isArray(d.clients)) {
+        setClients((prev) => {
+          const merged = mergeRecordsById(prev, d.clients, delMap.clients, normalizeClient);
+          localStorage.setItem('carvlak_clients', JSON.stringify(merged));
+          return merged;
+        });
       }
-      if (Array.isArray(d.vehicles) && d.vehicles.length > 0) {
-        setVehicles(d.vehicles);
-        localStorage.setItem('carvlak_vehicles', JSON.stringify(d.vehicles));
+
+      if (Array.isArray(d.vehicles)) {
+        setVehicles((prev) => {
+          const merged = mergeRecordsById(prev, d.vehicles, delMap.vehicles, normalizeVehicle);
+          localStorage.setItem('carvlak_vehicles', JSON.stringify(merged));
+          return merged;
+        });
       }
-      if (Array.isArray(d.expenses) && d.expenses.length > 0) {
-        setExpenses(d.expenses);
-        localStorage.setItem('carvlak_expenses', JSON.stringify(d.expenses));
+
+      if (Array.isArray(d.expenses)) {
+        setExpenses((prev) => {
+          const cleanPrev = prev.filter((e) => !['exp-1', 'exp-2', 'exp-3'].includes(e.id));
+          const merged = mergeRecordsById(cleanPrev, d.expenses, delMap.expenses);
+          localStorage.setItem('carvlak_expenses', JSON.stringify(merged));
+          return merged;
+        });
       }
+
       if (Array.isArray(d.detailing_companies)) {
-        setDetailingCompanies(d.detailing_companies);
-        localStorage.setItem('carvlak_detailing_companies', JSON.stringify(d.detailing_companies));
+        setDetailingCompanies((prev) => {
+          const merged = mergeRecordsById(prev, d.detailing_companies, delMap.detailing_companies, normalizeCompany);
+          localStorage.setItem('carvlak_detailing_companies', JSON.stringify(merged));
+          return merged;
+        });
       }
+
       if (Array.isArray(d.detailing_company_services) && d.detailing_company_services.length > 0) {
-        setDetailingCompanyServices(d.detailing_company_services);
-        localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(d.detailing_company_services));
+        setDetailingCompanyServices((prev) => {
+          const merged = mergeRecordsById(prev, d.detailing_company_services, delMap.detailing_company_services);
+          localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(merged));
+          return merged;
+        });
       }
+
       if (Array.isArray(d.detailing_tariffs) && d.detailing_tariffs.length > 0) {
-        setDetailingTariffs(d.detailing_tariffs);
-        localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(d.detailing_tariffs));
+        setDetailingTariffs((prev) => {
+          const merged = mergeRecordsById(prev, d.detailing_tariffs, delMap.detailing_tariffs);
+          localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(merged));
+          return merged;
+        });
       }
+
       if (Array.isArray(d.detailing_web_requests)) {
-        setDetailingWebRequests(d.detailing_web_requests);
-        localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(d.detailing_web_requests));
+        setDetailingWebRequests((prev) => {
+          const merged = mergeRecordsById(prev, d.detailing_web_requests, delMap.detailing_web_requests);
+          localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(merged));
+          return merged;
+        });
+      }
+
+      if (Array.isArray(d.stock_items)) {
+        setStockItems((prev) => {
+          const merged = mergeRecordsById(prev, d.stock_items, delMap.stock_items);
+          localStorage.setItem('carvlak_stock_items', JSON.stringify(merged));
+          return merged;
+        });
+      }
+
+      if (Array.isArray(d.detailing_receipts)) {
+        setDetailingReceipts((prev) => {
+          const merged = mergeRecordsById(prev, d.detailing_receipts, delMap.detailing_receipts);
+          localStorage.setItem('carvlak_detailing_receipts', JSON.stringify(merged));
+          return merged;
+        });
       }
     } catch (e) {
       // offline o sin conexión
@@ -1095,92 +1243,161 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkPhoneDuplicate = (phone: string, currentClientId?: string): Client | null => {
     if (!phone) return null;
     const sanitized = sanitizePhoneForWhatsApp(phone);
+    if (!sanitized) return null;
     const found = clients.find(
-      (c) => !c.is_archived && c.id !== currentClientId && sanitizePhoneForWhatsApp(c.phone) === sanitized
+      (c) => !c.is_archived && !c.deleted_at && c.id !== currentClientId && sanitizePhoneForWhatsApp(c.phone || '') === sanitized
     );
     return found || null;
   };
 
   const addClient = (data: Omit<Client, 'id' | 'created_at' | 'updated_at' | 'is_archived'>) => {
     const dup = checkPhoneDuplicate(data.phone);
-    const newClient: Client = {
+    if (dup) {
+      const normDup = normalizeClient(dup);
+      return {
+        client: normDup,
+        duplicateWarning: `Ya existía un cliente con este teléfono (${normDup.full_name}). Se usó el cliente existente.`
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+    const newClient: Client = normalizeClient({
       ...data,
+      name: data.full_name,
       id: `cli-${crypto.randomUUID()}`,
       is_archived: false,
       created_by: profile?.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+      created_at: nowIso,
+      updated_at: nowIso
+    });
 
-    setClients((prev) => [newClient, ...prev]);
+    setClients((prev) => {
+      const next = [newClient, ...prev];
+      try { localStorage.setItem('carvlak_clients', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cliente', newClient.id, 'create', { name: newClient.full_name, phone: newClient.phone });
     syncSupabase('clients', 'insert', newClient);
+    syncRecordsToCloud('clients', [newClient]);
 
     return {
-      client: newClient,
-      duplicateWarning: dup ? `Atención: Ya existe un cliente con este teléfono (${dup.full_name}).` : undefined
+      client: newClient
     };
   };
 
   const updateClient = (id: string, data: Partial<Client>) => {
-    setClients((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...data, updated_at: new Date().toISOString() } : c))
-    );
+    const nowIso = new Date().toISOString();
+    let updatedItem: Client | null = null;
+    setClients((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== id) return c;
+        updatedItem = normalizeClient({
+          ...c,
+          ...data,
+          ...(data.full_name ? { name: data.full_name } : {}),
+          updated_at: nowIso
+        });
+        return updatedItem!;
+      });
+      try { localStorage.setItem('carvlak_clients', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cliente', id, 'update', data);
-    syncSupabase('clients', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('clients', 'update', { ...data, updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('clients', [updatedItem]);
   };
 
   const archiveClient = (id: string) => {
-    setClients((prev) => prev.map((c) => (c.id === id ? { ...c, is_archived: true } : c)));
+    const nowIso = new Date().toISOString();
+    let updatedItem: Client | null = null;
+    setClients((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== id) return c;
+        updatedItem = { ...c, is_archived: true, updated_at: nowIso };
+        return updatedItem;
+      });
+      try { localStorage.setItem('carvlak_clients', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cliente', id, 'archive');
-    syncSupabase('clients', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('clients', 'update', { is_archived: true, updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('clients', [updatedItem]);
   };
 
   // VEHÍCULOS
   const getVehicleByPlate = (plate: string): Vehicle | undefined => {
     const norm = normalizePlate(plate);
-    return vehicles.find((v) => !v.is_archived && normalizePlate(v.plate) === norm);
+    if (!norm) return undefined;
+    return vehicles.find((v) => !v.is_archived && !v.deleted_at && normalizePlate(v.plate || '') === norm);
   };
 
   const addVehicle = (data: Omit<Vehicle, 'id' | 'created_at' | 'updated_at' | 'is_archived'>) => {
     const normalizedPlate = normalizePlate(data.plate);
-    const existing = getVehicleByPlate(normalizedPlate);
-    if (existing) {
-      return { vehicle: existing, error: `Ya existe un vehículo registrado con la matrícula ${normalizedPlate}.` };
+    if (normalizedPlate) {
+      const existing = getVehicleByPlate(normalizedPlate);
+      if (existing) {
+        return { vehicle: normalizeVehicle(existing), error: `Ya existe un vehículo registrado con la matrícula ${normalizedPlate}.` };
+      }
     }
 
-    const newVehicle: Vehicle = {
+    const nowIso = new Date().toISOString();
+    const newVehicle: Vehicle = normalizeVehicle({
       ...data,
       plate: normalizedPlate,
       id: `veh-${crypto.randomUUID()}`,
       is_archived: false,
       created_by: profile?.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+      created_at: nowIso,
+      updated_at: nowIso
+    });
 
-    setVehicles((prev) => [newVehicle, ...prev]);
+    setVehicles((prev) => {
+      const next = [newVehicle, ...prev];
+      try { localStorage.setItem('carvlak_vehicles', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('vehiculo', newVehicle.id, 'create', { plate: newVehicle.plate, model: newVehicle.model });
 
     // Registro inicial en historial
     addVehicleHistory(newVehicle.id, 'automotora', 'Registro Inicial', `Vehículo ${newVehicle.brand} ${newVehicle.model} registrado en CARVLAK Group.`);
     syncSupabase('vehicles', 'insert', newVehicle);
+    syncRecordsToCloud('vehicles', [newVehicle]);
 
     return { vehicle: newVehicle };
   };
 
   const updateVehicle = (id: string, data: Partial<Vehicle>) => {
-    setVehicles((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, ...data, updated_at: new Date().toISOString() } : v))
-    );
+    const nowIso = new Date().toISOString();
+    let updatedItem: Vehicle | null = null;
+    setVehicles((prev) => {
+      const next = prev.map((v) => {
+        if (v.id !== id) return v;
+        updatedItem = normalizeVehicle({ ...v, ...data, updated_at: nowIso });
+        return updatedItem!;
+      });
+      try { localStorage.setItem('carvlak_vehicles', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('vehiculo', id, 'update', data);
-    syncSupabase('vehicles', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('vehicles', 'update', { ...data, updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('vehicles', [updatedItem]);
   };
 
   const archiveVehicle = (id: string) => {
-    setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, is_archived: true } : v)));
+    const nowIso = new Date().toISOString();
+    let updatedItem: Vehicle | null = null;
+    setVehicles((prev) => {
+      const next = prev.map((v) => {
+        if (v.id !== id) return v;
+        updatedItem = { ...v, is_archived: true, updated_at: nowIso };
+        return updatedItem;
+      });
+      try { localStorage.setItem('carvlak_vehicles', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('vehiculo', id, 'archive');
-    syncSupabase('vehicles', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('vehicles', 'update', { is_archived: true, updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('vehicles', [updatedItem]);
   };
 
   const addVehicleHistory = (vehicleId: string, business: 'automotora' | 'detailing' | 'inspeccion', eventType: string, description: string) => {
@@ -1270,64 +1487,80 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Tarifario
   const updateDetailingTariff = (id: string, pricesOrUpdates: DetailingTariffPrices | Partial<DetailingTariff>, isActive?: boolean) => {
-    setDetailingTariffs((prev) =>
-      prev.map((t) => {
+    const nowIso = new Date().toISOString();
+    let updatedItem: DetailingTariff | null = null;
+    setDetailingTariffs((prev) => {
+      const next = prev.map((t) => {
         if (t.id !== id) return t;
         if ('chico' in pricesOrUpdates) {
-          return { ...t, prices: pricesOrUpdates as DetailingTariffPrices, isActive: isActive !== undefined ? isActive : t.isActive };
+          updatedItem = { ...t, prices: pricesOrUpdates as DetailingTariffPrices, isActive: isActive !== undefined ? isActive : t.isActive, updated_at: nowIso } as any;
+          return updatedItem!;
         }
-        return { ...t, ...(pricesOrUpdates as Partial<DetailingTariff>), isActive: isActive !== undefined ? isActive : t.isActive };
-      })
-    );
-    const updated = detailingTariffs.find((t) => t.id === id);
-    if (updated) {
-      const payload = 'chico' in pricesOrUpdates
-        ? { ...updated, prices: pricesOrUpdates, isActive: isActive !== undefined ? isActive : updated.isActive }
-        : { ...updated, ...pricesOrUpdates, isActive: isActive !== undefined ? isActive : updated.isActive };
-      syncSupabase('detailing_tariffs', 'upsert', payload);
+        updatedItem = { ...t, ...(pricesOrUpdates as Partial<DetailingTariff>), isActive: isActive !== undefined ? isActive : t.isActive, updated_at: nowIso } as any;
+        return updatedItem!;
+      });
+      try { localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    if (updatedItem) {
+      syncSupabase('detailing_tariffs', 'upsert', updatedItem);
+      syncRecordsToCloud('detailing_tariffs', [updatedItem]);
     }
     logActivity('cotizacion_detailing', id, 'update', { action: 'Actualización de tarifario' });
   };
 
   const addDetailingTariff = (tariffData: Omit<DetailingTariff, 'id'>): DetailingTariff => {
+    const nowIso = new Date().toISOString();
     const newTariff: DetailingTariff = {
       ...tariffData,
-      id: `tariff-${crypto.randomUUID()}`
+      id: `tariff-${crypto.randomUUID()}`,
+      ...( { created_at: nowIso, updated_at: nowIso } as any )
     };
-    setDetailingTariffs((prev) => [...prev, newTariff]);
+    setDetailingTariffs((prev) => {
+      const next = [...prev, newTariff];
+      try { localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_tariffs', 'insert', newTariff);
+    syncRecordsToCloud('detailing_tariffs', [newTariff]);
     return newTariff;
   };
 
   const deleteDetailingTariff = (id: string) => {
-    setDetailingTariffs((prev) => prev.filter((t) => t.id !== id));
+    const nowIso = new Date().toISOString();
+    setDetailingTariffs((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      try { localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_tariffs', 'delete', { id });
+    syncRecordsToCloud('detailing_tariffs', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
     logActivity('cotizacion_detailing', id, 'archive', { action: 'Eliminación de servicio del tarifario' });
   };
 
   const reorderDetailingTariffs = (ordered: DetailingTariff[]) => {
-    setDetailingTariffs(ordered);
-    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(ordered));
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'detailing_tariffs', data: ordered })
-    }).catch(() => {});
+    const nowIso = new Date().toISOString();
+    const stamped = ordered.map((t, idx) => ({ ...t, order: idx + 1, updated_at: nowIso }));
+    setDetailingTariffs(stamped);
+    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(stamped));
+    syncRecordsToCloud('detailing_tariffs', stamped);
   };
 
   const saveAllDetailingTariffs = async (updatedTariffs: DetailingTariff[]) => {
+    const nowIso = new Date().toISOString();
     // 1. Detectar servicios eliminados
     const currentIds = new Set(updatedTariffs.map((t) => t.id));
     const deletedTariffs = detailingTariffs.filter((t) => !currentIds.has(t.id));
+    const stamped = updatedTariffs.map((t) => ({ ...t, updated_at: nowIso }));
 
     // 2. Actualizar estado local y localStorage inmediatamente
-    setDetailingTariffs(updatedTariffs);
-    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(updatedTariffs));
+    setDetailingTariffs(stamped);
+    localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(stamped));
 
     // 3. Sincronizar en Supabase
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('detailing_tariffs').upsert(updatedTariffs);
+        await supabase.from('detailing_tariffs').upsert(stamped);
       } catch (err) {
         console.warn('Error sincronizando servicios con Supabase:', err);
       }
@@ -1341,12 +1574,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 4. Fallback de sincronización web pública
-    fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'detailing_tariffs', data: updatedTariffs })
-    }).catch(() => {});
+    // 4. Sincronización por registro en /api/sync (con soft-delete para los eliminados)
+    const payloadToSync = [
+      ...stamped,
+      ...deletedTariffs.map((d) => ({ id: d.id, deleted_at: nowIso, updated_at: nowIso }))
+    ];
+    await syncRecordsToCloud('detailing_tariffs', payloadToSync);
 
     logActivity('cotizacion_detailing', 'tariffs', 'update', {
       action: 'Actualización general de tarifario y cuidados',
@@ -1356,59 +1589,86 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Solicitudes Web de Presupuestos (DetailVlak)
   const addDetailingWebRequest = (req: DetailingWebRequest) => {
-    setDetailingWebRequests((prev) => [req, ...prev]);
+    const nowIso = new Date().toISOString();
+    const stamped = { ...req, updated_at: (req as any).updated_at || nowIso };
+    setDetailingWebRequests((prev) => {
+      const next = [stamped, ...prev];
+      try { localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', req.id, 'create', { action: 'Nueva solicitud web', client: req.client_name });
-    syncSupabase('detailing_web_requests', 'insert', req);
+    syncSupabase('detailing_web_requests', 'insert', stamped);
+    syncRecordsToCloud('detailing_web_requests', [stamped]);
   };
 
   const updateDetailingWebRequestStatus = (id: string, status: DetailingWebRequestStatus, notes?: string) => {
-    setDetailingWebRequests((prev) =>
-      prev.map((r) => {
+    const nowIso = new Date().toISOString();
+    let updatedItem: DetailingWebRequest | null = null;
+    setDetailingWebRequests((prev) => {
+      const next = prev.map((r) => {
         if (r.id !== id) return r;
         const historyItem = {
           status,
-          changed_at: new Date().toISOString(),
+          changed_at: nowIso,
           changed_by: profile?.full_name || 'Sistema',
           note: notes
         };
         const updatedHistory = [...(r.status_history || []), historyItem];
-        return {
+        updatedItem = {
           ...r,
           status,
           status_history: updatedHistory,
-          ...(notes !== undefined ? { notes } : {})
-        };
-      })
-    );
+          ...(notes !== undefined ? { notes } : {}),
+          updated_at: nowIso
+        } as any;
+        return updatedItem!;
+      });
+      try { localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', id, 'status_change', { new_status: status });
-    syncSupabase('detailing_web_requests', 'update', { status, ...(notes !== undefined ? { notes } : {}), updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('detailing_web_requests', 'update', { status, ...(notes !== undefined ? { notes } : {}), updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('detailing_web_requests', [updatedItem]);
   };
 
   const addDetailingWebRequestNote = (id: string, text: string, author?: string) => {
     if (!text.trim()) return;
-    setDetailingWebRequests((prev) =>
-      prev.map((r) => {
+    const nowIso = new Date().toISOString();
+    let updatedItem: DetailingWebRequest | null = null;
+    setDetailingWebRequests((prev) => {
+      const next = prev.map((r) => {
         if (r.id !== id) return r;
         const newNote = {
           id: `note-${crypto.randomUUID()}`,
           text: text.trim(),
-          created_at: new Date().toISOString(),
+          created_at: nowIso,
           author: author || profile?.full_name || 'Administración'
         };
         const updatedNotes = [...(r.internal_notes || []), newNote];
-        return {
+        updatedItem = {
           ...r,
-          internal_notes: updatedNotes
-        };
-      })
-    );
-    syncSupabase('detailing_web_requests', 'update', { updated_at: new Date().toISOString() }, 'id', id);
+          internal_notes: updatedNotes,
+          updated_at: nowIso
+        } as any;
+        return updatedItem!;
+      });
+      try { localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    syncSupabase('detailing_web_requests', 'update', { updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('detailing_web_requests', [updatedItem]);
   };
 
   const deleteDetailingWebRequest = (id: string) => {
-    setDetailingWebRequests((prev) => prev.filter((r) => r.id !== id));
+    const nowIso = new Date().toISOString();
+    setDetailingWebRequests((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      try { localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', id, 'archive', { action: 'Eliminación de solicitud web' });
     syncSupabase('detailing_web_requests', 'delete', null, 'id', id);
+    syncRecordsToCloud('detailing_web_requests', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
   };
 
   const convertWebRequestToQuote = (
@@ -1530,39 +1790,65 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addDetailingQuote = (quoteData: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'>): DetailingQuote => {
     const todayUY = getLocalDateString();
     const nowIso = new Date().toISOString();
+    const quoteId = `quote-${crypto.randomUUID()}`;
+    const paymentsWithQuoteId = (quoteData.payments || []).map((p) => ({
+      ...p,
+      quote_id: quoteId,
+      created_at: p.created_at || nowIso,
+      updated_at: nowIso
+    }));
+
     const newQuote: DetailingQuote = {
       ...quoteData,
-      id: `quote-${crypto.randomUUID()}`,
+      id: quoteId,
+      payments: paymentsWithQuoteId,
       work_date: quoteData.work_date || todayUY,
       created_by: profile?.id,
       created_at: nowIso,
       updated_at: nowIso
     };
-    setDetailingQuotes((prev) => [newQuote, ...prev]);
+
+    setDetailingQuotes((prev) => {
+      const next = [newQuote, ...prev];
+      detailingQuotesRef.current = next;
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', newQuote.id, 'create', {
       client: newQuote.client_name,
       total: newQuote.total_amount,
       work_date: newQuote.work_date
     });
     syncSupabase('detailing_quotes', 'insert', newQuote);
+    syncRecordsToCloud('detailing_quotes', [newQuote]);
 
     // Si viene con pagos registrados:
-    if (newQuote.payments && newQuote.payments.length > 0) {
-      newQuote.payments.forEach((p) => {
-        syncSupabase('detailing_payments', 'insert', { ...p, quote_id: newQuote.id });
+    if (paymentsWithQuoteId.length > 0) {
+      paymentsWithQuoteId.forEach((p) => {
+        syncSupabase('detailing_payments', 'insert', p);
       });
-      setDetailingPayments((prev) => [...(newQuote.payments || []), ...prev]);
+      setDetailingPayments((prev) => {
+        const next = [...paymentsWithQuoteId, ...prev];
+        try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+        return next;
+      });
+      syncRecordsToCloud('detailing_payments', paymentsWithQuoteId);
 
-      const totalPaid = newQuote.payments
+      const totalPaid = paymentsWithQuoteId
         .filter((p) => !p.is_voided)
         .reduce((s, p) => s + (Number(p.amount) || 0), 0);
 
       // Si quedó cobrado:
       if (totalPaid >= newQuote.total_amount && newQuote.total_amount > 0) {
-        const comms = calculateCommissionsForQuote(newQuote);
+        const comms = calculateCommissionsForQuote(newQuote).map((c) => ({ ...c, updated_at: nowIso }));
         if (comms.length > 0) {
-          setCommissions((prev) => [...prev, ...comms]);
+          setCommissions((prev) => {
+            const next = [...prev, ...comms];
+            try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+            return next;
+          });
           comms.forEach((c) => syncSupabase('commissions', 'insert', c));
+          syncRecordsToCloud('commissions', comms);
         }
       }
     }
@@ -1572,10 +1858,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateDetailingQuote = (id: string, data: Partial<DetailingQuote>) => {
     const nowIso = new Date().toISOString();
-    setDetailingQuotes((prev) =>
-      prev.map((q) => {
+    let updatedQuoteItem: DetailingQuote | null = null;
+    let newCommsToSync: CommissionRecord[] = [];
+    let deletedCommIds: string[] = [];
+
+    setDetailingQuotes((prev) => {
+      const next = prev.map((q) => {
         if (q.id !== id) return q;
         const updated = { ...q, ...data, updated_at: nowIso };
+        updatedQuoteItem = updated;
 
         // Si cambian precio, origen o participantes y la comisión no está pagada, se recalcula sola:
         const hasPriceChanged = data.total_amount !== undefined && data.total_amount !== q.total_amount;
@@ -1585,28 +1876,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (hasPriceChanged || hasOriginChanged || hasParticipantsChanged) {
           const pendingComms = commissions.filter((c) => c.quote_id === id && c.status === 'Pendiente');
           if (pendingComms.length > 0) {
-            const newComms = calculateCommissionsForQuote(updated);
-            setCommissions((prevC) => [...prevC.filter((c) => c.quote_id !== id || c.status === 'Pagada'), ...newComms]);
+            deletedCommIds = pendingComms.map((c) => c.id);
+            const newComms = calculateCommissionsForQuote(updated).map((c) => ({ ...c, updated_at: nowIso }));
+            newCommsToSync = newComms;
+            setCommissions((prevC) => {
+              const nextC = [...prevC.filter((c) => c.quote_id !== id || c.status === 'Pagada'), ...newComms];
+              try { localStorage.setItem('carvlak_commissions', JSON.stringify(nextC)); } catch {}
+              return nextC;
+            });
             newComms.forEach((c) => syncSupabase('commissions', 'upsert', c));
           }
         }
         return updated;
-      })
-    );
+      });
+      detailingQuotesRef.current = next;
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', id, 'update', data);
     syncSupabase('detailing_quotes', 'update', { ...data, updated_at: nowIso }, 'id', id);
+    if (updatedQuoteItem) {
+      syncRecordsToCloud('detailing_quotes', [updatedQuoteItem]);
+    }
+    if (deletedCommIds.length > 0 || newCommsToSync.length > 0) {
+      syncRecordsToCloud('commissions', [
+        ...deletedCommIds.map((cid) => ({ id: cid, deleted_at: nowIso, updated_at: nowIso })),
+        ...newCommsToSync
+      ]);
+    }
   };
 
   const archiveDetailingQuote = (id: string) => {
-    setDetailingQuotes((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, is_archived: true, updated_at: new Date().toISOString() } : q))
-    );
+    const nowIso = new Date().toISOString();
+    let updatedItem: DetailingQuote | null = null;
+    setDetailingQuotes((prev) => {
+      const next = prev.map((q) => {
+        if (q.id !== id) return q;
+        updatedItem = { ...q, is_archived: true, updated_at: nowIso };
+        return updatedItem;
+      });
+      detailingQuotesRef.current = next;
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', id, 'archive', { is_archived: true });
-    syncSupabase('detailing_quotes', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('detailing_quotes', 'update', { is_archived: true, updated_at: nowIso }, 'id', id);
+    if (updatedItem) syncRecordsToCloud('detailing_quotes', [updatedItem]);
   };
 
   // FASE DETAILVLAK: Configuración
   const updateDetailingConfig = (config: Partial<DetailingConfig>) => {
+    const nowIso = new Date().toISOString();
+    let updatedCfg: DetailingConfig | null = null;
     setDetailingConfig((prev) => {
       const companyPricing = config.company_pricing || config.preventa_tariff || prev.company_pricing || prev.preventa_tariff || DEFAULT_PREVENTA_TARIFF;
       const updated = {
@@ -1615,14 +1936,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         company_pricing: companyPricing,
         preventa_tariff: companyPricing
       };
+      updatedCfg = updated;
+      try { localStorage.setItem('carvlak_detailing_config', JSON.stringify(updated)); } catch {}
       syncSupabase('detailing_configs', 'upsert', {
         id: 'default',
         config: updated,
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
         updated_by: profile?.id
       });
       return updated;
     });
+    if (updatedCfg) {
+      syncRecordsToCloud('detailing_config', updatedCfg);
+    }
     logActivity('configuracion', 'detailing_config', 'update', config);
   };
 
@@ -1943,8 +2269,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 2. Eliminar comisión en cascada
-    setCommissions((prev) => prev.filter((c) => c.quote_id !== id));
+    const removedComms = commissions.filter((c) => c.quote_id === id);
+    setCommissions((prev) => {
+      const next = prev.filter((c) => c.quote_id !== id);
+      try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('commissions', 'delete', undefined, 'quote_id', id);
+    if (removedComms.length > 0) {
+      syncRecordsToCloud('commissions', removedComms.map((c) => ({ id: c.id, deleted_at: nowIso, updated_at: nowIso })));
+    }
 
     // 3. Liberar y anular turno en calendario
     if (currentQuote.appointment_id) {
@@ -1959,26 +2293,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 4. Anular cobros asociados
-    const voidedPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: true }));
-    setDetailingPayments((prev) => prev.map((p) => p.quote_id === id ? { ...p, is_voided: true } : p));
+    const voidedPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: true, voided_at: nowIso, updated_at: nowIso }));
+    const updatedPaymentsForCloud: DetailingPayment[] = [];
+    setDetailingPayments((prev) => {
+      const next = prev.map((p) => {
+        if (p.quote_id !== id) return p;
+        const vp = { ...p, is_voided: true, voided_at: nowIso, updated_at: nowIso };
+        updatedPaymentsForCloud.push(vp);
+        return vp;
+      });
+      try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_payments', 'update', { is_voided: true }, 'quote_id', id);
+    if (updatedPaymentsForCloud.length > 0) {
+      syncRecordsToCloud('detailing_payments', updatedPaymentsForCloud);
+    }
 
     // 5. Anular comprobante asociado en cascada
-    setDetailingReceipts((prev) =>
-      prev.map((r) =>
-        r.quote_id === id
-          ? { ...r, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' }
-          : r
-      )
-    );
+    const updatedReceiptsForCloud: DetailingReceipt[] = [];
+    setDetailingReceipts((prev) => {
+      const next = prev.map((r) => {
+        if (r.quote_id !== id) return r;
+        const vr = { ...r, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' as const, updated_at: nowIso } as any;
+        updatedReceiptsForCloud.push(vr);
+        return vr;
+      });
+      try { localStorage.setItem('carvlak_detailing_receipts', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_receipts', 'update', {
       is_voided: true,
       voided_at: nowIso,
       void_reason: reason,
       status: 'Anulado'
     }, 'quote_id', id);
+    if (updatedReceiptsForCloud.length > 0) {
+      syncRecordsToCloud('detailing_receipts', updatedReceiptsForCloud);
+    }
 
     const updatedFields: Partial<DetailingQuote> = {
+      is_voided: true,
       voided_at: nowIso,
       voided_by: profile?.id,
       void_reason: reason,
@@ -1987,11 +2342,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updated_at: nowIso
     };
 
-    setDetailingQuotes((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q))
-    );
+    const finalVoidedQuote = { ...currentQuote, ...updatedFields };
+    setDetailingQuotes((prev) => {
+      const next = prev.map((q) => (q.id === id ? finalVoidedQuote : q));
+      detailingQuotesRef.current = next;
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', id, 'status_change', { action: 'void', reason });
     syncSupabase('detailing_quotes', 'update', updatedFields, 'id', id);
+    syncRecordsToCloud('detailing_quotes', [finalVoidedQuote]);
   };
 
   // RESTAURAR TRABAJO ANULADO
@@ -2009,9 +2369,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       note: 'Trabajo restaurado'
     };
 
-    const restoredPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: false }));
-    setDetailingPayments((prev) => prev.map((p) => p.quote_id === id ? { ...p, is_voided: false } : p));
+    const restoredPayments = (currentQuote.payments || []).map((p) => ({ ...p, is_voided: false, updated_at: nowIso }));
+    const affectedPayments: DetailingPayment[] = [];
+    setDetailingPayments((prev) => {
+      const next = prev.map((p) => {
+        if (p.quote_id !== id) return p;
+        const updatedP = { ...p, is_voided: false, updated_at: nowIso };
+        affectedPayments.push(updatedP);
+        return updatedP;
+      });
+      try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_payments', 'update', { is_voided: false }, 'quote_id', id);
+    if (affectedPayments.length > 0) {
+      syncRecordsToCloud('detailing_payments', affectedPayments);
+    }
 
     if (currentQuote.appointment_id) {
       setAppointments((prev) =>
@@ -2042,26 +2415,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       }
 
-      const newComms = calculateCommissionsForQuote(currentQuote);
+      const newComms = calculateCommissionsForQuote(currentQuote).map((c) => ({ ...c, updated_at: nowIso }));
       if (newComms.length > 0) {
-        setCommissions((prev) => [...prev.filter((c) => c.quote_id !== currentQuote.id), ...newComms]);
+        setCommissions((prev) => {
+          const next = [...prev.filter((c) => c.quote_id !== currentQuote.id), ...newComms];
+          try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+          return next;
+        });
         newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
+        syncRecordsToCloud('commissions', newComms);
       }
     }
 
     // Restaurar comprobante asociado si existía
-    setDetailingReceipts((prev) =>
-      prev.map((r) =>
-        r.quote_id === id
-          ? { ...r, is_voided: false, voided_at: undefined, void_reason: undefined, status: r.balance_pending === 0 ? 'Pagado' : 'Saldo pendiente' }
-          : r
-      )
-    );
+    const restoredReceipts: DetailingReceipt[] = [];
+    setDetailingReceipts((prev) => {
+      const next = prev.map((r) => {
+        if (r.quote_id !== id) return r;
+        const updatedR: DetailingReceipt = { ...r, is_voided: false, voided_at: undefined, void_reason: undefined, status: r.balance_pending === 0 ? 'Pagado' : 'Saldo pendiente' };
+        restoredReceipts.push(updatedR);
+        return updatedR;
+      });
+      try { localStorage.setItem('carvlak_detailing_receipts', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_receipts', 'update', {
       is_voided: false,
       voided_at: null,
       void_reason: null
     }, 'quote_id', id);
+    if (restoredReceipts.length > 0) {
+      syncRecordsToCloud('detailing_receipts', restoredReceipts.map((r) => ({ ...r, updated_at: nowIso })));
+    }
 
     const updatedFields: Partial<DetailingQuote> = {
       voided_at: undefined,
@@ -2072,11 +2457,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updated_at: nowIso
     };
 
-    setDetailingQuotes((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q))
-    );
+    const finalRestoredQuote = { ...currentQuote, ...updatedFields };
+    setDetailingQuotes((prev) => {
+      const next = prev.map((q) => (q.id === id ? { ...q, ...updatedFields } : q));
+      detailingQuotesRef.current = next;
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('cotizacion_detailing', id, 'update', { action: 'restore' });
     syncSupabase('detailing_quotes', 'update', { ...updatedFields, voided_at: null, voided_by: null, void_reason: null }, 'id', id);
+    syncRecordsToCloud('detailing_quotes', [finalRestoredQuote]);
   };
 
   // BORRADO DEFINITIVO (SOLO ADMIN)
@@ -2085,13 +2475,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Solo los administradores pueden borrar definitivamente');
       return;
     }
+    const nowIso = new Date().toISOString();
     const q = detailingQuotesRef.current.find((item) => item.id === id) || detailingQuotes.find((item) => item.id === id);
     if (q?.materials_consumed && q.materials_consumed.length > 0 && !q.is_voided) {
       const toRestore: Record<string, number> = {};
       q.materials_consumed.forEach((c) => {
         toRestore[c.stock_item_id] = (toRestore[c.stock_item_id] || 0) + c.quantity;
       });
-      const nowIso = new Date().toISOString();
       setStockItems((prev) =>
         prev.map((s) => {
           const add = toRestore[s.id];
@@ -2103,19 +2493,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     }
 
-    setDetailingQuotes((prev) => prev.filter((item) => item.id !== id));
+    setDetailingQuotes((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      detailingQuotesRef.current = next;
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    syncRecordsToCloud('detailing_quotes', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
+
     if (q?.appointment_id) {
       setAppointments((prev) => prev.filter((a) => a.id !== q.appointment_id));
       syncSupabase('appointments', 'delete', undefined, 'id', q.appointment_id);
     }
-    setCommissions((prev) => prev.filter((c) => c.quote_id !== id));
+
+    const removedComms = commissions.filter((c) => c.quote_id === id);
+    setCommissions((prev) => {
+      const next = prev.filter((c) => c.quote_id !== id);
+      try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('commissions', 'delete', undefined, 'quote_id', id);
+    if (removedComms.length > 0) {
+      syncRecordsToCloud('commissions', removedComms.map((c) => ({ id: c.id, deleted_at: nowIso, updated_at: nowIso })));
+    }
 
-    setDetailingReceipts((prev) => prev.filter((r) => r.quote_id !== id));
+    const removedReceipts = detailingReceipts.filter((r) => r.quote_id === id);
+    setDetailingReceipts((prev) => {
+      const next = prev.filter((r) => r.quote_id !== id);
+      try { localStorage.setItem('carvlak_detailing_receipts', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_receipts', 'delete', undefined, 'quote_id', id);
+    if (removedReceipts.length > 0) {
+      syncRecordsToCloud('detailing_receipts', removedReceipts.map((r) => ({ id: r.id, deleted_at: nowIso, updated_at: nowIso })));
+    }
 
-    setDetailingPayments((prev) => prev.filter((p) => p.quote_id !== id));
+    const removedPayments = detailingPayments.filter((p) => p.quote_id === id);
+    setDetailingPayments((prev) => {
+      const next = prev.filter((p) => p.quote_id !== id);
+      try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_payments', 'delete', undefined, 'quote_id', id);
+    if (removedPayments.length > 0) {
+      syncRecordsToCloud('detailing_payments', removedPayments.map((p) => ({ id: p.id, deleted_at: nowIso, updated_at: nowIso })));
+    }
 
     syncSupabase('detailing_quotes', 'delete', undefined, 'id', id);
     logActivity('cotizacion_detailing', id, 'archive', { permanent_deleted: true });
@@ -2255,11 +2677,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_by: profile?.id
     };
 
-    setDetailingReceipts((prev) => [
-      ...prev.filter((r) => r.id !== newReceipt.id && r.quote_id !== quote.id),
-      newReceipt
-    ]);
+    setDetailingReceipts((prev) => {
+      const next = [
+        ...prev.filter((r) => r.id !== newReceipt.id && r.quote_id !== quote.id),
+        newReceipt
+      ];
+      try { localStorage.setItem('carvlak_detailing_receipts', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_receipts', 'upsert', newReceipt);
+    syncRecordsToCloud('detailing_receipts', [{ ...newReceipt, updated_at: nowIso }]);
 
     // Enlazar id y correlativo en la cotización
     if (quote.receipt_id !== newReceipt.id || quote.receipt_number !== newReceipt.receipt_number) {
@@ -2305,25 +2732,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adjustSingleCommission = (commissionId: string, newAmount: number, reason: string) => {
     if (!profile?.roles?.includes('admin')) return;
     const nowIso = new Date().toISOString();
-    setCommissions((prev) =>
-      prev.map((c) =>
-        c.id === commissionId
-          ? {
-              ...c,
-              commission_amount: newAmount,
-              adjustment_reason: reason,
-              adjusted_at: nowIso,
-              adjusted_by: profile?.id
-            }
-          : c
-      )
-    );
+    let updatedComm: CommissionRecord | null = null;
+    setCommissions((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== commissionId) return c;
+        updatedComm = {
+          ...c,
+          commission_amount: newAmount,
+          adjustment_reason: reason,
+          adjusted_at: nowIso,
+          adjusted_by: profile?.id,
+          updated_at: nowIso
+        };
+        return updatedComm;
+      });
+      try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('commissions', 'update', {
       commission_amount: newAmount,
       adjustment_reason: reason,
       adjusted_at: nowIso,
       adjusted_by: profile?.id
     }, 'id', commissionId);
+    if (updatedComm) syncRecordsToCloud('commissions', [updatedComm]);
     logActivity('comision', commissionId, 'update', { action: 'manual_adjustment', newAmount, reason });
   };
 
@@ -2473,7 +2905,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       quote_id: quoteId,
       created_by: profile?.id,
       is_voided: false,
-      created_at: nowIso
+      created_at: nowIso,
+      updated_at: nowIso
     };
     const updatedPayments = [...(q.payments || []), newPayment];
     const totalPaid = updatedPayments
@@ -2492,7 +2925,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     updateDetailingQuote(quoteId, { payments: updatedPayments });
-    setDetailingPayments((prev) => [newPayment, ...prev]);
+    setDetailingPayments((prev) => {
+      const next = [newPayment, ...prev];
+      try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -2513,16 +2950,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     syncSupabase('detailing_payments', 'insert', newPayment);
+    syncRecordsToCloud('detailing_payments', [newPayment]);
 
     // Si queda Cobrado (totalPaid >= total_amount)
     if (totalPaid >= q.total_amount && q.total_amount > 0) {
       // 1. Generar comisiones si no existen
       const existingComms = commissions.filter((c) => c.quote_id === quoteId);
       if (existingComms.length === 0) {
-        const newComms = calculateCommissionsForQuote(updatedQuote);
+        const newComms = calculateCommissionsForQuote(updatedQuote).map((c) => ({ ...c, updated_at: nowIso }));
         if (newComms.length > 0) {
-          setCommissions((prev) => [...prev.filter((c) => c.quote_id !== quoteId), ...newComms]);
+          setCommissions((prev) => {
+            const next = [...prev.filter((c) => c.quote_id !== quoteId), ...newComms];
+            try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+            return next;
+          });
           newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
+          syncRecordsToCloud('commissions', newComms);
         }
       }
       // 2. Generar comprobante oficial o actualizarlo a Pagado
@@ -2543,7 +2986,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nowIso = new Date().toISOString();
     const updatedPayments = (q.payments || []).map((p) =>
       p.id === paymentId
-        ? { ...p, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' }
+        ? { ...p, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado', updated_at: nowIso }
         : p
     );
 
@@ -2552,13 +2995,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item
     );
 
-    setDetailingQuotes((prev) =>
-      prev.map((item) => (item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item))
-    );
+    const updatedQuote = { ...q, payments: updatedPayments, updated_at: nowIso };
+    setDetailingQuotes((prev) => {
+      const next = prev.map((item) => (item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item));
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
 
-    setDetailingPayments((prev) =>
-      prev.map((p) => (p.id === paymentId ? { ...p, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado' } : p))
-    );
+    let voidedPaymentObj: DetailingPayment | null = null;
+    setDetailingPayments((prev) => {
+      const next = prev.map((p) => {
+        if (p.id !== paymentId) return p;
+        voidedPaymentObj = { ...p, is_voided: true, voided_at: nowIso, void_reason: reason, status: 'Anulado', updated_at: nowIso };
+        return voidedPaymentObj;
+      });
+      try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -2587,6 +3040,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     syncSupabase('detailing_payments', 'update', { is_voided: true }, 'id', paymentId);
     syncSupabase('detailing_quotes', 'update', { payments: updatedPayments, updated_at: nowIso }, 'id', quoteId);
+    if (voidedPaymentObj) syncRecordsToCloud('detailing_payments', [voidedPaymentObj]);
+    syncRecordsToCloud('detailing_quotes', [updatedQuote]);
 
     const existingReceipt = detailingReceipts.find((r) => r.quote_id === quoteId);
     if (existingReceipt) {
@@ -2609,11 +3064,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item
     );
 
-    setDetailingQuotes((prev) =>
-      prev.map((item) => (item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item))
-    );
+    const updatedQuote = { ...q, payments: updatedPayments, updated_at: nowIso };
+    setDetailingQuotes((prev) => {
+      const next = prev.map((item) => (item.id === quoteId ? { ...item, payments: updatedPayments, updated_at: nowIso } : item));
+      try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
+      return next;
+    });
 
-    setDetailingPayments((prev) => prev.filter((p) => p.id !== paymentId));
+    setDetailingPayments((prev) => {
+      const next = prev.filter((p) => p.id !== paymentId);
+      try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(next)); } catch {}
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -2642,6 +3104,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     syncSupabase('detailing_payments', 'delete', undefined, 'id', paymentId);
     syncSupabase('detailing_quotes', 'update', { payments: updatedPayments, updated_at: nowIso }, 'id', quoteId);
+    syncRecordsToCloud('detailing_payments', [{ id: paymentId, deleted_at: nowIso, updated_at: nowIso }]);
+    syncRecordsToCloud('detailing_quotes', [updatedQuote]);
 
     const existingReceipt = detailingReceipts.find((r) => r.quote_id === quoteId);
     if (existingReceipt) {
@@ -2722,7 +3186,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addDetailingCompany = (companyData: Omit<DetailingCompany, 'id' | 'created_at' | 'updated_at'>): DetailingCompany => {
     const nowIso = new Date().toISOString();
-    const newCompany: DetailingCompany = {
+    const newCompany: DetailingCompany = normalizeCompany({
       ...companyData,
       id: `comp-${crypto.randomUUID()}`,
       is_active: companyData.is_active !== undefined ? companyData.is_active : true,
@@ -2730,31 +3194,52 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_by: profile?.id,
       created_at: nowIso,
       updated_at: nowIso
-    };
-    setDetailingCompanies((prev) => [newCompany, ...prev]);
+    });
+    setDetailingCompanies((prev) => {
+      const next = [newCompany, ...prev];
+      try { localStorage.setItem('carvlak_detailing_companies', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('empresa_detailing' as any, newCompany.id, 'create', { name: newCompany.name });
     syncSupabase('detailing_companies', 'insert', newCompany);
+    syncRecordsToCloud('detailing_companies', [newCompany]);
     return newCompany;
   };
 
   const updateDetailingCompany = (id: string, data: Partial<DetailingCompany>) => {
     const nowIso = new Date().toISOString();
-    setDetailingCompanies((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...data, updated_at: nowIso } : c))
-    );
+    let updatedComp: DetailingCompany | null = null;
+    setDetailingCompanies((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== id) return c;
+        updatedComp = normalizeCompany({ ...c, ...data, updated_at: nowIso });
+        return updatedComp;
+      });
+      try { localStorage.setItem('carvlak_detailing_companies', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('empresa_detailing' as any, id, 'update', data);
     syncSupabase('detailing_companies', 'update', { ...data, updated_at: nowIso }, 'id', id);
+    if (updatedComp) syncRecordsToCloud('detailing_companies', [updatedComp]);
   };
 
   const toggleDetailingCompanyActive = (id: string) => {
     const nowIso = new Date().toISOString();
-    setDetailingCompanies((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active, updated_at: nowIso } : c))
-    );
+    let updatedComp: DetailingCompany | null = null;
+    setDetailingCompanies((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== id) return c;
+        updatedComp = { ...c, is_active: !c.is_active, updated_at: nowIso };
+        return updatedComp;
+      });
+      try { localStorage.setItem('carvlak_detailing_companies', JSON.stringify(next)); } catch {}
+      return next;
+    });
     const target = detailingCompanies.find((c) => c.id === id);
     if (target) {
       syncSupabase('detailing_companies', 'update', { is_active: !target.is_active, updated_at: nowIso }, 'id', id);
     }
+    if (updatedComp) syncRecordsToCloud('detailing_companies', [updatedComp]);
   };
 
   const deleteDetailingCompanyPermanent = (id: string): { success: boolean; error?: string } => {
@@ -2765,8 +3250,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (hasJobs) {
       return { success: false, error: 'No se puede eliminar la empresa porque tiene trabajos registrados. Podés desactivarla.' };
     }
-    setDetailingCompanies((prev) => prev.filter((c) => c.id !== id));
+    const nowIso = new Date().toISOString();
+    setDetailingCompanies((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      try { localStorage.setItem('carvlak_detailing_companies', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('detailing_companies', 'delete', undefined, 'id', id);
+    syncRecordsToCloud('detailing_companies', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
     logActivity('empresa_detailing' as any, id, 'archive', { permanent_deleted: true });
     return { success: true };
   };
@@ -2776,12 +3267,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('Solo el administrador puede agregar servicios al catálogo', 'error');
       return null;
     }
+    const nowIso = new Date().toISOString();
     const newService: DetailingCompanySpecialService = {
       ...serviceData,
       id: serviceData.id || `cs-${crypto.randomUUID()}`,
-      created_at: new Date().toISOString()
+      created_at: nowIso
     };
-    setDetailingCompanyServices((prev) => [...prev, newService]);
+    setDetailingCompanyServices((prev) => {
+      const next = [...prev, newService];
+      try { localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(next)); } catch {}
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('detailing_company_services').insert(newService);
       if (error) {
@@ -2790,6 +3286,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enqueueSync({ table: 'detailing_company_services', action: 'insert', payload: newService });
       }
     }
+    syncRecordsToCloud('detailing_company_services', [{ ...newService, updated_at: nowIso }]);
     return newService;
   };
 
@@ -2798,9 +3295,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('Solo el administrador puede modificar servicios del catálogo', 'error');
       return;
     }
-    setDetailingCompanyServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...data } : s))
-    );
+    const nowIso = new Date().toISOString();
+    let updatedSvc: any = null;
+    setDetailingCompanyServices((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== id) return s;
+        updatedSvc = { ...s, ...data, updated_at: nowIso };
+        return updatedSvc;
+      });
+      try { localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(next)); } catch {}
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('detailing_company_services').update(data).eq('id', id);
       if (error) {
@@ -2809,6 +3314,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enqueueSync({ table: 'detailing_company_services', action: 'update', payload: data, matchField: 'id', matchValue: id });
       }
     }
+    if (updatedSvc) syncRecordsToCloud('detailing_company_services', [updatedSvc]);
   };
 
   const deleteDetailingCompanyServicePermanent = async (id: string): Promise<{ success: boolean; error?: string }> => {
@@ -2816,7 +3322,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('Solo el administrador puede eliminar servicios del catálogo', 'error');
       return { success: false, error: 'Solo el administrador puede eliminar servicios' };
     }
-    setDetailingCompanyServices((prev) => prev.filter((s) => s.id !== id));
+    const nowIso = new Date().toISOString();
+    setDetailingCompanyServices((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      try { localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(next)); } catch {}
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('detailing_company_services').delete().eq('id', id);
       if (error) {
@@ -2826,6 +3337,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: error.message };
       }
     }
+    syncRecordsToCloud('detailing_company_services', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
     return { success: true };
   };
 
@@ -2834,13 +3346,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('Solo el administrador puede ordenar servicios', 'error');
       return;
     }
-    setDetailingCompanyServices(updatedServices);
+    const nowIso = new Date().toISOString();
+    const updates = updatedServices.map((s, idx) => ({
+      ...s,
+      sort_order: idx + 1,
+      updated_at: nowIso
+    }));
+    setDetailingCompanyServices(updates);
+    try { localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(updates)); } catch {}
     if (isSupabaseConfigured && supabase) {
       try {
-        const updates = updatedServices.map((s, idx) => ({
-          ...s,
-          sort_order: idx + 1
-        }));
         const { error } = await supabase.from('detailing_company_services').upsert(updates);
         if (error) {
           console.error('Error reordenando detailing_company_services:', error);
@@ -2850,13 +3365,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Excepción al reordenar servicios:', err);
       }
     }
+    syncRecordsToCloud('detailing_company_services', updates);
   };
 
   const voidExpense = async (id: string, reason: string) => {
     const nowIso = new Date().toISOString();
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Anulado' } : e))
-    );
+    let voidedExp: Expense | null = null;
+    setExpenses((prev) => {
+      const next = prev.map((e) => {
+        if (e.id !== id) return e;
+        voidedExp = { ...e, voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Anulado', updated_at: nowIso };
+        return voidedExp;
+      });
+      try { localStorage.setItem('carvlak_expenses', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('gasto', id, 'status_change', { action: 'void', reason });
 
     if (isSupabaseConfigured && supabase) {
@@ -2880,13 +3403,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     syncSupabase('expenses', 'update', { voided_at: nowIso, voided_by: profile?.id, void_reason: reason, status: 'Anulado' }, 'id', id);
+    if (voidedExp) syncRecordsToCloud('expenses', [voidedExp]);
   };
 
   const restoreExpense = (id: string) => {
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, voided_at: undefined, voided_by: undefined, void_reason: undefined, status: 'Pagado' } : e))
-    );
+    const nowIso = new Date().toISOString();
+    let restoredExp: Expense | null = null;
+    setExpenses((prev) => {
+      const next = prev.map((e) => {
+        if (e.id !== id) return e;
+        restoredExp = { ...e, voided_at: undefined, voided_by: undefined, void_reason: undefined, status: 'Pagado', updated_at: nowIso };
+        return restoredExp;
+      });
+      try { localStorage.setItem('carvlak_expenses', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('expenses', 'update', { voided_at: null, voided_by: null, void_reason: null, status: 'Pagado' }, 'id', id);
+    if (restoredExp) syncRecordsToCloud('expenses', [restoredExp]);
     logActivity('gasto', id, 'update', { action: 'restore' });
   };
 
@@ -2895,8 +3428,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('Solo el administrador puede eliminar gastos', 'error');
       return;
     }
+    const nowIso = new Date().toISOString();
     const previous = expenses;
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    setExpenses((prev) => {
+      const next = prev.filter((e) => e.id !== id);
+      try { localStorage.setItem('carvlak_expenses', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('gasto', id, 'archive', { permanent_deleted: true });
 
     if (isSupabaseConfigured && supabase) {
@@ -2917,6 +3455,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     syncSupabase('expenses', 'delete', undefined, 'id', id);
+    syncRecordsToCloud('expenses', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
   };
 
   const saveDetailingCashClosure = (closureData: Omit<DetailingCashClosure, 'id' | 'created_at'>): DetailingCashClosure => {
@@ -2932,60 +3471,95 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Stock Genérico
   const addStockItem = (itemData: Omit<StockItem, 'id' | 'updated_at' | 'movements'>): StockItem => {
+    const nowIso = new Date().toISOString();
     const newItem: StockItem = {
       ...itemData,
       id: `stk-${crypto.randomUUID()}`,
       movements: [],
-      updated_at: new Date().toISOString()
+      updated_at: nowIso
     };
-    setStockItems((prev) => [newItem, ...prev]);
+    setStockItems((prev) => {
+      const next = [newItem, ...prev];
+      try { localStorage.setItem('carvlak_stock', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('stock', newItem.id, 'create', { name: newItem.name, qty: newItem.quantity });
     syncSupabase('stock_items', 'insert', newItem);
+    syncRecordsToCloud('stock_items', [newItem]);
     return newItem;
   };
 
   const updateStockItem = (id: string, data: Partial<StockItem>) => {
-    setStockItems((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s))
-    );
+    const nowIso = new Date().toISOString();
+    let updatedStk: StockItem | null = null;
+    setStockItems((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== id) return s;
+        updatedStk = { ...s, ...data, updated_at: nowIso };
+        return updatedStk;
+      });
+      try { localStorage.setItem('carvlak_stock', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('stock', id, 'update', data);
-    syncSupabase('stock_items', 'update', { ...data, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('stock_items', 'update', { ...data, updated_at: nowIso }, 'id', id);
+    if (updatedStk) syncRecordsToCloud('stock_items', [updatedStk]);
   };
 
   const archiveStockItem = (id: string) => {
-    setStockItems((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, is_archived: true, updated_at: new Date().toISOString() } : s))
-    );
+    const nowIso = new Date().toISOString();
+    let archivedStk: StockItem | null = null;
+    setStockItems((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== id) return s;
+        archivedStk = { ...s, is_archived: true, updated_at: nowIso };
+        return archivedStk;
+      });
+      try { localStorage.setItem('carvlak_stock', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('stock', id, 'archive', { is_archived: true });
-    syncSupabase('stock_items', 'update', { is_archived: true, updated_at: new Date().toISOString() }, 'id', id);
+    syncSupabase('stock_items', 'update', { is_archived: true, updated_at: nowIso }, 'id', id);
+    if (archivedStk) syncRecordsToCloud('stock_items', [archivedStk]);
   };
 
   const deleteStockItemPermanent = (id: string) => {
-    setStockItems((prev) => prev.filter((s) => s.id !== id));
+    const nowIso = new Date().toISOString();
+    setStockItems((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      try { localStorage.setItem('carvlak_stock', JSON.stringify(next)); } catch {}
+      return next;
+    });
     syncSupabase('stock_items', 'delete', undefined, 'id', id);
+    syncRecordsToCloud('stock_items', [{ id, deleted_at: nowIso, updated_at: nowIso }]);
     logActivity('stock', id, 'archive', { permanent_deleted: true });
   };
 
   const recordStockMovement = (movement: Omit<StockMovement, 'id' | 'created_at'>, createExpense = false) => {
+    const nowIso = new Date().toISOString();
     const newMovement: StockMovement = {
       ...movement,
       id: `mov-${crypto.randomUUID()}`,
-      created_at: new Date().toISOString()
+      created_at: nowIso
     };
 
-    setStockItems((prev) =>
-      prev.map((item) => {
+    let updatedStkItem: StockItem | null = null;
+    setStockItems((prev) => {
+      const next = prev.map((item) => {
         if (item.id !== movement.stock_item_id) return item;
         const delta = movement.type === 'Entrada' ? movement.quantity : -movement.quantity;
         const newQty = Math.max(0, item.quantity + delta);
-        return {
+        updatedStkItem = {
           ...item,
           quantity: newQty,
           movements: [newMovement, ...(item.movements || [])],
-          updated_at: new Date().toISOString()
+          updated_at: nowIso
         };
-      })
-    );
+        return updatedStkItem;
+      });
+      try { localStorage.setItem('carvlak_stock', JSON.stringify(next)); } catch {}
+      return next;
+    });
 
     syncSupabase('stock_movements', 'insert', newMovement);
 
@@ -2994,8 +3568,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (targetItem) {
       const delta = movement.type === 'Entrada' ? movement.quantity : -movement.quantity;
       const newQty = Math.max(0, targetItem.quantity + delta);
-      syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: new Date().toISOString() }, 'id', targetItem.id);
+      syncSupabase('stock_items', 'update', { quantity: newQty, updated_at: nowIso }, 'id', targetItem.id);
     }
+    if (updatedStkItem) syncRecordsToCloud('stock_items', [updatedStkItem]);
 
     // Registro opcional como gasto al reponer stock
     if (createExpense && movement.type === 'Entrada' && movement.unit_cost && movement.unit_cost > 0) {
@@ -3021,24 +3596,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Gastos Genéricos
   const addExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>): Expense => {
+    const nowIso = new Date().toISOString();
     const newExpense: Expense = {
       ...expenseData,
       id: `exp-${crypto.randomUUID()}`,
       created_by: profile?.id,
-      created_at: new Date().toISOString()
+      created_at: nowIso,
+      updated_at: nowIso
     };
-    setExpenses((prev) => [newExpense, ...prev]);
+    setExpenses((prev) => {
+      const next = [newExpense, ...prev];
+      try { localStorage.setItem('carvlak_expenses', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('gasto', newExpense.id, 'create', { amount: newExpense.amount, category: newExpense.category });
     syncSupabase('expenses', 'insert', newExpense);
+    syncRecordsToCloud('expenses', [newExpense]);
     return newExpense;
   };
 
   const updateExpense = (id: string, data: Partial<Expense>) => {
-    setExpenses((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...data } : e))
-    );
+    const nowIso = new Date().toISOString();
+    let updatedExp: Expense | null = null;
+    setExpenses((prev) => {
+      const next = prev.map((e) => {
+        if (e.id !== id) return e;
+        updatedExp = { ...e, ...data, updated_at: nowIso };
+        return updatedExp;
+      });
+      try { localStorage.setItem('carvlak_expenses', JSON.stringify(next)); } catch {}
+      return next;
+    });
     logActivity('gasto', id, 'update', data);
-    syncSupabase('expenses', 'update', data, 'id', id);
+    syncSupabase('expenses', 'update', { ...data, updated_at: nowIso }, 'id', id);
+    if (updatedExp) syncRecordsToCloud('expenses', [updatedExp]);
   };
 
   const deleteExpense = (id: string) => {
@@ -3047,10 +3638,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Comisiones
   const markCommissionPaid = (id: string) => {
-    setCommissions((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: 'Pagada', paid_at: new Date().toISOString() } : c))
-    );
-    syncSupabase('commissions', 'update', { status: 'Pagada', paid_at: new Date().toISOString() }, 'id', id);
+    const nowIso = new Date().toISOString();
+    let updatedComm: CommissionRecord | null = null;
+    setCommissions((prev) => {
+      const next = prev.map((c) => {
+        if (c.id !== id) return c;
+        updatedComm = { ...c, status: 'Pagada', paid_at: nowIso, updated_at: nowIso };
+        return updatedComm;
+      });
+      try { localStorage.setItem('carvlak_commissions', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    syncSupabase('commissions', 'update', { status: 'Pagada', paid_at: nowIso }, 'id', id);
+    if (updatedComm) syncRecordsToCloud('commissions', [updatedComm]);
   };
 
   // Plantillas WhatsApp
@@ -4602,12 +5202,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Listas filtradas memoizadas para evitar re-cálculos en cada render
-  const activeClients = useMemo(() => clients.filter((c) => !c.is_archived), [clients]);
-  const activeVehicles = useMemo(() => vehicles.filter((v) => !v.is_archived), [vehicles]);
+  const activeClients = useMemo(() => clients.filter((c) => !c.is_archived && !c.deleted_at), [clients]);
+  const activeVehicles = useMemo(() => vehicles.filter((v) => !v.is_archived && !v.deleted_at), [vehicles]);
   const activeAppointments = useMemo(() => appointments.filter((a) => !a.is_archived && !a.voided_at), [appointments]);
-  const activeDetailingQuotes = useMemo(() => detailingQuotes.filter((q) => isActiveJob(q)), [detailingQuotes]);
-  const activeStockItems = useMemo(() => stockItems.filter((s) => !s.is_archived), [stockItems]);
-  const activeExpenses = useMemo(() => expenses.filter((e) => isActiveExpense(e)), [expenses]);
+  const activeDetailingQuotes = useMemo(() => detailingQuotes.filter((q) => isActiveJob(q) && !q.deleted_at), [detailingQuotes]);
+  const activeStockItems = useMemo(() => stockItems.filter((s) => !s.is_archived && !(s as any).deleted_at), [stockItems]);
+  const activeExpenses = useMemo(() => expenses.filter((e) => isActiveExpense(e) && !e.deleted_at), [expenses]);
   const activeInspections = useMemo(() => inspections.filter((i) => !i.is_archived && i.type !== 'interna'), [inspections]);
   const activeDealershipVehicles = useMemo(() => dealershipVehicles.filter((v) => !v.is_archived), [dealershipVehicles]);
   const activeDealershipInquiries = useMemo(() => dealershipInquiries.filter((inq) => !inq.is_archived), [dealershipInquiries]);
@@ -4647,6 +5247,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     reorderDetailingTariffs,
     saveAllDetailingTariffs,
     refreshData,
+    syncRecordsToCloud,
     isSyncing,
     lastSyncedAt,
     detailingQuotes: activeDetailingQuotes,
@@ -4886,6 +5487,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     generateDetailingReceipt,
     cleanDetailingTestData,
     refreshData,
+    syncRecordsToCloud,
     isSyncing,
     lastSyncedAt
   ]);

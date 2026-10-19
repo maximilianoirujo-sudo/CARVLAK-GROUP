@@ -36,11 +36,11 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
   useEffect(() => {
     if (clientToEdit) {
-      setFullName(clientToEdit.full_name);
-      setPhone(clientToEdit.phone);
+      setFullName(clientToEdit.full_name || clientToEdit.name || '');
+      setPhone(clientToEdit.phone || '');
       setEmail(clientToEdit.email || '');
       setCedula(clientToEdit.cedula || '');
-      setOrigin(clientToEdit.origin);
+      setOrigin(clientToEdit.origin || 'WhatsApp');
       setNotes(clientToEdit.notes || '');
       setSocialMediaConsent(clientToEdit.social_media_consent ?? false);
       setDuplicateClient(null);
@@ -75,16 +75,17 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
   };
 
   const handleUseExisting = (dup: Client) => {
+    const dupName = dup.full_name || dup.name || '';
     setActiveExistingClient(dup);
-    setFullName(dup.full_name);
-    setPhone(dup.phone);
+    setFullName(dupName);
+    setPhone(dup.phone || '');
     setEmail(dup.email || '');
     setCedula(dup.cedula || '');
-    setOrigin(dup.origin);
+    setOrigin(dup.origin || 'WhatsApp');
     setNotes(dup.notes || '');
     setSocialMediaConsent(dup.social_media_consent ?? false);
     setDuplicateClient(null);
-    showToast(`Cargados datos de ${dup.full_name}`, 'info');
+    showToast(`Cargados datos de ${dupName}`, 'info');
   };
 
   const handleSubmit = (e: React.FormEvent) => {

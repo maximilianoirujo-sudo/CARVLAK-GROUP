@@ -42,7 +42,7 @@ export const DetailingExpensesSection: React.FC<DetailingExpensesSectionProps> =
 
   // Gastos filtrados
   const businessExpenses = useMemo(() => {
-    return expenses.filter((e) => isActiveExpense(e) && (e.business === businessFilter || e.business === 'general'));
+    return (expenses || []).filter((e) => isActiveExpense(e) && !e.deleted_at && (e.business === businessFilter || e.business === 'general' || !e.business));
   }, [expenses, businessFilter]);
 
   const filteredExpenses = useMemo(() => {

@@ -35,14 +35,15 @@ export const ClientList: React.FC<ClientListProps> = ({
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
 
   const filteredClients = useMemo(() => {
-    return clients.filter((c) => {
+    return (clients || []).filter((c) => {
+      if (!c || c.is_archived || c.deleted_at) return false;
       if (originFilter !== 'all' && c.origin !== originFilter) return false;
 
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
-        const nameMatch = c.full_name.toLowerCase().includes(q);
-        const phoneMatch = c.phone.includes(q);
-        const cedulaMatch = c.cedula?.includes(q);
+        const nameMatch = String(c.full_name ?? c.name ?? '').toLowerCase().includes(q);
+        const phoneMatch = String(c.phone ?? '').toLowerCase().includes(q);
+        const cedulaMatch = String(c.cedula ?? '').toLowerCase().includes(q);
         return nameMatch || phoneMatch || cedulaMatch;
       }
       return true;
@@ -145,7 +146,7 @@ export const ClientList: React.FC<ClientListProps> = ({
 
                     <button
                       type="button"
-                      onClick={(e) => handleOpenWhatsApp(e, client.phone, client.full_name)}
+                      onClick={(e) => handleOpenWhatsApp(e, client.phone || '', client.full_name || client.name || '')}
                       className="px-2.5 py-1 rounded-xl bg-white hover:bg-[#F5F5F4] text-[#161616] border border-[#E5E5E3] hover:border-[#D0D0CD] transition-all flex items-center gap-1.5 text-[11px] font-medium cursor-pointer"
                       title="Abrir chat en WhatsApp"
                     >
@@ -157,11 +158,11 @@ export const ClientList: React.FC<ClientListProps> = ({
                   {/* Nombre y teléfono en vertical */}
                   <div className="mt-3">
                     <h3 className="text-base font-bold text-[#161616] group-hover:text-[#D7141A] transition-colors">
-                      {client.full_name}
+                      {client.full_name || client.name || 'Sin nombre'}
                     </h3>
                     <p className="text-xs text-[#6B6B6B] font-mono flex items-center gap-1.5 mt-1">
                       <Phone className="w-3.5 h-3.5 text-[#9A9A9A]" />
-                      <span>{client.phone}</span>
+                      <span>{client.phone || 'Sin teléfono'}</span>
                     </p>
                   </div>
 

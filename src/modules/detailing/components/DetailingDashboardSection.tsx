@@ -50,8 +50,8 @@ export const DetailingDashboardSection: React.FC = () => {
 
   // 3. Gastos operativos del mes
   const monthExpenses = useMemo(() => {
-    return expenses
-      .filter((e) => isActiveExpense(e) && e.business === 'detailing' && e.date.startsWith(selectedMonth))
+    return (expenses || [])
+      .filter((e) => isActiveExpense(e) && !e.deleted_at && (e.business === 'detailing' || e.business === 'general' || !e.business) && String(e.date || '').startsWith(selectedMonth))
       .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   }, [expenses, selectedMonth]);
 
