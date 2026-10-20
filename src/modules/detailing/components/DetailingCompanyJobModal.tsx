@@ -489,8 +489,30 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     return getOriginCommissionRates(detailingConfig, 'Empresa');
   }, [detailingConfig]);
 
-  const effectiveRominaRate = customRominaRate !== null ? customRominaRate : autoCompanyRates.romina;
-  const effectiveMaxiRate = customMaxiRate !== null ? customMaxiRate : autoCompanyRates.maxi;
+  // Autos de CARVLAK (automotora de Jonathan): NO es comisión. Quien hace el trabajo cobra el 100% del monto.
+  const isCarvlakJob = Boolean(
+    currentCompany &&
+      ((currentCompany as any).is_carvlak_internal || /^\s*carvlak\b/i.test(String(currentCompany.name || '')))
+  );
+
+  const effectiveRominaRate = isCarvlakJob
+    ? 100
+    : customRominaRate !== null
+      ? customRominaRate
+      : autoCompanyRates.romina;
+  const effectiveMaxiRate = isCarvlakJob
+    ? 100
+    : customMaxiRate !== null
+      ? customMaxiRate
+      : autoCompanyRates.maxi;
+
+  // En autos CARVLAK: por defecto lo cobra Romina y no existe "Los dos" (no se reparte)
+  useEffect(() => {
+    if (!isOpen || !isCarvlakJob) return;
+    if (whoDidIt === 'both' || (!whoDidIt && !quoteToEdit)) {
+      setWhoDidIt('romina');
+    }
+  }, [isOpen, isCarvlakJob, whoDidIt, quoteToEdit]);
 
   const liveRominaAmount = useMemo(
     () => Math.round(totalAmount * (effectiveRominaRate / 100)),
@@ -1241,7 +1263,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className={`grid ${isCarvlakJob ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}>
                 <button
                   type="button"
                   onClick={() => setWhoDidIt('maxi')}
@@ -1264,6 +1286,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                 >
                   Romina
                 </button>
+                {!isCarvlakJob && (
                 <button
                   type="button"
                   onClick={() => setWhoDidIt('both')}
@@ -1275,7 +1298,14 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                 >
                   Los dos
                 </button>
+                )}
               </div>
+
+              {isCarvlakJob && (
+                <div className="p-2.5 bg-white border border-[#E5E5E3] rounded-lg text-[11px] text-[#161616]">
+                  <strong>Auto de CARVLAK:</strong> no es comisión. Quien hace el trabajo cobra el <strong>100% del monto</strong>. Se registra para la cuenta de Jonathan.
+                </div>
+              )}
 
               {/* Desglose en vivo por persona seleccionada */}
               {whoDidIt && (
@@ -1296,7 +1326,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                             </span>
                           )}
                         </div>
-                        {isAdmin && (
+                        {isAdmin && !isCarvlakJob && (
                           <button
                             type="button"
                             onClick={() => setIsEditingRominaRate((prev) => !prev)}
@@ -1309,7 +1339,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                       </div>
 
                       {/* Selección rápida de % para Romina en este trabajo */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className={`${isCarvlakJob ? 'hidden' : 'flex'} items-center gap-1.5 flex-wrap`}>
                         <span className="text-[10px] font-semibold text-[#6B6B6B] mr-0.5">% de Romina:</span>
                         {[30, 12.5].map((pct) => {
                           const isActive = effectiveRominaRate === pct;
@@ -1333,7 +1363,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                         })}
                       </div>
 
-                      {isAdmin && isEditingRominaRate && (
+                      {isAdmin && !isCarvlakJob && isEditingRominaRate && (
                         <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
                           <div className="flex items-center gap-2">
                             <label className="text-[11px] font-medium text-[#161616]">% en este trabajo:</label>
@@ -1389,7 +1419,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                             </span>
                           )}
                         </div>
-                        {isAdmin && (
+                        {isAdmin && !isCarvlakJob && (
                           <button
                             type="button"
                             onClick={() => setIsEditingMaxiRate((prev) => !prev)}
@@ -1402,7 +1432,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                       </div>
 
                       {/* Selección rápida de % para Maximiliano en este trabajo */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className={`${isCarvlakJob ? 'hidden' : 'flex'} items-center gap-1.5 flex-wrap`}>
                         <span className="text-[10px] font-semibold text-[#6B6B6B] mr-0.5">% de Maximiliano:</span>
                         {[30, 12.5].map((pct) => {
                           const isActive = effectiveMaxiRate === pct;
@@ -1426,7 +1456,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                         })}
                       </div>
 
-                      {isAdmin && isEditingMaxiRate && (
+                      {isAdmin && !isCarvlakJob && isEditingMaxiRate && (
                         <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
                           <div className="flex items-center gap-2">
                             <label className="text-[11px] font-medium text-[#161616]">% en este trabajo:</label>
