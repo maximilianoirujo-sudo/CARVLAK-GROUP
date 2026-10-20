@@ -8,7 +8,9 @@ import {
   Save,
   Check,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  Edit2,
+  Users
 } from 'lucide-react';
 import {
   DetailingCompany,
@@ -22,7 +24,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import {
   formatCurrency,
-  getLocalDateString
+  getLocalDateString,
+  getOriginCommissionRates
 } from '../../../lib/formatters';
 import {
   calculatePreventaPrices,
@@ -39,6 +42,7 @@ interface DetailingCompanyJobModalProps {
   onClose: () => void;
   preselectedCompanyId?: string;
   initialDate?: string;
+  quoteToEdit?: DetailingQuote | null;
   onJobCreated?: (newQuote: DetailingQuote) => void;
 }
 
@@ -53,6 +57,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
   onClose,
   preselectedCompanyId,
   initialDate,
+  quoteToEdit,
   onJobCreated
 }) => {
   const {
@@ -63,10 +68,12 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     detailingQuotes,
     detailingConfig,
     detailingCompanyServices,
+    commissions,
     syncRecordsToCloud
   } = useData();
-  const { profile, availableProfiles } = useAuth();
+  const { profile } = useAuth();
   const { showToast } = useToast();
+  const isAdmin = Boolean(profile?.roles?.includes('admin'));
 
   const todayUY = getLocalDateString();
   const tomorrowUY = useMemo(() => {
@@ -96,16 +103,21 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
   const [selectedSpecialServiceIds, setSelectedSpecialServiceIds] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
 
-  // 6. Descuento, notas, asignado y comisiones
+  // 6. ¿Quién hizo el trabajo? (MANDATORY & NO PRESELECTED ON NEW JOBS)
+  const [whoDidIt, setWhoDidIt] = useState<'' | 'maxi' | 'romina' | 'both'>('');
+  const [customMaxiRate, setCustomMaxiRate] = useState<number | null>(null);
+  const [customMaxiReason, setCustomMaxiReason] = useState<string>('');
+  const [isEditingMaxiRate, setIsEditingMaxiRate] = useState<boolean>(false);
+  const [customRominaRate, setCustomRominaRate] = useState<number | null>(null);
+  const [customRominaReason, setCustomRominaReason] = useState<string>('');
+  const [isEditingRominaRate, setIsEditingRominaRate] = useState<boolean>(false);
+
+  // 7. Descuento y notas
   const [discountType, setDiscountType] = useState<'none' | 'fixed' | 'percent'>('none');
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
-  const [assignedTo, setAssignedTo] = useState<string>(profile?.id || 'user-maxi');
-  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>(() => {
-    return detailingConfig?.commission_config?.default_participants || ['user-romina', 'user-maxi'];
-  });
 
-  // 7. Cobro
+  // 8. Cobro
   const [paymentOption, setPaymentOption] = useState<'pending' | 'full'>('pending');
   const [paymentMethod, setPaymentMethod] = useState<string>(() => {
     return localStorage.getItem('carvlak_last_detailing_payment_method') || 'Transferencia BROU';
@@ -115,97 +127,169 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedDraftData, setSavedDraftData] = useState<any | null>(null);
 
-  const initializedRef = useRef<boolean>(false);
+  const initializedKeyRef = useRef<string | null>(null);
   const createdQuoteRef = useRef<DetailingQuote | null>(null);
 
   // Initialize form ONLY ONCE when modal opens
   useEffect(() => {
     if (!isOpen) {
-      initializedRef.current = false;
+      initializedKeyRef.current = null;
       createdQuoteRef.current = null;
       setSaveError(null);
       return;
     }
 
-    if (initializedRef.current) {
+    const sessionKey = quoteToEdit ? `edit:${quoteToEdit.id}` : 'new';
+    if (initializedKeyRef.current === sessionKey) {
       return;
     }
-    initializedRef.current = true;
+    initializedKeyRef.current = sessionKey;
     setSaveError(null);
 
-    setSelectedCompanyId(preselectedCompanyId || '');
-    setCompanySearch('');
-    setIsCompanyDropdownOpen(false);
-    setVehicleBrand('');
-    setVehicleModel('');
-    setVehiclePlate('');
-    setVehicleSize(1);
-    setWorkDate(initialDate || todayUY);
-    setIncludePreventa(true);
-    setSelectedSpecialServiceIds([]);
-    setCustomItems([]);
-    setDiscountType('none');
-    setDiscountValue(0);
-    setNotes('');
-    setAssignedTo(profile?.id || 'user-maxi');
-    setSelectedParticipantIds(
-      detailingConfig?.commission_config?.default_participants || ['user-romina', 'user-maxi']
-    );
-    setPaymentOption('pending');
-    setPaymentMethod(localStorage.getItem('carvlak_last_detailing_payment_method') || 'Transferencia BROU');
+    if (quoteToEdit) {
+      setSelectedCompanyId(quoteToEdit.company_id || quoteToEdit.client_id || preselectedCompanyId || '');
+      setCompanySearch('');
+      setIsCompanyDropdownOpen(false);
+      const vehParts = String(quoteToEdit.vehicle_info || '').split(' ');
+      setVehicleBrand(vehParts[0] || '');
+      setVehicleModel(vehParts.slice(1).join(' ') || vehParts[0] || '');
+      setVehiclePlate(quoteToEdit.vehicle_plate || '');
+      setVehicleSize((quoteToEdit.vehicle_size as 1 | 2 | 3 | 4) || 1);
+      setWorkDate(quoteToEdit.work_date || todayUY);
+      const svcs = quoteToEdit.selected_services || [];
+      setIncludePreventa(svcs.some((s) => s.serviceId === 'preventa'));
+      setSelectedSpecialServiceIds(svcs.filter((s) => s.serviceId !== 'preventa' && !String(s.serviceId).startsWith('c-')).map((s) => s.serviceId));
+      setCustomItems(
+        svcs
+          .filter((s) => String(s.serviceId).startsWith('c-'))
+          .map((s) => ({ id: s.serviceId, desc: s.serviceName || s.name || '', price: s.price || 0 }))
+      );
+      setDiscountType((quoteToEdit.discount_type as any) || 'none');
+      setDiscountValue(quoteToEdit.discount_amount || 0);
+      setNotes(quoteToEdit.notes || '');
 
-    // Check sessionStorage for draft
-    try {
-      const rawDraft = sessionStorage.getItem(COMPANY_DRAFT_STORAGE_KEY);
-      if (rawDraft) {
-        const parsed = JSON.parse(rawDraft);
-        if (
-          parsed &&
-          (parsed.selectedCompanyId ||
-            parsed.companySearch ||
-            parsed.vehicleBrand ||
-            parsed.vehicleModel ||
-            parsed.vehiclePlate ||
-            (Array.isArray(parsed.selectedSpecialServiceIds) && parsed.selectedSpecialServiceIds.length > 0) ||
-            parsed.notes)
-        ) {
-          setSavedDraftData(parsed);
+      const parts = (quoteToEdit.commission_participants || []).filter((p) => p && typeof p.rate === 'number' && p.rate > 0);
+      const maxiPart = parts.find(
+        (p) => p.employee_id === 'user-maxi' || String(p.employee_name || '').toLowerCase().includes('maxi')
+      );
+      const rominaPart = parts.find(
+        (p) => p.employee_id === 'user-romina' || String(p.employee_name || '').toLowerCase().includes('romina')
+      );
+
+      if (maxiPart && rominaPart) {
+        setWhoDidIt('both');
+      } else if (maxiPart) {
+        setWhoDidIt('maxi');
+      } else if (rominaPart) {
+        setWhoDidIt('romina');
+      } else {
+        setWhoDidIt('');
+      }
+
+      const defaultCompanyRates = getOriginCommissionRates(detailingConfig, 'Empresa');
+      if (maxiPart && (maxiPart.rate !== defaultCompanyRates.maxi || maxiPart.adjustment_reason)) {
+        setCustomMaxiRate(maxiPart.rate);
+        setCustomMaxiReason(maxiPart.adjustment_reason || '');
+      } else {
+        setCustomMaxiRate(null);
+        setCustomMaxiReason('');
+      }
+
+      if (rominaPart && (rominaPart.rate !== defaultCompanyRates.romina || rominaPart.adjustment_reason)) {
+        setCustomRominaRate(rominaPart.rate);
+        setCustomRominaReason(rominaPart.adjustment_reason || '');
+      } else {
+        setCustomRominaRate(null);
+        setCustomRominaReason('');
+      }
+
+      setIsEditingMaxiRate(false);
+      setIsEditingRominaRate(false);
+      setPaymentOption('pending');
+      setSavedDraftData(null);
+    } else {
+      setSelectedCompanyId(preselectedCompanyId || '');
+      setCompanySearch('');
+      setIsCompanyDropdownOpen(false);
+      setVehicleBrand('');
+      setVehicleModel('');
+      setVehiclePlate('');
+      setVehicleSize(1);
+      setWorkDate(initialDate || todayUY);
+      setIncludePreventa(true);
+      setSelectedSpecialServiceIds([]);
+      setCustomItems([]);
+      setWhoDidIt('');
+      setCustomMaxiRate(null);
+      setCustomMaxiReason('');
+      setIsEditingMaxiRate(false);
+      setCustomRominaRate(null);
+      setCustomRominaReason('');
+      setIsEditingRominaRate(false);
+      setDiscountType('none');
+      setDiscountValue(0);
+      setNotes('');
+      setPaymentOption('pending');
+      setPaymentMethod(localStorage.getItem('carvlak_last_detailing_payment_method') || 'Transferencia BROU');
+
+      // Check sessionStorage for draft
+      try {
+        const rawDraft = sessionStorage.getItem(COMPANY_DRAFT_STORAGE_KEY);
+        if (rawDraft) {
+          const parsed = JSON.parse(rawDraft);
+          if (
+            parsed &&
+            (parsed.selectedCompanyId ||
+              parsed.companySearch ||
+              parsed.vehicleBrand ||
+              parsed.vehicleModel ||
+              parsed.vehiclePlate ||
+              parsed.whoDidIt ||
+              (Array.isArray(parsed.selectedSpecialServiceIds) && parsed.selectedSpecialServiceIds.length > 0) ||
+              parsed.notes)
+          ) {
+            setSavedDraftData(parsed);
+          } else {
+            setSavedDraftData(null);
+          }
         } else {
           setSavedDraftData(null);
         }
-      } else {
+      } catch {
         setSavedDraftData(null);
       }
-    } catch {
-      setSavedDraftData(null);
     }
-  }, [isOpen, preselectedCompanyId, initialDate, todayUY, profile, detailingConfig]);
+  }, [isOpen, quoteToEdit, preselectedCompanyId, initialDate, todayUY, detailingConfig]);
 
   const hasUnsavedChanges = useMemo(() => {
+    if (quoteToEdit) return false;
     return Boolean(
       (selectedCompanyId && selectedCompanyId !== preselectedCompanyId) ||
       companySearch.trim() ||
       vehicleBrand.trim() ||
       vehicleModel.trim() ||
       vehiclePlate.trim() ||
+      whoDidIt ||
       selectedSpecialServiceIds.length > 0 ||
       customItems.length > 0 ||
       notes.trim()
     );
   }, [
+    quoteToEdit,
     selectedCompanyId,
     preselectedCompanyId,
     companySearch,
     vehicleBrand,
     vehicleModel,
     vehiclePlate,
+    whoDidIt,
     selectedSpecialServiceIds,
     customItems,
     notes
   ]);
 
   useEffect(() => {
-    if (!isOpen || !hasUnsavedChanges) return;
+    if (!isOpen || quoteToEdit || !hasUnsavedChanges) return;
     try {
       const draftPayload = {
         selectedCompanyId,
@@ -218,11 +302,14 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         includePreventa,
         selectedSpecialServiceIds,
         customItems,
+        whoDidIt,
+        customMaxiRate,
+        customMaxiReason,
+        customRominaRate,
+        customRominaReason,
         discountType,
         discountValue,
         notes,
-        assignedTo,
-        selectedParticipantIds,
         paymentOption,
         paymentMethod
       };
@@ -230,6 +317,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     } catch {}
   }, [
     isOpen,
+    quoteToEdit,
     hasUnsavedChanges,
     selectedCompanyId,
     companySearch,
@@ -241,11 +329,14 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     includePreventa,
     selectedSpecialServiceIds,
     customItems,
+    whoDidIt,
+    customMaxiRate,
+    customMaxiReason,
+    customRominaRate,
+    customRominaReason,
     discountType,
     discountValue,
     notes,
-    assignedTo,
-    selectedParticipantIds,
     paymentOption,
     paymentMethod
   ]);
@@ -266,13 +357,14 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     if (Array.isArray(savedDraftData.customItems)) {
       setCustomItems(savedDraftData.customItems);
     }
+    if (savedDraftData.whoDidIt) setWhoDidIt(savedDraftData.whoDidIt);
+    if (savedDraftData.customMaxiRate !== undefined) setCustomMaxiRate(savedDraftData.customMaxiRate);
+    if (savedDraftData.customMaxiReason) setCustomMaxiReason(savedDraftData.customMaxiReason);
+    if (savedDraftData.customRominaRate !== undefined) setCustomRominaRate(savedDraftData.customRominaRate);
+    if (savedDraftData.customRominaReason) setCustomRominaReason(savedDraftData.customRominaReason);
     if (savedDraftData.discountType) setDiscountType(savedDraftData.discountType);
     if (savedDraftData.discountValue) setDiscountValue(Number(savedDraftData.discountValue) || 0);
     setNotes(savedDraftData.notes || '');
-    if (savedDraftData.assignedTo) setAssignedTo(savedDraftData.assignedTo);
-    if (Array.isArray(savedDraftData.selectedParticipantIds) && savedDraftData.selectedParticipantIds.length > 0) {
-      setSelectedParticipantIds(savedDraftData.selectedParticipantIds);
-    }
     if (savedDraftData.paymentOption) setPaymentOption(savedDraftData.paymentOption);
     if (savedDraftData.paymentMethod) setPaymentMethod(savedDraftData.paymentMethod);
     setSavedDraftData(null);
@@ -392,6 +484,31 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
 
   const totalAmount = Math.max(0, subtotal - calculatedDiscount);
 
+  // Porcentajes automáticos según Configuración > Comisiones para origen 'Empresa'
+  const autoCompanyRates = useMemo(() => {
+    return getOriginCommissionRates(detailingConfig, 'Empresa');
+  }, [detailingConfig]);
+
+  const effectiveRominaRate = customRominaRate !== null ? customRominaRate : autoCompanyRates.romina;
+  const effectiveMaxiRate = customMaxiRate !== null ? customMaxiRate : autoCompanyRates.maxi;
+
+  const liveRominaAmount = useMemo(
+    () => Math.round(totalAmount * (effectiveRominaRate / 100)),
+    [totalAmount, effectiveRominaRate]
+  );
+
+  const liveMaxiAmount = useMemo(
+    () => Math.round(totalAmount * (effectiveMaxiRate / 100)),
+    [totalAmount, effectiveMaxiRate]
+  );
+
+  const hasPaidCommissionsForEdit = useMemo(() => {
+    if (!quoteToEdit) return false;
+    return (commissions || []).some(
+      (c) => c && !c.deleted_at && c.quote_id === quoteToEdit.id && c.status === 'Pagada'
+    );
+  }, [quoteToEdit, commissions]);
+
   // Mapeo de tamaño a categoría existente
   const categoryMapped: VehicleCategory = useMemo(() => {
     switch (vehicleSize) {
@@ -479,6 +596,13 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
       return;
     }
 
+    if (!whoDidIt) {
+      const msg = 'Elegí quién hizo el trabajo (Maximiliano, Romina o Los dos)';
+      setSaveError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -555,11 +679,14 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         }
       });
 
+      const targetQuoteId = quoteToEdit?.id || createdQuoteRef.current?.id || '';
+
       // Pagos iniciales si pagó ahora
       const initialPayments: DetailingPayment[] = [];
       if (paymentOption === 'full' && totalAmount > 0) {
         initialPayments.push({
           id: `pay-${crypto.randomUUID()}`,
+          quote_id: targetQuoteId,
           amount: totalAmount,
           method: paymentMethod,
           date: workDate,
@@ -571,6 +698,35 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
       }
 
       const fullVehicleInfo = `${cleanBrand} ${cleanModel}`.trim();
+
+      const finalParticipants: { employee_id: string; employee_name: string; rate: number; adjustment_reason?: string }[] = [];
+      if (whoDidIt === 'romina' || whoDidIt === 'both') {
+        finalParticipants.push({
+          employee_id: 'user-romina',
+          employee_name: 'Romina',
+          rate: effectiveRominaRate,
+          ...(customRominaRate !== null && customRominaReason.trim()
+            ? { adjustment_reason: customRominaReason.trim() }
+            : {})
+        });
+      }
+      if (whoDidIt === 'maxi' || whoDidIt === 'both') {
+        finalParticipants.push({
+          employee_id: 'user-maxi',
+          employee_name: 'Maximiliano',
+          rate: effectiveMaxiRate,
+          ...(customMaxiRate !== null && customMaxiReason.trim()
+            ? { adjustment_reason: customMaxiReason.trim() }
+            : {})
+        });
+      }
+
+      const assignedList =
+        whoDidIt === 'both'
+          ? ['user-romina', 'user-maxi']
+          : whoDidIt === 'maxi'
+            ? ['user-maxi']
+            : ['user-romina'];
 
       const quotePayload: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'> = {
         customer_type: 'empresa',
@@ -591,22 +747,22 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         extreme_dirt_surcharge: 0,
         total_amount: totalAmount,
         origin: 'Empresa',
-        assigned_to: assignedTo || profile?.id,
-        commission_participants: selectedParticipantIds.map((pid) => {
-          const p = (availableProfiles || []).find((prof) => prof && prof.id === pid);
-          return {
-            employee_id: pid,
-            employee_name: p ? String(p.full_name || 'Colaborador') : 'Colaborador',
-            rate: 30
-          };
-        }),
+        assigned_to: assignedList[0],
+        commission_participants: finalParticipants,
         notes: notes.trim(),
-        status: 'Trabajo Completado',
-        payments: createdQuoteRef.current ? createdQuoteRef.current.payments || [] : initialPayments
+        status: quoteToEdit ? quoteToEdit.status : 'Trabajo Completado',
+        payments: quoteToEdit
+          ? [...(quoteToEdit.payments || []), ...initialPayments]
+          : createdQuoteRef.current
+          ? createdQuoteRef.current.payments || []
+          : initialPayments
       };
 
       let savedQuote: DetailingQuote;
-      if (createdQuoteRef.current) {
+      if (quoteToEdit) {
+        updateDetailingQuote(quoteToEdit.id, quotePayload);
+        savedQuote = { ...quoteToEdit, ...quotePayload, updated_at: nowIso };
+      } else if (createdQuoteRef.current) {
         updateDetailingQuote(createdQuoteRef.current.id, quotePayload);
         savedQuote = { ...createdQuoteRef.current, ...quotePayload, updated_at: nowIso };
       } else {
@@ -629,7 +785,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
 
       if (onJobCreated) onJobCreated(savedQuote);
 
-      if (andClearForNext) {
+      if (andClearForNext && !quoteToEdit) {
         createdQuoteRef.current = null;
         showToast(`Trabajo guardado para ${company.name}. Podés cargar el siguiente.`, 'success');
         setVehicleBrand('');
@@ -639,6 +795,13 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         setIncludePreventa(true);
         setSelectedSpecialServiceIds([]);
         setCustomItems([]);
+        setWhoDidIt('');
+        setCustomMaxiRate(null);
+        setCustomMaxiReason('');
+        setIsEditingMaxiRate(false);
+        setCustomRominaRate(null);
+        setCustomRominaReason('');
+        setIsEditingRominaRate(false);
         setNotes('');
         setDiscountType('none');
         setDiscountValue(0);
@@ -1062,7 +1225,201 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
               )}
             </div>
 
-            {/* 6. DESCUENTO, DETAILER Y NOTAS */}
+            {/* 6. ¿QUIÉN HIZO EL TRABAJO? (Visible, obligatorio, sin opción preseleccionada) */}
+            <div className="space-y-2 p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3]">
+              <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#D7141A]" />
+                  ¿Quién hizo el trabajo? *
+                </span>
+                {!whoDidIt && <span className="text-[10px] text-[#D7141A] font-bold">Obligatorio</span>}
+              </label>
+
+              {hasPaidCommissionsForEdit && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+                  ⚠️ Este trabajo tiene comisión ya pagada. Si cambiás quién lo hizo o el %, la comisión pagada no se tocará.
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWhoDidIt('maxi')}
+                  className={`py-3 px-2 rounded-xl font-bold border text-xs transition-all cursor-pointer text-center ${
+                    whoDidIt === 'maxi'
+                      ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                      : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                  }`}
+                >
+                  Maximiliano
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWhoDidIt('romina')}
+                  className={`py-3 px-2 rounded-xl font-bold border text-xs transition-all cursor-pointer text-center ${
+                    whoDidIt === 'romina'
+                      ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                      : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                  }`}
+                >
+                  Romina
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWhoDidIt('both')}
+                  className={`py-3 px-2 rounded-xl font-bold border text-xs transition-all cursor-pointer text-center ${
+                    whoDidIt === 'both'
+                      ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                      : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                  }`}
+                >
+                  Los dos
+                </button>
+              </div>
+
+              {/* Desglose en vivo por persona seleccionada */}
+              {whoDidIt && (
+                <div className="space-y-2 pt-1">
+                  {(whoDidIt === 'romina' || whoDidIt === 'both') && (
+                    <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-50 text-[#D7141A] font-black text-[10px]">
+                            R
+                          </span>
+                          <span className="font-bold text-xs text-[#161616]">
+                            {`Romina ${String(effectiveRominaRate).replace('.', ',')}% = $${liveRominaAmount.toLocaleString('es-UY')}`}
+                          </span>
+                          {customRominaRate !== null && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
+                              Ajustado
+                            </span>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingRominaRate((prev) => !prev)}
+                            className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
+                            title="Ajustar % de Romina para este trabajo"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {isAdmin && isEditingRominaRate && (
+                        <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-[11px] font-medium text-[#161616]">% en este trabajo:</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={effectiveRominaRate}
+                              onChange={(e) => setCustomRominaRate(parseFloat(e.target.value) || 0)}
+                              className="w-20 bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2 py-1 text-xs font-mono font-bold text-center text-[#161616]"
+                            />
+                            <span className="text-xs font-bold text-[#6B6B6B]">%</span>
+                            {customRominaRate !== null && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomRominaRate(null);
+                                  setCustomRominaReason('');
+                                  setIsEditingRominaRate(false);
+                                }}
+                                className="text-[10px] text-[#D7141A] font-bold hover:underline ml-auto cursor-pointer"
+                              >
+                                Volver a automático ({autoCompanyRates.romina}%)
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Motivo del ajuste (opcional)..."
+                            value={customRominaReason}
+                            onChange={(e) => setCustomRominaReason(e.target.value)}
+                            className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-[11px] text-[#161616]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(whoDidIt === 'maxi' || whoDidIt === 'both') && (
+                    <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-stone-100 text-[#161616] font-black text-[10px]">
+                            M
+                          </span>
+                          <span className="font-bold text-xs text-[#161616]">
+                            {`Maximiliano ${String(effectiveMaxiRate).replace('.', ',')}% = $${liveMaxiAmount.toLocaleString('es-UY')}`}
+                          </span>
+                          {customMaxiRate !== null && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
+                              Ajustado
+                            </span>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingMaxiRate((prev) => !prev)}
+                            className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
+                            title="Ajustar % de Maximiliano para este trabajo"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {isAdmin && isEditingMaxiRate && (
+                        <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-[11px] font-medium text-[#161616]">% en este trabajo:</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={effectiveMaxiRate}
+                              onChange={(e) => setCustomMaxiRate(parseFloat(e.target.value) || 0)}
+                              className="w-20 bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2 py-1 text-xs font-mono font-bold text-center text-[#161616]"
+                            />
+                            <span className="text-xs font-bold text-[#6B6B6B]">%</span>
+                            {customMaxiRate !== null && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomMaxiRate(null);
+                                  setCustomMaxiReason('');
+                                  setIsEditingMaxiRate(false);
+                                }}
+                                className="text-[10px] text-[#D7141A] font-bold hover:underline ml-auto cursor-pointer"
+                              >
+                                Volver a automático ({autoCompanyRates.maxi}%)
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Motivo del ajuste (opcional)..."
+                            value={customMaxiReason}
+                            onChange={(e) => setCustomMaxiReason(e.target.value)}
+                            className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-[11px] text-[#161616]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 7. DESCUENTO Y NOTAS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E5E5E3]">
               <div>
                 <label className="block text-[11px] font-bold text-[#161616] mb-1">
@@ -1092,34 +1449,16 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
 
               <div>
                 <label className="block text-[11px] font-bold text-[#161616] mb-1">
-                  ¿Quién realizó el trabajo?
+                  Notas u Observaciones del Auto
                 </label>
-                <select
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ej. manchas difíciles en asiento trasero"
                   className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3 py-1.5 text-xs text-[#161616]"
-                >
-                  {(availableProfiles || []).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.full_name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
-            </div>
-
-            {/* Notas */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#161616] mb-1">
-                Notas u Observaciones del Auto
-              </label>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Ej. manchas difíciles en asiento trasero / entregar antes de las 17 hs"
-                className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3 py-1.5 text-xs text-[#161616]"
-              />
             </div>
 
             {/* 7. COBRO */}

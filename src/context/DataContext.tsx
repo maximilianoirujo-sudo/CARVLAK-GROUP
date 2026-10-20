@@ -80,7 +80,7 @@ import {
   INITIAL_DETAILING_COMPANIES,
   INITIAL_DETAILING_WEB_REQUESTS
 } from '../lib/mockData';
-import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, isActivePayment, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates, normalizeClient, normalizeVehicle, normalizeCompany, mergeRecordsById } from '../lib/formatters';
+import { normalizePlate, sanitizePhoneForWhatsApp, getLocalDateString, isActiveJob, isActiveExpense, isActivePayment, mapOldStatusToNew, getDiscountLabel, getOriginCommissionRates, normalizeDetailingCommissionConfig, normalizeClient, normalizeVehicle, normalizeCompany, mergeRecordsById } from '../lib/formatters';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { enqueueSync, processSyncQueue } from '../lib/syncQueue';
 import { useAuth } from './AuthContext';
@@ -465,19 +465,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (s) {
       try {
         const parsed = JSON.parse(s);
-        return {
+        return normalizeDetailingCommissionConfig({
           ...INITIAL_DETAILING_CONFIG,
           ...parsed,
           web_budget: {
             ...INITIAL_DETAILING_CONFIG.web_budget,
             ...(parsed.web_budget || {})
           }
-        };
+        });
       } catch {
-        return INITIAL_DETAILING_CONFIG;
+        return normalizeDetailingCommissionConfig(INITIAL_DETAILING_CONFIG);
       }
     }
-    return INITIAL_DETAILING_CONFIG;
+    return normalizeDetailingCommissionConfig(INITIAL_DETAILING_CONFIG);
   });
 
   const [detailingCashClosures, setDetailingCashClosures] = useState<DetailingCashClosure[]>(() => {
@@ -930,7 +930,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (d.detailing_config && typeof d.detailing_config === 'object') {
         setDetailingConfig((prev) => {
-          const mergedCfg: DetailingConfig = {
+          const mergedCfg: DetailingConfig = normalizeDetailingCommissionConfig({
             ...INITIAL_DETAILING_CONFIG,
             ...prev,
             ...d.detailing_config,
@@ -939,7 +939,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...(prev.web_budget || {}),
               ...(d.detailing_config.web_budget || {})
             }
-          };
+          });
           localStorage.setItem('carvlak_detailing_config', JSON.stringify(mergedCfg));
           return mergedCfg;
         });
@@ -1861,23 +1861,53 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let updatedQuoteItem: DetailingQuote | null = null;
     let newCommsToSync: CommissionRecord[] = [];
     let deletedCommIds: string[] = [];
+    let newPaymentsToSync: DetailingPayment[] = [];
+    let shouldWarnPaidComm = false;
 
     setDetailingQuotes((prev) => {
       const next = prev.map((q) => {
         if (q.id !== id) return q;
-        const updated = { ...q, ...data, updated_at: nowIso };
+        const rawUpdated = { ...q, ...data, updated_at: nowIso };
+        const normalizedPayments = (rawUpdated.payments || []).map((p) => ({
+          ...p,
+          quote_id: id,
+          updated_at: p.updated_at || nowIso,
+          created_at: p.created_at || p.date || nowIso
+        }));
+        const updated: DetailingQuote = { ...rawUpdated, payments: normalizedPayments };
         updatedQuoteItem = updated;
 
-        // Si cambian precio, origen o participantes y la comisión no está pagada, se recalcula sola:
+        // Detectar pagos nuevos agregados durante la edición
+        const prevPayIds = new Set((q.payments || []).map((p) => p.id));
+        newPaymentsToSync = normalizedPayments.filter((p) => p.id && !prevPayIds.has(p.id));
+
+        // Si cambian precio, origen o participantes:
+        // - Si la comisión NO está pagada ('Pendiente'), se recalcula.
+        // - Si ya está pagada ('Pagada'), avisar y NO tocarla.
         const hasPriceChanged = data.total_amount !== undefined && data.total_amount !== q.total_amount;
         const hasOriginChanged = data.origin !== undefined && data.origin !== q.origin;
-        const hasParticipantsChanged = data.commission_participants !== undefined;
+        const hasParticipantsChanged =
+          data.commission_participants !== undefined &&
+          JSON.stringify(data.commission_participants) !== JSON.stringify(q.commission_participants);
+
+        const quoteComms = commissions.filter((c) => c.quote_id === id && !c.deleted_at);
+        const paidComms = quoteComms.filter((c) => c.status === 'Pagada');
+        const pendingComms = quoteComms.filter((c) => c.status === 'Pendiente');
+
+        const totalPaid = normalizedPayments
+          .filter((p) => !p.is_voided)
+          .reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        const isFullyPaid = totalPaid >= updated.total_amount && updated.total_amount > 0;
 
         if (hasPriceChanged || hasOriginChanged || hasParticipantsChanged) {
-          const pendingComms = commissions.filter((c) => c.quote_id === id && c.status === 'Pendiente');
+          if (paidComms.length > 0) {
+            shouldWarnPaidComm = true;
+          }
           if (pendingComms.length > 0) {
             deletedCommIds = pendingComms.map((c) => c.id);
-            const newComms = calculateCommissionsForQuote(updated).map((c) => ({ ...c, updated_at: nowIso }));
+            const newComms = calculateCommissionsForQuote(updated)
+              .filter((nc) => !paidComms.some((pc) => pc.employee_id === nc.employee_id))
+              .map((c) => ({ ...c, updated_at: nowIso }));
             newCommsToSync = newComms;
             setCommissions((prevC) => {
               const nextC = [...prevC.filter((c) => c.quote_id !== id || c.status === 'Pagada'), ...newComms];
@@ -1885,14 +1915,72 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return nextC;
             });
             newComms.forEach((c) => syncSupabase('commissions', 'upsert', c));
+          } else if (paidComms.length > 0 && isFullyPaid) {
+            // Si un participante ya tenía comisión Pagada y se agregó un segundo participante que no tenía comisión:
+            const newComms = calculateCommissionsForQuote(updated)
+              .filter((nc) => !paidComms.some((pc) => pc.employee_id === nc.employee_id))
+              .map((c) => ({ ...c, updated_at: nowIso }));
+            if (newComms.length > 0) {
+              newCommsToSync = newComms;
+              setCommissions((prevC) => {
+                const nextC = [...prevC, ...newComms];
+                try { localStorage.setItem('carvlak_commissions', JSON.stringify(nextC)); } catch {}
+                return nextC;
+              });
+              newComms.forEach((c) => syncSupabase('commissions', 'upsert', c));
+            }
+          }
+        } else if (isFullyPaid && quoteComms.length === 0) {
+          // Si el trabajo pasó a estar Cobrado durante la edición y no tenía comisiones generadas aún
+          const newComms = calculateCommissionsForQuote(updated).map((c) => ({ ...c, updated_at: nowIso }));
+          if (newComms.length > 0) {
+            newCommsToSync = newComms;
+            setCommissions((prevC) => {
+              const nextC = [...prevC, ...newComms];
+              try { localStorage.setItem('carvlak_commissions', JSON.stringify(nextC)); } catch {}
+              return nextC;
+            });
+            newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
           }
         }
+
+        if ((hasPriceChanged || hasOriginChanged || hasParticipantsChanged) && isFullyPaid && quoteComms.length === 0 && newCommsToSync.length === 0) {
+          const newComms = calculateCommissionsForQuote(updated).map((c) => ({ ...c, updated_at: nowIso }));
+          if (newComms.length > 0) {
+            newCommsToSync = newComms;
+            setCommissions((prevC) => {
+              const nextC = [...prevC, ...newComms];
+              try { localStorage.setItem('carvlak_commissions', JSON.stringify(nextC)); } catch {}
+              return nextC;
+            });
+            newComms.forEach((c) => syncSupabase('commissions', 'insert', c));
+          }
+        }
+
         return updated;
       });
       detailingQuotesRef.current = next;
       try { localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(next)); } catch {}
       return next;
     });
+
+    if (shouldWarnPaidComm) {
+      showToast('Aviso: Las comisiones que ya estaban pagadas no se modificaron.', 'info');
+    }
+
+    if (newPaymentsToSync.length > 0) {
+      setDetailingPayments((prevP) => {
+        const existingIds = new Set(prevP.map((p) => p.id));
+        const toAdd = newPaymentsToSync.filter((p) => !existingIds.has(p.id));
+        if (toAdd.length === 0) return prevP;
+        const nextP = [...toAdd, ...prevP];
+        try { localStorage.setItem('carvlak_detailing_payments', JSON.stringify(nextP)); } catch {}
+        return nextP;
+      });
+      newPaymentsToSync.forEach((p) => syncSupabase('detailing_payments', 'insert', p));
+      syncRecordsToCloud('detailing_payments', newPaymentsToSync);
+    }
+
     logActivity('cotizacion_detailing', id, 'update', data);
     syncSupabase('detailing_quotes', 'update', { ...data, updated_at: nowIso }, 'id', id);
     if (updatedQuoteItem) {
@@ -1930,12 +2018,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let updatedCfg: DetailingConfig | null = null;
     setDetailingConfig((prev) => {
       const companyPricing = config.company_pricing || config.preventa_tariff || prev.company_pricing || prev.preventa_tariff || DEFAULT_PREVENTA_TARIFF;
-      const updated = {
+      const updated = normalizeDetailingCommissionConfig({
         ...prev,
         ...config,
         company_pricing: companyPricing,
         preventa_tariff: companyPricing
-      };
+      });
       updatedCfg = updated;
       try { localStorage.setItem('carvlak_detailing_config', JSON.stringify(updated)); } catch {}
       syncSupabase('detailing_configs', 'upsert', {
@@ -2212,7 +2300,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (rate > 0) {
         const commAmount = Math.round(baseAmount * (rate / 100));
-        const empName = empProfile?.full_name || empRule?.employee_name || (isMaxi ? 'Maximiliano Irujo' : 'Romina');
+        const empName = customPart?.employee_name || empProfile?.full_name || empRule?.employee_name || (isMaxi ? 'Maximiliano' : 'Romina');
         result.push({
           id: `comm-${crypto.randomUUID()}`,
           business: 'detailing',
@@ -2220,15 +2308,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           employee_id: empId,
           employee_name: empName,
           quote_id: quote.id,
+          job_date: quote.work_date || quote.created_at,
           client_name: quote.client_name,
           vehicle_description: `${quote.vehicle_info}${quote.vehicle_plate ? ` (${quote.vehicle_plate})` : ''}`,
+          base_amount: baseAmount,
+          rate: rate,
+          amount: commAmount,
           amount_charged: quote.total_amount,
           commission_rate: rate,
           commission_amount: commAmount,
           origin: quote.origin,
           receipt_number: quote.receipt_number,
+          adjustment_reason: customPart?.adjustment_reason,
           status: 'Pendiente',
-          created_at: nowIso
+          created_at: nowIso,
+          updated_at: nowIso
         });
       }
     });

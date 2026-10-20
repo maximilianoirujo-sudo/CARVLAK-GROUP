@@ -2,7 +2,7 @@
 // CARVLAK GROUP - FORMATEADORES & UTILIDADES
 // ==============================================================================
 
-import { Currency, Business, DetailingOriginCommissionRule, DetailingConfig } from '../types';
+import { Currency, Business, DetailingOriginCommissionRule, DetailingConfig, DetailingQuote, CommissionRecord } from '../types';
 
 /**
  * Formatea montos en Pesos Uruguayos ($UYU) con separadores de miles estándar uruguayo
@@ -464,67 +464,325 @@ export function isJobScheduled(workDate?: string): boolean {
 }
 
 /**
- * Obtiene los porcentajes de comisión para Maximiliano y Romina según el origen del cliente.
- * Lee primero de `origin_commission_rules` en la configuración de detailing,
- * luego de las reglas de empleados en `commission_config.employee_rules`,
- * y finalmente aplica los valores por defecto (Romina 30%, Maxi 30% o 12.5% para Anuncios pagos).
+ * Normaliza la configuración de comisiones de DetailVlak garantizando que:
+ * - Cada persona tenga sus reglas en `commission_config.employee_rules`.
+ * - La regla de 'Anuncios pagos' sea EXCLUSIVA de Maximiliano (nunca se aplica a Romina).
+ * - 'Empresa' mantenga el porcentaje configurado para empresas de cada persona.
+ */
+export function normalizeDetailingCommissionConfig<T extends Partial<DetailingConfig>>(config: T): T {
+  if (!config || typeof config !== 'object') return config;
+  const cc: any = config.commission_config || {};
+  const baseRate = typeof cc.base_rate === 'number' ? cc.base_rate : 30;
+  const adsRate = typeof cc.ads_rate === 'number' ? cc.ads_rate : 12.5;
+  const companyRate = typeof cc.company_rate === 'number' ? cc.company_rate : 12.5;
+
+  const empRules: any[] = Array.isArray(cc.employee_rules) ? cc.employee_rules : [];
+  const existingRomina = empRules.find(
+    (r) => r.employee_id === 'user-romina' || String(r.employee_name || '').toLowerCase().includes('romina')
+  );
+  const existingMaxi = empRules.find(
+    (r) => r.employee_id === 'user-maxi' || String(r.employee_name || '').toLowerCase().includes('maxi')
+  );
+
+  const rominaBase = typeof existingRomina?.base_percentage === 'number' ? existingRomina.base_percentage : baseRate;
+  const maxiBase = typeof existingMaxi?.base_percentage === 'number' ? existingMaxi.base_percentage : baseRate;
+
+  // Regla de Empresa por persona (desde employee_rules o origin_commission_rules)
+  const originTable = Array.isArray(config.origin_commission_rules) ? config.origin_commission_rules : [];
+  const companyRow = originTable.find((r) => String(r.origin || '').trim().toLowerCase() === 'empresa');
+  const adsRow = originTable.find((r) => String(r.origin || '').trim().toLowerCase().includes('anuncio'));
+
+  const rominaCompanyRule = existingRomina?.origin_rules?.find(
+    (or: any) => String(or.origin || '').trim().toLowerCase() === 'empresa'
+  );
+  const maxiCompanyRule = existingMaxi?.origin_rules?.find(
+    (or: any) => String(or.origin || '').trim().toLowerCase() === 'empresa'
+  );
+  const maxiAdsRule = existingMaxi?.origin_rules?.find(
+    (or: any) => String(or.origin || '').trim().toLowerCase().includes('anuncio')
+  );
+
+  const rominaCompanyPct =
+    rominaCompanyRule && typeof rominaCompanyRule.percentage === 'number'
+      ? rominaCompanyRule.percentage
+      : typeof companyRow?.romina_percentage === 'number'
+        ? companyRow.romina_percentage
+        : companyRate;
+
+  const maxiCompanyPct =
+    maxiCompanyRule && typeof maxiCompanyRule.percentage === 'number'
+      ? maxiCompanyRule.percentage
+      : typeof companyRow?.maxi_percentage === 'number'
+        ? companyRow.maxi_percentage
+        : companyRate;
+
+  const maxiAdsPct =
+    maxiAdsRule && typeof maxiAdsRule.percentage === 'number'
+      ? maxiAdsRule.percentage
+      : typeof adsRow?.maxi_percentage === 'number'
+        ? adsRow.maxi_percentage
+        : adsRate;
+
+  // Romina: SOLO tiene reglas propias (p.ej. Empresa), NUNCA 'Anuncios pagos'
+  const rominaOtherOriginRules = (existingRomina?.origin_rules || []).filter((or: any) => {
+    const o = String(or.origin || '').trim().toLowerCase();
+    return !o.includes('anuncio') && o !== 'empresa';
+  });
+
+  const maxiOtherOriginRules = (existingMaxi?.origin_rules || []).filter((or: any) => {
+    const o = String(or.origin || '').trim().toLowerCase();
+    return !o.includes('anuncio') && o !== 'empresa';
+  });
+
+  const normalizedEmployeeRules = [
+    {
+      employee_id: 'user-romina',
+      employee_name: 'Romina',
+      base_percentage: rominaBase,
+      origin_rules: [
+        { origin: 'Empresa', percentage: rominaCompanyPct },
+        ...rominaOtherOriginRules
+      ]
+    },
+    {
+      employee_id: 'user-maxi',
+      employee_name: 'Maximiliano',
+      base_percentage: maxiBase,
+      origin_rules: [
+        { origin: 'Anuncios pagos', percentage: maxiAdsPct },
+        { origin: 'Empresa', percentage: maxiCompanyPct },
+        ...maxiOtherOriginRules
+      ]
+    }
+  ];
+
+  const normalizedOriginCommissionRules: DetailingOriginCommissionRule[] = [
+    { origin: 'WhatsApp', romina_percentage: rominaBase, maxi_percentage: maxiBase },
+    { origin: 'Instagram', romina_percentage: rominaBase, maxi_percentage: maxiBase },
+    { origin: 'Recomendación', romina_percentage: rominaBase, maxi_percentage: maxiBase },
+    { origin: 'Anuncios pagos', romina_percentage: rominaBase, maxi_percentage: maxiAdsPct },
+    { origin: 'Otro', romina_percentage: rominaBase, maxi_percentage: maxiBase },
+    { origin: 'Empresa', romina_percentage: rominaCompanyPct, maxi_percentage: maxiCompanyPct }
+  ];
+
+  return {
+    ...config,
+    commission_config: {
+      ...cc,
+      base_rate: baseRate,
+      ads_rate: maxiAdsPct,
+      company_rate: maxiCompanyPct,
+      employee_rules: normalizedEmployeeRules
+    },
+    origin_commission_rules: normalizedOriginCommissionRules
+  };
+}
+
+/**
+ * Obtiene los porcentajes de comisión automáticos para Maximiliano y Romina según las reglas
+ * de Configuración > Comisiones (`commission_config.employee_rules` / `origin_commission_rules`):
+ * - Romina: su % base (30% siempre para particulares, incluido 'Anuncios pagos').
+ * - Maximiliano: su % base (30%), o su % configurado si el origen es 'Anuncios pagos' (12,5%).
+ * - Origen 'Empresa': el % configurado para empresas de cada persona.
+ * - La regla de origen se aplica SOLO a la persona que la tiene configurada ('Anuncios pagos' es solo de Maximiliano, nunca a Romina).
  */
 export function getOriginCommissionRates(
   config?: DetailingConfig | {
     origin_commission_rules?: DetailingOriginCommissionRule[];
-    commission_config?: {
-      employee_rules?: {
-        employee_id: string;
-        employee_name?: string;
-        base_percentage?: number;
-        origin_rules?: { origin: string; percentage: number }[];
-      }[];
-    };
+    commission_config?: any;
   } | null,
   origin?: string | null
 ): { maxi: number; romina: number } {
-  if (!origin) return { maxi: 30, romina: 30 };
+  const cc: any = config?.commission_config || {};
+  const empRules: any[] = Array.isArray(cc.employee_rules) ? cc.employee_rules : [];
+  const maxiRule = empRules.find(
+    (r) => r.employee_id === 'user-maxi' || (r.employee_name || '').toLowerCase().includes('maxi')
+  );
+  const rominaRule = empRules.find(
+    (r) => r.employee_id === 'user-romina' || (r.employee_name || '').toLowerCase().includes('romina')
+  );
+
+  const fallbackBase = typeof cc.base_rate === 'number' ? cc.base_rate : 30;
+  const maxiBase = typeof maxiRule?.base_percentage === 'number' ? maxiRule.base_percentage : fallbackBase;
+  const rominaBase = typeof rominaRule?.base_percentage === 'number' ? rominaRule.base_percentage : fallbackBase;
+
+  if (!origin) {
+    return { maxi: maxiBase, romina: rominaBase };
+  }
+
   const originNorm = origin.trim().toLowerCase();
-
-  // 1. Buscar en origin_commission_rules directa
-  if (config?.origin_commission_rules && config.origin_commission_rules.length > 0) {
-    const found = config.origin_commission_rules.find(
-      (r) => r.origin.trim().toLowerCase() === originNorm
-    );
-    if (found) {
-      return {
-        maxi: typeof found.maxi_percentage === 'number' ? found.maxi_percentage : (Number(found.maxi_percentage) || 30),
-        romina: typeof found.romina_percentage === 'number' ? found.romina_percentage : (Number(found.romina_percentage) || 30)
-      };
-    }
-  }
-
-  // 2. Buscar en employee_rules si existe
-  if (config?.commission_config?.employee_rules) {
-    const maxiRule = config.commission_config.employee_rules.find(
-      (r) => r.employee_id === 'user-maxi' || (r.employee_name || '').toLowerCase().includes('maxi')
-    );
-    const rominaRule = config.commission_config.employee_rules.find(
-      (r) => r.employee_id === 'user-romina' || (r.employee_name || '').toLowerCase().includes('romina')
-    );
-
-    const maxiOriginRule = maxiRule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === originNorm);
-    const rominaOriginRule = rominaRule?.origin_rules?.find((or) => or.origin?.trim().toLowerCase() === originNorm);
-
-    if (maxiOriginRule || rominaOriginRule) {
-      return {
-        maxi: maxiOriginRule ? Number(maxiOriginRule.percentage) : (maxiRule?.base_percentage ?? 30),
-        romina: rominaOriginRule ? Number(rominaOriginRule.percentage) : (rominaRule?.base_percentage ?? 30)
-      };
-    }
-  }
-
-  // 3. Fallback inteligente
   const isAds = originNorm.includes('anuncio');
+
+  // Regla de origen para Maximiliano
+  let maxiRate = maxiBase;
+  const maxiOriginRule = maxiRule?.origin_rules?.find(
+    (or: any) => (or.origin || '').trim().toLowerCase() === originNorm || (isAds && (or.origin || '').trim().toLowerCase().includes('anuncio'))
+  );
+  if (maxiOriginRule && typeof maxiOriginRule.percentage === 'number') {
+    maxiRate = Number(maxiOriginRule.percentage);
+  } else if (config?.origin_commission_rules && config.origin_commission_rules.length > 0) {
+    const found = config.origin_commission_rules.find(
+      (r) => (r.origin || '').trim().toLowerCase() === originNorm
+    );
+    if (found && typeof found.maxi_percentage === 'number') {
+      maxiRate = Number(found.maxi_percentage);
+    } else if (isAds) {
+      maxiRate = typeof cc.ads_rate === 'number' ? cc.ads_rate : 12.5;
+    }
+  } else if (isAds) {
+    maxiRate = typeof cc.ads_rate === 'number' ? cc.ads_rate : 12.5;
+  }
+
+  // Regla de origen para Romina:
+  // IMPORTANTE: La regla de 'Anuncios pagos' es EXCLUSIVA de Maximiliano, NUNCA se aplica a Romina.
+  let rominaRate = rominaBase;
+  if (!isAds) {
+    const rominaOriginRule = rominaRule?.origin_rules?.find(
+      (or: any) => (or.origin || '').trim().toLowerCase() === originNorm && !(or.origin || '').trim().toLowerCase().includes('anuncio')
+    );
+    if (rominaOriginRule && typeof rominaOriginRule.percentage === 'number') {
+      rominaRate = Number(rominaOriginRule.percentage);
+    } else if (originNorm === 'empresa' && config?.origin_commission_rules && config.origin_commission_rules.length > 0) {
+      const found = config.origin_commission_rules.find(
+        (r) => (r.origin || '').trim().toLowerCase() === 'empresa'
+      );
+      if (found && typeof found.romina_percentage === 'number') {
+        rominaRate = Number(found.romina_percentage);
+      }
+    }
+  }
+
   return {
-    maxi: isAds ? 12.5 : 30,
-    romina: 30
+    maxi: maxiRate,
+    romina: rominaRate
   };
+}
+
+export interface JobPerformerItem {
+  employee_id: 'user-maxi' | 'user-romina' | string;
+  employee_name: string;
+  short_name: 'M' | 'R' | string;
+  short: 'M' | 'R' | string;
+  rate: number;
+  amount: number;
+  status?: 'Pendiente' | 'Pagada';
+  adjustment_reason?: string;
+}
+
+/**
+ * Calcula el resumen de quién hizo el trabajo (M / R / M+R) y la comisión de cada participante.
+ * - Si existen registros en `commissions` para este trabajo (ej. trabajos ya cobrados o históricos),
+ *   usa exactamente los montos y tasas guardados en `commissions` sin recalcular nada (REGLA Nº 1).
+ * - Si aún no se generaron comisiones (ej. trabajo nuevo pendiente de cobro), usa `quote.commission_participants`.
+ */
+export function getJobPerformersSummary(
+  quote: DetailingQuote | null | undefined,
+  commissions?: CommissionRecord[]
+): {
+  badge: 'M' | 'R' | 'M+R' | 'Sin asignar';
+  label: string;
+  items: JobPerformerItem[];
+  totalCommission: number;
+} {
+  if (!quote) {
+    return { badge: 'Sin asignar', label: 'Sin asignar', items: [], totalCommission: 0 };
+  }
+
+  const jobCommissions = (commissions || []).filter(
+    (c) => c && !c.deleted_at && c.quote_id === quote.id
+  );
+
+  const participants = (quote.commission_participants || []).filter(
+    (p) => p && typeof p.rate === 'number' && p.rate > 0
+  );
+
+  const itemsMap = new Map<string, JobPerformerItem>();
+
+  // 1. Primero poblar desde participants del trabajo
+  for (const p of participants) {
+    const isMaxi = p.employee_id === 'user-maxi' || (p.employee_name || '').toLowerCase().includes('maxi');
+    const empId = isMaxi ? 'user-maxi' : 'user-romina';
+    const empName = isMaxi ? 'Maximiliano' : 'Romina';
+    const shortName = isMaxi ? 'M' : 'R';
+    const existingComm: any = jobCommissions.find(
+      (c) => c.employee_id === empId || (isMaxi && (c.employee_name || '').toLowerCase().includes('maxi')) || (!isMaxi && (c.employee_name || '').toLowerCase().includes('romina'))
+    );
+
+    const rate = existingComm
+      ? Number(existingComm.rate ?? existingComm.commission_rate)
+      : Number(p.rate);
+    const amount = existingComm
+      ? Number(existingComm.amount ?? existingComm.commission_amount)
+      : Math.round((Number(quote.total_amount) || 0) * (rate / 100));
+
+    itemsMap.set(empId, {
+      employee_id: empId,
+      employee_name: empName,
+      short_name: shortName,
+      short: shortName,
+      rate,
+      amount,
+      status: existingComm?.status,
+      adjustment_reason: p.adjustment_reason || existingComm?.adjustment_reason
+    });
+  }
+
+  // 2. Asegurar que cualquier comisión activa existente en `commissions` esté reflejada con su monto exacto
+  for (const c of jobCommissions as any[]) {
+    const isMaxi = c.employee_id === 'user-maxi' || (c.employee_name || '').toLowerCase().includes('maxi');
+    const empId = isMaxi ? 'user-maxi' : 'user-romina';
+    const shortName = isMaxi ? 'M' : 'R';
+    if (!itemsMap.has(empId)) {
+      itemsMap.set(empId, {
+        employee_id: empId,
+        employee_name: isMaxi ? 'Maximiliano' : 'Romina',
+        short_name: shortName,
+        short: shortName,
+        rate: Number(c.rate ?? c.commission_rate) || 0,
+        amount: Number(c.amount ?? c.commission_amount) || 0,
+        status: c.status,
+        adjustment_reason: c.adjustment_reason
+      });
+    }
+  }
+
+  const items = Array.from(itemsMap.values());
+  const hasMaxi = items.some((i) => i.employee_id === 'user-maxi');
+  const hasRomina = items.some((i) => i.employee_id === 'user-romina');
+
+  let badge: 'M' | 'R' | 'M+R' | 'Sin asignar' = 'Sin asignar';
+  let label = 'Sin asignar';
+
+  if (hasMaxi && hasRomina) {
+    badge = 'M+R';
+    label = 'Los dos (M+R)';
+  } else if (hasMaxi) {
+    badge = 'M';
+    label = 'Maximiliano (M)';
+  } else if (hasRomina) {
+    badge = 'R';
+    label = 'Romina (R)';
+  } else if (quote.assigned_to) {
+    const assignedArr: string[] = Array.isArray(quote.assigned_to)
+      ? quote.assigned_to
+      : [String(quote.assigned_to)];
+    const aMaxi = assignedArr.some((a) => a === 'user-maxi' || a.toLowerCase().includes('maxi'));
+    const aRom = assignedArr.some((a) => a === 'user-romina' || a.toLowerCase().includes('romina'));
+    if (aMaxi && aRom) {
+      badge = 'M+R';
+      label = 'Los dos (M+R)';
+    } else if (aMaxi) {
+      badge = 'M';
+      label = 'Maximiliano (M)';
+    } else if (aRom) {
+      badge = 'R';
+      label = 'Romina (R)';
+    }
+  }
+
+  const totalCommission = items.reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
+
+  return { badge, label, items, totalCommission };
 }
 
 /**
@@ -693,7 +951,3 @@ export function mergeRecordsById<T extends { id?: string }>(
 
   return Array.from(map.values());
 }
-
-
-
-

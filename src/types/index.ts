@@ -650,7 +650,11 @@ export interface CommissionRecord {
   vehicle_description: string;
   amount_charged: number; // Monto total cobrado al cliente
   commission_rate: number; // Porcentaje (ej: 30 para Maximiliano)
-  commission_amount: number; // Monto a pagar (UYU o USD según negocio)
+  commission_amount: number;
+  rate?: number;
+  amount?: number;
+  base_amount?: number;
+  job_date?: string;
   currency?: Currency; // Moneda explícita: 'USD' para automotora, 'UYU' para detailing/inspección
   status: 'Pendiente' | 'Pagada';
   created_at: string;
@@ -1380,6 +1384,9 @@ export interface DetailingCommissionEmployeeRule {
 }
 
 export interface DetailingCommissionGlobalConfig {
+  base_rate?: number;
+  ads_rate?: number;
+  company_rate?: number;
   calculation_base: 'total_after_discounts' | 'exclude_surcharges' | 'subtract_supplies';
   default_participants: string[]; // employee_ids
   employee_rules: DetailingCommissionEmployeeRule[];

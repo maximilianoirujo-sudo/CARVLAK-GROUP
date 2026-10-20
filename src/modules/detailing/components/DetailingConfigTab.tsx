@@ -33,7 +33,7 @@ import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useData } from '../../../context/DataContext';
 import { supabase } from '../../../lib/supabase';
-import { formatCurrency } from '../../../lib/formatters';
+import { formatCurrency, normalizeDetailingCommissionConfig } from '../../../lib/formatters';
 import { DetailingCleanTestDataModal } from './DetailingCleanTestDataModal';
 import { DetailingPreventaTariffConfigSection } from './config/DetailingPreventaTariffConfigSection';
 import { DetailingCompanySpecialServicesConfigSection } from './config/DetailingCompanySpecialServicesConfigSection';
@@ -215,7 +215,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
 
   // Copia local para edición
   const [formData, setFormData] = useState<DetailingConfig>(() => {
-    const copy = JSON.parse(JSON.stringify(config)) as DetailingConfig;
+    const copy = normalizeDetailingCommissionConfig(JSON.parse(JSON.stringify(config)) as DetailingConfig);
     if (!copy.origins || copy.origins.length === 0) {
       copy.origins = copy.client_origins && copy.client_origins.length > 0 ? copy.client_origins : [
         'Presencial',
@@ -234,11 +234,17 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     copy.client_origins = copy.origins;
     const existingRules = copy.origin_commission_rules || [];
     copy.origin_commission_rules = copy.origins.map((orig) => {
+      const isAds = orig.toLowerCase().includes('anuncio');
       const found = existingRules.find((r) => r.origin.trim().toLowerCase() === orig.trim().toLowerCase());
-      if (found) return found;
+      if (found) {
+        return {
+          ...found,
+          romina_percentage: isAds ? 30 : found.romina_percentage
+        };
+      }
       return {
         origin: orig,
-        maxi_percentage: orig.toLowerCase().includes('anuncio') ? 12.5 : 30,
+        maxi_percentage: isAds ? 12.5 : 30,
         romina_percentage: 30
       };
     });
@@ -433,27 +439,44 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
       setIsTariffsDirty(false);
     }
 
-    const updatedRules = formData.origin_commission_rules || [];
+    const existingEmpRules = formData.commission_config?.employee_rules || [];
+    const rominaEmp = existingEmpRules.find((r) => r.employee_id === 'user-romina');
+    const maxiEmp = existingEmpRules.find((r) => r.employee_id === 'user-maxi');
+    const rominaBase = typeof rominaEmp?.base_percentage === 'number' ? rominaEmp.base_percentage : 30;
+    const maxiBase = typeof maxiEmp?.base_percentage === 'number' ? maxiEmp.base_percentage : 30;
+
+    const updatedRules = (formData.origin_commission_rules || []).map((r) => {
+      const isAds = r.origin.trim().toLowerCase().includes('anuncio');
+      return {
+        ...r,
+        // La regla de 'Anuncios pagos' es solo de Maximiliano, nunca a Romina
+        romina_percentage: isAds ? rominaBase : r.romina_percentage
+      };
+    });
+
     const syncedEmployeeRules: DetailingCommissionEmployeeRule[] = [
       {
         employee_id: 'user-romina',
         employee_name: 'Romina',
-        base_percentage: 30,
-        origin_rules: updatedRules.map((r) => ({ origin: r.origin, percentage: r.romina_percentage })),
+        base_percentage: rominaBase,
+        origin_rules: updatedRules
+          .filter((r) => !r.origin.trim().toLowerCase().includes('anuncio'))
+          .map((r) => ({ origin: r.origin, percentage: r.romina_percentage })),
         is_default_participant: true
       },
       {
         employee_id: 'user-maxi',
         employee_name: 'Maximiliano',
-        base_percentage: 30,
+        base_percentage: maxiBase,
         origin_rules: updatedRules.map((r) => ({ origin: r.origin, percentage: r.maxi_percentage })),
         is_default_participant: true
       }
     ];
 
-    const toSave: DetailingConfig = {
+    const toSave: DetailingConfig = normalizeDetailingCommissionConfig({
       ...formData,
       client_origins: formData.origins,
+      origin_commission_rules: updatedRules,
       commission_config: {
         ...(formData.commission_config || {
           calculation_base: 'total_after_discounts',
@@ -463,7 +486,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
         default_participants: ['user-romina', 'user-maxi'],
         employee_rules: syncedEmployeeRules
       }
-    };
+    });
 
     onSaveConfig(toSave);
     showToast('Configuración y tarifario guardados correctamente', 'success');
@@ -1466,75 +1489,191 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
           )}
 
           {/* 9. COMISIONES */}
-          {activeSection === 'commissions' && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-bold text-[#161616]">Reglas de Comisión</h4>
-                <p className="text-[#6B6B6B] mt-0.5">
-                  Las comisiones se generan automáticamente al quedar el trabajo Cobrado.
-                </p>
-              </div>
+          {activeSection === 'commissions' && (() => {
+            const empRules = formData.commission_config?.employee_rules || [];
+            const rominaEmp = empRules.find((r) => r.employee_id === 'user-romina');
+            const maxiEmp = empRules.find((r) => r.employee_id === 'user-maxi');
+            const rominaBase = typeof rominaEmp?.base_percentage === 'number' ? rominaEmp.base_percentage : 30;
+            const maxiBase = typeof maxiEmp?.base_percentage === 'number' ? maxiEmp.base_percentage : 30;
 
-              <div className="p-3.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-3">
+            const adsRule = (formData.origin_commission_rules || []).find((r) => r.origin.trim().toLowerCase().includes('anuncio'));
+            const companyRule = (formData.origin_commission_rules || []).find((r) => r.origin.trim().toLowerCase() === 'empresa');
+
+            const maxiAdsPct = typeof adsRule?.maxi_percentage === 'number' ? adsRule.maxi_percentage : 12.5;
+            const rominaCompanyPct = typeof companyRule?.romina_percentage === 'number' ? companyRule.romina_percentage : 12.5;
+            const maxiCompanyPct = typeof companyRule?.maxi_percentage === 'number' ? companyRule.maxi_percentage : 12.5;
+
+            const updateBasePct = (empId: 'user-romina' | 'user-maxi', val: number) => {
+              setFormData((prev) => {
+                const currentEmpRules = prev.commission_config?.employee_rules || [];
+                const nextEmpRules = currentEmpRules.map((er) =>
+                  er.employee_id === empId ? { ...er, base_percentage: val } : er
+                );
+                const nextOriginRules = (prev.origin_commission_rules || []).map((or) => {
+                  const oNorm = or.origin.trim().toLowerCase();
+                  if (empId === 'user-romina') {
+                    if (oNorm !== 'empresa') return { ...or, romina_percentage: val };
+                  } else {
+                    if (!oNorm.includes('anuncio') && oNorm !== 'empresa') return { ...or, maxi_percentage: val };
+                  }
+                  return or;
+                });
+                return {
+                  ...prev,
+                  origin_commission_rules: nextOriginRules,
+                  commission_config: {
+                    ...(prev.commission_config || { calculation_base: 'total_after_discounts', default_participants: ['user-romina', 'user-maxi'], employee_rules: [] }),
+                    employee_rules: nextEmpRules
+                  }
+                };
+              });
+            };
+
+            return (
+              <div className="space-y-4">
                 <div>
-                  <label className="font-medium text-[#161616] block mb-1">Base de Cálculo</label>
-                  <select
-                    value={formData.commission_config?.calculation_base || 'total_after_discounts'}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        commission_config: {
-                          ...prev.commission_config!,
-                          calculation_base: e.target.value as any
-                        }
-                      }))
-                    }
-                    className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs"
-                  >
-                    <option value="total_after_discounts">Total después de descuentos (Recomendado)</option>
-                    <option value="exclude_surcharges">Excluir recargos por suciedad extrema</option>
-                  </select>
+                  <h4 className="text-sm font-bold text-[#161616]">Reglas de Comisión</h4>
+                  <p className="text-[#6B6B6B] mt-0.5">
+                    Las comisiones se generan automáticamente al quedar el trabajo Cobrado. Cuando trabajan &quot;Los dos&quot;, cada uno cobra su porcentaje completo sobre el total (no se divide).
+                  </p>
                 </div>
 
-                <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-[#161616]">Porcentajes por integrante:</span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSection('origins')}
-                      className="text-[11px] text-[#D7141A] hover:underline font-bold cursor-pointer"
+                <div className="p-3.5 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-3">
+                  <div>
+                    <label className="font-medium text-[#161616] block mb-1">Base de Cálculo</label>
+                    <select
+                      value={formData.commission_config?.calculation_base || 'total_after_discounts'}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          commission_config: {
+                            ...prev.commission_config!,
+                            calculation_base: e.target.value as any
+                          }
+                        }))
+                      }
+                      className="w-full bg-white border border-[#E5E5E3] rounded-xl px-3 py-2 text-xs"
                     >
-                      Configurar por canal →
-                    </button>
+                      <option value="total_after_discounts">Total después de descuentos (Recomendado)</option>
+                      <option value="exclude_surcharges">Excluir recargos por suciedad extrema</option>
+                    </select>
                   </div>
 
-                  <div className="p-2.5 bg-white rounded-lg border border-[#E5E5E3] flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-xs">Romina</span>
-                      <span className="text-[10px] text-[#6B6B6B] block">Detailer de taller</span>
+                  <div className="pt-2 border-t border-[#E5E5E3] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-[#161616]">Porcentajes automáticos por persona:</span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveSection('origins')}
+                        className="text-[11px] text-[#D7141A] hover:underline font-bold cursor-pointer"
+                      >
+                        Ver tabla de canales →
+                      </button>
                     </div>
-                    <span className="text-xs font-semibold text-[#161616]">
-                      Configurada en Orígenes de Cliente
-                    </span>
-                  </div>
 
-                  <div className="p-2.5 bg-white rounded-lg border border-[#E5E5E3] flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-xs">Maximiliano</span>
-                      <span className="text-[10px] text-[#6B6B6B] block">Dueño / Admin</span>
+                    {/* Romina */}
+                    <div className="p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-xs text-[#161616]">Romina</span>
+                          <span className="text-[10px] text-[#6B6B6B] block">Detailer • Su % particular aplica siempre (incluido Anuncios pagos)</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="flex items-center justify-between bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3]">
+                          <span className="text-[11px] font-semibold text-[#161616]">% Particulares (Siempre):</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={rominaBase}
+                              onChange={(e) => updateBasePct('user-romina', parseFloat(e.target.value) || 0)}
+                              className="w-16 bg-white border border-[#E5E5E3] rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616]"
+                            />
+                            <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3]">
+                          <span className="text-[11px] font-semibold text-[#161616]">% Empresas:</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={rominaCompanyPct}
+                              onChange={(e) => handleUpdateOriginCommission('Empresa', 'romina', parseFloat(e.target.value) || 0)}
+                              className="w-16 bg-white border border-[#E5E5E3] rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616]"
+                            />
+                            <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-xs font-semibold text-[#161616]">
-                      Configurada en Orígenes de Cliente
-                    </span>
-                  </div>
 
-                  <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-900">
-                    💡 Para configurar cuánto se pone de comisión dependiendo del origen del cliente para Maximiliano y Romina, ingresá en la sección <strong>Orígenes de Cliente</strong>.
+                    {/* Maximiliano */}
+                    <div className="p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-xs text-[#161616]">Maximiliano</span>
+                          <span className="text-[10px] text-[#6B6B6B] block">Dueño / Admin • Tiene regla propia para Anuncios pagos</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div className="flex items-center justify-between bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3]">
+                          <span className="text-[11px] font-semibold text-[#161616]">% General:</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={maxiBase}
+                              onChange={(e) => updateBasePct('user-maxi', parseFloat(e.target.value) || 0)}
+                              className="w-14 bg-white border border-[#E5E5E3] rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616]"
+                            />
+                            <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between bg-red-50/60 px-3 py-2 rounded-lg border border-red-200">
+                          <span className="text-[11px] font-semibold text-[#D7141A]">% Anuncios pagos:</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={maxiAdsPct}
+                              onChange={(e) => handleUpdateOriginCommission('Anuncios pagos', 'maxi', parseFloat(e.target.value) || 0)}
+                              className="w-14 bg-white border border-red-200 rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616]"
+                            />
+                            <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between bg-[#F5F5F4] px-3 py-2 rounded-lg border border-[#E5E5E3]">
+                          <span className="text-[11px] font-semibold text-[#161616]">% Empresas:</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={maxiCompanyPct}
+                              onChange={(e) => handleUpdateOriginCommission('Empresa', 'maxi', parseFloat(e.target.value) || 0)}
+                              className="w-14 bg-white border border-[#E5E5E3] rounded px-1.5 py-0.5 text-xs text-center font-bold text-[#161616]"
+                            />
+                            <span className="text-[11px] font-bold text-[#6B6B6B]">%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* 10. WHATSAPP DEL COMPROBANTE */}
           {activeSection === 'whatsapp' && (

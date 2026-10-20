@@ -26,7 +26,8 @@ import {
   getDetailingPaidAmount,
   getDetailingPaymentStatus,
   isActiveJob,
-  isActivePayment
+  isActivePayment,
+  getJobPerformersSummary
 } from '../../../lib/formatters';
 import { DetailingCompanyJobModal } from './DetailingCompanyJobModal';
 import { DetailingCompanyPaymentModal } from './DetailingCompanyPaymentModal';
@@ -44,7 +45,7 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
   onBack,
   onEditCompany
 }) => {
-  const { detailingQuotes, detailingConfig, detailingPayments, voidDetailingPayment } = useData();
+  const { detailingQuotes, detailingConfig, detailingPayments, commissions, voidDetailingPayment } = useData();
   const { showToast } = useToast();
 
   // Selector de Mes (Formato YYYY-MM)
@@ -54,6 +55,7 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
 
   // Modales
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [quoteToEdit, setQuoteToEdit] = useState<DetailingQuote | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isStatementModalOpen, setIsStatementModalOpen] = useState(false);
 
@@ -188,6 +190,8 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
       'Matrícula',
       'Tamaño',
       'Servicios',
+      'Quién lo hizo',
+      'Comisiones',
       'Total UYU',
       'Abonado UYU',
       'Saldo Pendiente UYU',
@@ -199,6 +203,10 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
       const bal = (q.total_amount || 0) - paid;
       const services = (q.selected_services || []).map((s) => s.serviceName || s.name).join(' + ');
       const status = bal <= 0 ? 'Cobrado' : paid > 0 ? 'Parcial' : 'Pendiente';
+      const perf = getJobPerformersSummary(q, commissions);
+      const commsStr = perf.items
+        .map((it) => `${it.employee_name} ${it.rate}% = $${it.amount}`)
+        .join(' | ');
 
       return [
         `"${q.work_date || q.created_at.slice(0, 10)}"`,
@@ -206,6 +214,8 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
         `"${q.vehicle_plate || 'Sin matrícula'}"`,
         `"Tamaño ${q.vehicle_size || '-'}"`,
         `"${services.replace(/"/g, '""')}"`,
+        `"${perf.badge} (${perf.label})"`,
+        `"${commsStr.replace(/"/g, '""')}"`,
         q.total_amount || 0,
         paid,
         bal,
@@ -217,6 +227,8 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
     rows.push([
       '"TOTALES"',
       `"${monthJobsCount} vehículos"`,
+      '""',
+      '""',
       '""',
       '""',
       '""',
@@ -286,7 +298,10 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
             </button>
 
             <button
-              onClick={() => setIsJobModalOpen(true)}
+              onClick={() => {
+                setQuoteToEdit(null);
+                setIsJobModalOpen(true);
+              }}
               className="bg-[#D7141A] hover:bg-[#b01015] text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer min-h-[38px]"
             >
               <Plus className="w-4 h-4" />
@@ -441,10 +456,10 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
             {monthQuotes.map((q) => {
               const paid = getDetailingPaidAmount(q);
               const balance = Math.max(0, (q.total_amount || 0) - paid);
-              const status = getDetailingPaymentStatus(q);
               const servicesText = (q.selected_services || [])
                 .map((s) => s.serviceName || s.name)
                 .join(', ');
+              const performers = getJobPerformersSummary(q, commissions);
 
               return (
                 <div
@@ -452,13 +467,19 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
                   className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs hover:bg-[#FAFAFA] transition-colors rounded-xl px-2 -mx-2"
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-[#161616] text-sm">
                         {q.vehicle_info || 'Vehículo sin especificar'}
                       </span>
                       {q.vehicle_plate && <UruguayanPlate plate={q.vehicle_plate} size="sm" />}
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-[#161616]">
                         Tamaño {q.vehicle_size || '-'}
+                      </span>
+                      <span
+                        className="text-[10px] bg-violet-50 text-violet-700 border border-violet-200 font-bold px-1.5 py-0.5 rounded-md"
+                        title={`Realizado por: ${performers.label}`}
+                      >
+                        {performers.badge}
                       </span>
                     </div>
 
@@ -467,9 +488,30 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
                       <span>✨ {servicesText || 'Preparación preventa'}</span>
                       {q.notes && <span className="italic">"{q.notes}"</span>}
                     </div>
+
+                    {performers.items.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5 text-[10px] text-violet-700 font-medium">
+                        {performers.items.map((it) => (
+                          <span key={it.employee_id} className="bg-violet-50/70 px-1.5 py-0.5 rounded">
+                            {it.short}: {it.rate.toString().replace('.', ',')}% = {formatCurrency(it.amount)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuoteToEdit(q);
+                        setIsJobModalOpen(true);
+                      }}
+                      className="p-1.5 rounded-lg border border-[#E5E5E3] text-[#6B6B6B] hover:text-[#161616] hover:bg-white transition-colors cursor-pointer"
+                      title="Editar trabajo"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
                     <div className="text-right">
                       <span className="font-mono font-black text-sm text-[#161616] block">
                         {formatCurrency(q.total_amount)}
@@ -559,8 +601,12 @@ export const DetailingCompanyDetailView: React.FC<DetailingCompanyDetailViewProp
       {isJobModalOpen && (
         <DetailingCompanyJobModal
           isOpen={isJobModalOpen}
-          onClose={() => setIsJobModalOpen(false)}
+          onClose={() => {
+            setIsJobModalOpen(false);
+            setQuoteToEdit(null);
+          }}
           preselectedCompanyId={company.id}
+          quoteToEdit={quoteToEdit}
           initialDate={selectedMonth === getLocalDateString().slice(0, 7) ? getLocalDateString() : `${selectedMonth}-01`}
         />
       )}

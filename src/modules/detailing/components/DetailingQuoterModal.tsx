@@ -12,7 +12,9 @@ import {
   Check,
   Search,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  Edit2,
+  Users
 } from 'lucide-react';
 import {
   DetailingQuote,
@@ -59,24 +61,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     addClient,
     addVehicle,
     detailingConfig,
+    commissions,
     generateDetailingReceipt,
     syncRecordsToCloud
   } = useData();
 
-  const { profile, availableProfiles } = useAuth();
+  const { profile } = useAuth();
   const { showToast } = useToast();
-
-  const detailerProfiles = useMemo(() => {
-    return (availableProfiles || []).filter(
-      (p) => p && p.is_active && p.businesses?.includes('detailing')
-    );
-  }, [availableProfiles]);
-
-  const defaultProfileId = useMemo(() => {
-    const romina = detailerProfiles.find((p) => String(p.full_name || '').toLowerCase().includes('romina'));
-    if (romina) return romina.id;
-    return profile?.id || detailerProfiles[0]?.id || '';
-  }, [detailerProfiles, profile]);
+  const isAdmin = Boolean(profile?.roles?.includes('admin'));
 
   // Client State
   const [clientSearchTerm, setClientSearchTerm] = useState('');
@@ -108,14 +100,20 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   // Origin State (MANDATORY & NO PRESELECTED)
   const [origin, setOrigin] = useState<string>('');
 
+  // ¿Quién hizo el trabajo? (MANDATORY & NO PRESELECTED ON NEW JOBS)
+  const [whoDidIt, setWhoDidIt] = useState<'' | 'maxi' | 'romina' | 'both'>('');
+  const [customMaxiRate, setCustomMaxiRate] = useState<number | null>(null);
+  const [customMaxiReason, setCustomMaxiReason] = useState<string>('');
+  const [isEditingMaxiRate, setIsEditingMaxiRate] = useState<boolean>(false);
+  const [customRominaRate, setCustomRominaRate] = useState<number | null>(null);
+  const [customRominaReason, setCustomRominaReason] = useState<string>('');
+  const [isEditingRominaRate, setIsEditingRominaRate] = useState<boolean>(false);
+
   // More Options State
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [discountType, setDiscountType] = useState<string>('none');
   const [customDiscountAmount, setCustomDiscountAmount] = useState<number>(0);
   const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
-  const [assignedTo, setAssignedTo] = useState<string>('');
-  const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
-  const [rominaCommissionOverride, setRominaCommissionOverride] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
 
   // Payment State ("¿Ya cobraste?")
@@ -162,25 +160,45 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setDiscountType(quoteToEdit.discount_type || 'none');
       setCustomDiscountAmount(quoteToEdit.discount_amount || 0);
       setSurchargeAmount(quoteToEdit.extreme_dirt_surcharge || 0);
-      setAssignedTo(quoteToEdit.assigned_to || defaultProfileId);
       setNotes(quoteToEdit.notes || '');
 
-      if (quoteToEdit.commission_participants && quoteToEdit.commission_participants.length > 0) {
-        setSelectedParticipantIds(quoteToEdit.commission_participants.map((p) => p.employee_id));
-        const rominaPart = quoteToEdit.commission_participants.find(
-          (p) => p.employee_id === 'user-romina' || String(p.employee_name || '').toLowerCase().includes('romina')
-        );
-        if (rominaPart && typeof rominaPart.rate === 'number') {
-          setRominaCommissionOverride(rominaPart.rate);
-        } else {
-          setRominaCommissionOverride(null);
-        }
+      const parts = (quoteToEdit.commission_participants || []).filter((p) => p && typeof p.rate === 'number' && p.rate > 0);
+      const maxiPart = parts.find(
+        (p) => p.employee_id === 'user-maxi' || String(p.employee_name || '').toLowerCase().includes('maxi')
+      );
+      const rominaPart = parts.find(
+        (p) => p.employee_id === 'user-romina' || String(p.employee_name || '').toLowerCase().includes('romina')
+      );
+
+      if (maxiPart && rominaPart) {
+        setWhoDidIt('both');
+      } else if (maxiPart) {
+        setWhoDidIt('maxi');
+      } else if (rominaPart) {
+        setWhoDidIt('romina');
       } else {
-        const defaults = detailingConfig?.commission_config?.default_participants || [];
-        setSelectedParticipantIds(defaults.length > 0 ? defaults : [defaultProfileId]);
-        setRominaCommissionOverride(null);
+        setWhoDidIt('');
       }
 
+      const defaultRates = getOriginCommissionRates(detailingConfig, quoteToEdit.origin || 'WhatsApp');
+      if (maxiPart && (maxiPart.rate !== defaultRates.maxi || maxiPart.adjustment_reason)) {
+        setCustomMaxiRate(maxiPart.rate);
+        setCustomMaxiReason(maxiPart.adjustment_reason || '');
+      } else {
+        setCustomMaxiRate(null);
+        setCustomMaxiReason('');
+      }
+
+      if (rominaPart && (rominaPart.rate !== defaultRates.romina || rominaPart.adjustment_reason)) {
+        setCustomRominaRate(rominaPart.rate);
+        setCustomRominaReason(rominaPart.adjustment_reason || '');
+      } else {
+        setCustomRominaRate(null);
+        setCustomRominaReason('');
+      }
+
+      setIsEditingMaxiRate(false);
+      setIsEditingRominaRate(false);
       setPaymentOption('none');
       setIsCreatingClient(false);
       setIsCreatingVehicle(false);
@@ -199,14 +217,16 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setWorkDate(initialDate || todayUY);
       setSelectedServiceIds([]);
       setOrigin('');
+      setWhoDidIt('');
+      setCustomMaxiRate(null);
+      setCustomMaxiReason('');
+      setIsEditingMaxiRate(false);
+      setCustomRominaRate(null);
+      setCustomRominaReason('');
+      setIsEditingRominaRate(false);
       setDiscountType('none');
       setCustomDiscountAmount(0);
       setSurchargeAmount(0);
-      setAssignedTo(defaultProfileId);
-
-      const defaults = detailingConfig?.commission_config?.default_participants || [];
-      setSelectedParticipantIds(defaults.length > 0 ? defaults : [defaultProfileId]);
-      setRominaCommissionOverride(null);
       setNotes('');
 
       const lastMethod = localStorage.getItem('carvlak_last_detailing_payment_method') || 'Efectivo';
@@ -231,6 +251,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
               parsed.newVehicleModel ||
               (Array.isArray(parsed.selectedServiceIds) && parsed.selectedServiceIds.length > 0) ||
               parsed.origin ||
+              parsed.whoDidIt ||
               parsed.notes)
           ) {
             setSavedDraftData(parsed);
@@ -244,7 +265,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         setSavedDraftData(null);
       }
     }
-  }, [isOpen, quoteToEdit, initialDate, todayUY, defaultProfileId, detailingConfig]);
+  }, [isOpen, quoteToEdit, initialDate, todayUY, detailingConfig]);
 
   // Save draft automatically to sessionStorage when editing a new job
   const hasUnsavedChanges = useMemo(() => {
@@ -258,6 +279,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       newVehiclePlate.trim() ||
       selectedServiceIds.length > 0 ||
       origin ||
+      whoDidIt ||
       notes.trim()
     );
   }, [
@@ -270,6 +292,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     newVehiclePlate,
     selectedServiceIds,
     origin,
+    whoDidIt,
     notes
   ]);
 
@@ -291,12 +314,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         workDate,
         selectedServiceIds,
         origin,
+        whoDidIt,
+        customMaxiRate,
+        customMaxiReason,
+        customRominaRate,
+        customRominaReason,
         discountType,
         customDiscountAmount,
         surchargeAmount,
-        assignedTo,
-        selectedParticipantIds,
-        rominaCommissionOverride,
         notes,
         paymentOption,
         partialAmount,
@@ -323,12 +348,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     workDate,
     selectedServiceIds,
     origin,
+    whoDidIt,
+    customMaxiRate,
+    customMaxiReason,
+    customRominaRate,
+    customRominaReason,
     discountType,
     customDiscountAmount,
     surchargeAmount,
-    assignedTo,
-    selectedParticipantIds,
-    rominaCommissionOverride,
     notes,
     paymentOption,
     partialAmount,
@@ -350,16 +377,14 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     if (savedDraftData.workDate) setWorkDate(savedDraftData.workDate);
     if (Array.isArray(savedDraftData.selectedServiceIds)) setSelectedServiceIds(savedDraftData.selectedServiceIds);
     setOrigin(savedDraftData.origin || '');
+    if (savedDraftData.whoDidIt) setWhoDidIt(savedDraftData.whoDidIt);
+    if (savedDraftData.customMaxiRate !== undefined) setCustomMaxiRate(savedDraftData.customMaxiRate);
+    if (savedDraftData.customMaxiReason) setCustomMaxiReason(savedDraftData.customMaxiReason);
+    if (savedDraftData.customRominaRate !== undefined) setCustomRominaRate(savedDraftData.customRominaRate);
+    if (savedDraftData.customRominaReason) setCustomRominaReason(savedDraftData.customRominaReason);
     setDiscountType(savedDraftData.discountType || 'none');
     setCustomDiscountAmount(Number(savedDraftData.customDiscountAmount) || 0);
     setSurchargeAmount(Number(savedDraftData.surchargeAmount) || 0);
-    if (savedDraftData.assignedTo) setAssignedTo(savedDraftData.assignedTo);
-    if (Array.isArray(savedDraftData.selectedParticipantIds) && savedDraftData.selectedParticipantIds.length > 0) {
-      setSelectedParticipantIds(savedDraftData.selectedParticipantIds);
-    }
-    if (savedDraftData.rominaCommissionOverride !== undefined) {
-      setRominaCommissionOverride(savedDraftData.rominaCommissionOverride);
-    }
     setNotes(savedDraftData.notes || '');
     if (savedDraftData.paymentOption) setPaymentOption(savedDraftData.paymentOption);
     if (savedDraftData.partialAmount) setPartialAmount(Number(savedDraftData.partialAmount) || 0);
@@ -488,29 +513,38 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     }
   }, [paymentOption, isSplitPayment, totalAmount]);
 
-  const defaultRominaRate = useMemo(() => {
-    if (!origin) return 30;
-    return getOriginCommissionRates(detailingConfig, origin).romina;
+  // Reglas automáticas desde Configuración > Comisiones (sin valores fijos en el código)
+  const autoOriginRates = useMemo(() => {
+    return getOriginCommissionRates(detailingConfig, origin || 'WhatsApp');
   }, [detailingConfig, origin]);
 
-  const activeRominaRate = rominaCommissionOverride !== null ? rominaCommissionOverride : defaultRominaRate;
+  const effectiveRominaRate = customRominaRate !== null ? customRominaRate : autoOriginRates.romina;
+  const effectiveMaxiRate = customMaxiRate !== null ? customMaxiRate : autoOriginRates.maxi;
 
-  // Commission preview per participant based on origin
-  const commissionPreview = useMemo(() => {
-    if (!origin) return [];
-    const rates = getOriginCommissionRates(detailingConfig, origin);
+  const commissionBaseAmount = useMemo(() => {
+    const calcBase = detailingConfig?.commission_config?.calculation_base || 'total_after_discounts';
+    if (calcBase === 'exclude_surcharges') {
+      return Math.max(0, totalAmount - surchargeAmount);
+    }
+    return totalAmount;
+  }, [detailingConfig, totalAmount, surchargeAmount]);
 
-    return selectedParticipantIds.map((pid) => {
-      const p = (availableProfiles || []).find((prof) => prof && prof.id === pid);
-      const fullName = String(p?.full_name || 'Colaborador');
-      const name = fullName.split(' ')[0] || 'Colaborador';
-      const isMaxi = pid === 'user-maxi' || fullName.toLowerCase().includes('maxi');
-      const isRomina = pid === 'user-romina' || fullName.toLowerCase().includes('romina');
-      const pct = isMaxi ? rates.maxi : isRomina ? activeRominaRate : 30;
-      const amt = Math.round(totalAmount * (pct / 100));
-      return { id: pid, name, pct, amt };
-    });
-  }, [origin, selectedParticipantIds, availableProfiles, totalAmount, detailingConfig, activeRominaRate]);
+  const liveRominaAmount = useMemo(
+    () => Math.round(commissionBaseAmount * (effectiveRominaRate / 100)),
+    [commissionBaseAmount, effectiveRominaRate]
+  );
+
+  const liveMaxiAmount = useMemo(
+    () => Math.round(commissionBaseAmount * (effectiveMaxiRate / 100)),
+    [commissionBaseAmount, effectiveMaxiRate]
+  );
+
+  const hasPaidCommissionsForEdit = useMemo(() => {
+    if (!quoteToEdit) return false;
+    return (commissions || []).some(
+      (c) => c && !c.deleted_at && c.quote_id === quoteToEdit.id && c.status === 'Pagada'
+    );
+  }, [quoteToEdit, commissions]);
 
   // Available origins from config
   const availableOrigins: ClientOrigin[] = (detailingConfig?.client_origins || detailingConfig?.origins) && (detailingConfig?.client_origins || detailingConfig?.origins)!.length > 0
@@ -581,6 +615,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
 
     if (!origin) {
       const msg = 'El origen del cliente es obligatorio';
+      setSaveError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
+    if (!whoDidIt) {
+      const msg = 'Elegí quién hizo el trabajo (Maximiliano, Romina o Los dos)';
       setSaveError(msg);
       showToast(msg, 'error');
       return;
@@ -762,6 +803,35 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         localStorage.setItem('carvlak_last_detailing_payment_method', paymentMethod);
       }
 
+      const finalParticipants: { employee_id: string; employee_name: string; rate: number; adjustment_reason?: string }[] = [];
+      if (whoDidIt === 'romina' || whoDidIt === 'both') {
+        finalParticipants.push({
+          employee_id: 'user-romina',
+          employee_name: 'Romina',
+          rate: effectiveRominaRate,
+          ...(customRominaRate !== null && customRominaReason.trim()
+            ? { adjustment_reason: customRominaReason.trim() }
+            : {})
+        });
+      }
+      if (whoDidIt === 'maxi' || whoDidIt === 'both') {
+        finalParticipants.push({
+          employee_id: 'user-maxi',
+          employee_name: 'Maximiliano',
+          rate: effectiveMaxiRate,
+          ...(customMaxiRate !== null && customMaxiReason.trim()
+            ? { adjustment_reason: customMaxiReason.trim() }
+            : {})
+        });
+      }
+
+      const assignedList =
+        whoDidIt === 'both'
+          ? ['user-romina', 'user-maxi']
+          : whoDidIt === 'maxi'
+            ? ['user-maxi']
+            : ['user-romina'];
+
       const payload: Omit<DetailingQuote, 'id' | 'created_at' | 'updated_at'> = {
         work_date: workDate,
         client_id: finalClientId,
@@ -778,20 +848,8 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         extreme_dirt_surcharge: surchargeAmount,
         total_amount: totalAmount,
         origin: origin as ClientOrigin,
-        assigned_to: assignedTo || defaultProfileId,
-        commission_participants: selectedParticipantIds.map((pid) => {
-          const p = (availableProfiles || []).find((prof) => prof && prof.id === pid);
-          const rates = getOriginCommissionRates(detailingConfig, origin);
-          const fullName = String(p?.full_name || 'Colaborador');
-          const isMaxi = pid === 'user-maxi' || fullName.toLowerCase().includes('maxi');
-          const isRomina = pid === 'user-romina' || fullName.toLowerCase().includes('romina');
-          const rate = isMaxi ? rates.maxi : isRomina ? activeRominaRate : 30;
-          return {
-            employee_id: pid,
-            employee_name: fullName,
-            rate
-          };
-        }),
+        assigned_to: assignedList[0],
+        commission_participants: finalParticipants,
         notes: notes.trim(),
         payments: quoteToEdit
           ? [...(quoteToEdit.payments || []), ...initialPayments]
@@ -1254,7 +1312,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
               </div>
             </div>
 
-            {/* 5. ORIGEN DEL CLIENTE (Obligatorio, sin valor previo, con preview de comisión) */}
+            {/* 5. ORIGEN DEL CLIENTE (Obligatorio, sin valor previo) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
                 <span>5. Origen del cliente *</span>
@@ -1284,81 +1342,210 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                   );
                 })}
               </div>
+            </div>
 
-              {/* Preview de comisiones */}
-              {origin && commissionPreview.length > 0 && (
-                <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
-                  <span className="font-medium text-emerald-900">Comisiones estimadas:</span>
-                  <div className="flex items-center gap-2 font-mono">
-                    {commissionPreview.map((c) => (
-                      <span key={c.id} className="text-emerald-800 font-bold">
-                        {c.name}: {c.pct}% ({formatCurrency(c.amt)})
-                      </span>
-                    ))}
-                  </div>
+            {/* 6. ¿QUIÉN HIZO EL TRABAJO? (Visible, obligatorio, sin opción preseleccionada) */}
+            <div className="space-y-2 p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3]">
+              <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#D7141A]" />
+                  ¿Quién hizo el trabajo? *
+                </span>
+                {!whoDidIt && <span className="text-[10px] text-[#D7141A] font-bold">Obligatorio</span>}
+              </label>
+
+              {hasPaidCommissionsForEdit && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900">
+                  ⚠️ Este trabajo tiene comisión ya pagada. Si cambiás quién lo hizo o el %, la comisión pagada no se tocará.
                 </div>
               )}
 
-              {/* 5.1 SELECCIÓN DE COMISIÓN DE ROMINA (30% vs 12.5%) */}
-              {origin && (
-                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#161616]">
-                      Comisión de Romina para este trabajo:
-                    </span>
-                    <span className="text-xs font-black text-[#D7141A] font-mono">
-                      {activeRominaRate}%
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRominaCommissionOverride(30)}
-                      className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
-                        activeRominaRate === 30
-                          ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
-                          : 'bg-white text-stone-800 border-[#E5E5E3] hover:border-stone-400'
-                      }`}
-                    >
-                      <div className="font-bold text-xs flex items-center justify-between">
-                        <span>30% — Venta Propia</span>
-                        {activeRominaRate === 30 && <span className="text-[10px] text-emerald-400 font-bold">✓ Activo</span>}
-                      </div>
-                      <div className={`text-[10px] mt-0.5 leading-tight ${activeRominaRate === 30 ? 'text-stone-300' : 'text-[#6B6B6B]'}`}>
-                        Consigue y vende por fuera de los anuncios
-                      </div>
-                    </button>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWhoDidIt('maxi')}
+                  className={`py-3 px-2 rounded-xl font-bold border text-xs transition-all cursor-pointer text-center ${
+                    whoDidIt === 'maxi'
+                      ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                      : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                  }`}
+                >
+                  Maximiliano
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWhoDidIt('romina')}
+                  className={`py-3 px-2 rounded-xl font-bold border text-xs transition-all cursor-pointer text-center ${
+                    whoDidIt === 'romina'
+                      ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                      : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                  }`}
+                >
+                  Romina
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWhoDidIt('both')}
+                  className={`py-3 px-2 rounded-xl font-bold border text-xs transition-all cursor-pointer text-center ${
+                    whoDidIt === 'both'
+                      ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
+                      : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                  }`}
+                >
+                  Los dos
+                </button>
+              </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setRominaCommissionOverride(12.5)}
-                      className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
-                        activeRominaRate === 12.5
-                          ? 'bg-[#161616] text-white border-[#161616] shadow-xs'
-                          : 'bg-white text-stone-800 border-[#E5E5E3] hover:border-stone-400'
-                      }`}
-                    >
-                      <div className="font-bold text-xs flex items-center justify-between">
-                        <span>12.5% — Anuncios / Taller</span>
-                        {activeRominaRate === 12.5 && <span className="text-[10px] text-emerald-400 font-bold">✓ Activo</span>}
+              {/* Desglose en vivo por persona seleccionada */}
+              {whoDidIt && (
+                <div className="space-y-2 pt-1">
+                  {(whoDidIt === 'romina' || whoDidIt === 'both') && (
+                    <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-red-50 text-[#D7141A] font-black text-[10px]">
+                            R
+                          </span>
+                          <span className="font-bold text-xs text-[#161616]">
+                            {`Romina ${String(effectiveRominaRate).replace('.', ',')}% = $${liveRominaAmount.toLocaleString('es-UY')}`}
+                          </span>
+                          {customRominaRate !== null && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
+                              Ajustado
+                            </span>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingRominaRate((prev) => !prev)}
+                            className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
+                            title="Ajustar % de Romina para este trabajo"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
-                      <div className={`text-[10px] mt-0.5 leading-tight ${activeRominaRate === 12.5 ? 'text-stone-300' : 'text-[#6B6B6B]'}`}>
-                        Venta por anuncios o mano de obra
+
+                      {isAdmin && isEditingRominaRate && (
+                        <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-[11px] font-medium text-[#161616]">% en este trabajo:</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={effectiveRominaRate}
+                              onChange={(e) => setCustomRominaRate(parseFloat(e.target.value) || 0)}
+                              className="w-20 bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2 py-1 text-xs font-mono font-bold text-center text-[#161616]"
+                            />
+                            <span className="text-xs font-bold text-[#6B6B6B]">%</span>
+                            {customRominaRate !== null && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomRominaRate(null);
+                                  setCustomRominaReason('');
+                                  setIsEditingRominaRate(false);
+                                }}
+                                className="text-[10px] text-[#D7141A] font-bold hover:underline ml-auto cursor-pointer"
+                              >
+                                Volver a automático ({autoOriginRates.romina}%)
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Motivo del ajuste (opcional)..."
+                            value={customRominaReason}
+                            onChange={(e) => setCustomRominaReason(e.target.value)}
+                            className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-[11px] text-[#161616]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(whoDidIt === 'maxi' || whoDidIt === 'both') && (
+                    <div className="p-2.5 bg-white rounded-xl border border-[#E5E5E3] space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-stone-100 text-[#161616] font-black text-[10px]">
+                            M
+                          </span>
+                          <span className="font-bold text-xs text-[#161616]">
+                            {`Maximiliano ${String(effectiveMaxiRate).replace('.', ',')}% = $${liveMaxiAmount.toLocaleString('es-UY')}`}
+                          </span>
+                          {customMaxiRate !== null && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
+                              Ajustado
+                            </span>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingMaxiRate((prev) => !prev)}
+                            className="p-1.5 rounded-lg text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] transition-colors cursor-pointer"
+                            title="Ajustar % de Maximiliano para este trabajo"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
-                    </button>
-                  </div>
+
+                      {isAdmin && isEditingMaxiRate && (
+                        <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-[11px] font-medium text-[#161616]">% en este trabajo:</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              value={effectiveMaxiRate}
+                              onChange={(e) => setCustomMaxiRate(parseFloat(e.target.value) || 0)}
+                              className="w-20 bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2 py-1 text-xs font-mono font-bold text-center text-[#161616]"
+                            />
+                            <span className="text-xs font-bold text-[#6B6B6B]">%</span>
+                            {customMaxiRate !== null && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomMaxiRate(null);
+                                  setCustomMaxiReason('');
+                                  setIsEditingMaxiRate(false);
+                                }}
+                                className="text-[10px] text-[#D7141A] font-bold hover:underline ml-auto cursor-pointer"
+                              >
+                                Volver a automático ({autoOriginRates.maxi}%)
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Motivo del ajuste (opcional)..."
+                            value={customMaxiReason}
+                            onChange={(e) => setCustomMaxiReason(e.target.value)}
+                            className="w-full bg-[#F5F5F4] border border-[#E5E5E3] rounded-lg px-2.5 py-1.5 text-[11px] text-[#161616]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* 6. MÁS OPCIONES (Desplegable) */}
+            {/* 7. MÁS OPCIONES (Desplegable) */}
             <div className="border border-[#E5E5E3] rounded-xl overflow-hidden">
               <button
                 type="button"
                 onClick={() => setShowMoreOptions(!showMoreOptions)}
                 className="w-full p-3 bg-[#F5F5F4] flex items-center justify-between font-bold text-xs text-[#161616] hover:bg-gray-100 transition-colors cursor-pointer"
               >
-                <span>6. Más opciones (descuentos, recargos, responsable, notas)</span>
+                <span>7. Más opciones (descuentos, recargos, notas)</span>
                 {showMoreOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
@@ -1398,54 +1585,6 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                     />
                   </div>
 
-                  {/* Quién lo hizo */}
-                  <div>
-                    <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                      ¿Quién realizó o realiza el trabajo?
-                    </label>
-                    <select
-                      value={assignedTo}
-                      onChange={(e) => setAssignedTo(e.target.value)}
-                      className="w-full bg-white border border-[#E5E5E3] rounded-lg px-2 py-1.5 text-xs text-[#161616] focus:border-[#D7141A] focus:outline-none"
-                    >
-                      {detailerProfiles.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.full_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Participantes de comisión */}
-                  <div>
-                    <label className="text-[11px] font-medium text-[#161616] block mb-1">
-                      Participantes de comisión
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {detailerProfiles.map((p) => {
-                        const isPart = selectedParticipantIds.includes(p.id);
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedParticipantIds((prev) =>
-                                prev.includes(p.id) ? prev.filter((id) => id !== p.id) : [...prev, p.id]
-                              );
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                              isPart
-                                ? 'bg-red-50 border-[#D7141A] text-[#D7141A]'
-                                : 'bg-white border-[#E5E5E3] text-[#6B6B6B]'
-                            }`}
-                          >
-                            {String(p.full_name || '').split(' ')[0]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   {/* Notas */}
                   <div>
                     <label className="text-[11px] font-medium text-[#161616] block mb-1">
@@ -1463,12 +1602,12 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
               )}
             </div>
 
-            {/* 7. COBRO (Opcional en el mismo paso) */}
+            {/* 8. COBRO (Opcional en el mismo paso) */}
             <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
                   <DollarSign className="w-3.5 h-3.5 text-[#D7141A]" />
-                  7. ¿Ya cobraste?
+                  8. ¿Ya cobraste?
                 </span>
                 <span className="text-xs font-bold font-mono text-[#161616]">
                   Total: {formatCurrency(totalAmount)}

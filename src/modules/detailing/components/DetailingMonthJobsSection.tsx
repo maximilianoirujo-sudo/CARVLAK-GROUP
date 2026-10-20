@@ -37,13 +37,15 @@ import {
   isJobScheduled,
   isActiveJob,
   isActiveExpense,
-  isActivePayment
+  isActivePayment,
+  getJobPerformersSummary
 } from '../../../lib/formatters';
 import { Button } from '../../../components/ui/Button';
 import { UruguayanPlate } from '../../../components/ui/UruguayanPlate';
 import { DetailingVoidModal } from './DetailingVoidModal';
 import { DetailingPaymentRecordModal } from './DetailingPaymentRecordModal';
 import { DetailingQuoterModal } from './DetailingQuoterModal';
+import { DetailingCompanyJobModal } from './DetailingCompanyJobModal';
 import { DetailingReceiptView } from './receipts/DetailingReceiptView';
 
 export const DetailingMonthJobsSection: React.FC = () => {
@@ -81,6 +83,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
   const [activeQuoteForDetail, setActiveQuoteForDetail] = useState<DetailingQuote | null>(null);
   const [quoteToEdit, setQuoteToEdit] = useState<DetailingQuote | null>(null);
   const [isQuoterModalOpen, setIsQuoterModalOpen] = useState(false);
+  const [isCompanyJobModalOpen, setIsCompanyJobModalOpen] = useState(false);
   const [quoteForPayment, setQuoteForPayment] = useState<DetailingQuote | null>(null);
   const [quoteToVoid, setQuoteToVoid] = useState<DetailingQuote | null>(null);
   const [isBulkVoidModalOpen, setIsBulkVoidModalOpen] = useState(false);
@@ -115,6 +118,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
   // Trabajos del mes
   const monthQuotes = useMemo(() => {
     return detailingQuotes.filter((q) => {
+      if (q.deleted_at) return false;
       const qDate = q.work_date || (q.created_at ? q.created_at.slice(0, 10) : '');
       return qDate.startsWith(selectedMonth);
     });
@@ -147,14 +151,16 @@ export const DetailingMonthJobsSection: React.FC = () => {
   const totalCommissions = useMemo(() => {
     return commissions
       .filter((c) => {
-        if (c.business !== 'detailing' || !c.created_at.startsWith(selectedMonth)) return false;
+        if (c.deleted_at) return false;
+        const cDate = c.job_date || (c.created_at ? c.created_at.slice(0, 10) : '');
+        if ((c.business && c.business !== 'detailing') || !cDate.startsWith(selectedMonth)) return false;
         if (c.quote_id) {
           const rel = detailingQuotes.find((q) => q.id === c.quote_id);
           if (rel && !isActiveJob(rel)) return false;
         }
         return true;
       })
-      .reduce((sum, c) => sum + (Number(c.commission_amount) || 0), 0);
+      .reduce((sum, c) => sum + (Number(c.amount ?? c.commission_amount) || 0), 0);
   }, [commissions, detailingQuotes, selectedMonth]);
 
   const netResult = totalBilled - totalExpenses - totalCommissions;
@@ -179,7 +185,10 @@ export const DetailingMonthJobsSection: React.FC = () => {
 
       // Responsable
       if (detailerFilter !== 'all') {
-        if (q.assigned_to !== detailerFilter) return false;
+        const inParticipants = (q.commission_participants || []).some(
+          (p) => p.employee_id === detailerFilter
+        );
+        if (q.assigned_to !== detailerFilter && !inParticipants) return false;
       }
 
       // Origen
@@ -251,7 +260,8 @@ export const DetailingMonthJobsSection: React.FC = () => {
       'Saldo Pendiente ($UYU)',
       'Estado de Cobro',
       'Origen',
-      'Responsable',
+      'Quien lo hizo',
+      'Comisiones',
       'Anulado'
     ];
 
@@ -260,7 +270,10 @@ export const DetailingMonthJobsSection: React.FC = () => {
       const paid = getDetailingPaidAmount(q);
       const pending = Math.max(0, (q.total_amount || 0) - paid);
       const servicesStr = (q.selected_services || []).map((s) => s.serviceName || s.name).join(' + ');
-      const detailer = availableProfiles.find((p) => p.id === q.assigned_to)?.full_name || 'Sin asignar';
+      const perf = getJobPerformersSummary(q, commissions);
+      const commsStr = perf.items
+        .map((it) => `${it.employee_name} ${it.rate}% = $${it.amount}`)
+        .join(' | ');
 
       return [
         q.work_date || q.created_at.slice(0, 10),
@@ -274,7 +287,8 @@ export const DetailingMonthJobsSection: React.FC = () => {
         pending,
         status,
         q.origin || '',
-        `"${detailer.replace(/"/g, '""')}"`,
+        `"${perf.badge} (${perf.label})"`,
+        `"${commsStr.replace(/"/g, '""')}"`,
         q.is_voided ? 'SI' : 'NO'
       ].join(';');
     });
@@ -302,6 +316,16 @@ export const DetailingMonthJobsSection: React.FC = () => {
       setActiveReceiptToView(rcpt);
     }
   };
+
+  const currentDetailQuote = useMemo(() => {
+    if (!activeQuoteForDetail) return null;
+    return detailingQuotes.find((q) => q.id === activeQuoteForDetail.id) || activeQuoteForDetail;
+  }, [activeQuoteForDetail, detailingQuotes]);
+
+  const currentDetailPerformers = useMemo(() => {
+    if (!currentDetailQuote) return null;
+    return getJobPerformersSummary(currentDetailQuote, commissions);
+  }, [currentDetailQuote, commissions]);
 
   return (
     <div className="space-y-4">
@@ -583,6 +607,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
                     const payStatus = getDetailingPaymentStatus(q);
                     const isSelected = selectedQuoteIds.includes(q.id);
                     const isScheduledFuture = isJobScheduled(q.work_date);
+                    const performers = getJobPerformersSummary(q, commissions);
 
                     return (
                       <div
@@ -616,6 +641,12 @@ export const DetailingMonthJobsSection: React.FC = () => {
                               {q.vehicle_plate ? (
                                 <UruguayanPlate plate={q.vehicle_plate} size="sm" />
                               ) : null}
+                              <span
+                                className="text-[10px] bg-violet-50 text-violet-700 border border-violet-200 font-bold px-1.5 py-0.5 rounded-md"
+                                title={`Realizado por: ${performers.label}`}
+                              >
+                                {performers.badge}
+                              </span>
                               {q.customer_type === 'empresa' && (
                                 <span className="text-[9px] bg-red-100 text-[#D7141A] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                                   EMPRESA · {q.company_name || 'Empresa'}
@@ -640,6 +671,16 @@ export const DetailingMonthJobsSection: React.FC = () => {
                               <span className="mx-1">·</span>
                               <span>{(q.selected_services || []).map((s) => s.serviceName || s.name).join(', ')}</span>
                             </p>
+
+                            {performers.items.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-violet-700 font-medium">
+                                {performers.items.map((it) => (
+                                  <span key={it.employee_id} className="bg-violet-50/70 px-1.5 py-0.5 rounded">
+                                    {it.short}: {it.rate.toString().replace('.', ',')}% = {formatCurrency(it.amount)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -689,7 +730,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
       </button>
 
       {/* 6. Modal / Slide-over Detalle del Trabajo */}
-      {activeQuoteForDetail && (
+      {currentDetailQuote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
           <div className="bg-white border border-[#E5E5E3] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl my-auto">
             {/* Header */}
@@ -699,9 +740,9 @@ export const DetailingMonthJobsSection: React.FC = () => {
                   Detalle del trabajo
                 </span>
                 <h3 className="text-sm sm:text-base font-bold text-[#161616] flex items-center gap-2">
-                  <span>{activeQuoteForDetail.vehicle_info}</span>
-                  {activeQuoteForDetail.vehicle_plate && (
-                    <UruguayanPlate plate={activeQuoteForDetail.vehicle_plate} size="sm" />
+                  <span>{currentDetailQuote.vehicle_info}</span>
+                  {currentDetailQuote.vehicle_plate && (
+                    <UruguayanPlate plate={currentDetailQuote.vehicle_plate} size="sm" />
                   )}
                 </h3>
               </div>
@@ -720,9 +761,9 @@ export const DetailingMonthJobsSection: React.FC = () => {
                 <div>
                   <span className="text-[10px] text-[#6B6B6B] block">Fecha de trabajo</span>
                   <span className="font-bold text-xs text-[#161616]">
-                    {activeQuoteForDetail.work_date || activeQuoteForDetail.created_at.slice(0, 10)}
+                    {currentDetailQuote.work_date || currentDetailQuote.created_at.slice(0, 10)}
                   </span>
-                  {isJobScheduled(activeQuoteForDetail.work_date) && (
+                  {isJobScheduled(currentDetailQuote.work_date) && (
                     <span className="ml-1 text-[9px] bg-gray-200 text-gray-700 font-bold px-1.5 py-0.5 rounded">
                       Programado
                     </span>
@@ -732,7 +773,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
                 <div className="text-right">
                   <span className="text-[10px] text-[#6B6B6B] block">Estado de cobro</span>
                   <span className="font-bold text-xs">
-                    {getDetailingPaymentStatus(activeQuoteForDetail)}
+                    {getDetailingPaymentStatus(currentDetailQuote)}
                   </span>
                 </div>
               </div>
@@ -740,20 +781,82 @@ export const DetailingMonthJobsSection: React.FC = () => {
               {/* Cliente */}
               <div className="p-3 bg-white rounded-xl border border-[#E5E5E3] space-y-1">
                 <span className="text-[10px] text-[#6B6B6B] block font-medium">Cliente</span>
-                <p className="font-bold text-sm text-[#161616]">{activeQuoteForDetail.client_name}</p>
-                {activeQuoteForDetail.client_phone && (
-                  <p className="text-xs text-[#6B6B6B]">{activeQuoteForDetail.client_phone}</p>
+                <p className="font-bold text-sm text-[#161616]">
+                  {currentDetailQuote.customer_type === 'empresa'
+                    ? `${currentDetailQuote.company_name || currentDetailQuote.client_name} (Empresa)`
+                    : currentDetailQuote.client_name}
+                </p>
+                {currentDetailQuote.client_phone && (
+                  <p className="text-xs text-[#6B6B6B]">{currentDetailQuote.client_phone}</p>
                 )}
                 <p className="text-[10px] text-[#6B6B6B] mt-1">
-                  Origen: <span className="font-semibold text-[#161616]">{activeQuoteForDetail.origin}</span>
+                  Origen: <span className="font-semibold text-[#161616]">{currentDetailQuote.origin}</span>
                 </p>
               </div>
+
+              {/* ¿Quién hizo el trabajo y comisiones? */}
+              {currentDetailPerformers && (
+                <div className="p-3 bg-violet-50/50 rounded-xl border border-violet-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#161616] flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-violet-600" />
+                      ¿Quién hizo el trabajo?
+                    </span>
+                    <span className="text-[11px] font-bold bg-violet-100 text-violet-800 px-2 py-0.5 rounded-full">
+                      {currentDetailPerformers.badge} · {currentDetailPerformers.label}
+                    </span>
+                  </div>
+
+                  {currentDetailPerformers.items.length > 0 ? (
+                    <div className="space-y-1.5 pt-1">
+                      {currentDetailPerformers.items.map((it) => (
+                        <div
+                          key={it.employee_id}
+                          className="p-2 bg-white rounded-lg border border-violet-100 flex items-center justify-between"
+                        >
+                          <div>
+                            <span className="font-bold text-xs text-[#161616]">
+                              {it.employee_name}{' '}
+                              <span className="text-[#D7141A]">
+                                {it.rate.toString().replace('.', ',')}%
+                              </span>{' '}
+                              = <span className="font-mono">{formatCurrency(it.amount)}</span>
+                            </span>
+                            {it.adjustment_reason && (
+                              <span className="block text-[10px] text-amber-700 mt-0.5">
+                                Ajuste puntual: {it.adjustment_reason}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              it.status === 'Pagada'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : it.status === 'Pendiente'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {it.status === 'Pagada'
+                              ? 'Comisión pagada'
+                              : it.status === 'Pendiente'
+                              ? 'Comisión pendiente'
+                              : 'Al cobrar el trabajo'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[#6B6B6B]">Sin participantes asignados</p>
+                  )}
+                </div>
+              )}
 
               {/* Servicios */}
               <div className="space-y-1.5">
                 <span className="text-xs font-bold text-[#161616]">Servicios realizados</span>
                 <div className="border border-[#E5E5E3] rounded-xl divide-y divide-[#E5E5E3] overflow-hidden">
-                  {(activeQuoteForDetail.selected_services || []).map((s, idx) => (
+                  {(currentDetailQuote.selected_services || []).map((s, idx) => (
                     <div key={idx} className="p-2.5 flex items-center justify-between bg-white text-xs">
                       <span className="font-medium text-[#161616]">{s.serviceName || s.name}</span>
                       <span className="font-mono text-[#6B6B6B]">{formatCurrency(s.price)}</span>
@@ -767,13 +870,13 @@ export const DetailingMonthJobsSection: React.FC = () => {
                 <div className="flex justify-between text-xs">
                   <span className="text-[#6B6B6B]">Total del trabajo:</span>
                   <span className="font-bold font-mono text-[#161616]">
-                    {formatCurrency(activeQuoteForDetail.total_amount)}
+                    {formatCurrency(currentDetailQuote.total_amount)}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-[#6B6B6B]">Monto cobrado:</span>
                   <span className="font-bold font-mono text-emerald-600">
-                    {formatCurrency(getDetailingPaidAmount(activeQuoteForDetail))}
+                    {formatCurrency(getDetailingPaidAmount(currentDetailQuote))}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs pt-1 border-t border-[#E5E5E3]">
@@ -782,7 +885,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
                     {formatCurrency(
                       Math.max(
                         0,
-                        (activeQuoteForDetail.total_amount || 0) - getDetailingPaidAmount(activeQuoteForDetail)
+                        (currentDetailQuote.total_amount || 0) - getDetailingPaidAmount(currentDetailQuote)
                       )
                     )}
                   </span>
@@ -790,23 +893,23 @@ export const DetailingMonthJobsSection: React.FC = () => {
               </div>
 
               {/* Notas si existen */}
-              {activeQuoteForDetail.notes && (
+              {currentDetailQuote.notes && (
                 <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
                   <span className="text-[10px] text-amber-800 font-bold block mb-0.5">Notas</span>
-                  <p className="text-xs text-amber-900">{activeQuoteForDetail.notes}</p>
+                  <p className="text-xs text-amber-900">{currentDetailQuote.notes}</p>
                 </div>
               )}
             </div>
 
             {/* Acciones principales de la fila */}
             <div className="p-3.5 sm:p-4 border-t border-[#E5E5E3] bg-[#F5F5F4] flex flex-wrap items-center justify-end gap-2">
-              {!activeQuoteForDetail.is_voided && (
+              {!currentDetailQuote.is_voided && (
                 <>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      setQuoteToVoid(activeQuoteForDetail);
+                      setQuoteToVoid(currentDetailQuote);
                       setActiveQuoteForDetail(null);
                     }}
                     className="text-rose-600 hover:text-rose-700"
@@ -819,8 +922,12 @@ export const DetailingMonthJobsSection: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      setQuoteToEdit(activeQuoteForDetail);
-                      setIsQuoterModalOpen(true);
+                      setQuoteToEdit(currentDetailQuote);
+                      if (currentDetailQuote.customer_type === 'empresa' || currentDetailQuote.company_id) {
+                        setIsCompanyJobModalOpen(true);
+                      } else {
+                        setIsQuoterModalOpen(true);
+                      }
                       setActiveQuoteForDetail(null);
                     }}
                   >
@@ -831,18 +938,18 @@ export const DetailingMonthJobsSection: React.FC = () => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleViewReceipt(activeQuoteForDetail)}
+                    onClick={() => handleViewReceipt(currentDetailQuote)}
                   >
                     <FileText className="w-3.5 h-3.5 mr-1 text-[#D7141A]" />
                     Ver/enviar comprobante
                   </Button>
 
-                  {getDetailingPaymentStatus(activeQuoteForDetail) !== 'Cobrado' && (
+                  {getDetailingPaymentStatus(currentDetailQuote) !== 'Cobrado' && (
                     <Button
                       variant="primary"
                       size="sm"
                       onClick={() => {
-                        setQuoteForPayment(activeQuoteForDetail);
+                        setQuoteForPayment(currentDetailQuote);
                         setActiveQuoteForDetail(null);
                       }}
                       className="bg-[#D7141A] hover:bg-[#b01015]"
@@ -867,7 +974,7 @@ export const DetailingMonthJobsSection: React.FC = () => {
         />
       )}
 
-      {/* Modal de Nuevo/Editar Trabajo */}
+      {/* Modal de Nuevo/Editar Trabajo Particular */}
       {isQuoterModalOpen && (
         <DetailingQuoterModal
           isOpen={isQuoterModalOpen}
@@ -875,6 +982,20 @@ export const DetailingMonthJobsSection: React.FC = () => {
             setIsQuoterModalOpen(false);
             setQuoteToEdit(null);
           }}
+          quoteToEdit={quoteToEdit}
+          initialDate={selectedMonth === getLocalDateString().slice(0, 7) ? getLocalDateString() : `${selectedMonth}-01`}
+        />
+      )}
+
+      {/* Modal de Editar Trabajo de Empresa */}
+      {isCompanyJobModalOpen && (
+        <DetailingCompanyJobModal
+          isOpen={isCompanyJobModalOpen}
+          onClose={() => {
+            setIsCompanyJobModalOpen(false);
+            setQuoteToEdit(null);
+          }}
+          preselectedCompanyId={quoteToEdit?.company_id}
           quoteToEdit={quoteToEdit}
           initialDate={selectedMonth === getLocalDateString().slice(0, 7) ? getLocalDateString() : `${selectedMonth}-01`}
         />
