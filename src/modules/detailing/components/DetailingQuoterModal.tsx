@@ -1427,6 +1427,31 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                         )}
                       </div>
 
+                      {/* Selección rápida de % para Romina en este trabajo */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-semibold text-[#6B6B6B] mr-0.5">% de Romina:</span>
+                        {[30, 12.5].map((pct) => {
+                          const isActive = effectiveRominaRate === pct;
+                          return (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => {
+                                setCustomRominaRate(pct === autoOriginRates.romina ? null : pct);
+                                if (pct === autoOriginRates.romina) setCustomRominaReason('');
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-[#161616] text-white border-[#161616]'
+                                  : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                              }`}
+                            >
+                              {String(pct).replace('.', ',')}%
+                            </button>
+                          );
+                        })}
+                      </div>
+
                       {isAdmin && isEditingRominaRate && (
                         <div className="pt-2 border-t border-[#E5E5E3] space-y-2">
                           <div className="flex items-center gap-2">
@@ -1493,6 +1518,31 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                         )}
+                      </div>
+
+                      {/* Selección rápida de % para Maximiliano en este trabajo */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-semibold text-[#6B6B6B] mr-0.5">% de Maximiliano:</span>
+                        {[30, 12.5].map((pct) => {
+                          const isActive = effectiveMaxiRate === pct;
+                          return (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => {
+                                setCustomMaxiRate(pct === autoOriginRates.maxi ? null : pct);
+                                if (pct === autoOriginRates.maxi) setCustomMaxiReason('');
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-[#161616] text-white border-[#161616]'
+                                  : 'bg-white text-[#161616] border-[#E5E5E3] hover:border-[#161616]'
+                              }`}
+                            >
+                              {String(pct).replace('.', ',')}%
+                            </button>
+                          );
+                        })}
                       </div>
 
                       {isAdmin && isEditingMaxiRate && (
