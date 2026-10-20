@@ -42,6 +42,38 @@ interface DetailingModuleProps {
 export const DetailingModule: React.FC<DetailingModuleProps> = () => {
   const { profile } = useAuth();
   const { detailingConfig, updateDetailingConfig, refreshData, isSyncing, lastSyncedAt, detailingWebRequests } = useData();
+  const { detailingCompanies, addDetailingCompany, updateDetailingCompany } = useData();
+
+  // Autos de CARVLAK (automotora): se cargan como empresa interna con tarifa propia (base $4.000 tamaño 1)
+  const CARVLAK_BASE_PRICE = 4000;
+  const [carvlakCompanyId, setCarvlakCompanyId] = useState<string | undefined>(undefined);
+
+  const handleOpenCarvlakJob = () => {
+    setShowNewJobMenu(false);
+    let company = (detailingCompanies || []).find(
+      (c: any) => c && !c.deleted_at && (c.is_carvlak_internal || /^\s*carvlak\b/i.test(c.name || ''))
+    );
+    if (!company) {
+      company = addDetailingCompany({
+        name: 'CARVLAK',
+        contact_name: 'Jonathan',
+        billing_mode: 'mensual',
+        notes: 'Autos de la automotora CARVLAK. Se cobran a Jonathan.',
+        is_active: true,
+        is_carvlak_internal: true,
+        pricing_override: { preventa_tariff: { base_price_size_1: CARVLAK_BASE_PRICE } }
+      } as any);
+    } else if (!(company as any).pricing_override?.preventa_tariff?.base_price_size_1) {
+      updateDetailingCompany(company.id, {
+        pricing_override: {
+          ...((company as any).pricing_override || {}),
+          preventa_tariff: { ...((company as any).pricing_override?.preventa_tariff || {}), base_price_size_1: CARVLAK_BASE_PRICE }
+        }
+      } as any);
+    }
+    setCarvlakCompanyId(company?.id);
+    setIsCompanyJobModalOpen(true);
+  };
   const { showToast } = useToast();
 
   const isAdmin = profile?.roles.includes('admin');
@@ -152,6 +184,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
                       type="button"
                       onClick={() => {
                         setShowNewJobMenu(false);
+                        setCarvlakCompanyId(undefined);
                         setIsCompanyJobModalOpen(true);
                       }}
                       className="w-full text-left px-4 py-2 text-xs font-bold text-neutral-800 hover:bg-red-50 flex items-center gap-2.5 transition-colors border-t border-neutral-100"
@@ -160,6 +193,18 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
                       <div>
                         <div className="text-[#D7141A]">Empresa</div>
                         <div className="text-[10px] text-neutral-500 font-normal">Preparación preventa y tarifas</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenCarvlakJob}
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors border-t border-neutral-100"
+                    >
+                      <Car className="w-4 h-4 text-[#161616]" />
+                      <div>
+                        <div className="text-[#161616]">Autos CARVLAK</div>
+                        <div className="text-[10px] text-neutral-500 font-normal">Automotora · se cobran a Jonathan</div>
                       </div>
                     </button>
                   </div>
@@ -365,7 +410,11 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
       {isCompanyJobModalOpen && (
         <DetailingCompanyJobModal
           isOpen={isCompanyJobModalOpen}
-          onClose={() => setIsCompanyJobModalOpen(false)}
+          preselectedCompanyId={carvlakCompanyId}
+          onClose={() => {
+            setIsCompanyJobModalOpen(false);
+            setCarvlakCompanyId(undefined);
+          }}
         />
       )}
     </div>
