@@ -892,6 +892,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sincronización en la nube vía /api/sync (Upstash / Vercel KV) para computadoras y celulares
   // Une (merge) por id y updated_at sin pisar cambios locales más recientes y respetando borrados (deletedIds)
+  // ==========================================================================
+  // AUTO-SYNC: todo cambio local (de cualquier celular) se sube solo al servidor.
+  // Guarda una "foto" de lo último sincronizado por colección y sube solo lo que cambió.
+  // ==========================================================================
+  const lastSyncedRef = useRef<Record<string, Map<string, string>>>({});
+  const lastSyncedConfigRef = useRef<string | null>(null);
+
+  const snapshotList = (list: any[]): Map<string, string> => {
+    const m = new Map<string, string>();
+    (Array.isArray(list) ? list : []).forEach((r: any) => {
+      if (r && r.id) m.set(String(r.id), JSON.stringify(r));
+    });
+    return m;
+  };
+
+  const markListSynced = (key: string, list: any[]) => {
+    lastSyncedRef.current[key] = snapshotList(list);
+  };
+
   const syncFromCloud = async () => {
     try {
       await flushApiSyncQueue();
@@ -912,6 +931,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const merged = mergeRecordsById(prev, rawQuotes, delMap.detailing_quotes);
           detailingQuotesRef.current = merged;
           localStorage.setItem('carvlak_detailing_quotes', JSON.stringify(merged));
+          markListSynced('detailing_quotes', merged);
           return merged;
         });
       }
@@ -924,6 +944,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingPayments((prev) => {
           const merged = mergeRecordsById(prev, rawPayments, delMap.detailing_payments);
           localStorage.setItem('carvlak_detailing_payments', JSON.stringify(merged));
+          markListSynced('detailing_payments', merged);
           return merged;
         });
       }
@@ -941,6 +962,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           });
           localStorage.setItem('carvlak_detailing_config', JSON.stringify(mergedCfg));
+          lastSyncedConfigRef.current = JSON.stringify(mergedCfg);
           return mergedCfg;
         });
       }
@@ -949,6 +971,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCommissions((prev) => {
           const merged = mergeRecordsById(prev, d.commissions, delMap.commissions);
           localStorage.setItem('carvlak_commissions', JSON.stringify(merged));
+          markListSynced('commissions', merged);
           return merged;
         });
       }
@@ -957,6 +980,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setClients((prev) => {
           const merged = mergeRecordsById(prev, d.clients, delMap.clients, normalizeClient);
           localStorage.setItem('carvlak_clients', JSON.stringify(merged));
+          markListSynced('clients', merged);
           return merged;
         });
       }
@@ -965,6 +989,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setVehicles((prev) => {
           const merged = mergeRecordsById(prev, d.vehicles, delMap.vehicles, normalizeVehicle);
           localStorage.setItem('carvlak_vehicles', JSON.stringify(merged));
+          markListSynced('vehicles', merged);
           return merged;
         });
       }
@@ -974,6 +999,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const cleanPrev = prev.filter((e) => !['exp-1', 'exp-2', 'exp-3'].includes(e.id));
           const merged = mergeRecordsById(cleanPrev, d.expenses, delMap.expenses);
           localStorage.setItem('carvlak_expenses', JSON.stringify(merged));
+          markListSynced('expenses', merged);
           return merged;
         });
       }
@@ -982,6 +1008,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingCompanies((prev) => {
           const merged = mergeRecordsById(prev, d.detailing_companies, delMap.detailing_companies, normalizeCompany);
           localStorage.setItem('carvlak_detailing_companies', JSON.stringify(merged));
+          markListSynced('detailing_companies', merged);
           return merged;
         });
       }
@@ -990,6 +1017,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingCompanyServices((prev) => {
           const merged = mergeRecordsById(prev, d.detailing_company_services, delMap.detailing_company_services);
           localStorage.setItem('carvlak_detailing_company_services', JSON.stringify(merged));
+          markListSynced('detailing_company_services', merged);
           return merged;
         });
       }
@@ -998,6 +1026,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingTariffs((prev) => {
           const merged = mergeRecordsById(prev, d.detailing_tariffs, delMap.detailing_tariffs);
           localStorage.setItem('carvlak_detailing_tariffs', JSON.stringify(merged));
+          markListSynced('detailing_tariffs', merged);
           return merged;
         });
       }
@@ -1006,6 +1035,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingWebRequests((prev) => {
           const merged = mergeRecordsById(prev, d.detailing_web_requests, delMap.detailing_web_requests);
           localStorage.setItem('carvlak_detailing_web_requests', JSON.stringify(merged));
+          markListSynced('detailing_web_requests', merged);
           return merged;
         });
       }
@@ -1014,6 +1044,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setStockItems((prev) => {
           const merged = mergeRecordsById(prev, d.stock_items, delMap.stock_items);
           localStorage.setItem('carvlak_stock_items', JSON.stringify(merged));
+          markListSynced('stock_items', merged);
           return merged;
         });
       }
@@ -1022,6 +1053,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setDetailingReceipts((prev) => {
           const merged = mergeRecordsById(prev, d.detailing_receipts, delMap.detailing_receipts);
           localStorage.setItem('carvlak_detailing_receipts', JSON.stringify(merged));
+          markListSynced('detailing_receipts', merged);
           return merged;
         });
       }
@@ -1043,12 +1075,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.addEventListener('online', onVisibleOrFocus);
     document.addEventListener('visibilitychange', onVisibleOrFocus);
 
-    // Sondeo suave cada 20s para mantener actualizados celulares en tiempo real
+    // Sondeo cada 8s para mantener actualizados los celulares casi en tiempo real
     const pollInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncFromCloud();
       }
-    }, 20000);
+    }, 8000);
 
     return () => {
       window.removeEventListener('focus', onVisibleOrFocus);
@@ -1057,6 +1089,77 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearInterval(pollInterval);
     };
   }, []);
+
+  // Sube automáticamente al servidor lo que cambió en este dispositivo (altas, ediciones y borrados).
+  const autoSyncCollections: Array<[string, any[]]> = [
+    ['detailing_quotes', detailingQuotes],
+    ['detailing_payments', detailingPayments],
+    ['commissions', commissions],
+    ['clients', clients],
+    ['vehicles', vehicles],
+    ['expenses', expenses],
+    ['detailing_companies', detailingCompanies],
+    ['detailing_company_services', detailingCompanyServices],
+    ['detailing_tariffs', detailingTariffs],
+    ['stock_items', stockItems],
+    ['detailing_receipts', detailingReceipts],
+    ['detailing_web_requests', detailingWebRequests]
+  ];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const nowIso = new Date().toISOString();
+      autoSyncCollections.forEach(([key, list]) => {
+        const current = snapshotList(list);
+        const previous = lastSyncedRef.current[key];
+        if (!previous) {
+          // Primera vez: solo tomar la foto, no subir nada (evita pisar datos más nuevos del servidor)
+          lastSyncedRef.current[key] = current;
+          return;
+        }
+        const changed: any[] = [];
+        current.forEach((json, id) => {
+          if (previous.get(id) !== json) changed.push(JSON.parse(json));
+        });
+        const removed: any[] = [];
+        previous.forEach((json, id) => {
+          if (!current.has(id)) {
+            const old = JSON.parse(json);
+            removed.push({ ...old, deleted_at: old.deleted_at || nowIso, updated_at: nowIso });
+          }
+        });
+        lastSyncedRef.current[key] = current;
+        const toSend = [...changed, ...removed];
+        if (toSend.length > 0) {
+          syncRecordsToCloud(key, toSend);
+        }
+      });
+
+      const cfgJson = JSON.stringify(detailingConfig || {});
+      if (lastSyncedConfigRef.current === null) {
+        lastSyncedConfigRef.current = cfgJson;
+      } else if (lastSyncedConfigRef.current !== cfgJson) {
+        lastSyncedConfigRef.current = cfgJson;
+        syncRecordsToCloud('detailing_config', detailingConfig);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    detailingQuotes,
+    detailingPayments,
+    commissions,
+    clients,
+    vehicles,
+    expenses,
+    detailingCompanies,
+    detailingCompanyServices,
+    detailingTariffs,
+    stockItems,
+    detailingReceipts,
+    detailingWebRequests,
+    detailingConfig
+  ]);
 
   const loadSupabaseData = async () => {
     if (!supabase || !isSupabaseConfigured) return;

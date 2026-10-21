@@ -247,42 +247,107 @@ export const DetailingCommissionsSection: React.FC<DetailingCommissionsSectionPr
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Banner de resumen de comisiones */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
-          <div className="flex items-center justify-between text-[11px] font-medium text-[#6B6B6B]">
-            <span>Comisiones pendientes</span>
-            <Clock className="w-4 h-4 text-[#D7141A]" />
+      {/* RESUMEN SIMPLE: CUÁNTO HAY QUE PAGAR A CADA UNO */}
+      <div className="bg-white border border-[#E5E5E3] rounded-2xl p-4 sm:p-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-[#161616]">Comisiones a pagar</h2>
+            <p className="text-sm text-[#6B6B6B]">Lo que se le debe a cada uno en el mes elegido</p>
           </div>
-          <div className="text-2xl font-bold text-[#D7141A] font-mono mt-0.5">
-            {formatCurrency(totalPending, defaultCurrency)}
-          </div>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-            Por liquidar ({filteredCommissions.filter((c) => c.status === 'Pendiente').length} trabajos)
-          </p>
+          <label className="flex items-center gap-2 bg-[#F5F5F4] border border-[#E5E5E3] rounded-xl px-3 py-2 text-sm text-[#161616]">
+            <Calendar className="w-4 h-4 text-[#6B6B6B]" />
+            <span className="sr-only">Mes</span>
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-transparent text-[#161616] font-bold focus:outline-none cursor-pointer text-base"
+            />
+          </label>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
-          <div className="flex items-center justify-between text-[11px] font-medium text-[#6B6B6B]">
-            <span>Comisiones pagadas</span>
-            <CheckCircle2 className="w-4 h-4 text-[#1E6B43]" />
-          </div>
-          <div className="text-2xl font-bold text-[#161616] font-mono mt-0.5">
-            {formatCurrency(totalPaid, defaultCurrency)}
-          </div>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">Liquidadas este período</p>
-        </div>
+        {settlementsByEmployee.length === 0 ? (
+          <p className="text-base text-[#6B6B6B] py-6 text-center">No hay comisiones en este mes.</p>
+        ) : (
+          <>
+            {isAdmin && settlementsByEmployee.length > 1 && (
+              <div className="flex items-baseline justify-between gap-3 p-4 rounded-xl bg-[#161616] text-white">
+                <span className="text-sm font-bold uppercase tracking-wider">Total a pagar</span>
+                <span className="text-3xl font-black font-mono">
+                  {formatCurrency(settlementsByEmployee.reduce((acc, e) => acc + e.totalPending, 0), defaultCurrency)}
+                </span>
+              </div>
+            )}
 
-        <div className="p-4 rounded-2xl bg-white border border-[#E5E5E3] shadow-xs">
-          <div className="text-[11px] font-medium text-[#6B6B6B]">Total facturado en trabajos</div>
-          <div className="text-2xl font-bold text-[#161616] font-mono mt-0.5">
-            {formatCurrency(totalBilled, defaultCurrency)}
-          </div>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-            Base sobre la cual se calculan comisiones
-          </p>
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {settlementsByEmployee.map((emp) => {
+                const pendingJobs = [...emp.pendingList].sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+                return (
+                  <div key={emp.employeeId} className="rounded-2xl border-2 border-[#161616] p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#161616]">{emp.employeeName}</h3>
+                        <p className="text-sm text-[#6B6B6B]">
+                          {emp.pendingList.length} {emp.pendingList.length === 1 ? 'trabajo' : 'trabajos'} sin pagar
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-xs font-bold uppercase tracking-wider text-[#6B6B6B]">A pagar</span>
+                        <span className="block text-3xl sm:text-4xl font-black font-mono text-[#D7141A] leading-tight">
+                          {formatCurrency(emp.totalPending, defaultCurrency)}
+                        </span>
+                        {emp.totalPaid > 0 && (
+                          <span className="block text-sm text-[#1E6B43] font-semibold">
+                            Ya pagado: {formatCurrency(emp.totalPaid, defaultCurrency)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {pendingJobs.length > 0 && (
+                      <ul className="divide-y divide-[#E5E5E3] border-t border-[#E5E5E3]">
+                        {pendingJobs.map((c) => {
+                          const q = detailingQuotes.find((qq) => qq.id === c.quote_id);
+                          const dateStr = (q?.work_date || c.created_at || '').slice(0, 10);
+                          const [yy, mm, dd] = dateStr.split('-');
+                          return (
+                            <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
+                              <div className="min-w-0">
+                                <p className="text-base font-semibold text-[#161616] truncate">
+                                  {c.vehicle_description || q?.vehicle_info || 'Trabajo'}
+                                </p>
+                                <p className="text-sm text-[#6B6B6B] truncate">
+                                  {dd && mm ? `${dd}/${mm}` : ''} · {c.client_name} · {c.commission_rate}% de {formatCurrency(c.amount_charged, defaultCurrency)}
+                                </p>
+                              </div>
+                              <span className="text-lg font-bold font-mono text-[#161616] shrink-0">
+                                {formatCurrency(c.commission_amount, defaultCurrency)}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+
+                    {isAdmin && emp.totalPending > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkPeriodPaidForEmployee(emp.employeeId, emp.employeeName)}
+                        className="w-full py-3 rounded-xl bg-[#161616] hover:bg-black text-white text-base font-bold flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-5 h-5" />
+                        Marcar como pagado ({formatCurrency(emp.totalPending, defaultCurrency)})
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
+
+      <h3 className="text-sm font-bold text-[#6B6B6B] uppercase tracking-wider pt-2">Detalle, filtros y exportar</h3>
 
       {/* Controles de Filtros y Acciones Globales */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[#E5E5E3]">

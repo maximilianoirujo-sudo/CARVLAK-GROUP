@@ -84,8 +84,11 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
         return p as any;
       }
     }
-    return 'company';
+    return 'tariffs';
   });
+
+  // Opciones avanzadas plegadas para que la configuración sea más simple
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
   // Copia local para edición del tarifario
   const [localTariffs, setLocalTariffs] = useState<DetailingTariff[]>(() =>
@@ -538,21 +541,26 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
     showToast('Respaldo descargado exitosamente', 'success');
   };
 
-  const navItems = [
-    { id: 'company', label: 'Empresa y Logo', icon: Building2 },
-    { id: 'tarifa_empresas', label: 'Tarifa Empresas (Preventa)', icon: ShieldCheck },
-    { id: 'servicios_empresas', label: 'Servicios Especiales Empresas', icon: Sparkles },
-    { id: 'receipts', label: 'Comprobantes y Numeración', icon: FileText },
-    { id: 'tariffs', label: 'Tarifario y Cuidados', icon: Sparkles },
-    { id: 'discounts', label: 'Descuentos y Recargo', icon: Percent },
-    { id: 'payments', label: 'Medios de Pago', icon: CreditCard },
-    { id: 'origins', label: 'Orígenes de Cliente', icon: Users },
-    { id: 'void_reasons', label: 'Motivos de Anulación', icon: Ban },
-    { id: 'expenses', label: 'Gastos del Taller', icon: Receipt },
+  // Lo esencial, siempre a la vista
+  const mainNavItems = [
+    { id: 'tariffs', label: 'Servicios', icon: Sparkles },
     { id: 'commissions', label: 'Comisiones', icon: DollarSign },
-    { id: 'whatsapp', label: 'Plantilla WhatsApp', icon: MessageCircle },
-    { id: 'backup', label: 'Respaldo y Limpieza', icon: Database }
+    { id: 'origins', label: 'Orígenes de cliente', icon: Users },
+    { id: 'payments', label: 'Medios de pago', icon: CreditCard },
+    { id: 'company', label: 'Datos del taller y logo', icon: Building2 }
   ];
+  // Lo que se toca poco, plegado en "Más opciones"
+  const advancedNavItems = [
+    { id: 'servicios_empresas', label: 'Servicios para empresas', icon: Sparkles },
+    { id: 'receipts', label: 'Comprobantes', icon: FileText },
+    { id: 'discounts', label: 'Descuentos y recargo', icon: Percent },
+    { id: 'expenses', label: 'Categorías de gastos', icon: Receipt },
+    { id: 'void_reasons', label: 'Motivos de anulación', icon: Ban },
+    { id: 'whatsapp', label: 'Mensaje de WhatsApp', icon: MessageCircle },
+    { id: 'backup', label: 'Respaldo y limpieza', icon: Database }
+  ];
+  const isAdvancedActive = advancedNavItems.some((i) => i.id === activeSection);
+  const navItems = [...mainNavItems, ...(showAdvanced || isAdvancedActive ? advancedNavItems : [])];
 
   return (
     <div className="space-y-4">
@@ -620,6 +628,13 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="w-full p-2.5 mt-1 rounded-xl text-left text-xs font-bold text-[#6B6B6B] hover:text-[#161616] hover:bg-[#F5F5F4] border-t border-[#E5E5E3] cursor-pointer"
+          >
+            {showAdvanced || isAdvancedActive ? '− Menos opciones' : '+ Más opciones'}
+          </button>
         </div>
 
         {/* Panel de Contenido */}
@@ -1019,6 +1034,8 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
                       </div>
 
                       {/* Precios por Categoría */}
+                      {/* Ya no se usan precios predeterminados: el precio se carga a mano en cada trabajo */}
+                      {false && (
                       <div>
                         <label className="text-[10px] font-bold text-[#6B7079] block mb-1">
                           Precios por categoría de vehículo ($)
@@ -1091,6 +1108,7 @@ export const DetailingConfigTab: React.FC<DetailingConfigTabProps> = ({
                           </div>
                         </div>
                       </div>
+                      )}
 
                       {/* Cuidados posteriores específicos del servicio */}
                       <div>

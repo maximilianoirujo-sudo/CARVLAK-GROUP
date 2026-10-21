@@ -102,6 +102,8 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
   // 5. Servicios Especiales
   const [selectedSpecialServiceIds, setSelectedSpecialServiceIds] = useState<string[]>([]);
   const [customItems, setCustomItems] = useState<CustomItem[]>([]);
+  // Precio del trabajo: lo pone el usuario a mano (sin precios predeterminados)
+  const [manualPrice, setManualPrice] = useState<number>(0);
 
   // 6. ¿Quién hizo el trabajo? (MANDATORY & NO PRESELECTED ON NEW JOBS)
   const [whoDidIt, setWhoDidIt] = useState<'' | 'maxi' | 'romina' | 'both'>('');
@@ -166,6 +168,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
       );
       setDiscountType((quoteToEdit.discount_type as any) || 'none');
       setDiscountValue(quoteToEdit.discount_amount || 0);
+      setManualPrice(Number(quoteToEdit.subtotal) || Number(quoteToEdit.total_amount) || 0);
       setNotes(quoteToEdit.notes || '');
 
       const parts = (quoteToEdit.commission_participants || []).filter((p) => p && typeof p.rate === 'number' && p.rate > 0);
@@ -219,6 +222,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
       setIncludePreventa(true);
       setSelectedSpecialServiceIds([]);
       setCustomItems([]);
+      setManualPrice(0);
       setWhoDidIt('');
       setCustomMaxiRate(null);
       setCustomMaxiReason('');
@@ -302,6 +306,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         includePreventa,
         selectedSpecialServiceIds,
         customItems,
+        manualPrice,
         whoDidIt,
         customMaxiRate,
         customMaxiReason,
@@ -329,6 +334,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     includePreventa,
     selectedSpecialServiceIds,
     customItems,
+    manualPrice,
     whoDidIt,
     customMaxiRate,
     customMaxiReason,
@@ -354,6 +360,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     if (Array.isArray(savedDraftData.selectedSpecialServiceIds)) {
       setSelectedSpecialServiceIds(savedDraftData.selectedSpecialServiceIds);
     }
+    setManualPrice(Number(savedDraftData.manualPrice) || 0);
     if (Array.isArray(savedDraftData.customItems)) {
       setCustomItems(savedDraftData.customItems);
     }
@@ -474,7 +481,9 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
     return customItems.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
   }, [customItems]);
 
-  const subtotal = preventaPrice + specialServicesTotal + customItemsTotal;
+  // El total de los servicios lo carga el usuario a mano
+  void preventaPrice; void specialServicesTotal; void customItemsTotal;
+  const subtotal = Math.max(0, Number(manualPrice) || 0);
 
   const calculatedDiscount = useMemo(() => {
     if (discountType === 'fixed') return Math.min(subtotal, Math.max(0, discountValue));
@@ -618,6 +627,13 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
       return;
     }
 
+    if (!subtotal || subtotal <= 0) {
+      const msg = 'Ingresá el precio del trabajo';
+      setSaveError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
     if (!whoDidIt) {
       const msg = 'Elegí quién hizo el trabajo (Maximiliano, Romina o Los dos)';
       setSaveError(msg);
@@ -676,7 +692,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         selectedServicesFormatted.push({
           serviceId: 'preventa',
           serviceName: `Preparación Preventa (Tamaño ${vehicleSize})`,
-          price: preventaPrice
+          price: 0
         });
       }
 
@@ -686,17 +702,17 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
           selectedServicesFormatted.push({
             serviceId: s.id,
             serviceName: s.name,
-            price: getSpecialServicePrice(s, vehicleSize, effectiveTariff)
+            price: 0
           });
         }
       });
 
       customItems.forEach((ci) => {
-        if (ci.desc.trim() && ci.price > 0) {
+        if (ci.desc.trim()) {
           selectedServicesFormatted.push({
             serviceId: ci.id,
             serviceName: ci.desc.trim(),
-            price: Number(ci.price)
+            price: 0
           });
         }
       });
@@ -817,6 +833,7 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
         setIncludePreventa(true);
         setSelectedSpecialServiceIds([]);
         setCustomItems([]);
+        setManualPrice(0);
         setWhoDidIt('');
         setCustomMaxiRate(null);
         setCustomMaxiReason('');
@@ -1063,7 +1080,6 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                       name: `Tamaño ${sizeNum}`,
                       examples: ''
                     };
-                    const price = calculatedPrices[sizeNum as 1 | 2 | 3 | 4];
                     const isSelected = vehicleSize === sizeNum;
 
                     return (
@@ -1087,12 +1103,6 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                           <p className="text-[10px] text-[#6B6B6B] line-clamp-2 min-h-[28px]">
                             {s.examples || '-'}
                           </p>
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-[#E5E5E3]/60 flex items-baseline justify-between">
-                          <span className="text-[9px] text-[#6B6B6B]">Preventa</span>
-                          <span className={`font-mono font-black text-sm ${isSelected ? 'text-[#D7141A]' : 'text-[#161616]'}`}>
-                            {formatCurrency(price)}
-                          </span>
                         </div>
                       </button>
                     );
@@ -1154,9 +1164,6 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                   </span>
                 </div>
               </label>
-              <span className={`font-mono font-black text-sm ${includePreventa ? 'text-[#161616]' : 'text-[#6B6B6B] line-through'}`}>
-                {formatCurrency(calculatedPrices[vehicleSize])}
-              </span>
             </div>
 
             {/* 5. SERVICIOS ESPECIALES & ÍTEMS LIBRES */}
@@ -1179,7 +1186,6 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {catalogSpecialServices.map((s) => {
                   const isSelected = selectedSpecialServiceIds.includes(s.id);
-                  const sPrice = getSpecialServicePrice(s, vehicleSize, effectiveTariff);
 
                   return (
                     <button
@@ -1203,9 +1209,6 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                           )}
                         </div>
                       </div>
-                      <span className="font-mono font-bold text-xs shrink-0">
-                        {formatCurrency(sPrice)}
-                      </span>
                     </button>
                   );
                 })}
@@ -1224,16 +1227,6 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                         onChange={(e) => handleUpdateCustomItem(ci.id, 'desc', e.target.value)}
                         className="flex-1 bg-white border border-[#E5E5E3] rounded-lg px-2.5 py-1 text-xs"
                       />
-                      <div className="relative w-28">
-                        <span className="absolute left-2 top-1 text-[#6B6B6B] text-[10px]">$U</span>
-                        <input
-                          type="number"
-                          placeholder="Precio"
-                          value={ci.price || ''}
-                          onChange={(e) => handleUpdateCustomItem(ci.id, 'price', Number(e.target.value) || 0)}
-                          className="w-full bg-white border border-[#E5E5E3] rounded-lg pl-7 pr-2 py-1 text-xs font-mono font-bold text-right"
-                        />
-                      </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveCustomItem(ci.id)}
@@ -1245,6 +1238,29 @@ export const DetailingCompanyJobModal: React.FC<DetailingCompanyJobModalProps> =
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* PRECIO DEL TRABAJO (manual) */}
+            <div className="p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-1.5">
+              <label htmlFor="company-manual-price" className="text-xs font-bold text-[#161616] flex items-center justify-between">
+                <span>Precio del trabajo ($U) *</span>
+                {!subtotal && <span className="text-[10px] text-[#D7141A] font-bold">Obligatorio</span>}
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-[#6B6B6B]">$U</span>
+                <input
+                  id="company-manual-price"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={50}
+                  placeholder="Ej: 4000"
+                  value={manualPrice || ''}
+                  onChange={(e) => setManualPrice(Math.max(0, Number(e.target.value) || 0))}
+                  className="flex-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2.5 text-xl font-bold font-mono text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                />
+              </div>
+              <p className="text-[10px] text-[#6B6B6B]">Total de todos los servicios de este auto.</p>
             </div>
 
             {/* 6. ¿QUIÉN HIZO EL TRABAJO? (Visible, obligatorio, sin opción preseleccionada) */}

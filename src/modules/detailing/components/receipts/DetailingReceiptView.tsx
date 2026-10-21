@@ -271,7 +271,7 @@ Podés ver e imprimir tu comprobante aquí:
                     )}
                   </td>
                   <td className="py-3 text-right font-mono font-bold text-[#161616] text-sm">
-                    {formatCurrency(srv.price, 'UYU')}
+                    {Number(srv.price) > 0 ? formatCurrency(srv.price, 'UYU') : ''}
                   </td>
                 </tr>
               ))}

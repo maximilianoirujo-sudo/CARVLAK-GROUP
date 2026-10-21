@@ -114,6 +114,8 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   const [discountType, setDiscountType] = useState<string>('none');
   const [customDiscountAmount, setCustomDiscountAmount] = useState<number>(0);
   const [surchargeAmount, setSurchargeAmount] = useState<number>(0);
+  // Precio de los servicios: lo carga el usuario a mano (sin precios predeterminados)
+  const [manualPrice, setManualPrice] = useState<number>(0);
   const [notes, setNotes] = useState('');
 
   // Payment State ("¿Ya cobraste?")
@@ -156,6 +158,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setSelectedVehicleId(quoteToEdit.vehicle_id || '');
       setWorkDate(quoteToEdit.work_date || todayUY);
       setSelectedServiceIds((quoteToEdit.selected_services || []).map((s) => s.serviceId));
+      setManualPrice(Number(quoteToEdit.subtotal) || Number(quoteToEdit.total_amount) || 0);
       setOrigin(quoteToEdit.origin || '');
       setDiscountType(quoteToEdit.discount_type || 'none');
       setCustomDiscountAmount(quoteToEdit.discount_amount || 0);
@@ -216,6 +219,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       setNewVehicleCategory('Mediano');
       setWorkDate(initialDate || todayUY);
       setSelectedServiceIds([]);
+      setManualPrice(0);
       setOrigin('');
       setWhoDidIt('');
       setCustomMaxiRate(null);
@@ -322,6 +326,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
         discountType,
         customDiscountAmount,
         surchargeAmount,
+        manualPrice,
         notes,
         paymentOption,
         partialAmount,
@@ -356,6 +361,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     discountType,
     customDiscountAmount,
     surchargeAmount,
+    manualPrice,
     notes,
     paymentOption,
     partialAmount,
@@ -385,6 +391,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
     setDiscountType(savedDraftData.discountType || 'none');
     setCustomDiscountAmount(Number(savedDraftData.customDiscountAmount) || 0);
     setSurchargeAmount(Number(savedDraftData.surchargeAmount) || 0);
+    setManualPrice(Number(savedDraftData.manualPrice) || 0);
     setNotes(savedDraftData.notes || '');
     if (savedDraftData.paymentOption) setPaymentOption(savedDraftData.paymentOption);
     if (savedDraftData.partialAmount) setPartialAmount(Number(savedDraftData.partialAmount) || 0);
@@ -475,14 +482,8 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
   }, [clients, vehicles, clientSearchTerm]);
 
   // Calculate pricing
-  const subtotal = useMemo(() => {
-    return selectedServiceIds.reduce((sum, sid) => {
-      const tariff = (detailingTariffs || []).find((t) => t && t.id === sid);
-      if (!tariff || !tariff.prices) return sum;
-      const price = tariff.prices[categoryPriceKey] || tariff.prices.chico || 0;
-      return sum + price;
-    }, 0);
-  }, [selectedServiceIds, detailingTariffs, categoryPriceKey]);
+  // El precio lo pone el usuario a mano (total de todos los servicios)
+  const subtotal = useMemo(() => Math.max(0, Number(manualPrice) || 0), [manualPrice]);
 
   const discountValue = useMemo(() => {
     if (discountType === 'none') return 0;
@@ -613,6 +614,13 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       return;
     }
 
+    if (!subtotal || subtotal <= 0) {
+      const msg = 'Ingresá el precio del trabajo';
+      setSaveError(msg);
+      showToast(msg, 'error');
+      return;
+    }
+
     if (!origin) {
       const msg = 'El origen del cliente es obligatorio';
       setSaveError(msg);
@@ -736,13 +744,12 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
       // PASO 3: TRABAJO (confirmar localStorage y respuesta OK de /api/sync)
       const selectedServicesFormatted = selectedServiceIds.map((sid) => {
         const tariff = (detailingTariffs || []).find((t) => t && t.id === sid);
-        const price = tariff?.prices?.[categoryPriceKey] || tariff?.prices?.chico || 0;
         return {
           serviceId: sid,
           serviceName: tariff?.name || 'Servicio',
           name: tariff?.name || 'Servicio',
           category: finalCategory,
-          price
+          price: 0
         };
       });
 
@@ -1279,10 +1286,7 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
               <label className="text-xs font-bold text-[#161616] flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#D7141A]" />
-                  4. Servicios ({activeCategory})
-                </span>
-                <span className="text-[11px] font-bold text-[#D7141A]">
-                  {formatCurrency(subtotal)}
+                  4. Servicios realizados
                 </span>
               </label>
 
@@ -1290,7 +1294,6 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                 {(detailingTariffs || []).map((t) => {
                   if (!t) return null;
                   const isSelected = selectedServiceIds.includes(t.id);
-                  const price = t.prices?.[categoryPriceKey] || t.prices?.chico || 0;
                   return (
                     <button
                       key={t.id}
@@ -1303,12 +1306,35 @@ export const DetailingQuoterModal: React.FC<DetailingQuoterModalProps> = ({
                       }`}
                     >
                       <span className="font-bold leading-tight">{t.name}</span>
-                      <span className={`text-[11px] font-mono mt-1 ${isSelected ? 'font-bold text-[#D7141A]' : 'text-[#6B6B6B]'}`}>
-                        {formatCurrency(price)}
-                      </span>
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Precio manual del trabajo */}
+              <div className="mt-2 p-3 bg-[#F5F5F4] rounded-xl border border-[#E5E5E3] space-y-1.5">
+                <label htmlFor="manual-price-input" className="text-xs font-bold text-[#161616] flex items-center justify-between">
+                  <span>Precio del trabajo ($U) *</span>
+                  {!subtotal && <span className="text-[10px] text-[#D7141A] font-bold">Obligatorio</span>}
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-[#6B6B6B]">$U</span>
+                  <input
+                    id="manual-price-input"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={50}
+                    placeholder="Ej: 4500"
+                    value={manualPrice || ''}
+                    onChange={(e) => setManualPrice(Math.max(0, Number(e.target.value) || 0))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.preventDefault();
+                    }}
+                    className="flex-1 bg-white border border-[#E5E5E3] rounded-xl px-3 py-2.5 text-xl font-bold font-mono text-[#161616] focus:border-[#D7141A] focus:outline-none"
+                  />
+                </div>
+                <p className="text-[10px] text-[#6B6B6B]">Total de todos los servicios elegidos.</p>
               </div>
             </div>
 
