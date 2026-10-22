@@ -34,6 +34,7 @@ import { DetailingConfigTab } from './components/DetailingConfigTab';
 import { DetailingQuoterModal } from './components/DetailingQuoterModal';
 import { DetailingWebBudgetSection } from './components/DetailingWebBudgetSection';
 import { DetailingWebRequestsSection } from './components/DetailingWebRequestsSection';
+import { DetailingCarvlakSection } from './components/DetailingCarvlakSection';
 
 interface DetailingModuleProps {
   onOpenPublicForm?: () => void;
@@ -48,7 +49,15 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
   const CARVLAK_BASE_PRICE = 4000;
   const [carvlakCompanyId, setCarvlakCompanyId] = useState<string | undefined>(undefined);
 
+  const [carvlakAutoOpen, setCarvlakAutoOpen] = useState(false);
   const handleOpenCarvlakJob = () => {
+    setShowNewJobMenu(false);
+    setCarvlakAutoOpen(true);
+    setActiveTab('carvlak');
+  };
+  // (anterior) abría el formulario de empresa con tarifa; ya no se usa
+
+  const _legacyOpenCarvlakCompanyJob = () => {
     setShowNewJobMenu(false);
     let company = (detailingCompanies || []).find(
       (c: any) => c && !c.deleted_at && (c.is_carvlak_internal || /^\s*carvlak\b/i.test(c.name || ''))
@@ -81,12 +90,12 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
 
   // Pestaña inicial: soporta URL param ?sub=web-services o ?sub=web-requests
   const [activeTab, setActiveTab] = useState<
-    'jobs' | 'calendar' | 'companies' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'web-services' | 'web-requests' | 'config'
+    'jobs' | 'carvlak' | 'calendar' | 'companies' | 'receipts' | 'stock' | 'commissions' | 'expenses' | 'dashboard' | 'web-services' | 'web-requests' | 'config'
   >(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const sub = params.get('sub') || params.get('section') || params.get('subtab');
-      if (sub && ['jobs', 'calendar', 'companies', 'receipts', 'stock', 'commissions', 'expenses', 'dashboard', 'web-services', 'web-requests', 'config'].includes(sub)) {
+      if (sub && ['jobs', 'carvlak', 'calendar', 'companies', 'receipts', 'stock', 'commissions', 'expenses', 'dashboard', 'web-services', 'web-requests', 'config'].includes(sub)) {
         return sub as any;
       }
     }
@@ -204,7 +213,7 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
                       <Car className="w-4 h-4 text-[#161616]" />
                       <div>
                         <div className="text-[#161616]">Autos CARVLAK</div>
-                        <div className="text-[10px] text-neutral-500 font-normal">Automotora · se cobran a Jonathan</div>
+                        <div className="text-[10px] text-neutral-500 font-normal">Solo auto y precio · sin comisión</div>
                       </div>
                     </button>
                   </div>
@@ -227,6 +236,19 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Trabajos del mes</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('carvlak')}
+            className={`px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
+              activeTab === 'carvlak'
+                ? 'bg-[#161616] text-white shadow-xs'
+                : 'bg-[#F5F5F4] text-[#6B6B6B] hover:text-[#161616] hover:bg-gray-200'
+            }`}
+          >
+            <Car className="w-3.5 h-3.5" />
+            <span>Autos CARVLAK</span>
           </button>
 
           <button
@@ -372,6 +394,10 @@ export const DetailingModule: React.FC<DetailingModuleProps> = () => {
 
       {/* 3. Renderizado de Contenido según Pestaña Activa */}
       {activeTab === 'jobs' && <DetailingMonthJobsSection />}
+
+      {activeTab === 'carvlak' && (
+        <DetailingCarvlakSection autoOpenForm={carvlakAutoOpen} onFormClosed={() => setCarvlakAutoOpen(false)} />
+      )}
 
       {activeTab === 'calendar' && <DetailingCalendarView />}
 

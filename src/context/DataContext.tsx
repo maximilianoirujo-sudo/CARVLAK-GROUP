@@ -2335,6 +2335,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     quote: DetailingQuote,
     materialsCost?: number
   ): CommissionRecord[] => {
+    // Autos de CARVLAK (Jonathan): solo registro, nunca generan comisión
+    const qAny: any = quote;
+    if (
+      qAny?.is_carvlak_job === true ||
+      /^\s*carvlak\b/i.test(String(qAny?.company_name || '')) ||
+      (qAny?.company_id && (detailingCompanies || []).some((c: any) => c && c.id === qAny.company_id && c.is_carvlak_internal))
+    ) {
+      return [];
+    }
     const commissionConfig = detailingConfig?.commission_config;
     const baseCalc = commissionConfig?.calculation_base || 'total_after_discounts';
 
