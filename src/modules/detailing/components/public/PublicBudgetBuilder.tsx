@@ -1119,6 +1119,61 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </div>
             </div>
           </div>
+
+          {/* Carrusel de videos reales: engancha desde el inicio */}
+          {(() => {
+            const reelServices = activeTariffs.filter((t) => (t.video_url || '').includes('.mp4'));
+            if (reelServices.length === 0) return null;
+            return (
+              <div className="pt-6">
+                <div className="flex items-end justify-between gap-3 mb-3">
+                  <div>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#1E5EFF] block">
+                      Trabajos reales en nuestro taller
+                    </span>
+                    <h2 className="text-[20px] sm:text-[22px] font-bold text-[#0B0B0C] leading-tight">
+                      Mirá cómo trabajamos
+                    </h2>
+                  </div>
+                  <span className="text-[12px] text-[#6B7079] shrink-0">Deslizá →</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-5 px-5 sm:mx-0 sm:px-0">
+                  {reelServices.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setDetailModalService(t)}
+                      className="relative shrink-0 w-[160px] sm:w-[200px] aspect-[9/16] rounded-[14px] overflow-hidden bg-[#0B0B0C] snap-start text-left cursor-pointer active:scale-98 transition-transform"
+                    >
+                      <video
+                        src={t.video_url}
+                        muted
+                        loop
+                        playsInline
+                        autoPlay
+                        preload="metadata"
+                        className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 p-3 pt-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                        <span className="text-white text-[14px] font-semibold leading-snug block line-clamp-2">
+                          {t.shortName || t.name}
+                        </span>
+                        <span className="text-[#8FB3FF] text-[12px] font-semibold">Ver servicio →</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={scrollToConfig}
+                  className="mt-3 w-full h-[48px] rounded-[12px] bg-[#0B0B0C] hover:bg-black text-white font-semibold text-[15px] inline-flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <span>Quiero esto para mi auto</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })()}
         </section>
       )}
 
@@ -1511,11 +1566,24 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
                         onClick={() => setDetailModalService(tariff)}
                         className="relative w-full aspect-[4/3] overflow-hidden bg-[#F5F6F7] cursor-pointer"
                       >
-                        <img
-                          src={coverImage}
-                          alt={tariff.name}
-                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                        />
+                        {(tariff.video_url || '').includes('.mp4') ? (
+                          <video
+                            src={tariff.video_url}
+                            muted
+                            loop
+                            playsInline
+                            autoPlay
+                            preload="metadata"
+                            poster={coverImage}
+                            className="w-full h-full object-cover pointer-events-none"
+                          />
+                        ) : (
+                          <img
+                            src={coverImage}
+                            alt={tariff.name}
+                            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                          />
+                        )}
 
                         {/* Badges superiores discretos */}
                         <div className="absolute top-3 inset-x-3 flex items-start justify-between gap-2 z-10">
@@ -2493,13 +2561,22 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-[15px] flex-1">
               {/* 1. Video o Foto */}
               {detailModalService.video_url && detailModalService.video_url.trim() ? (
-                <div className="rounded-[12px] overflow-hidden border border-[#E6E8EB] bg-black aspect-video">
+                <div
+                  className={`rounded-[12px] overflow-hidden border border-[#E6E8EB] bg-black ${
+                    detailModalService.is_video_uploaded || detailModalService.video_url.includes('.mp4')
+                      ? 'aspect-[9/16] max-h-[65vh] mx-auto'
+                      : 'aspect-video'
+                  }`}
+                >
                   {detailModalService.is_video_uploaded || detailModalService.video_url.includes('.mp4') ? (
                     <video
                       src={detailModalService.video_url}
+                      autoPlay
+                      muted
+                      loop
                       controls
                       playsInline
-                      className="w-full h-full object-contain mx-auto"
+                      className="w-full h-full object-cover mx-auto"
                     />
                   ) : (
                     <VideoEmbed url={detailModalService.video_url} autoPlay />

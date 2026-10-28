@@ -21,6 +21,12 @@ const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1617814076367-
 
 const DEFAULT_CLIPS: DetailingWebHeroClip[] = [
   {
+    id: 'clip-bmw',
+    url: '/videos/portada-bmw.mp4',
+    label: '0) BMW terminada: brillo y reflejos',
+    order: 0
+  },
+  {
     id: 'clip-1',
     url: '/videos/portada-interior.mp4',
     label: '1) Limpieza de interior con pincel',
