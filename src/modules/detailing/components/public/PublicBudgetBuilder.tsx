@@ -948,9 +948,9 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
 
     const timeSlotLabel =
       createdRequest.preferred_time_slot === 'manana'
-        ? 'Mañana (08:30 a 12:30)'
+        ? 'Mañana (10:00 a 14:00)'
         : createdRequest.preferred_time_slot === 'tarde'
-        ? 'Tarde (13:30 a 18:30)'
+        ? 'Tarde (14:00 a 18:00, lunes a viernes)'
         : 'A coordinar';
 
     const message = `¡Hola DetailVlak! 👋 Acabo de armar mi presupuesto estimado en su web.
@@ -1807,8 +1807,8 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { key: 'manana', label: 'Mañana', hours: '08:30 a 12:30' },
-                  { key: 'tarde', label: 'Tarde', hours: '13:30 a 18:30' },
+                  { key: 'manana', label: 'Mañana', hours: '10:00 a 14:00' },
+                  { key: 'tarde', label: 'Tarde', hours: '14:00 a 18:00 (lun a vie)' },
                   { key: 'indiferente', label: 'Indiferente', hours: 'A coordinar luego' }
                 ].map((slot) => {
                   const isSelected = preferredTimeSlot === slot.key;
@@ -2365,10 +2365,10 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
               <div className="space-y-1">
                 <p className="text-[15px] text-[#3A3D42]">
-                  {webBudget.content?.address || 'Av. Giannattasio, Ciudad de la Costa, Canelones, Uruguay.'}
+                  {webBudget.content?.address || 'Av. Giannattasio esquina Paraguay, Shangrilá, Canelones, Uruguay'}
                 </p>
                 <p className="text-[13px] text-[#6B7079]">
-                  Horario de atención: Lunes a Sábados de 08:30 a 18:30 hs (con coordinación previa).
+                  Horario de atención: lunes a viernes de 10 a 18 hs · sábados de 10 a 14 hs.
                 </p>
               </div>
 
