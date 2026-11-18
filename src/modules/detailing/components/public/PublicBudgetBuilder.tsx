@@ -118,7 +118,7 @@ export const PublicBudgetBuilder: React.FC<PublicBudgetBuilderProps> = ({ onBack
     webBudget.settings?.whatsapp_number ||
     webBudget.content?.company_phone ||
     INITIAL_GENERAL_CONFIG.company_phone ||
-    '59899267964';
+    '59894533175';
 
   // Sync latest data from /api/sync and Supabase
   useEffect(() => {
@@ -965,10 +965,10 @@ ${servicesListText}${productsListText}${discountText}
 
 💰 *TOTAL ESTIMADO:* $${createdRequest.total_amount.toLocaleString('es-UY')} UYU
 ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n` : ''}
-¿Tienen disponibilidad en esas fechas para coordinar la inspección?`;
+¿Tienen disponibilidad para coordinar el turno?`;
 
     let cleanPhone = companyPhone.replace(/[^0-9]/g, '');
-    if (!cleanPhone) cleanPhone = '59899267964';
+    if (!cleanPhone) cleanPhone = '59894533175';
 
     const encoded = encodeURIComponent(message);
     window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`, '_blank');
@@ -976,7 +976,7 @@ ${createdRequest.comments ? `\n💬 *Comentarios:* ${createdRequest.comments}\n`
 
   const handleDirectWhatsApp = () => {
     let cleanPhone = companyPhone.replace(/[^0-9]/g, '');
-    if (!cleanPhone) cleanPhone = '59899267964';
+    if (!cleanPhone) cleanPhone = '59894533175';
     const text = encodeURIComponent('¡Hola DetailVlak! 👋 Quisiera hacerles una consulta sobre un tratamiento para mi auto.');
     window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${text}`, '_blank');
   };

@@ -48,11 +48,7 @@ export const App: React.FC = () => {
       ) : publicReportToken ? (
         <InspectionPublicReportPage token={publicReportToken} />
       ) : isPublicBudget ? (
-        <PublicBudgetBuilder
-          onBackToApp={() => {
-            window.location.href = '/?tab=mod-detailing';
-          }}
-        />
+        <PublicBudgetBuilder />
       ) : isPublicCatalog ? (
         <DealershipPublicCatalogPage onBackToApp={() => {
           const url = new URL(window.location.href);
